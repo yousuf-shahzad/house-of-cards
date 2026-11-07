@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hero test card</title>
+<link rel="stylesheet" href="../style.css">
+<h2>hero.js test card</h2>
+<p>Renders a headline, tagline, and keyboard-accessible CTA linking to features. Expect all checks to say PASS; resize to check text wrapping.</p>
+<div id="hero"></div>
+<section id="features"><h2>Features target</h2></section>
+<pre id="out"></pre>
+<script src="hero.js"></script>
+<script>
+  const hero = document.getElementById("hero");
+  window.components.hero(hero);
+  const checks = {
+    "one headline": hero.querySelectorAll("h1").length === 1,
+    "tagline present": !!hero.querySelector(".tagline")?.textContent.trim(),
+    "CTA reaches features": hero.querySelector("a.cta")?.hash === "#features" && !!document.getElementById("features"),
+    "section has accessible name": hero.querySelector("section")?.getAttribute("aria-labelledby") === hero.querySelector("h1")?.id
+  };
+  document.getElementById("out").textContent = Object.entries(checks).map(([name, pass]) => `${pass ? "PASS" : "FAIL"} ${name}`).join("\n");
+</script>
+</html>
