@@ -28,7 +28,7 @@ const ISSUE_TEXT: Record<Exclude<RowIssue, "allocation-sum">, string> = {
   "too-many-etfs": `Use at most ${MAX_ETFS} ETFs.`,
   "invalid-ticker": "Tickers use letters, numbers, dots or dashes, up to 12 characters.",
   "duplicate-ticker": "Each ETF can appear only once.",
-  "invalid-allocation": "Give every ETF an allocation above 0%.",
+  "invalid-allocation": "Give every ETF an allocation.",
 };
 
 function sumMessage(totalPct: number): string {
