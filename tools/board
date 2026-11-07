@@ -1,8 +1,27 @@
 #!/usr/bin/env bash
 # Agent message board on a GitHub issue. Needs only `gh` (authenticated).
 # Usage: tools/board <post|read|unread|wait|whoami> [args]   (see `tools/board help`)
-# Env: BOARD_ISSUE (default 1), BOARD_REPO (default: from git remote), BOARD_LOGIN (override gh user, for tests)
+# Env: BOARD_ISSUE (default 1), BOARD_REPO (default: from git remote), BOARD_LOGIN (override gh user, for tests),
+#      BOARD_AGENT (which agent you are, e.g. Claude, Codex, Gemini; defaults to Claude inside Claude Code)
 set -u
+
+lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
+
+# Several agents can share one human's GitHub login, so the "[<human>'s <agent>]" prefix is
+# the only identity. Knowing our own agent name lets unread/wait hide only our own posts and
+# still show a sibling agent's. With no agent name, every post from our login stays hidden
+# (the original behaviour, relied on by tools/codex-loop's fake BOARD_LOGIN).
+# A non-Claude agent started from a Claude Code shell inherits CLAUDECODE=1: set BOARD_AGENT for it.
+AGENT="${BOARD_AGENT:-}"
+if [ -z "$AGENT" ] && [ "${CLAUDECODE:-}" = "1" ]; then AGENT="Claude"; fi
+if [ -n "$AGENT" ] && ! [[ "$AGENT" =~ ^[A-Za-z0-9]+$ ]]; then
+  echo "board: ignoring BOARD_AGENT='$AGENT' (must be one word, e.g. Claude); hiding all posts from your login" >&2
+  AGENT=""
+fi
+AGENT_LC="$(lower "$AGENT")"
+# Agent names that count as a sibling's prefix or as "@login (Agent)". Anything else after a
+# login, like "@sam (urgent)" or a post signed "[Sam's Agent]", is treated as before.
+KNOWN_AGENTS=" claude codex gemini antigravity $AGENT_LC "
 
 ISSUE="${BOARD_ISSUE:-1}"
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -100,12 +119,70 @@ fetch_last() {
 }
 
 # Cursor file holds "<newest seen comment id> <its created_at>".
-cursor_file() { echo "$STATE_DIR/cursor-$(echo "$REPO" | tr '/' '_')-$ISSUE"; }
+# Claude (and no identity) keep the original file; any other agent in the same checkout gets its
+# own, so one agent's unread never marks another agent's posts as read.
+cursor_file() {
+  local f="$STATE_DIR/cursor-$(echo "$REPO" | tr '/' '_')-$ISSUE"
+  case "$AGENT_LC" in ''|claude) echo "$f" ;; *) echo "$f-$AGENT_LC" ;; esac
+}
 get_cursor() { local f; f="$(cursor_file)"; [ -s "$f" ] && cat "$f" || echo ""; }
 set_cursor() { # $1=id $2=created_at; only moves forward
   mkdir -p "$STATE_DIR"
   local cur; cur="$(get_cursor | cut -d' ' -f1)"
   if [ -z "$cur" ] || [ "$1" -gt "$cur" ]; then echo "$1 $2" > "$(cursor_file)"; fi
+}
+
+# stdin: a post body. Prints the first word of <agent> from a leading "[<human>'s <agent>]"
+# ("[Sam's Gemini CLI]" -> Gemini), or nothing.
+post_agent() { sed -n "1s/^\[[^]]*'s \([^]]*\)\].*/\1/p" | awk '{ print $1 }'; }
+
+# stdin: a post body. Exit 0 if it addresses us. $1 = our login, $2 = the post's author login.
+# No agent identity: @all or a bare @login (the original rule). With one (AGENTS.md rules):
+#   @all, "@login-<agent>", or "@login (<Agent>, ...)" naming us -> for us;
+#   "@login (<OtherAgent>)" -> not for us; a parenthetical that names no agent, like "(urgent)", is
+#   left alone; a bare @login is for the Claude agent only, and never when a sibling on our own
+#   login wrote it (it is naming itself, and answering would loop).
+# The body is wrapped in newlines so every boundary is a character, with no ^/$ anchors (portable awk).
+mentions_me() {
+  awk -v login="$1" -v author="$2" -v agent="$AGENT_LC" -v known="$KNOWN_AGENTS" '
+    { s = s tolower($0) "\n" }
+    END {
+      login = tolower(login); author = tolower(author)
+      s = "\n" s; B = "[^a-z0-9_-]"
+      if (match(s, B "@all" B)) exit 0
+      if (agent == "") exit !match(s, B "@" login B)
+      if (match(s, B "@" login "-" agent B)) exit 0
+      out = ""; rest = s
+      while (match(rest, "@" login " *\\([^)]*\\)")) {
+        pre = substr(rest, 1, RSTART - 1); seg = substr(rest, RSTART, RLENGTH)
+        rest = substr(rest, RSTART + RLENGTH)
+        c = seg; sub(/^[^(]*\(/, "", c); sub(/\)$/, "", c); gsub(/[^a-z0-9]+/, " ", c)
+        n = split(c, w, " ")
+        if (n == 0 || !index(known, " " w[1] " ")) { out = out pre seg; continue }
+        for (i = 1; i <= n; i++) if (w[i] == agent) exit 0
+        out = out pre " "
+      }
+      s = out rest
+      if (agent != "claude" || author == login) exit 1
+      exit !match(s, B "@" login B)
+    }'
+}
+
+# stdin: fetch lines. Drops our own posts. With no agent identity: every post from our login.
+# With one: only same-login posts whose prefix names a known agent other than us are kept, so a
+# post signed "[Sam's Agent]" or with no prefix stays hidden as before. $1 = our login.
+# Output is other logins' rows, then kept same-login rows; the caller re-sorts by id.
+not_mine() {
+  local rows me id user ts b who
+  rows="$(cat)"; me="$(lower "$1")"
+  printf '%s\n' "$rows" | awk -F'\t' -v me="$me" 'NF && tolower($2) != me'
+  [ -n "$AGENT" ] || return 0
+  printf '%s\n' "$rows" | awk -F'\t' -v me="$me" 'NF && tolower($2) == me' |
+  while IFS=$'\t' read -r id user ts b; do
+    who="$(lower "$(printf '%s' "$b" | b64d | tr -d '\r' | post_agent)")"
+    [ -n "$who" ] && [ "$who" != "$AGENT_LC" ] || continue
+    case "$KNOWN_AGENTS" in *" $who "*) printf '%s\t%s\t%s\t%s\n' "$id" "$user" "$ts" "$b" ;; esac
+  done
 }
 
 # stdin: fetch lines. Prints formatted comments; $1 = login to flag mentions for (may be empty)
@@ -115,7 +192,7 @@ render() {
     [ -n "$id" ] || continue
     body="$(printf '%s' "$b" | b64d | tr -d '\r')"
     flag=""
-    if [ -n "$login" ] && printf '%s' "$body" | grep -qiE "(^|[^A-Za-z0-9_-])@(${login}|all)([^A-Za-z0-9_-]|$)"; then
+    if [ -n "$login" ] && printf '%s' "$body" | mentions_me "$login" "$user"; then
       flag=" ** MENTION **"
     fi
     printf -- '--- @%s %s (#%s)%s\n%s\n' "$user" "$ts" "$id" "$flag" "$body"
@@ -137,7 +214,7 @@ do_unread() {
   fi
   [ -n "$new" ] || return 0
   maxrow="$(printf '%s\n' "$new" | sort -n -t"$(printf '\t')" -k1,1 | tail -1)"
-  new="$(printf '%s\n' "$new" | awk -F'\t' -v me="$login" 'NF && tolower($2) != tolower(me)')"
+  new="$(printf '%s\n' "$new" | not_mine "$login" | sort -n -t"$(printf '\t')" -k1,1)"
   if [ -n "$new" ]; then
     printf '%s\n' "$new" | render "$login"
   fi
@@ -212,11 +289,14 @@ case "${1:-help}" in
     cat <<USAGE
 tools/board post <text>        post a comment (or pipe text on stdin); must start with [<human>'s <agent>]
 tools/board read [-n N]        show the last N comments (default 10)
-tools/board unread             show comments by others since your last check, then mark read
+tools/board unread             show comments by others (incl. your login's other agents) since your last check, then mark read
 tools/board wait [--interval S] [--timeout S]
                                block until someone else posts; print it; exit 0 (124 on timeout)
 tools/board whoami             your GitHub login
-Env: BOARD_ISSUE (default 1), BOARD_REPO, BOARD_LOGIN
+Env: BOARD_ISSUE (default 1), BOARD_REPO, BOARD_LOGIN,
+     BOARD_AGENT (your agent name: Claude, Codex, Gemini...; default Claude inside Claude Code, else
+                  none = hide every post from your login. Set it for any non-Claude agent, especially
+                  one started from a Claude Code shell, which inherits CLAUDECODE=1)
 USAGE
     ;;
 esac

@@ -2,6 +2,8 @@
 # SessionStart: show unread board posts and tell the agent to keep a background wait running.
 # Never fails the session: always exits 0.
 cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null || exit 0
+# Same identity as the agent's own tools/board calls, so they share one read cursor consistently.
+export BOARD_AGENT="${BOARD_AGENT:-Claude}"
 out="$(tools/board unread 2>&1)" || out="(board unreachable: $(printf '%s' "$out" | head -n 1)). Run tools/board unread later."
 echo "Team board (GitHub issue #${BOARD_ISSUE:-1}). Rules are in AGENTS.md."
 if [ -n "$out" ]; then
