@@ -1,16 +1,39 @@
-"""Portfolio request business rules. Owner: package e (Yousuf's Codex). Signature fixed by W0-B.
+"""Business validation for portfolio requests."""
 
-Raise hoc.contract.PortfolioValidationError with the specific code:
-  ALLOCATION_SUM_INVALID  |sum - 1| > ALLOCATION_TOLERANCE   details {"total": <sum>, "tolerance": 1e-4}
-  DUPLICATE_TICKER        same ticker twice (case-insensitive)  details {"tickers": [...]}
-  TOO_MANY_ETFS           more than MAX_ETFS                    details {"count": n, "max": 10}
-Return non-fatal notices (e.g. a 0% allocation) as Notice objects.
-"""
-
-from __future__ import annotations
-
-from hoc.contract import Notice, PortfolioRequest
+from hoc.contract import (
+    ALLOCATION_TOLERANCE,
+    MAX_ETFS,
+    Notice,
+    PortfolioRequest,
+    PortfolioValidationError,
+    wsum,
+)
 
 
 def validate_request(request: PortfolioRequest) -> list[Notice]:
-    raise NotImplementedError("package e: validate_request")
+    if len(request.holdings) > MAX_ETFS:
+        raise PortfolioValidationError(
+            "TOO_MANY_ETFS",
+            f"At most {MAX_ETFS} ETFs are allowed.",
+            {"count": len(request.holdings), "max": MAX_ETFS},
+        )
+    tickers = [item.ticker.upper() for item in request.holdings]
+    duplicates = sorted({ticker for ticker in tickers if tickers.count(ticker) > 1})
+    if duplicates:
+        raise PortfolioValidationError(
+            "DUPLICATE_TICKER",
+            "Each ETF may appear only once.",
+            {"tickers": duplicates},
+        )
+    total = wsum(item.allocation for item in request.holdings)
+    if abs(total - 1.0) > ALLOCATION_TOLERANCE:
+        raise PortfolioValidationError(
+            "ALLOCATION_SUM_INVALID",
+            "Allocations must total 100%.",
+            {"total": total, "tolerance": ALLOCATION_TOLERANCE},
+        )
+    return [
+        Notice(code="ZERO_ALLOCATION", message=f"{item.ticker} has a 0% allocation.")
+        for item in request.holdings
+        if item.allocation == 0
+    ]
