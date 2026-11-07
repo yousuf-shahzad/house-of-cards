@@ -125,9 +125,14 @@ function SortChevron({ dir }: { dir: false | "asc" | "desc" }) {
   );
 }
 
-function truncateLabel(text: string, maxLen = 18): string {
-  if (text.length <= maxLen) return text;
-  return `${text.slice(0, maxLen - 1)}…`;
+function truncateLabel(text: string, maxLen = 22): string {
+  const normalized = text.trim().replace(/\s+/g, " ");
+  if (normalized.length <= maxLen) return normalized;
+  return `${normalized.slice(0, maxLen - 1).trimEnd()}…`;
+}
+
+function normalizeNearZero(value: number, epsilon = 5e-5): number {
+  return Math.abs(value) < epsilon ? 0 : value;
 }
 
 export default function ExposuresPage() {
@@ -202,11 +207,16 @@ export default function ExposuresPage() {
     [analysis],
   );
 
+  const positiveExposures = useMemo(
+    () => (analysis ? analysis.exposures.filter((company) => company.exposure > 0) : []),
+    [analysis],
+  );
+
   const topLimit = chartLimit === "10" ? 10 : 20;
 
   const chartData = useMemo<ChartDatum[]>(() => {
     if (!analysis) return [];
-    return analysis.exposures.slice(0, topLimit).map((company) => {
+    return positiveExposures.slice(0, topLimit).map((company) => {
       const primarySymbol = company.symbols[0];
       const baseLabel = primarySymbol
         ? `${primarySymbol} · ${company.company_name}`
@@ -216,8 +226,8 @@ export default function ExposuresPage() {
         rank: company.rank,
         label: baseLabel,
         shortLabel: primarySymbol
-          ? `${primarySymbol} (${truncateLabel(company.company_name, 14)})`
-          : truncateLabel(company.company_name, 18),
+          ? `${primarySymbol} · ${truncateLabel(company.company_name, 16)}`
+          : truncateLabel(company.company_name, 22),
         companyName: company.company_name,
         symbols: company.symbols,
         totalExposure: company.exposure,
@@ -226,11 +236,11 @@ export default function ExposuresPage() {
       };
       for (const ticker of etfTickers) {
         const found = company.contributions.find((c) => c.etf_ticker === ticker);
-        row[`etf_${ticker}`] = found ? found.contribution : 0;
+        row[`etf_${ticker}`] = found ? Math.max(0, found.contribution) : 0;
       }
       return row;
     });
-  }, [analysis, etfTickers, topLimit]);
+  }, [analysis, etfTickers, positiveExposures, topLimit]);
 
   const clampedChartIdx =
     chartData.length > 0 ? Math.min(Math.max(0, activeChartIdx), chartData.length - 1) : 0;
@@ -257,28 +267,26 @@ export default function ExposuresPage() {
   );
 
   const availableSectors = useMemo(() => {
-    if (!analysis) return [];
     const seen = new Set<Sector>();
-    for (const item of analysis.exposures) {
+    for (const item of positiveExposures) {
       seen.add(item.sector);
     }
     return [...seen];
-  }, [analysis]);
+  }, [positiveExposures]);
 
-  const multiEtfCompanyCount = useMemo(() => {
-    if (!analysis) return 0;
-    return analysis.exposures.filter((c) => c.etf_count > 1).length;
-  }, [analysis]);
+  const multiEtfCompanyCount = useMemo(
+    () => positiveExposures.filter((c) => c.etf_count > 1).length,
+    [positiveExposures],
+  );
 
-  const mergedClassCompanyCount = useMemo(() => {
-    if (!analysis) return 0;
-    return analysis.exposures.filter((c) => c.securities.length > 1 || c.symbols.length > 1).length;
-  }, [analysis]);
+  const mergedClassCompanyCount = useMemo(
+    () => positiveExposures.filter((c) => c.securities.length > 1 || c.symbols.length > 1).length,
+    [positiveExposures],
+  );
 
   const filteredExposures = useMemo(() => {
-    if (!analysis) return [];
     const q = query.trim().toLowerCase();
-    return analysis.exposures.filter((item) => {
+    return positiveExposures.filter((item) => {
       if (sectorFilter !== "all" && item.sector !== sectorFilter) return false;
       if (identityFilter !== "all" && item.identity_status !== identityFilter) return false;
       if (etfFilter === "__overlap__") {
@@ -302,7 +310,7 @@ export default function ExposuresPage() {
       }
       return false;
     });
-  }, [analysis, etfFilter, identityFilter, query, sectorFilter]);
+  }, [etfFilter, identityFilter, positiveExposures, query, sectorFilter]);
 
   const filteredWeightSum = useMemo(
     () => filteredExposures.reduce((sum, item) => sum + item.exposure, 0),
@@ -399,7 +407,7 @@ export default function ExposuresPage() {
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-caption-1-semibold text-text-secondary">
-                        Per-ETF contribution breakdown (A_e × w_e,c)
+                        How each ETF contributes to your holding
                       </span>
                       <span className="text-caption-1-regular text-text-tertiary tabular-nums">
                         Total effective exposure: <Pct value={item.exposure} digits={2} />
@@ -806,10 +814,9 @@ export default function ExposuresPage() {
             </div>
           </div>
           <p className="text-body-2-regular text-text-secondary">
-            Exposures are never renormalised over missing funds: effective weights below represent
-            fractions of your full portfolio, leaving the{" "}
-            <Pct value={analysis.coverage.missing_allocation} digits={2} /> missing allocation
-            explicitly visible.
+            We show your true share of each company across the ETFs that loaded, without scaling up
+            to hide the{" "}
+            <Pct value={analysis.coverage.missing_allocation} digits={2} /> missing allocation.
           </p>
         </section>
       )}
@@ -833,7 +840,9 @@ export default function ExposuresPage() {
             <AsOfBadge date={analysis.as_of_date} />
           </div>
           <p className="text-caption-1-regular text-text-tertiary">
-            Excluded cash/derivatives: <Pct value={analysis.coverage.excluded_weight} digits={2} />
+            Excluded cash/derivatives:{" "}
+            <Pct value={normalizeNearZero(analysis.coverage.excluded_weight)} digits={2} />
+            {analysis.coverage.excluded_weight < 0 && " (short futures offset)"}
             {analysis.other_exposure > 0 && (
               <>
                 {" · "}Other tail: <Pct value={analysis.other_exposure} digits={2} />
@@ -920,9 +929,8 @@ export default function ExposuresPage() {
               </Chip>
             </div>
             <p className="text-body-2-regular text-text-secondary">
-              Each bar stacks <span className="font-mono">A_e × w_e,c</span> across your ETFs
-              without renormalisation. Hover a bar or use the keyboard controls to inspect per-ETF
-              contributions.
+              Each bar adds up what every ETF in your portfolio gives you in that company. Hover a
+              bar or use the arrow keys to see each ETF’s share.
             </p>
           </div>
 
@@ -956,7 +964,7 @@ export default function ExposuresPage() {
               })}
             </dl>
 
-            {analysis.exposures.length > 10 && (
+            {positiveExposures.length > 10 && (
               <SegmentedControl
                 aria-label="Chart company count"
                 selectedKeys={new Set([chartLimit])}
@@ -1087,10 +1095,21 @@ export default function ExposuresPage() {
                 <YAxis
                   type="category"
                   dataKey="shortLabel"
-                  width={156}
+                  width={188}
                   tickLine={false}
                   axisLine={false}
-                  tick={{ fontSize: 12, fill: "var(--color-text-secondary)" }}
+                  tick={(props: { x?: number | string; y?: number | string; payload?: { value?: string } }) => (
+                    <text
+                      x={Number(props.x ?? 0) - 6}
+                      y={Number(props.y ?? 0)}
+                      dy={4}
+                      textAnchor="end"
+                      fill="var(--color-text-secondary)"
+                      fontSize={12}
+                    >
+                      {props.payload?.value ?? ""}
+                    </text>
+                  )}
                 />
                 <Tooltip
                   content={() => null}
