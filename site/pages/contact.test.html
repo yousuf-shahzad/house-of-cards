@@ -1,0 +1,27 @@
+<!doctype html>
+<meta charset="utf-8"><title>contact test card</title>
+<link rel="stylesheet" href="../style.css">
+<h3>contact.js test card</h3>
+<p>Does: contact form with live validation + preview, saves to localStorage, then shows thanks. Expect: all below say PASS.</p>
+<div id="view"></div><pre id="out"></pre>
+<script src="contact.js"></script>
+<script>
+  const KEY = "contact-submissions", saved = localStorage.getItem(KEY);
+  localStorage.removeItem(KEY);
+  const v = document.getElementById("view");
+  window.pages.contact(v);
+  const f = v.querySelector("form"), E = f.elements, set = (n, val) => { E[n].value = val; E[n].dispatchEvent(new Event("input", { bubbles: true })); };
+  const checks = {};
+  checks["form with 3 fields"] = !!f && ["name", "email", "message"].every((n) => E[n]);
+  checks["send disabled when empty"] = f.querySelector("button").disabled;
+  set("email", "not-an-email");
+  checks["bad email shows error"] = E.email.nextElementSibling.textContent !== "";
+  set("name", "<b>Ada</b>"); set("email", "ada@example.com"); set("message", "Hello from the test card");
+  checks["preview escapes + updates"] = v.querySelector(".p-name").textContent === "<b>Ada</b>" && !v.querySelector(".p-name b");
+  checks["send enabled when valid"] = !f.querySelector("button").disabled;
+  f.requestSubmit();
+  checks["saved to localStorage"] = JSON.parse(localStorage.getItem(KEY) || "[]").length === 1;
+  checks["thanks state shown"] = !!v.querySelector(".thanks");
+  saved === null ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, saved);
+  out.textContent = Object.entries(checks).map(([k, ok]) => `${ok ? "PASS" : "FAIL"} ${k}`).join("\n");
+</script>
