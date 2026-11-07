@@ -14,8 +14,17 @@ main, #header > *, #footer > * { max-width: var(--max); margin: 0 auto; padding:
 a { color: var(--accent); }
 .placeholder { color: var(--muted); border: 1px dashed var(--muted); border-radius: var(--radius); text-align: center; }
 
-/* Fluid background: fixed full-viewport layer behind everything on home. */
-#fluid { position: fixed; inset: 0; z-index: -1; }
+/* Fluid background: absolutely positioned over the WHOLE home section, so it
+   scrolls with the page. Its bottom edge is masked to transparent, and the
+   footer's ::before ramps from transparent to the footer colour, so the fluid
+   melts into the solid footer instead of ending in a hard line. */
+#home { position: relative; }
+#fluid { position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  -webkit-mask-image: linear-gradient(#000 calc(100% - 240px), transparent);
+  mask-image: linear-gradient(#000 calc(100% - 240px), transparent); }
 #fluid canvas { width: 100%; height: 100%; display: block; }
 #fluid[hidden], #home[hidden], #view[hidden] { display: none; }
 #view { max-width: var(--max); margin: 0 auto; padding: 1rem; }
+#footer { position: relative; }
+#footer::before { content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: 160px;
+  background: linear-gradient(to bottom, transparent, var(--surface)); pointer-events: none; z-index: -1; }
