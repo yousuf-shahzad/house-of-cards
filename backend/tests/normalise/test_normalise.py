@@ -94,6 +94,9 @@ def test_sector_labels():
     assert map_sector("Information Technology") is Sector.information_technology
     assert map_sector("Consumer Cyclical") is Sector.consumer_discretionary
     assert map_sector("health_care") is Sector.health_care
+    assert map_sector("tech") is Sector.information_technology  # R3 tokens
+    assert map_sector("Telecom") is Sector.communication_services
+    assert map_sector("Communication") is Sector.communication_services
     assert map_sector("Cash and/or Derivatives") is Sector.unknown
 
 
