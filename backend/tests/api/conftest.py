@@ -1,8 +1,6 @@
-"""Package f test helpers: a fake-backed EtfService, and loopback for TestClient on Windows."""
+"""Package f test helpers: a fake-backed EtfService."""
 
 from __future__ import annotations
-
-import socket
 
 import pytest
 
@@ -10,23 +8,6 @@ from hoc.config import Settings
 from hoc.contract import EXCLUDED_ASSET_CLASSES, EtfHoldings, NormalisedHolding, wsum
 from hoc.service import EtfService
 from hoc.sources.registry import SourceRegistry
-
-_REAL_CONNECT = socket.socket.connect
-
-
-@pytest.fixture(autouse=True)
-def _allow_loopback(monkeypatch):
-    """Windows asyncio builds its self-pipe with socketpair() over 127.0.0.1, which the root conftest blocks.
-    Loopback only; everything else still hits the root conftest's block."""
-    blocked = socket.socket.connect
-
-    def connect(self, address, *args, **kwargs):
-        host = address[0] if isinstance(address, tuple) else address
-        if host in ("127.0.0.1", "::1", "localhost"):
-            return _REAL_CONNECT(self, address, *args, **kwargs)
-        return blocked(self, address, *args, **kwargs)
-
-    monkeypatch.setattr(socket.socket, "connect", connect)
 
 
 def stand_in_normalise(raw, reference, aliases) -> EtfHoldings:
