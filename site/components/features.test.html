@@ -1,0 +1,13 @@
+<!doctype html>
+<meta charset="utf-8"><title>features test card</title>
+<link rel="stylesheet" href="../style.css">
+<h3>features.js test card</h3>
+<p>Does: renders 3 feature cards (title + description). Expect: all below say PASS.</p>
+<div id="features"></div><pre id="out"></pre>
+<script src="features.js"></script>
+<script>
+  window.components.features(document.getElementById("features"));
+  const f = document.getElementById("features");
+  const checks = { "3 cards": f.querySelectorAll(".card").length === 3, "each has h3 and p": [...f.querySelectorAll(".card")].every(c => c.querySelector("h3") && c.querySelector("p")) };
+  out.textContent = Object.entries(checks).map(([k, v]) => `${v ? "PASS" : "FAIL"} ${k}`).join("\n");
+</script>
