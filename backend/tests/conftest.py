@@ -16,6 +16,7 @@ from hoc.sources.fake import FakeReference, FakeSourceAdapter
 
 SYNTHETIC = Path(__file__).parent / "fixtures" / "synthetic"
 LIVE = os.environ.get("HOC_LIVE") == "1"
+LOOPBACK = {"127.0.0.1", "::1", "localhost"}
 
 
 def pytest_collection_modifyitems(config, items):
@@ -33,14 +34,34 @@ def _offline(request, monkeypatch, tmp_path):
     if LIVE and "live" in request.keywords:
         return
 
-    def blocked(*args, **kwargs):
+    real_connect = socket.socket.connect
+    real_create_connection = socket.create_connection
+
+    def refuse(address):
         raise RuntimeError(
-            "Network access in an offline test. Use FakeHttpClient / FakeSourceAdapter, "
+            f"Network access in an offline test ({address!r}). Use FakeHttpClient / FakeSourceAdapter, "
             "or mark the test @pytest.mark.live."
         )
 
-    monkeypatch.setattr(socket.socket, "connect", blocked)
-    monkeypatch.setattr(socket, "create_connection", blocked)
+    def is_local(address) -> bool:
+        # Loopback stays allowed: asyncio's self-pipe on Windows is a socketpair over 127.0.0.1,
+        # which TestClient needs. Unix-domain sockets (str/bytes paths) are local too.
+        if not isinstance(address, tuple):
+            return True
+        return str(address[0]).lower() in LOOPBACK
+
+    def guarded_connect(self, address):
+        if not is_local(address):
+            refuse(address)
+        return real_connect(self, address)
+
+    def guarded_create_connection(address, *args, **kwargs):
+        if not is_local(address):
+            refuse(address)
+        return real_create_connection(address, *args, **kwargs)
+
+    monkeypatch.setattr(socket.socket, "connect", guarded_connect)
+    monkeypatch.setattr(socket, "create_connection", guarded_create_connection)
 
 
 @pytest.fixture
