@@ -27,7 +27,7 @@ import {
 } from "@tanstack/react-table";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
-import { api } from "@/api/client";
+import { api, ApiError } from "@/api/client";
 import type {
   CompanyExposure,
   IdentityStatus,
@@ -40,7 +40,7 @@ import { etfVisual } from "@/app/ui/etf-color";
 import { Pct, formatPct } from "@/app/ui/pct";
 import { Chip, type ChipColor } from "@/components/base/badges/chip";
 import { StatusDot } from "@/components/base/badges/status-dot";
-import { Button } from "@/components/base/buttons/button";
+import { Button, ButtonLink } from "@/components/base/buttons/button";
 import { Pagination } from "@/components/base/pagination/pagination";
 import { SearchField } from "@/components/base/search-field/search-field";
 import {
@@ -133,6 +133,20 @@ function truncateLabel(text: string, maxLen = 22): string {
 
 function normalizeNearZero(value: number, epsilon = 5e-5): number {
   return Math.abs(value) < epsilon ? 0 : value;
+}
+
+function errorCopy(error: ApiError): string {
+  const tickers = (error.details as { tickers?: string[] } | undefined)?.tickers;
+  if (error.code === "UNKNOWN_TICKER" && tickers?.length) {
+    return `We couldn't find ${tickers.join(", ")} in any data source. Check the ticker on the Portfolio page.`;
+  }
+  if (error.code === "SOURCES_UNAVAILABLE") {
+    return "None of the data sources could be reached, so we have no holdings to show.";
+  }
+  if (error.code === "NETWORK_ERROR") {
+    return "We couldn't reach the analysis service. Check that the backend is running.";
+  }
+  return error.message;
 }
 
 export default function ExposuresPage() {
@@ -680,20 +694,16 @@ export default function ExposuresPage() {
             <RiErrorWarningLine className="size-5 shrink-0" aria-hidden />
             <h2 className="text-headline-medium">Could not load exposures ({error.code})</h2>
           </div>
-          <p className="text-body-regular text-text-secondary">{error.message}</p>
+          <p className="text-body-regular text-text-secondary">{errorCopy(error)}</p>
           <div className="flex flex-wrap items-center gap-3">
-            <Button variant="primary" size="small" leadingIcon={RiRefreshLine} onClick={retry}>
-              Retry analysis
-            </Button>
-            <Button
-              variant="secondary"
-              size="small"
-              onClick={() => {
-                location.hash = "#/portfolio";
-              }}
-            >
+            {error.code !== "UNKNOWN_TICKER" && (
+              <Button variant="primary" size="small" leadingIcon={RiRefreshLine} onClick={retry}>
+                Retry analysis
+              </Button>
+            )}
+            <ButtonLink variant="secondary" size="small" href="#/portfolio">
               Edit portfolio
-            </Button>
+            </ButtonLink>
           </div>
         </section>
       );
@@ -784,12 +794,19 @@ export default function ExposuresPage() {
           <div className="flex items-center gap-2 text-body-2-medium text-text-error-primary">
             <RiErrorWarningLine className="size-4 shrink-0" aria-hidden />
             <span>
-              {error.code}: {error.message} (showing last valid analysis)
+              {errorCopy(error)} (showing last valid analysis)
             </span>
           </div>
-          <Button variant="secondary" size="xs" leadingIcon={RiRefreshLine} onClick={retry}>
-            Retry
-          </Button>
+          <div className="flex items-center gap-2">
+            {error.code !== "UNKNOWN_TICKER" && (
+              <Button variant="secondary" size="xs" leadingIcon={RiRefreshLine} onClick={retry}>
+                Retry
+              </Button>
+            )}
+            <ButtonLink variant="ghost" size="xs" href="#/portfolio">
+              Edit portfolio
+            </ButtonLink>
+          </div>
         </div>
       )}
 
