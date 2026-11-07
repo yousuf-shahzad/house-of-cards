@@ -2,10 +2,10 @@
 // converted to a fraction. Inputs above this layer are in percent; API responses
 // keep the contract's fractions of 1.
 import type {
-  AnalysisRequest,
+  PortfolioRequest,
   AnalysisResponse,
-  ApiErrorBody,
-  EtfResponse,
+  ErrorResponse,
+  EtfSummary,
   ExamplesResponse,
   HealthResponse,
 } from "./types";
@@ -26,7 +26,7 @@ export class ApiError extends Error {
   }
 }
 
-export function toAnalysisRequest(rows: AllocationInput[]): AnalysisRequest {
+export function toAnalysisRequest(rows: AllocationInput[]): PortfolioRequest {
   return {
     holdings: rows.map((row) => ({
       ticker: row.ticker.trim().toUpperCase(),
@@ -54,7 +54,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     // A proxy or crash page: reported below using the HTTP status.
   }
   if (!response.ok) {
-    const error = (body as Partial<ApiErrorBody> | null)?.error;
+    const error = (body as Partial<ErrorResponse> | null)?.error;
     throw new ApiError(
       error?.code ?? "HTTP_ERROR",
       error?.message ?? `The analysis service returned HTTP ${response.status}.`,
@@ -75,6 +75,27 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 const mockAnalysis = async (): Promise<AnalysisResponse> =>
   (await import("./__fixtures__/synthetic-analysis.json")).default as unknown as AnalysisResponse;
 
+/** One example built from the fixture's own request, so "load example" works in mock mode. */
+const mockExamples = async (): Promise<ExamplesResponse> => {
+  const fixture = await mockAnalysis();
+  return {
+    examples: [
+      {
+        id: "synthetic",
+        name: "Synthetic example",
+        description: "Invented ETFs for building pages. Not real holdings.",
+        verified: true,
+        holdings: fixture.request.holdings.map((item) => ({
+          ...item,
+          verified: true,
+          source: "fake",
+          as_of: fixture.as_of_date,
+        })),
+      },
+    ],
+  };
+};
+
 const mockUnavailable = (what: string) =>
   new ApiError("MOCK_UNAVAILABLE", `${what} is not available in synthetic mock mode.`, 0);
 
@@ -85,13 +106,13 @@ export const api = {
       : request<HealthResponse>("/api/health", { signal }),
   etf: (ticker: string, signal?: AbortSignal) =>
     MOCK_MODE
-      ? Promise.reject<EtfResponse>(mockUnavailable("ETF detail"))
-      : request<EtfResponse>(`/api/etfs/${encodeURIComponent(ticker.trim().toUpperCase())}`, {
+      ? Promise.reject<EtfSummary>(mockUnavailable("ETF detail"))
+      : request<EtfSummary>(`/api/etfs/${encodeURIComponent(ticker.trim().toUpperCase())}`, {
           signal,
         }),
   examples: (signal?: AbortSignal) =>
     MOCK_MODE
-      ? Promise.reject<ExamplesResponse>(mockUnavailable("Examples"))
+      ? mockExamples()
       : request<ExamplesResponse>("/api/examples", { signal }),
   analyse: (rows: AllocationInput[], signal?: AbortSignal) =>
     MOCK_MODE
