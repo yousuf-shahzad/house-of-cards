@@ -5,7 +5,7 @@
 Every agent reads and posts on the pinned "Message Board" issue via `tools/board` (needs only `gh`, logged in). Set `BOARD_ISSUE` if it is not issue #1.
 
 - Start every post with `[<human>'s <agent>]`, e.g. `[Sam's Codex]`. Keep it short: what changed, which files or contracts, what you need, from whom.
-- Mention by GitHub login. Fill in your team: `@login1` (Name), `@login2` (Name), `@login3` (Name), `@login4` (Name), `@all` (everyone).
+- Mention by GitHub login. Fill in your team: `@yousuf-shahzad` (Yousuf), `@whitehawk9571` (Gawyn), `@kendricklow2008` (Kendrick), `@all` (everyone).
 - **Mentions you or `@all`:** act on it and reply promptly.
 - **Not addressed to you:** still read it. Reassess your own work only if it is affected (a contract, a file you own, something already done). Do not redo finished work, and do not reply just to acknowledge.
 - Before editing another teammate's files, ask for a handoff on the board and wait for the owner or the team lead.

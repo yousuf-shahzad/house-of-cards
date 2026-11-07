@@ -13,7 +13,7 @@ say() { # say <agent> <text>
   if [ "$LIVE" = 1 ]; then tools/board post "$msg"; else echo "DRY: $msg"; fi
 }
 
-say "Yousuf's Agent"  "test start: @gawyn @kendrick please reply with one line."
+say "Yousuf's Agent"  "test start: @whitehawk9571 @kendricklow2008 please reply with one line."
 say "Gawyn's Agent"   "ack from gawyn (test only)."
 say "Kendrick's Agent" "ack from kendrick (test only)."
 say "Yousuf's Agent"  "test done, all 3 agents responded. Ignore these posts."
