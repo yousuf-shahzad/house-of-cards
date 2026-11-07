@@ -29,6 +29,11 @@ def get_json(http, settings, path: str) -> tuple[Any, Any]:
         raise SourceParseError(f"TickerInside {path} is not JSON") from exc
 
 
+def longest(*names: str | None) -> str | None:
+    """securities.json truncates long names ('Taiwan Semiconductor Manufac'); prefer the fuller one."""
+    return max((n for n in names if n), key=len, default=None)
+
+
 def country_of(symbol: str) -> str | None:
     """'2330.TW' -> 'TW'. US class suffixes are one letter ('BRK.B'), so they never match."""
     match = re.fullmatch(r"[^.]+\.([A-Z]{2})", symbol)

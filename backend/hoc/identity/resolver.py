@@ -54,6 +54,30 @@ def normalise_name(name: str) -> str:
     return re.sub(r"\s+", " ", name).strip().upper()
 
 
+_CLASS_SUFFIXES = [re.compile(p, re.IGNORECASE) for p in (
+    r"\s*\((?:class|cl\.?|series)\s+[a-z0-9]\)$",  # "(Class A)"
+    r"(?:\s*[-,]\s*|\s+)(?:class|cl\.?|series)\s+[a-z0-9]$",  # "Class B", "Cl A"
+    r"\s+-\s+[a-z]$",  # "- A"
+    r"(?:\s*[-,]\s*|\s+)\(?(?:sponsored\s+)?(?:adr|ads)\)?$",
+    r"(?:\s*[-,]\s*|\s+)(?:ordinary shares|common stock|pref(?:erred)?(?:\s+shares)?)$",
+)]
+
+
+def clean_company_name(name: str) -> str:
+    """Company display name without share-class or listing suffixes; never returns empty."""
+    cleaned, previous = name.strip(), None
+    while cleaned != previous:
+        previous = cleaned
+        for pattern in _CLASS_SUFFIXES:
+            cleaned = pattern.sub("", cleaned).strip()
+    return cleaned or name.strip()
+
+
+def best_company_name(names) -> str:
+    """Longest clean name (truncated reference names are shorter), ties alphabetical."""
+    return min({clean_company_name(n) for n in names if n}, key=lambda n: (-len(n), n))
+
+
 def normalise_cik(cik: str | None) -> str | None:
     digits = re.sub(r"\D", "", cik or "")
     return digits.zfill(10) if digits and int(digits) else None

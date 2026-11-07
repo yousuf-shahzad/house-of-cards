@@ -12,6 +12,7 @@ from collections.abc import Sequence
 from hoc.contract import SecurityInfo, SourceError
 
 from .files import ReferenceFiles, country_of
+from .files import longest as _longest
 
 
 class TickerInsideReference:
@@ -33,7 +34,7 @@ class TickerInsideReference:
                 continue
             ident = ident or {}
             found[symbol] = SecurityInfo(
-                symbol=key, name=(row[3] if row and len(row) > 3 else None) or ident.get("name"),
+                symbol=key, name=_longest(row[3] if row and len(row) > 3 else None, ident.get("name")),
                 cik=ident.get("cik"), figi=ident.get("composite_figi"),
                 share_class_figi=ident.get("share_class_figi"), exchange=ident.get("exchange"),
                 country=country_of(key),
