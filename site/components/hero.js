@@ -2,7 +2,7 @@
 (window.components ||= {}).hero = (el) => {
   el.innerHTML = `
     <style>
-      #hero .intro { padding: clamp(32px, 8vw, 80px) 16px; text-align: center; }
+      #hero .intro { padding: clamp(32px, 8vw, 80px) 16px; text-align: center; background: transparent; }
       #hero .eyebrow { color: var(--accent); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
       #hero h1 { max-width: 720px; margin: 16px auto; font-size: clamp(2rem, 6vw, 3.75rem); line-height: 1.1; }
       #hero .tagline { max-width: 560px; margin: 0 auto 28px; color: var(--muted); font-size: 1.15rem; }
