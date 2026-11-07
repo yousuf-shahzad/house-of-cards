@@ -30,6 +30,20 @@ def test_offline_tests_cannot_open_network_connections():
         socket.create_connection(("example.com", 443), timeout=1)
 
 
+def test_offline_guard_allows_loopback():
+    """Windows asyncio needs a 127.0.0.1 socketpair; TestClient breaks if loopback is blocked."""
+    import socket
+
+    a, b = socket.socketpair()
+    a.close(), b.close()
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind(("127.0.0.1", 0))
+    server.listen(1)
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client.connect(server.getsockname())
+    client.close(), server.close()
+
+
 def test_weight_serialises_to_ten_decimals():
     assert TypeAdapter(Weight).dump_python(0.1 + 0.2, mode="json") == 0.3
     assert TypeAdapter(Weight).dump_python(0.012345678912345, mode="json") == 0.0123456789
