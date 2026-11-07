@@ -100,6 +100,12 @@ def create_app(service_factory: Callable[[], EtfService] | None = None,
                          details={"errors": jsonable_encoder(exc.errors())})
         return _error(422, ErrorResponse(error=body))
 
+    @app.exception_handler(Exception)
+    def _unexpected(_: Request, exc: Exception) -> JSONResponse:
+        body = ErrorBody(code="INTERNAL_ERROR", message="Unexpected server error",
+                         details={"type": type(exc).__name__})
+        return _error(500, ErrorResponse(error=body))
+
     app.include_router(router)
     return app
 
