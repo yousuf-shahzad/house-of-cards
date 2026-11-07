@@ -1,11 +1,12 @@
-// Owner: Yousuf's Codex. A small incompressible velocity field advects two dyes.
+// Owner: Gawyn's Claude since issue #15 (originally Yousuf's Codex). A small incompressible velocity field advects two dyes.
 (() => {
   const cleanups = new WeakMap();
   (window.components ||= {}).fluid = (el) => {
     cleanups.get(el)?.();
     el.innerHTML = `<style>
       #fluid { pointer-events: none; overflow: hidden; }
-      #fluid canvas { filter: blur(10px); opacity: .65; }
+      html.fluid-drag, html.fluid-drag * { user-select: none; -webkit-user-select: none; }
+      #fluid canvas { filter: blur(2px); opacity: .95; }
     </style><canvas aria-hidden="true"></canvas>`;
     const canvas = el.querySelector('canvas');
     const ctx = canvas.getContext('2d');
@@ -13,7 +14,7 @@
     const motion = matchMedia('(prefers-reduced-motion: reduce)');
     let width, height, size, u, v, dye, glow, nextU, nextV, nextDye, nextGlow;
     let pressure, nextPressure, divergence, pixels, accent, secondary;
-    let frame = 0, lastTime = 0, clock = 0, home = true, previous = null;
+    let boxW = 0, boxH = 0, lastScroll = scrollY, frame = 0, lastTime = 0, clock = 0, home = true, previous = null;
     const color = (value) => {
       ctx.fillStyle = '#38bdf8';
       ctx.fillStyle = value.trim();
@@ -37,8 +38,12 @@
       }
     }
     function resize() {
+      // The layer spans the whole home section (taller than the viewport) and
+      // scrolls with the page, so the grid follows the layer's own box.
+      const box = el.getBoundingClientRect();
       width = 96;
-      height = Math.max(36, Math.min(144, Math.round(96 * innerHeight / Math.max(1, innerWidth))));
+      height = Math.max(36, Math.min(320, Math.round(96 * box.height / Math.max(1, box.width))));
+      boxW = Math.round(box.width); boxH = Math.round(box.height);
       size = width * height;
       canvas.width = width; canvas.height = height;
       [u, v, dye, glow, nextU, nextV, nextDye, nextGlow, pressure, nextPressure, divergence] =
@@ -121,29 +126,58 @@
     function route(event) { home = event.detail?.route === 'home'; sync(); }
     function pointer(event) {
       if (!home || document.hidden || motion.matches) return;
-      const x = event.clientX / Math.max(1, innerWidth) * width;
-      const y = event.clientY / Math.max(1, innerHeight) * height;
+      const box = el.getBoundingClientRect();
+      const x = (event.clientX - box.left) / Math.max(1, box.width) * width;
+      const y = (event.clientY - box.top) / Math.max(1, box.height) * height;
       const dx = previous && previous.id === event.pointerId ? Math.max(-4, Math.min(4, x - previous.x)) : 0;
       const dy = previous && previous.id === event.pointerId ? Math.max(-4, Math.min(4, y - previous.y)) : -.5;
       splat(x, y, dx, dy, .8);
       previous = { x, y, id: event.pointerId };
     }
-    function release() { previous = null; }
+    // Dragging stirs the fluid, so don't let it also select the text underneath.
+    function dragStart(event) { if (event.pointerType === 'mouse' && home) document.documentElement.classList.add('fluid-drag'); }
+    function release() { previous = null; document.documentElement.classList.remove('fluid-drag'); }
+    // Scrolling drags the fluid: push it along the visible band, opposite to the
+    // page's motion (like a hand sweeping over it), with a wavy swirl and a few
+    // fresh dye splats so the push is visible.
+    function scrolled() {
+      const delta = scrollY - lastScroll; lastScroll = scrollY;
+      if (!home || document.hidden || motion.matches || !v || Math.abs(delta) < 1) return;
+      const box = el.getBoundingClientRect(), push = Math.max(-120, Math.min(120, delta));
+      const top = Math.max(1, Math.floor(-box.top / box.height * height));
+      const bottom = Math.min(height - 1, Math.ceil((-box.top + innerHeight) / box.height * height));
+      for (let row = top; row < bottom; row++) {
+        for (let col = 1; col < width - 1; col++) {
+          const i = row * width + col, wave = Math.sin(col * .35 + row * .12 + clock);
+          v[i] -= push / 70 * (.6 + .4 * wave);
+          u[i] += push / 160 * Math.cos(col * .2 - row * .15);
+        }
+      }
+      const mid = (top + bottom) / 2;
+      for (let k = 0; k < 3; k++) splat(width * (.2 + .6 * Math.random()), mid + (Math.random() - .5) * (bottom - top) * .6, 0, -Math.sign(push) * 2, .5);
+    }
+    // The layer's height changes as content loads; rebuild only on a real change.
+    const sizeWatch = new ResizeObserver(() => {
+      const box = el.getBoundingClientRect();
+      if (Math.abs(box.width - boxW) > 1 || Math.abs(box.height - boxH) > 4) resize();
+    });
+    sizeWatch.observe(el);
     const colors = new MutationObserver(() => { readColors(); paint(); });
     colors.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class'] });
     window.addEventListener('pointermove', pointer, { passive: true });
     window.addEventListener('pointerdown', pointer, { passive: true });
+    window.addEventListener('pointerdown', dragStart, { passive: true });
     window.addEventListener('pointerup', release);
     window.addEventListener('pointercancel', release);
-    window.addEventListener('resize', resize);
+    window.addEventListener('scroll', scrolled, { passive: true });
     window.addEventListener('routechange', route);
     document.addEventListener('visibilitychange', sync);
     motion.addEventListener('change', sync);
     cleanups.set(el, () => {
-      cancelAnimationFrame(frame); colors.disconnect();
-      window.removeEventListener('pointermove', pointer); window.removeEventListener('pointerdown', pointer);
+      cancelAnimationFrame(frame); colors.disconnect(); sizeWatch.disconnect();
+      window.removeEventListener('pointermove', pointer); window.removeEventListener('pointerdown', pointer); window.removeEventListener('pointerdown', dragStart);
       window.removeEventListener('pointerup', release); window.removeEventListener('pointercancel', release);
-      window.removeEventListener('resize', resize); window.removeEventListener('routechange', route);
+      window.removeEventListener('scroll', scrolled); window.removeEventListener('routechange', route);
       document.removeEventListener('visibilitychange', sync); motion.removeEventListener('change', sync);
     });
     resize(); sync();
