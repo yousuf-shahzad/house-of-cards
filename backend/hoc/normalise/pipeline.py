@@ -33,13 +33,13 @@ _S = Sector
 # Keys are labels lower-cased with everything but letters removed.
 SECTOR_LABELS: dict[str, Sector] = {
     "informationtechnology": _S.information_technology, "technology": _S.information_technology,
-    "it": _S.information_technology, "infotech": _S.information_technology,
+    "it": _S.information_technology, "tech": _S.information_technology, "infotech": _S.information_technology,
     "financials": _S.financials, "financial": _S.financials, "financialservices": _S.financials,
     "healthcare": _S.health_care,
     "consumerdiscretionary": _S.consumer_discretionary, "consumercyclical": _S.consumer_discretionary,
     "communicationservices": _S.communication_services, "communication": _S.communication_services,
     "communications": _S.communication_services, "telecommunications": _S.communication_services,
-    "telecommunicationservices": _S.communication_services,
+    "telecommunicationservices": _S.communication_services, "telecom": _S.communication_services,
     "industrials": _S.industrials, "industrial": _S.industrials,
     "consumerstaples": _S.consumer_staples, "consumerdefensive": _S.consumer_staples,
     "energy": _S.energy,
