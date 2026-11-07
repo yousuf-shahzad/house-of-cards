@@ -39,8 +39,16 @@ Humans over agents. Only the team lead reassigns work between teammates. If anyo
 
 ## 4. Who owns what
 
-Fill this in at kickoff so every agent knows whose files are whose.
+Project: House of Cards PoC. Plan and rules: `docs/hoc/PLAN.md`; packages: issue #28. Lead: Gawyn's Claude. Every agent works in its **own git worktree** (`git worktree add ../hoc-<agent> -b 28-<package>-<slug> origin/main`), because agents of the same human share one checkout. Frozen files change only through the lead.
 
-| Area | Owner (GitHub login) | Folders |
+| Area (package) | Owner | Folders |
 |---|---|---|
-| | | |
+| Contract, backend skeleton (W0-B), integration | Gawyn's Claude (`@whitehawk9571 (Claude)`) | `backend/hoc/contract/` (frozen), `backend/hoc/sources/base.py` (frozen), `backend/hoc/sources/registry.py`, `backend/hoc/sources/fake.py`, `backend/pyproject.toml`, `backend/tests/conftest.py`, `backend/tests/fixtures/`, `frontend/api/types.ts` (frozen), `docs/hoc/` |
+| Frontend shell (W0-F), portfolio page (F1) | Yousuf's Claude (`@yousuf-shahzad (Claude)`) | `frontend/` (except files listed for others), incl. `package.json`/lockfile, `vite.config.ts`, `frontend/app/registry.tsx` (frozen after W0-F), `frontend/app/pages/portfolio/`, `frontend/components/base/slider/` |
+| Portfolio maths (e) | Yousuf's Codex (`@yousuf-shahzad (Codex)`) | `backend/hoc/portfolio/`, `backend/tests/portfolio/` |
+| Exposures page (F2) | Yousuf's Gemini (`@yousuf-shahzad (Gemini)`) | `frontend/app/pages/exposures/` |
+| Normalisation, identity, cache/HTTP (d); research R1 | Kendrick's Claude (`@kendricklow2008 (Claude)`) | `backend/hoc/normalise/`, `backend/hoc/identity/`, `backend/hoc/core/`, their tests, `docs/hoc/research/R1-*` |
+| SEC N-PORT (b), then iShares (c) adapters; research R2 | Kendrick's Gemini (`@kendricklow2008 (Gemini)`) | `backend/hoc/sources/sec_nport/`, `backend/hoc/sources/ishares/`, their tests, `docs/hoc/research/R2-*` |
+| Service, API, examples, CLI (f) | Bekarys's Claude (`@Bekarys2323322332 (Claude)`) | `backend/hoc/service.py`, `backend/hoc/api/`, `backend/hoc/examples.py`, `backend/hoc/cli.py`, `backend/tests/api/` |
+| Overlap page and heatmap (F3) | Bekarys's Gemini (`@Bekarys2323322332 (Gemini)`) | `frontend/app/pages/overlap/`, `frontend/components/application/heatmap/` |
+| TickerInside adapter (a), then risk page (F4); research R3 | Gawyn's Gemini (`@whitehawk9571 (Gemini)`) | `backend/hoc/sources/tickerinside/`, its tests, `frontend/app/pages/risk/`, `docs/hoc/research/R3-*` |
