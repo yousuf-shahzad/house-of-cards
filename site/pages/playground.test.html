@@ -1,0 +1,23 @@
+<!doctype html>
+<meta charset="utf-8"><title>playground test card</title>
+<link rel="stylesheet" href="../style.css">
+<h3>playground.js test card</h3>
+<p>Does: counter, todo list, accent colour picker (state in localStorage). Expect: all below say PASS.</p>
+<div id="view"></div><pre id="out"></pre>
+<script src="playground.js"></script>
+<script>
+  localStorage.clear();
+  const v = document.getElementById("view");
+  window.pages.playground(v);
+  v.querySelector(".inc").click(); v.querySelector(".inc").click();
+  const inp = v.querySelector("#pg-todo input"); inp.value = "<b>x</b>"; v.querySelector("#pg-todo form").requestSubmit();
+  const pick = v.querySelector("#pg-color input"); pick.value = "#ff0000"; pick.dispatchEvent(new Event("input"));
+  const checks = {
+    "counter = 2": v.querySelector(".num").textContent === "2",
+    "todo added, escaped": v.querySelectorAll("#pg-todo li").length === 1 && !v.querySelector("#pg-todo li b"),
+    "accent changed": getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() === "#ff0000",
+    "state saved": localStorage.getItem("pg-count") === "2",
+  };
+  out.textContent = Object.entries(checks).map(([k, ok]) => `${ok ? "PASS" : "FAIL"} ${k}`).join("\n");
+  localStorage.clear(); document.documentElement.style.removeProperty("--accent");
+</script>
