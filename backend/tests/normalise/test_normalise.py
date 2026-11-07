@@ -7,7 +7,7 @@ import json
 import pytest
 
 from hoc.contract import RawEtfHoldings, Sector, wsum
-from hoc.identity.resolver import Aliases, aliases_from_entries, load_aliases
+from hoc.identity.resolver import Aliases, aliases_from_entries, clean_company_name, load_aliases
 from hoc.normalise.pipeline import map_sector, normalise_etf
 
 
@@ -107,3 +107,22 @@ def test_aliases_file_loads_and_validates():
     with pytest.raises(ValueError, match="two aliases"):
         aliases_from_entries([{"id": "X", "company_name": "X", "identifiers": ["A"], "note": "n"},
                               {"id": "Y", "company_name": "Y", "identifiers": ["A"], "note": "n"}])
+
+
+@pytest.mark.parametrize(("raw", "clean"), [
+    ("Alphabet Inc. (Class A)", "Alphabet Inc."), ("Berkshire Hathaway Class B", "Berkshire Hathaway"),
+    ("Fox Corp Cl A", "Fox Corp"), ("News Corp - A", "News Corp"), ("Baidu Inc ADR", "Baidu Inc"),
+    ("Shell PLC - Sponsored ADR", "Shell PLC"), ("Samsung Electronics Pref", "Samsung Electronics"),
+    ("Acme Ordinary Shares", "Acme"), ("Crossroads", "Crossroads"), ("Subclass A", "Subclass A"), ("ADR", "ADR"),
+])
+def test_clean_company_name(raw, clean):
+    assert clean_company_name(raw) == clean
+
+
+def test_company_name_prefers_longest_clean_name(fake_source, fake_reference, aliases):
+    raw = fake_source.fetch("ZZAAA")
+    lines = [h.model_copy(update={"name": n}) if h.source_symbol in ("ZZBET.A", "ZZBET.B") else h
+             for h, n in zip(raw.holdings, ["", "ZZ Beta Hold (Class A)", "ZZ Beta Holdings Class B", "", "", ""],
+                             strict=True)]
+    etf = normalise_etf(raw.model_copy(update={"holdings": lines}), fake_reference, aliases)
+    assert {h.company_name for h in etf.holdings if h.company_key == "CIK:9990000002"} == {"ZZ Beta Holdings"}

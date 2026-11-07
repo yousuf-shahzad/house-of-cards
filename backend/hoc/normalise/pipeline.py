@@ -24,7 +24,7 @@ from hoc.contract import (
     wsum,
 )
 from hoc.contract.units import RAW_WEIGHT_SUM_MAX, SECTOR_COVERAGE_THRESHOLD
-from hoc.identity.resolver import Aliases, listing_symbol, resolve
+from hoc.identity.resolver import Aliases, best_company_name, listing_symbol, resolve
 from hoc.sources.base import ReferenceProvider
 
 NORMALISER_VERSION = "norm-1"
@@ -102,15 +102,15 @@ def normalise_etf(raw: RawEtfHoldings, reference: ReferenceProvider, aliases: Al
             },
         }
 
-    # One display name per company in this ETF: the alias name, else the heaviest line's name.
+    # One display name per company in this ETF: the alias name, else the best clean line name.
     company_lines: dict[str, list[dict]] = defaultdict(list)
     for entry in merged.values():
         entry["weight"] = wsum(entry["weights"])
         company_lines[entry["fields"]["company_key"]].append(entry)
     holdings = []
     for lines in company_lines.values():
-        top = min(lines, key=lambda e: (-e["weight"], e["fields"]["security_key"]))
-        company_name = top["alias_name"] or top["fields"]["name"]
+        alias_name = next((e["alias_name"] for e in lines if e["alias_name"]), None)
+        company_name = alias_name or best_company_name(e["fields"]["name"] for e in lines)
         holdings += [NormalisedHolding(**e["fields"], weight=e["weight"], company_name=company_name) for e in lines]
     holdings.sort(key=lambda h: (-h.weight, h.security_key))
 

@@ -19,6 +19,7 @@ from typing import ClassVar
 from hoc.contract import RawEtfHoldings, RawHolding, SourceError, SourceName, SourceParseError, TickerNotFound
 
 from .files import BASE_URL, LICENCE, ReferenceFiles, country_of, get_json
+from .files import longest as _longest
 
 TICKER = re.compile(r"[A-Z0-9][A-Z0-9.\-]{0,11}")
 FUTURES_SYMBOL = re.compile(r"[A-Z]{1,5}[FGHJKMNQUVXZ]\d{1,2}")
@@ -71,7 +72,7 @@ class TickerInsideAdapter:
                 asset_class = "equity"
             row = names.get(symbol)
             lines.append(RawHolding(
-                source_symbol=symbol, name=(row[3] if row and len(row) > 3 else None) or ident.get("name"),
+                source_symbol=symbol, name=_longest(row[3] if row and len(row) > 3 else None, ident.get("name")),
                 weight=weight / 100, asset_class=asset_class, exchange=ident.get("exchange"),
                 country=country_of(symbol), cik=ident.get("cik"), figi=ident.get("composite_figi"),
             ))
