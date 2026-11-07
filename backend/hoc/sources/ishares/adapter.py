@@ -80,7 +80,8 @@ def _asset_class(row):
     if labels & {"fx", "foreign exchange", "forward", "forwards"}:
         return "fx"
     if labels & {"future", "futures", "index", "option", "options", "swap", "swaps", "warrant",
-                 "warrants", "derivative", "derivatives"}:
+                 "warrants", "right", "rights", "derivative", "derivatives"} or re.search(
+                     r"(?:^|\s)WS$", row.get("ticker", ""), re.IGNORECASE):
         return "derivative"
     if labels & {"cash", "money market", "stif", "collateral", "cash collateral and margins"}:
         return "cash"
@@ -150,13 +151,13 @@ def _parse_csv(text):
             raise ValueError("invalid holdings row")
         row = dict(zip(header, (cell.strip() for cell in cells), strict=True))
         weight = _optional(row.get("weight (%)")) or _optional(row.get("market weight"))
-        if weight is None or not _optional(row.get("name")):
-            raise ValueError("missing holding name or weight")
+        if not _optional(row.get("name")):
+            raise ValueError("missing holding name")
         location = _optional(row.get("location"))
         currency = _optional(row.get("currency")) or _optional(row.get("market currency"))
         holdings.append(RawHolding(
             source_symbol=_optional(row.get("ticker")), name=row["name"],
-            weight=_number(weight) / 100, asset_class=_asset_class(row),
+            weight=_number(weight) / 100 if weight is not None else 0.0, asset_class=_asset_class(row),
             exchange=_optional(row.get("exchange")),
             country=location.upper() if location and re.fullmatch(r"[A-Za-z]{2}", location) else None,
             currency=currency, sector_label=_optional(row.get("sector")),
@@ -169,6 +170,8 @@ def _parse_csv(text):
         ))
     if not holdings:
         raise ValueError("empty holdings table")
+    if not 0.5 <= math.fsum(line.weight for line in holdings) <= 1.5:
+        raise ValueError("holdings weights outside 0.5..1.5")
     return as_of, holdings
 
 

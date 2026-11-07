@@ -67,12 +67,12 @@ def test_discovery_metadata_and_fraction_units():
 def test_uk_date_reordered_headers_and_market_weight():
     header = ["Name", "Market Weight", "Ticker", "Asset Class", "Exchange", "Location", "Market Currency"]
     _, adapter = setup(csv_body([
-        ["ZZ Foreign", "12.34", "009999", "Equity", "ZZ Exchange", "United Kingdom", "GBP"],
+        ["ZZ Foreign", "100", "009999", "Equity", "ZZ Exchange", "United Kingdom", "GBP"],
     ], header, "05/Nov/2026"))
     result = adapter.fetch("ZZF")
     line = result.holdings[0]
     assert result.as_of == date(2026, 11, 5)
-    assert line.source_symbol == "009999" and line.weight == .1234
+    assert line.source_symbol == "009999" and line.weight == 1.0
     assert line.exchange == "ZZ Exchange" and line.currency == "GBP"
     assert line.country is None  # never pass a country name as an ISO code
     assert line.isin is None and line.cusip is None
@@ -82,13 +82,15 @@ def test_uk_date_reordered_headers_and_market_weight():
     ("Equity", "EQUITY", "equity"), ("Equity", "CASH", "cash"),
     ("Money Market", "STIF", "cash"), ("Cash Collateral and Margins", "COLLATERAL", "cash"),
     ("Equity", "FUTURE", "derivative"), ("Futures", "", "derivative"),
-    ("Equity", "INDEX", "derivative"), ("Equity", "WARRANT", "derivative"),
+    ("Equity", "INDEX", "derivative"), ("Rights", "", "derivative"),
+    ("Equity", "RIGHT", "derivative"), ("Equity", "WARRANT", "derivative"),
     ("FX", "", "fx"), ("Equity", "FX", "fx"), ("Fund", "FUND", "fund"),
     ("Fixed Income", "", "fixed_income"), ("Preferred Stock", "", "preferred"),
     ("Unrecognised", "", "other"),
 ])
 def test_classification_with_type_override(asset, kind, expected):
-    _, adapter = setup(csv_body([["ZZ", "ZZ Instrument", asset, kind, "-0.25"]],
+    _, adapter = setup(csv_body([["ZZ", "ZZ Instrument", asset, kind, "-0.25"],
+                                      ["ZZBASE", "ZZ Base", "Equity", "", "100.25"]],
                                ["Ticker", "Name", "Asset Class", "Type", "Weight (%)"]))
     line = adapter.fetch("ZZF").holdings[0]
     assert line.asset_class == expected and line.weight == -.0025
@@ -99,6 +101,7 @@ def test_zero_weight_fallback_column_and_numeric_formats():
     _, adapter = setup(csv_body([
         ["ZZ0", "ZZ Zero", "Equity", "0.00", "75", "1,234.56", "USD"],
         ["ZZ1", "ZZ One", "FX", "-", "(1.25)", "50", "GBP"],
+        ["ZZBASE", "ZZ Base", "Equity", "101.25", "", "100", "USD"],
     ], header))
     lines = adapter.fetch("ZZF").holdings
     assert lines[0].weight == 0 and lines[0].market_value_usd == 1234.56
@@ -184,3 +187,38 @@ def test_cache_policy_and_stale_provenance():
     assert result.warnings == ["iShares holdings served from stale cache"]
     assert all(c["ttl"] == TTL and c["source"] == "ishares" for c in calls)
     assert all(c["headers"]["User-Agent"] == "ZZ test contact" for c in calls)
+
+
+@pytest.mark.parametrize("missing_weight", ["-", "", "  "])
+def test_keeps_zero_weight_collateral_unlisted_warrant_and_cash(missing_weight):
+    header = ["Ticker", "Name", "Asset Class", "Market Weight", "Exchange", "Market Value", "Currency"]
+    _, adapter = setup(csv_body([
+        ["ZZBASE", "ZZ Base", "Equity", "100", "ZZ Exchange", "10000", "USD"],
+        ["ZZCOL", "ZZ Collateral", "Cash Collateral and Margins", missing_weight, "-", "0", "USD"],
+        ["ZZUNL", "ZZ Unlisted", "Equity", missing_weight, "NO MARKET (E.G. UNLISTED)", "0", "USD"],
+        ["ZZW WS", "ZZ Warrant", "Equity", missing_weight, "ZZ Exchange", "0", "USD"],
+        ["ZZUSD", "ZZ USD Cash", "Cash", missing_weight, "-", "0.00", "USD"],
+    ], header))
+    lines = adapter.fetch("ZZF").holdings
+    assert len(lines) == 5
+    assert [line.weight for line in lines] == [1.0, 0.0, 0.0, 0.0, 0.0]
+    assert [line.asset_class for line in lines] == ["equity", "cash", "equity", "derivative", "cash"]
+    assert lines[2].exchange == "NO MARKET (E.G. UNLISTED)"
+    assert lines[4].market_value_usd == 0.0
+
+
+@pytest.mark.parametrize("weight", ["49.99", "150.01", "0", "-5"])
+def test_rejects_implausible_total_weight(weight):
+    _, adapter = setup(csv_body([["ZZ", "ZZ Equity", "Equity", weight]],
+                               ["Ticker", "Name", "Asset Class", "Weight (%)"]))
+    with pytest.raises(SourceParseError):
+        adapter.fetch("ZZF")
+
+
+@pytest.mark.parametrize("weight", ["50", "150"])
+def test_accepts_total_weight_boundaries_and_unlisted_equity(weight):
+    _, adapter = setup(csv_body([["ZZ", "ZZ Unlisted", "Equity", weight, "NO MARKET (E.G. UNLISTED)"]],
+                               ["Ticker", "Name", "Asset Class", "Weight (%)", "Exchange"]))
+    line = adapter.fetch("ZZF").holdings[0]
+    assert line.weight == float(weight) / 100
+    assert line.asset_class == "equity"
