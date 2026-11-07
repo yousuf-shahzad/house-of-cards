@@ -5,6 +5,7 @@ import { MOCK_MODE } from "@/api/client";
 import { Button } from "@/components/base/buttons/button";
 import { Chip } from "@/components/base/badges/chip";
 import { Drawer, DrawerBody, DrawerHeader } from "@/components/base/drawer/drawer";
+import { useAnalysis } from "./analysis";
 import { pageFromHash, pages } from "./registry";
 
 const DashboardSidebar = lazy(() =>
@@ -36,6 +37,8 @@ class PageBoundary extends Component<{ children: ReactNode }, { failed: boolean 
 export function Workspace() {
   const [hash, setHash] = useState(location.hash);
   const [mobile, setMobile] = useState(false);
+  const { analysis } = useAnalysis();
+  const synthetic = MOCK_MODE || analysis?.etfs.some((etf) => etf.source === "fake") === true;
   useEffect(() => {
     const onHash = () => {
       setHash(location.hash);
@@ -102,9 +105,9 @@ export function Workspace() {
             <span className="text-body-medium text-text-secondary">{APP_NAME}</span>
             <span className="text-text-tertiary">/</span>
             <span className="text-body-medium text-text-primary">{page.label}</span>
-            {MOCK_MODE && (
+            {synthetic && (
               <Chip variant="caption" color="rose" role="status">
-                SYNTHETIC data: mock mode, not real holdings
+                SYNTHETIC data: not real holdings
               </Chip>
             )}
           </div>

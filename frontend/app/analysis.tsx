@@ -12,24 +12,33 @@ import {
   type ReactNode,
 } from "react";
 import { api, ApiError, type AllocationInput } from "@/api/client";
-import type { AnalysisResponse } from "@/api/types";
+import { ALLOCATION_TOLERANCE, MAX_ETFS, type AnalysisResponse } from "@/api/types";
 
 export const DEBOUNCE_MS = 400;
-const SUM_TOLERANCE_PCT = 1e-6;
+const SUM_TOLERANCE_PCT = ALLOCATION_TOLERANCE * 100;
+const TICKER_PATTERN = /^[A-Za-z0-9.\-]{1,12}$/;
 
 export type DraftRow = { id: string; ticker: string; allocationPct: number | null };
-export type RowIssue = "empty" | "duplicate-ticker" | "invalid-allocation" | "allocation-sum";
+export type RowIssue =
+  | "empty"
+  | "too-many-etfs"
+  | "invalid-ticker"
+  | "duplicate-ticker"
+  | "invalid-allocation"
+  | "allocation-sum";
 export type Validation = { valid: boolean; totalPct: number; issues: RowIssue[] };
 export type AnalysisStatus = "invalid" | "loading" | "ready" | "error";
 
 export function validateRows(rows: DraftRow[]): Validation {
   const issues = new Set<RowIssue>();
   if (rows.length === 0) issues.add("empty");
+  if (rows.length > MAX_ETFS) issues.add("too-many-etfs");
   const seen = new Set<string>();
   const amounts: number[] = [];
   for (const row of rows) {
     const ticker = row.ticker.trim().toUpperCase();
     if (!ticker) issues.add("empty");
+    else if (!TICKER_PATTERN.test(ticker)) issues.add("invalid-ticker");
     if (ticker && seen.has(ticker)) issues.add("duplicate-ticker");
     seen.add(ticker);
     if (row.allocationPct === null || !Number.isFinite(row.allocationPct) || row.allocationPct <= 0) {
