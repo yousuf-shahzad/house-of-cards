@@ -285,3 +285,40 @@ def test_concurrent_loads_of_one_etf_fetch_once(make_service, monkeypatch):
     for thread in threads:
         thread.join()
     assert source.calls == ["ZZAAA"]
+
+
+def test_memo_reuses_within_ttl_and_refreshes_after(make_service, monkeypatch):
+    """Codex audit (f): an always-running API must pick up a newer disclosure once the memo TTL passes."""
+    from datetime import date
+
+    import hoc.service as service_module
+
+    service, source = make_service()
+    now = [1000.0]
+    monkeypatch.setattr(service_module, "_clock", lambda: now[0])
+    disclosed = [date(2026, 11, 5)]
+    real_fetch = source.fetch
+    monkeypatch.setattr(source, "fetch", lambda t: real_fetch(t).model_copy(update={"as_of": disclosed[0]}))
+
+    assert service.load_etf("ZZAAA").as_of == date(2026, 11, 5)
+    disclosed[0] = date(2026, 11, 6)
+    now[0] += service_module.MEMO_TTL_SECONDS - 1  # allocation changes within the TTL: memo hits
+    for _ in range(3):
+        assert service.load_etf("ZZAAA").as_of == date(2026, 11, 5)
+    assert source.calls == ["ZZAAA"]
+    now[0] += 2  # past the TTL: reload, new disclosure
+    assert service.load_etf("ZZAAA").as_of == date(2026, 11, 6)
+    assert source.calls == ["ZZAAA", "ZZAAA"]
+
+
+def test_expired_memo_survives_a_failed_refresh(make_service, monkeypatch):
+    import hoc.service as service_module
+
+    service, source = make_service()
+    now = [1000.0]
+    monkeypatch.setattr(service_module, "_clock", lambda: now[0])
+    first = service.load_etf("ZZAAA")
+    source.unavailable.add("ZZAAA")
+    now[0] += service_module.MEMO_TTL_SECONDS + 1
+    assert service.load_etf("ZZAAA") is first  # stale holdings, still dated by their own as_of
+    assert source.calls == ["ZZAAA", "ZZAAA"]
