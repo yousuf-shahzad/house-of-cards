@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import threading
+import time
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
@@ -36,7 +37,13 @@ from hoc.portfolio.analyse import analyse
 from hoc.portfolio.validation import validate_request
 
 MAX_WORKERS = 8
+MEMO_TTL_SECONDS = 24 * 3600
+"""How long a loaded ETF is reused in memory: the source TTL, so a long-running API picks up new disclosures."""
 log = logging.getLogger("hoc.service")
+
+
+def _clock() -> float:
+    return time.monotonic()
 
 
 def _attempts(failures: Sequence[EtfFailure]) -> dict[str, list[dict]]:
@@ -49,8 +56,8 @@ class EtfService:
         self.reference = reference
         self.aliases = aliases
         self.settings = settings
-        # ponytail: memo lives as long as the process (the disk cache holds the 24 h TTL); restart to refresh.
-        self._memo: dict[tuple[str, str | None], EtfHoldings] = {}
+        self._memo: dict[tuple[str, str | None], tuple[float, EtfHoldings]] = {}
+        """(loaded at, holdings); reused for MEMO_TTL_SECONDS, then reloaded through the cached HTTP layer."""
         self._locks: dict[tuple[str, str | None], threading.Lock] = {}
         self._locks_guard = threading.Lock()
 
@@ -77,11 +84,14 @@ class EtfService:
         with self._locks_guard:
             lock = self._locks.setdefault(key, threading.Lock())
         with lock:
-            if key in self._memo:
-                return self._memo[key]
+            memo = self._memo.get(key)
+            if memo is not None and _clock() - memo[0] < MEMO_TTL_SECONDS:
+                return memo[1]
             loaded = self._load_uncached(ticker, source)
             if isinstance(loaded, EtfHoldings):
-                self._memo[key] = loaded
+                self._memo[key] = (_clock(), loaded)
+            elif memo is not None and loaded.status == "unavailable":
+                return memo[1]  # refresh failed: yesterday's holdings beat a gap (they keep their own as_of)
             return loaded
 
     def _load_uncached(self, ticker: str, source: SourceName | None) -> EtfHoldings | EtfFailure:
