@@ -115,10 +115,15 @@ def compare(ours: AnalysisResponse, lookthrough: dict, skipped: list[str], overl
     cov = ours.coverage
     loaded = sum(e.allocation for e in ours.etfs if e.ticker in funds)
     covered_sub = sum(e.portfolio_covered_weight for e in ours.etfs if e.ticker in funds)
+    excluded_sub = sum(e.allocation * e.excluded_weight for e in ours.etfs if e.ticker in funds)
+    unexplained_sub = loaded - covered_sub - excluded_sub
+    share = (lambda w: 100 * w / loaded) if loaded else (lambda w: 0.0)
     report.coverage = [
         Row(f"share of {'+'.join(funds)} looked through (%)", lookthrough["looked_through_pct"],
             100 * covered_sub / loaded if loaded else None,
-            "theirs counts every holdings line; we exclude cash, derivatives and FX"),
+            f"theirs is 100 by construction; our gap = funds' reported weights short of 100% "
+            f"{share(unexplained_sub):.4f} + excluded cash/derivative/FX lines {share(excluded_sub):.4f} "
+            "(net short derivatives can make that negative)"),
         Row("distinct companies (lookthrough funds)", lookthrough["distinct_companies"], None,
             "theirs counts tickers (GOOG and GOOGL are two); see ours below for the whole portfolio"),
         Row("our distinct companies / securities (whole portfolio)", None,
