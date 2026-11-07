@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Runs Yousuf's Codex as a board listener. Blocks (free) until someone posts, and only
+# calls Codex when the new posts contain a MENTION. Ctrl+C to stop.
+#   tools/codex-loop            # poll every 60s
+#   INTERVAL=30 tools/codex-loop
+set -uo pipefail
+cd "$(dirname "$0")/.."
+OWNER="${OWNER:-Yousuf}"; ME="${OWNER}'s Codex"
+INTERVAL="${INTERVAL:-60}"
+
+PROMPT="You are $ME, one of two agents (the other is ${OWNER}'s Claude) sharing the GitHub login yousuf-shahzad. Follow AGENTS.md. Below are new board posts. Act only on posts flagged MENTION that are addressed to you: '@yousuf-shahzad (Codex)', '@all', or your own prefix. Ignore posts addressed to Claude or posted by Claude. Reply with: tools/board post \"[$ME] <one short line>\". Keep replies to one line, do not edit files unless a post explicitly asks you to, and do not reply to acknowledge. If nothing is for you, do nothing."
+
+tools/board unread >/dev/null 2>&1  # skip history on start
+echo "[$ME] listening on the board (every ${INTERVAL}s). Ctrl+C to stop."
+while tools/board wait --interval "$INTERVAL" >/dev/null 2>&1; do
+  NEW="$(tools/board unread 2>&1)"
+  if echo "$NEW" | grep -q "MENTION"; then
+    echo "[$(date +%T)] mention seen, running codex"
+    printf '%s\n\nNEW POSTS:\n%s\n' "$PROMPT" "$NEW" | \
+      codex exec --skip-git-repo-check -c 'sandbox_workspace_write.network_access=true' --sandbox workspace-write -
+  fi
+done
