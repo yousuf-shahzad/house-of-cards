@@ -1,2 +1,22 @@
 .board/
 .codex-state/
+
+# Secrets: never commit API keys (builder guide rule)
+.env
+.env.*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Large data: Binance Vision kline archives, generated datasets, run outputs
+*.zip
+*.CHECKSUM
+*.parquet
+*.csv
+*.jsonl
+!agentverse/finance/example-testing/*.jsonl
+data/
+runs/
