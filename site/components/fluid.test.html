@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fluid test card</title>
+<link rel="stylesheet" href="../style.css">
+<h1>Fluid test card</h1>
+<p>Move a mouse or touch the page to stir the dye. Animation pauses off home and when motion is reduced. Colours follow the theme.</p>
+<div id="fluid" aria-hidden="true"></div>
+<pre id="out"></pre>
+<script>
+  const pending = new Map(); let next = 0;
+  window.requestAnimationFrame = (fn) => { pending.set(++next, fn); return next; };
+  window.cancelAnimationFrame = (id) => pending.delete(id);
+  function advance(time) { const tasks = [...pending.values()]; pending.clear(); tasks.forEach(fn => fn(time)); }
+</script>
+<script src="fluid.js"></script>
+<script>
+  const el = document.getElementById('fluid');
+  window.components.fluid(el);
+  const canvas = el.querySelector('canvas'), ctx = canvas.getContext('2d');
+  const snapshot = () => canvas.toDataURL();
+  const initial = snapshot(); advance(40);
+  const checks = { 'canvas paints dye': ctx.getImageData(0, 0, canvas.width, canvas.height).data.some((v, i) => i % 4 === 3 && v > 0) };
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  checks['animation follows motion preference'] = reduced ? pending.size === 0 : pending.size === 1 && snapshot() !== initial;
+  const beforePointer = snapshot();
+  window.dispatchEvent(new PointerEvent('pointermove', { clientX: innerWidth * .1, clientY: innerHeight * .2, pointerId: 1 }));
+  advance(80);
+  checks['pointer stirs dye'] = reduced ? snapshot() === beforePointer : snapshot() !== beforePointer;
+  window.dispatchEvent(new CustomEvent('routechange', { detail: { route: 'about' } }));
+  const paused = snapshot(); advance(120);
+  checks['off-home animation stops'] = pending.size === 0 && snapshot() === paused;
+  window.dispatchEvent(new CustomEvent('routechange', { detail: { route: 'home' } }));
+  checks['home resumes animation'] = pending.size === (reduced ? 0 : 1);
+  window.components.fluid(el);
+  checks['remount keeps one loop'] = pending.size === (reduced ? 0 : 1);
+  document.getElementById('out').textContent = Object.entries(checks).map(([name, pass]) => `${pass ? 'PASS' : 'FAIL'} ${name}`).join('\n');
+</script>
+</html>
