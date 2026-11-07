@@ -43,9 +43,21 @@ npm ci
 npm run dev
 ```
 
-Open http://127.0.0.1:5173, press **Load** on the example portfolio, then explore the pages.
-The first load fetches the funds' holdings (a few seconds). After that they come from a local cache
-(`backend/.cache/`, 24 h for most files), so changing allocations is instant.
+Open http://127.0.0.1:5173, press **Load** on an example portfolio, then explore the pages.
+Two examples are included: **US core with a tech tilt** (IVV 40 / QQQ 25 / XLK 15 / EEM 20) and
+**global-core** (VTI 50 / VXUS 30 / QQQ 20). Each is offered only after its funds' real holdings load.
+
+The API warms its cache in the background when it starts, and fetched files stay in a local cache
+(`backend/.cache/`, 24 h for most files), so changing allocations is instant. **Before a demo**, warm the
+cache once so the first load is instant even on a fresh machine:
+
+```bash
+cd backend
+uv run python -m hoc.cli warm
+uv run python -m hoc.cli warm --example global-core
+```
+
+A three-minute walkthrough with the real numbers is in [`docs/hoc/DEMO.md`](docs/hoc/DEMO.md).
 
 Command-line version of the same analysis:
 
@@ -110,9 +122,12 @@ contract. They use synthetic fixtures only.
 ## Known limits
 
 - Holdings are only as fresh as each fund's latest disclosure, which can be up to a quarter for N-PORT-only funds.
-- Identity resolution merges share classes through SEC CIK/LEI and a small curated alias list. Some
-  cross-listings (an ADR and its home-market line) may still show as separate companies.
-- Sector allocation uses each fund's reported breakdown when line-level sectors aren't available.
+- Identity resolution merges share classes through SEC CIK/LEI and a curated list of 48 aliases
+  (e.g. TSM and 2330.TW, Samsung common and preferred, Shell, Unilever). Cross-listings outside that list
+  may still show as separate companies.
+- Company sectors come from TickerInside's per-stock files for each fund's heaviest ~150 holdings; local
+  non-US listings have no such file, so they show as Unknown. Portfolio sector allocation falls back to each
+  fund's own reported breakdown when line-level sectors cover less than 95% of a fund.
 - This is a local PoC: no accounts, no database, no trading, and not investment advice.
 
 ## Repository layout
