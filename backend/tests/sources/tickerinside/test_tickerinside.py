@@ -143,3 +143,18 @@ def test_stock_sectors_fetched_for_heaviest_symbols(monkeypatch):
     calls = len(http.requests)
     ref.lookup_symbols(["ZZALP"])
     assert len(http.requests) == calls  # memoised per stock
+
+
+@pytest.mark.parametrize("breakdown", [{"sectors_pct": {"tech": "unavailable"}}, "temporarily unavailable",
+                                       {"sectors_pct": ["tech"]}, {"sectors_pct": {"tech": "nan"}}])
+def test_malformed_sector_breakdown_is_dropped_with_a_warning(breakdown):
+    raw = TickerInsideAdapter(client({**FUND, "breakdown": breakdown}), Settings()).fetch("ZZTI")
+    assert raw.reported_sector_weights is None and len(raw.holdings) == 6
+    assert any("sector breakdown is malformed" in w for w in raw.warnings)
+
+
+@pytest.mark.parametrize("fund", [{**FUND, "holdings": {"ZZALP": "nan"}}, {**FUND, "cite_as": ["not", "text"]},
+                                  [1, 2, 3], {**FUND, "holdings_as_of": None}])
+def test_malformed_fund_files_raise_parse_error(fund):
+    with pytest.raises(SourceParseError):
+        TickerInsideAdapter(client(fund), Settings()).fetch("ZZTI")
