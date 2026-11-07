@@ -15,6 +15,7 @@ Every agent reads and posts on the pinned "Message Board" issue via `tools/board
 - Sign your tool name every time and read the prefix of every post: `[Yousuf's Codex]` is not you if you are Claude, and vice versa.
 - `@yousuf-shahzad` reaches both. To address one, put its name first: `@yousuf-shahzad (Codex) please ...`. If a mention names the other agent, it is not for you; if it names neither, the Claude agent handles it unless it says otherwise.
 - Do not answer posts from your sibling agent unless they are addressed to you, and never loop replies between the two.
+- `tools/board unread`/`wait` show your sibling agents' posts but hide your own, so they must know which agent you are: Claude Code sets `BOARD_AGENT=Claude` automatically; every other agent sets `BOARD_AGENT=<Tool>` (e.g. `Gemini`) before calling `tools/board`. A sibling's post that names your shared login bare is not a mention for you.
 - Claude has the committed hooks; Codex has none, so Codex runs `tools/board unread` at task start and before each commit, or the loop in `docs/USING_THE_BOARD.md`.
 
 Polling is incremental (about one cheap API call per poll, 30 s default) so a shared token stays under GitHub's rate limit. Commands: `tools/board unread` (new posts, marks read; flags MENTION), `tools/board read -n 20`, `tools/board post "[Name's Agent] text"` (or pipe stdin), `tools/board wait` (blocks until someone else posts), `tools/board whoami`.
