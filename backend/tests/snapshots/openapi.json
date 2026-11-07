@@ -1,0 +1,1757 @@
+{
+  "components": {
+    "schemas": {
+      "AnalysisResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "as_of_date": {
+            "format": "date",
+            "title": "As Of Date",
+            "type": "string"
+          },
+          "attributions": {
+            "items": {
+              "$ref": "#/components/schemas/Attribution"
+            },
+            "title": "Attributions",
+            "type": "array"
+          },
+          "concentration": {
+            "$ref": "#/components/schemas/Concentration"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/Coverage"
+          },
+          "etfs": {
+            "items": {
+              "$ref": "#/components/schemas/EtfReport"
+            },
+            "title": "Etfs",
+            "type": "array"
+          },
+          "exposures": {
+            "items": {
+              "$ref": "#/components/schemas/CompanyExposure"
+            },
+            "title": "Exposures",
+            "type": "array"
+          },
+          "exposures_truncated": {
+            "title": "Exposures Truncated",
+            "type": "boolean"
+          },
+          "gaps": {
+            "items": {
+              "$ref": "#/components/schemas/DataGap"
+            },
+            "title": "Gaps",
+            "type": "array"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "method_version": {
+            "const": "hoc-1",
+            "default": "hoc-1",
+            "title": "Method Version",
+            "type": "string"
+          },
+          "other_exposure": {
+            "title": "Other Exposure",
+            "type": "number"
+          },
+          "overlap": {
+            "$ref": "#/components/schemas/Overlap"
+          },
+          "request": {
+            "$ref": "#/components/schemas/PortfolioRequest"
+          },
+          "sectors": {
+            "items": {
+              "$ref": "#/components/schemas/SectorExposure"
+            },
+            "title": "Sectors",
+            "type": "array"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/Notice"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "generated_at",
+          "as_of_date",
+          "request",
+          "etfs",
+          "coverage",
+          "exposures",
+          "exposures_truncated",
+          "other_exposure",
+          "overlap",
+          "concentration",
+          "sectors",
+          "gaps",
+          "warnings",
+          "attributions"
+        ],
+        "title": "AnalysisResponse",
+        "type": "object"
+      },
+      "Attribution": {
+        "additionalProperties": false,
+        "properties": {
+          "licence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Licence"
+          },
+          "source": {
+            "enum": [
+              "tickerinside",
+              "sec_nport",
+              "ishares",
+              "fake"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "required": [
+          "source",
+          "text"
+        ],
+        "title": "Attribution",
+        "type": "object"
+      },
+      "CompanyExposure": {
+        "additionalProperties": false,
+        "properties": {
+          "company_key": {
+            "title": "Company Key",
+            "type": "string"
+          },
+          "company_name": {
+            "title": "Company Name",
+            "type": "string"
+          },
+          "contributions": {
+            "items": {
+              "$ref": "#/components/schemas/Contribution"
+            },
+            "title": "Contributions",
+            "type": "array"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "etf_count": {
+            "title": "Etf Count",
+            "type": "integer"
+          },
+          "exposure": {
+            "title": "Exposure",
+            "type": "number"
+          },
+          "identity_status": {
+            "enum": [
+              "resolved",
+              "partial",
+              "unmatched"
+            ],
+            "title": "Identity Status",
+            "type": "string"
+          },
+          "rank": {
+            "title": "Rank",
+            "type": "integer"
+          },
+          "sector": {
+            "$ref": "#/components/schemas/Sector"
+          },
+          "securities": {
+            "items": {
+              "$ref": "#/components/schemas/SecurityExposure"
+            },
+            "title": "Securities",
+            "type": "array"
+          },
+          "symbols": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Symbols",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rank",
+          "company_key",
+          "company_name",
+          "identity_status",
+          "symbols",
+          "sector",
+          "exposure",
+          "etf_count",
+          "contributions",
+          "securities"
+        ],
+        "title": "CompanyExposure",
+        "type": "object"
+      },
+      "Concentration": {
+        "additionalProperties": false,
+        "properties": {
+          "distinct_companies": {
+            "title": "Distinct Companies",
+            "type": "integer"
+          },
+          "distinct_securities": {
+            "title": "Distinct Securities",
+            "type": "integer"
+          },
+          "effective_companies": {
+            "title": "Effective Companies",
+            "type": "number"
+          },
+          "hhi": {
+            "title": "Hhi",
+            "type": "number"
+          },
+          "top10": {
+            "title": "Top10",
+            "type": "number"
+          },
+          "top20": {
+            "title": "Top20",
+            "type": "number"
+          },
+          "top5": {
+            "title": "Top5",
+            "type": "number"
+          }
+        },
+        "required": [
+          "top5",
+          "top10",
+          "top20",
+          "hhi",
+          "effective_companies",
+          "distinct_securities",
+          "distinct_companies"
+        ],
+        "title": "Concentration",
+        "type": "object"
+      },
+      "Contribution": {
+        "additionalProperties": false,
+        "properties": {
+          "contribution": {
+            "title": "Contribution",
+            "type": "number"
+          },
+          "etf_ticker": {
+            "title": "Etf Ticker",
+            "type": "string"
+          },
+          "security_keys": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Security Keys",
+            "type": "array"
+          },
+          "weight_in_etf": {
+            "title": "Weight In Etf",
+            "type": "number"
+          }
+        },
+        "required": [
+          "etf_ticker",
+          "weight_in_etf",
+          "contribution",
+          "security_keys"
+        ],
+        "title": "Contribution",
+        "type": "object"
+      },
+      "Coverage": {
+        "additionalProperties": false,
+        "description": "covered + excluded + missing + unexplained == total_allocation (== 1 for a valid request).",
+        "properties": {
+          "covered_weight": {
+            "title": "Covered Weight",
+            "type": "number"
+          },
+          "excluded_weight": {
+            "title": "Excluded Weight",
+            "type": "number"
+          },
+          "loaded_allocation": {
+            "title": "Loaded Allocation",
+            "type": "number"
+          },
+          "missing_allocation": {
+            "title": "Missing Allocation",
+            "type": "number"
+          },
+          "sector_known_weight": {
+            "title": "Sector Known Weight",
+            "type": "number"
+          },
+          "total_allocation": {
+            "title": "Total Allocation",
+            "type": "number"
+          },
+          "unexplained_weight": {
+            "title": "Unexplained Weight",
+            "type": "number"
+          },
+          "unmatched_weight": {
+            "title": "Unmatched Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "total_allocation",
+          "loaded_allocation",
+          "missing_allocation",
+          "covered_weight",
+          "excluded_weight",
+          "unexplained_weight",
+          "unmatched_weight",
+          "sector_known_weight"
+        ],
+        "title": "Coverage",
+        "type": "object"
+      },
+      "DataGap": {
+        "additionalProperties": false,
+        "properties": {
+          "etf_ticker": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Etf Ticker"
+          },
+          "kind": {
+            "enum": [
+              "missing_etf",
+              "unmatched_identity",
+              "nested_fund",
+              "stale_disclosure",
+              "low_coverage",
+              "excluded_lines",
+              "no_sector_data"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "portfolio_weight": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Portfolio Weight"
+          },
+          "severity": {
+            "enum": [
+              "info",
+              "warning",
+              "critical"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject"
+          }
+        },
+        "required": [
+          "kind",
+          "severity",
+          "message"
+        ],
+        "title": "DataGap",
+        "type": "object"
+      },
+      "ErrorBody": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "VALIDATION_ERROR",
+              "ALLOCATION_SUM_INVALID",
+              "DUPLICATE_TICKER",
+              "TOO_MANY_ETFS",
+              "UNKNOWN_TICKER",
+              "ETF_NOT_FOUND",
+              "SOURCES_UNAVAILABLE",
+              "INTERNAL_ERROR"
+            ],
+            "title": "Code",
+            "type": "string"
+          },
+          "details": {
+            "additionalProperties": true,
+            "default": {},
+            "title": "Details",
+            "type": "object"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorBody",
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorBody"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "title": "ErrorResponse",
+        "type": "object"
+      },
+      "EtfReport": {
+        "additionalProperties": false,
+        "properties": {
+          "age_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age Days"
+          },
+          "allocation": {
+            "title": "Allocation",
+            "type": "number"
+          },
+          "as_of": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Of"
+          },
+          "attempts": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SourceAttempt"
+            },
+            "title": "Attempts",
+            "type": "array"
+          },
+          "attribution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attribution"
+          },
+          "company_count": {
+            "default": 0,
+            "title": "Company Count",
+            "type": "integer"
+          },
+          "excluded_weight": {
+            "default": 0.0,
+            "title": "Excluded Weight",
+            "type": "number"
+          },
+          "filing_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filing Url"
+          },
+          "holdings_count": {
+            "default": 0,
+            "title": "Holdings Count",
+            "type": "integer"
+          },
+          "holdings_weight": {
+            "default": 0.0,
+            "title": "Holdings Weight",
+            "type": "number"
+          },
+          "licence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Licence"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "portfolio_covered_weight": {
+            "default": 0.0,
+            "title": "Portfolio Covered Weight",
+            "type": "number"
+          },
+          "reported_weight": {
+            "default": 0.0,
+            "title": "Reported Weight",
+            "type": "number"
+          },
+          "retrieved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retrieved At"
+          },
+          "sector_basis": {
+            "default": "none",
+            "enum": [
+              "holdings",
+              "fund_reported",
+              "none"
+            ],
+            "title": "Sector Basis",
+            "type": "string"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "tickerinside",
+                  "sec_nport",
+                  "ishares",
+                  "fake"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "source_layer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Layer"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "status": {
+            "enum": [
+              "ok",
+              "warning",
+              "unavailable"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "ticker": {
+            "title": "Ticker",
+            "type": "string"
+          },
+          "unmatched_weight": {
+            "default": 0.0,
+            "title": "Unmatched Weight",
+            "type": "number"
+          },
+          "warnings": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Notice"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ticker",
+          "allocation",
+          "status"
+        ],
+        "title": "EtfReport",
+        "type": "object"
+      },
+      "EtfSummary": {
+        "additionalProperties": false,
+        "description": "GET /api/etfs/{ticker}: one ETF without portfolio context.",
+        "properties": {
+          "as_of": {
+            "format": "date",
+            "title": "As Of",
+            "type": "string"
+          },
+          "attempts": {
+            "items": {
+              "$ref": "#/components/schemas/SourceAttempt"
+            },
+            "title": "Attempts",
+            "type": "array"
+          },
+          "attribution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attribution"
+          },
+          "company_count": {
+            "title": "Company Count",
+            "type": "integer"
+          },
+          "excluded_weight": {
+            "title": "Excluded Weight",
+            "type": "number"
+          },
+          "filing_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filing Url"
+          },
+          "holdings": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/NormalisedHolding"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holdings"
+          },
+          "holdings_count": {
+            "title": "Holdings Count",
+            "type": "integer"
+          },
+          "holdings_weight": {
+            "title": "Holdings Weight",
+            "type": "number"
+          },
+          "licence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Licence"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "reported_weight": {
+            "title": "Reported Weight",
+            "type": "number"
+          },
+          "retrieved_at": {
+            "format": "date-time",
+            "title": "Retrieved At",
+            "type": "string"
+          },
+          "sector_basis": {
+            "enum": [
+              "holdings",
+              "fund_reported",
+              "none"
+            ],
+            "title": "Sector Basis",
+            "type": "string"
+          },
+          "sector_weights": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/Sector"
+            },
+            "title": "Sector Weights",
+            "type": "object"
+          },
+          "source": {
+            "enum": [
+              "tickerinside",
+              "sec_nport",
+              "ishares",
+              "fake"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "source_layer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Layer"
+          },
+          "source_url": {
+            "title": "Source Url",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ok",
+              "warning",
+              "unavailable"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "ticker": {
+            "title": "Ticker",
+            "type": "string"
+          },
+          "unmatched_weight": {
+            "title": "Unmatched Weight",
+            "type": "number"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/Notice"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ticker",
+          "status",
+          "source",
+          "source_url",
+          "as_of",
+          "retrieved_at",
+          "holdings_count",
+          "company_count",
+          "reported_weight",
+          "holdings_weight",
+          "excluded_weight",
+          "unmatched_weight",
+          "sector_basis",
+          "sector_weights",
+          "warnings",
+          "attempts"
+        ],
+        "title": "EtfSummary",
+        "type": "object"
+      },
+      "ExampleEtf": {
+        "additionalProperties": false,
+        "properties": {
+          "allocation": {
+            "title": "Allocation",
+            "type": "number"
+          },
+          "as_of": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Of"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "tickerinside",
+                  "sec_nport",
+                  "ishares",
+                  "fake"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "ticker": {
+            "title": "Ticker",
+            "type": "string"
+          },
+          "verified": {
+            "title": "Verified",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ticker",
+          "allocation",
+          "verified"
+        ],
+        "title": "ExampleEtf",
+        "type": "object"
+      },
+      "ExamplePortfolio": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "holdings": {
+            "items": {
+              "$ref": "#/components/schemas/ExampleEtf"
+            },
+            "title": "Holdings",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "verified": {
+            "title": "Verified",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "holdings",
+          "verified"
+        ],
+        "title": "ExamplePortfolio",
+        "type": "object"
+      },
+      "ExamplesResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "examples": {
+            "items": {
+              "$ref": "#/components/schemas/ExamplePortfolio"
+            },
+            "title": "Examples",
+            "type": "array"
+          }
+        },
+        "required": [
+          "examples"
+        ],
+        "title": "ExamplesResponse",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HealthResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "offline": {
+            "title": "Offline",
+            "type": "boolean"
+          },
+          "sources": {
+            "items": {
+              "enum": [
+                "tickerinside",
+                "sec_nport",
+                "ishares",
+                "fake"
+              ],
+              "type": "string"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "status": {
+            "const": "ok",
+            "default": "ok",
+            "title": "Status",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "offline",
+          "sources"
+        ],
+        "title": "HealthResponse",
+        "type": "object"
+      },
+      "NormalisedHolding": {
+        "additionalProperties": false,
+        "description": "One security in one ETF. Duplicate source lines for the same security_key are summed.",
+        "properties": {
+          "as_of": {
+            "format": "date",
+            "title": "As Of",
+            "type": "string"
+          },
+          "asset_class": {
+            "default": "equity",
+            "enum": [
+              "equity",
+              "preferred",
+              "fund",
+              "fixed_income",
+              "other",
+              "cash",
+              "derivative",
+              "fx"
+            ],
+            "title": "Asset Class",
+            "type": "string"
+          },
+          "company_key": {
+            "title": "Company Key",
+            "type": "string"
+          },
+          "company_key_basis": {
+            "enum": [
+              "alias",
+              "cik",
+              "lei",
+              "isin_issuer",
+              "symbol",
+              "name"
+            ],
+            "title": "Company Key Basis",
+            "type": "string"
+          },
+          "company_name": {
+            "title": "Company Name",
+            "type": "string"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "etf_ticker": {
+            "title": "Etf Ticker",
+            "type": "string"
+          },
+          "identity_status": {
+            "enum": [
+              "resolved",
+              "partial",
+              "unmatched"
+            ],
+            "title": "Identity Status",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "sector": {
+            "$ref": "#/components/schemas/Sector",
+            "default": "unknown"
+          },
+          "sector_source": {
+            "default": "none",
+            "enum": [
+              "source",
+              "reference",
+              "none"
+            ],
+            "title": "Sector Source",
+            "type": "string"
+          },
+          "security_id": {
+            "title": "Security Id",
+            "type": "string"
+          },
+          "security_id_type": {
+            "enum": [
+              "isin",
+              "figi",
+              "cusip",
+              "symbol",
+              "name"
+            ],
+            "title": "Security Id Type",
+            "type": "string"
+          },
+          "security_key": {
+            "title": "Security Key",
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "tickerinside",
+              "sec_nport",
+              "ishares",
+              "fake"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "symbol": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Symbol"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "etf_ticker",
+          "security_key",
+          "security_id",
+          "security_id_type",
+          "name",
+          "company_key",
+          "company_key_basis",
+          "company_name",
+          "identity_status",
+          "weight",
+          "source",
+          "as_of"
+        ],
+        "title": "NormalisedHolding",
+        "type": "object"
+      },
+      "Notice": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "Notice",
+        "type": "object"
+      },
+      "Overlap": {
+        "additionalProperties": false,
+        "properties": {
+          "etfs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Etfs",
+            "type": "array"
+          },
+          "matrix": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "title": "Matrix",
+            "type": "array"
+          },
+          "pairs": {
+            "items": {
+              "$ref": "#/components/schemas/OverlapPair"
+            },
+            "title": "Pairs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "etfs",
+          "matrix",
+          "pairs"
+        ],
+        "title": "Overlap",
+        "type": "object"
+      },
+      "OverlapPair": {
+        "additionalProperties": false,
+        "properties": {
+          "etf_a": {
+            "title": "Etf A",
+            "type": "string"
+          },
+          "etf_b": {
+            "title": "Etf B",
+            "type": "string"
+          },
+          "shared_companies": {
+            "title": "Shared Companies",
+            "type": "integer"
+          },
+          "shared_securities": {
+            "title": "Shared Securities",
+            "type": "integer"
+          },
+          "top_shared": {
+            "items": {
+              "$ref": "#/components/schemas/TopShared"
+            },
+            "title": "Top Shared",
+            "type": "array"
+          },
+          "weighted_overlap": {
+            "title": "Weighted Overlap",
+            "type": "number"
+          },
+          "weighted_overlap_securities": {
+            "title": "Weighted Overlap Securities",
+            "type": "number"
+          }
+        },
+        "required": [
+          "etf_a",
+          "etf_b",
+          "shared_securities",
+          "shared_companies",
+          "weighted_overlap",
+          "weighted_overlap_securities",
+          "top_shared"
+        ],
+        "title": "OverlapPair",
+        "type": "object"
+      },
+      "PortfolioItem": {
+        "additionalProperties": false,
+        "properties": {
+          "allocation": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Allocation",
+            "type": "number"
+          },
+          "ticker": {
+            "pattern": "^[A-Za-z0-9.\\-]{1,12}$",
+            "title": "Ticker",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticker",
+          "allocation"
+        ],
+        "title": "PortfolioItem",
+        "type": "object"
+      },
+      "PortfolioRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "holdings": {
+            "items": {
+              "$ref": "#/components/schemas/PortfolioItem"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Holdings",
+            "type": "array"
+          },
+          "max_companies": {
+            "default": 2000,
+            "maximum": 20000.0,
+            "minimum": 1.0,
+            "title": "Max Companies",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "holdings"
+        ],
+        "title": "PortfolioRequest",
+        "type": "object"
+      },
+      "Sector": {
+        "description": "GICS-style sectors. Every source label maps onto one of these (unmapped -> unknown).",
+        "enum": [
+          "information_technology",
+          "financials",
+          "health_care",
+          "consumer_discretionary",
+          "communication_services",
+          "industrials",
+          "consumer_staples",
+          "energy",
+          "utilities",
+          "real_estate",
+          "materials",
+          "unknown"
+        ],
+        "title": "Sector",
+        "type": "string"
+      },
+      "SectorContribution": {
+        "additionalProperties": false,
+        "properties": {
+          "contribution": {
+            "title": "Contribution",
+            "type": "number"
+          },
+          "etf_ticker": {
+            "title": "Etf Ticker",
+            "type": "string"
+          }
+        },
+        "required": [
+          "etf_ticker",
+          "contribution"
+        ],
+        "title": "SectorContribution",
+        "type": "object"
+      },
+      "SectorExposure": {
+        "additionalProperties": false,
+        "properties": {
+          "by_etf": {
+            "items": {
+              "$ref": "#/components/schemas/SectorContribution"
+            },
+            "title": "By Etf",
+            "type": "array"
+          },
+          "sector": {
+            "$ref": "#/components/schemas/Sector"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "sector",
+          "weight",
+          "by_etf"
+        ],
+        "title": "SectorExposure",
+        "type": "object"
+      },
+      "SecurityExposure": {
+        "additionalProperties": false,
+        "properties": {
+          "exposure": {
+            "title": "Exposure",
+            "type": "number"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "security_id": {
+            "title": "Security Id",
+            "type": "string"
+          },
+          "security_id_type": {
+            "enum": [
+              "isin",
+              "figi",
+              "cusip",
+              "symbol",
+              "name"
+            ],
+            "title": "Security Id Type",
+            "type": "string"
+          },
+          "security_key": {
+            "title": "Security Key",
+            "type": "string"
+          },
+          "symbol": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Symbol"
+          }
+        },
+        "required": [
+          "security_key",
+          "security_id",
+          "security_id_type",
+          "name",
+          "exposure"
+        ],
+        "title": "SecurityExposure",
+        "type": "object"
+      },
+      "SourceAttempt": {
+        "additionalProperties": false,
+        "properties": {
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "outcome": {
+            "enum": [
+              "ok",
+              "not_found",
+              "unavailable",
+              "parse_error",
+              "skipped"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "tickerinside",
+              "sec_nport",
+              "ishares",
+              "fake"
+            ],
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "outcome"
+        ],
+        "title": "SourceAttempt",
+        "type": "object"
+      },
+      "TopShared": {
+        "additionalProperties": false,
+        "properties": {
+          "company_key": {
+            "title": "Company Key",
+            "type": "string"
+          },
+          "company_name": {
+            "title": "Company Name",
+            "type": "string"
+          },
+          "min_weight": {
+            "title": "Min Weight",
+            "type": "number"
+          },
+          "weight_a": {
+            "title": "Weight A",
+            "type": "number"
+          },
+          "weight_b": {
+            "title": "Weight B",
+            "type": "number"
+          }
+        },
+        "required": [
+          "company_key",
+          "company_name",
+          "weight_a",
+          "weight_b",
+          "min_weight"
+        ],
+        "title": "TopShared",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "ETF look-through analysis on real holdings. Weights are fractions of 1.",
+    "title": "House of Cards API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/analysis": {
+      "post": {
+        "operationId": "analysis_api_analysis_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortfolioRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "VALIDATION_ERROR, ALLOCATION_SUM_INVALID, DUPLICATE_TICKER, TOO_MANY_ETFS, UNKNOWN_TICKER"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "SOURCES_UNAVAILABLE"
+          }
+        },
+        "summary": "Analysis"
+      }
+    },
+    "/api/etfs/{ticker}": {
+      "get": {
+        "operationId": "get_etf_api_etfs__ticker__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ticker",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9.\\-]{1,12}$",
+              "title": "Ticker",
+              "type": "string"
+            }
+          },
+          {
+            "description": "include normalised holdings",
+            "in": "query",
+            "name": "holdings",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "include normalised holdings",
+              "title": "Holdings",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "use only this source",
+            "in": "query",
+            "name": "source",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "tickerinside",
+                    "sec_nport",
+                    "ishares",
+                    "fake"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "use only this source",
+              "title": "Source"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EtfSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "ETF_NOT_FOUND"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "SOURCES_UNAVAILABLE"
+          }
+        },
+        "summary": "Get Etf"
+      }
+    },
+    "/api/examples": {
+      "get": {
+        "operationId": "examples_api_examples_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamplesResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Examples"
+      }
+    },
+    "/api/health": {
+      "get": {
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health"
+      }
+    }
+  }
+}

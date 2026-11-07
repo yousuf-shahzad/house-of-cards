@@ -1,0 +1,40 @@
+[project]
+name = "house-of-cards"
+version = "0.1.0"
+description = "House of Cards PoC: ETF look-through analysis (real holdings, deterministic maths)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "httpx>=0.27",
+    "pydantic>=2.8",
+    "defusedxml>=0.7",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hoc"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--import-mode=importlib"
+markers = [
+    "live: hits real data sources over the network; runs only with HOC_LIVE=1",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]

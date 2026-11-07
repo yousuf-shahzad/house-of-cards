@@ -1,0 +1,20 @@
+{
+  "etf_ticker": "ZZCCC",
+  "etf_name": "SYNTHETIC International Test Fund",
+  "source": "fake",
+  "source_layer": "issuer",
+  "as_of": "2026-10-31",
+  "retrieved_at": "2026-11-07T09:00:00Z",
+  "source_url": "https://example.invalid/synthetic/zzccc",
+  "attribution": "SYNTHETIC test data, not real holdings",
+  "licence": null,
+  "reported_sector_weights": null,
+  "holdings": [
+    {"source_symbol": "ZZEPS", "name": "ZZ Epsilon Semiconductor ADR", "weight": 0.30, "sector_label": "Information Technology"},
+    {"source_symbol": "ZZGAM", "name": "ZZ Gamma Therapeutics", "weight": 0.15, "sector_label": "Health Care"},
+    {"source_symbol": "ZZGAM", "name": "ZZ Gamma Therapeutics", "weight": 0.10, "sector_label": "Health Care"},
+    {"source_symbol": null, "name": "ZZ Zeta Mining", "weight": 0.40, "isin": "ZZ0000000ZT1", "lei": "9999000000000000ZETA", "sector_label": "Materials"},
+    {"source_symbol": null, "name": "EUR CURRENCY FORWARD", "weight": 0.05, "asset_class": "fx"}
+  ],
+  "warnings": []
+}

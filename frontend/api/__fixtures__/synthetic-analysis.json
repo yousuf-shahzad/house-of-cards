@@ -1,0 +1,466 @@
+{
+  "_comment": "SYNTHETIC fixture for VITE_API_MOCK=1 only. Not real holdings. Shape = AnalysisResponse.",
+  "method_version": "hoc-1",
+  "generated_at": "2026-11-07T12:00:00Z",
+  "as_of_date": "2026-11-07",
+  "request": {
+    "holdings": [
+      {
+        "ticker": "ZZAAA",
+        "allocation": 0.6
+      },
+      {
+        "ticker": "ZZBBB",
+        "allocation": 0.4
+      }
+    ],
+    "max_companies": 2000
+  },
+  "etfs": [
+    {
+      "ticker": "ZZAAA",
+      "name": "SYNTHETIC Broad Market Test Fund",
+      "allocation": 0.6,
+      "status": "ok",
+      "source": "fake",
+      "source_layer": "issuer",
+      "source_url": "https://example.invalid/synthetic/zzaaa",
+      "filing_url": null,
+      "attribution": "SYNTHETIC test data, not real holdings",
+      "licence": null,
+      "as_of": "2026-11-05",
+      "age_days": 2,
+      "retrieved_at": "2026-11-07T09:00:00Z",
+      "holdings_count": 5,
+      "company_count": 4,
+      "reported_weight": 1.0,
+      "holdings_weight": 0.95,
+      "excluded_weight": 0.05,
+      "unmatched_weight": 0.0,
+      "portfolio_covered_weight": 0.57,
+      "sector_basis": "holdings",
+      "warnings": [],
+      "attempts": []
+    },
+    {
+      "ticker": "ZZBBB",
+      "name": "SYNTHETIC Technology Test Fund",
+      "allocation": 0.4,
+      "status": "warning",
+      "source": "fake",
+      "source_layer": "sec_nport",
+      "source_url": "https://example.invalid/synthetic/zzbbb",
+      "filing_url": "https://example.invalid/synthetic/zzbbb/filing",
+      "attribution": "SYNTHETIC test data, not real holdings",
+      "licence": null,
+      "as_of": "2026-06-30",
+      "age_days": 130,
+      "retrieved_at": "2026-11-07T09:00:00Z",
+      "holdings_count": 4,
+      "company_count": 4,
+      "reported_weight": 1.0,
+      "holdings_weight": 0.98,
+      "excluded_weight": 0.02,
+      "unmatched_weight": 0.06,
+      "portfolio_covered_weight": 0.392,
+      "sector_basis": "fund_reported",
+      "warnings": [
+        {
+          "code": "stale_disclosure",
+          "message": "Holdings disclosed 2026-06-30 are 130 days old."
+        }
+      ],
+      "attempts": []
+    }
+  ],
+  "coverage": {
+    "total_allocation": 1.0,
+    "loaded_allocation": 1.0,
+    "missing_allocation": 0.0,
+    "covered_weight": 0.962,
+    "excluded_weight": 0.038,
+    "unexplained_weight": 0.0,
+    "unmatched_weight": 0.024,
+    "sector_known_weight": 0.938
+  },
+  "exposures": [
+    {
+      "rank": 1,
+      "company_key": "CIK:9990000001",
+      "company_name": "ZZ Alpha Corp",
+      "identity_status": "resolved",
+      "symbols": [
+        "ZZALP"
+      ],
+      "sector": "information_technology",
+      "country": "US",
+      "exposure": 0.34,
+      "etf_count": 2,
+      "contributions": [
+        {
+          "etf_ticker": "ZZAAA",
+          "weight_in_etf": 0.3,
+          "contribution": 0.18,
+          "security_keys": [
+            "SYM:ZZALP"
+          ]
+        },
+        {
+          "etf_ticker": "ZZBBB",
+          "weight_in_etf": 0.4,
+          "contribution": 0.16,
+          "security_keys": [
+            "SYM:ZZALP"
+          ]
+        }
+      ],
+      "securities": [
+        {
+          "security_key": "SYM:ZZALP",
+          "security_id": "ZZFIGI000001",
+          "security_id_type": "figi",
+          "symbol": "ZZALP",
+          "name": "ZZ Alpha Corp",
+          "exposure": 0.34
+        }
+      ]
+    },
+    {
+      "rank": 2,
+      "company_key": "CIK:9990000002",
+      "company_name": "ZZ Beta Holdings",
+      "identity_status": "resolved",
+      "symbols": [
+        "ZZBET.A",
+        "ZZBET.B"
+      ],
+      "sector": "financials",
+      "country": "US",
+      "exposure": 0.24,
+      "etf_count": 2,
+      "contributions": [
+        {
+          "etf_ticker": "ZZAAA",
+          "weight_in_etf": 0.2,
+          "contribution": 0.12,
+          "security_keys": [
+            "SYM:ZZBET.A",
+            "SYM:ZZBET.B"
+          ]
+        },
+        {
+          "etf_ticker": "ZZBBB",
+          "weight_in_etf": 0.3,
+          "contribution": 0.12,
+          "security_keys": [
+            "SYM:ZZBET.B"
+          ]
+        }
+      ],
+      "securities": [
+        {
+          "security_key": "SYM:ZZBET.B",
+          "security_id": "ZZFIGI000003",
+          "security_id_type": "figi",
+          "symbol": "ZZBET.B",
+          "name": "ZZ Beta Holdings Class B",
+          "exposure": 0.18
+        },
+        {
+          "security_key": "SYM:ZZBET.A",
+          "security_id": "ZZFIGI000002",
+          "security_id_type": "figi",
+          "symbol": "ZZBET.A",
+          "name": "ZZ Beta Holdings Class A",
+          "exposure": 0.06
+        }
+      ]
+    },
+    {
+      "rank": 3,
+      "company_key": "CIK:9990000003",
+      "company_name": "ZZ Gamma Therapeutics",
+      "identity_status": "resolved",
+      "symbols": [
+        "ZZGAM"
+      ],
+      "sector": "health_care",
+      "country": "US",
+      "exposure": 0.15,
+      "etf_count": 1,
+      "contributions": [
+        {
+          "etf_ticker": "ZZAAA",
+          "weight_in_etf": 0.25,
+          "contribution": 0.15,
+          "security_keys": [
+            "SYM:ZZGAM"
+          ]
+        }
+      ],
+      "securities": [
+        {
+          "security_key": "SYM:ZZGAM",
+          "security_id": "ZZFIGI000004",
+          "security_id_type": "figi",
+          "symbol": "ZZGAM",
+          "name": "ZZ Gamma Therapeutics",
+          "exposure": 0.15
+        }
+      ]
+    },
+    {
+      "rank": 4,
+      "company_key": "CIK:9990000004",
+      "company_name": "ZZ Delta Energy",
+      "identity_status": "resolved",
+      "symbols": [
+        "ZZDEL"
+      ],
+      "sector": "energy",
+      "country": "US",
+      "exposure": 0.12,
+      "etf_count": 1,
+      "contributions": [
+        {
+          "etf_ticker": "ZZAAA",
+          "weight_in_etf": 0.2,
+          "contribution": 0.12,
+          "security_keys": [
+            "SYM:ZZDEL"
+          ]
+        }
+      ],
+      "securities": [
+        {
+          "security_key": "SYM:ZZDEL",
+          "security_id": "ZZFIGI000005",
+          "security_id_type": "figi",
+          "symbol": "ZZDEL",
+          "name": "ZZ Delta Energy",
+          "exposure": 0.12
+        }
+      ]
+    },
+    {
+      "rank": 5,
+      "company_key": "ALIAS:ZZEPSILON",
+      "company_name": "ZZ Epsilon Semiconductor",
+      "identity_status": "resolved",
+      "symbols": [
+        "9999.TW"
+      ],
+      "sector": "information_technology",
+      "country": "TW",
+      "exposure": 0.088,
+      "etf_count": 1,
+      "contributions": [
+        {
+          "etf_ticker": "ZZBBB",
+          "weight_in_etf": 0.22,
+          "contribution": 0.088,
+          "security_keys": [
+            "SYM:9999.TW"
+          ]
+        }
+      ],
+      "securities": [
+        {
+          "security_key": "SYM:9999.TW",
+          "security_id": "ZZFIGI000007",
+          "security_id_type": "figi",
+          "symbol": "9999.TW",
+          "name": "ZZ Epsilon Semiconductor",
+          "exposure": 0.088
+        }
+      ]
+    },
+    {
+      "rank": 6,
+      "company_key": "NAME:ZZ UNNAMED PRIVATE CO",
+      "company_name": "ZZ Unnamed Private Co",
+      "identity_status": "unmatched",
+      "symbols": [],
+      "sector": "unknown",
+      "country": null,
+      "exposure": 0.024,
+      "etf_count": 1,
+      "contributions": [
+        {
+          "etf_ticker": "ZZBBB",
+          "weight_in_etf": 0.06,
+          "contribution": 0.024,
+          "security_keys": [
+            "NAME:ZZ UNNAMED PRIVATE CO"
+          ]
+        }
+      ],
+      "securities": [
+        {
+          "security_key": "NAME:ZZ UNNAMED PRIVATE CO",
+          "security_id": "ZZ Unnamed Private Co",
+          "security_id_type": "name",
+          "symbol": null,
+          "name": "ZZ Unnamed Private Co",
+          "exposure": 0.024
+        }
+      ]
+    }
+  ],
+  "exposures_truncated": false,
+  "other_exposure": 0.0,
+  "overlap": {
+    "etfs": [
+      "ZZAAA",
+      "ZZBBB"
+    ],
+    "matrix": [
+      [
+        0.95,
+        0.5
+      ],
+      [
+        0.5,
+        0.98
+      ]
+    ],
+    "pairs": [
+      {
+        "etf_a": "ZZAAA",
+        "etf_b": "ZZBBB",
+        "shared_securities": 2,
+        "shared_companies": 2,
+        "weighted_overlap": 0.5,
+        "weighted_overlap_securities": 0.4,
+        "top_shared": [
+          {
+            "company_key": "CIK:9990000001",
+            "company_name": "ZZ Alpha Corp",
+            "weight_a": 0.3,
+            "weight_b": 0.4,
+            "min_weight": 0.3
+          },
+          {
+            "company_key": "CIK:9990000002",
+            "company_name": "ZZ Beta Holdings",
+            "weight_a": 0.2,
+            "weight_b": 0.3,
+            "min_weight": 0.2
+          }
+        ]
+      }
+    ]
+  },
+  "concentration": {
+    "top5": 0.938,
+    "top10": 0.962,
+    "top20": 0.962,
+    "hhi": 0.2360164418,
+    "effective_companies": 4.236992949363612,
+    "distinct_securities": 7,
+    "distinct_companies": 6
+  },
+  "sectors": [
+    {
+      "sector": "information_technology",
+      "weight": 0.428,
+      "by_etf": [
+        {
+          "etf_ticker": "ZZBBB",
+          "contribution": 0.248
+        },
+        {
+          "etf_ticker": "ZZAAA",
+          "contribution": 0.18
+        }
+      ]
+    },
+    {
+      "sector": "financials",
+      "weight": 0.24,
+      "by_etf": [
+        {
+          "etf_ticker": "ZZAAA",
+          "contribution": 0.12
+        },
+        {
+          "etf_ticker": "ZZBBB",
+          "contribution": 0.12
+        }
+      ]
+    },
+    {
+      "sector": "health_care",
+      "weight": 0.15,
+      "by_etf": [
+        {
+          "etf_ticker": "ZZAAA",
+          "contribution": 0.15
+        }
+      ]
+    },
+    {
+      "sector": "energy",
+      "weight": 0.12,
+      "by_etf": [
+        {
+          "etf_ticker": "ZZAAA",
+          "contribution": 0.12
+        }
+      ]
+    },
+    {
+      "sector": "unknown",
+      "weight": 0.024,
+      "by_etf": [
+        {
+          "etf_ticker": "ZZBBB",
+          "contribution": 0.024
+        }
+      ]
+    }
+  ],
+  "gaps": [
+    {
+      "kind": "unmatched_identity",
+      "severity": "warning",
+      "etf_ticker": "ZZBBB",
+      "subject": "ZZ Unnamed Private Co",
+      "portfolio_weight": 0.024,
+      "message": "No identifier matched this holding; counted as its own company."
+    },
+    {
+      "kind": "stale_disclosure",
+      "severity": "warning",
+      "etf_ticker": "ZZBBB",
+      "subject": "2026-06-30",
+      "portfolio_weight": 0.4,
+      "message": "Holdings are 130 days old (quarterly N-PORT filing)."
+    },
+    {
+      "kind": "excluded_lines",
+      "severity": "info",
+      "etf_ticker": "ZZAAA",
+      "subject": "cash",
+      "portfolio_weight": 0.03,
+      "message": "Cash is excluded from look-through."
+    },
+    {
+      "kind": "excluded_lines",
+      "severity": "info",
+      "etf_ticker": "ZZBBB",
+      "subject": "derivative",
+      "portfolio_weight": 0.008,
+      "message": "Derivatives are excluded from look-through."
+    }
+  ],
+  "warnings": [],
+  "attributions": [
+    {
+      "source": "fake",
+      "text": "SYNTHETIC test data, not real holdings",
+      "url": null,
+      "licence": null
+    }
+  ]
+}

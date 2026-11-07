@@ -1,2 +1,30 @@
 .board/
 .codex-state/
+
+# Agent worktrees created inside the checkout
+.worktrees/
+
+# Secrets: never commit keys or local env files
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# House of Cards runtime cache: real source files live only here, never in git
+backend/.cache/
+
+# Node / frontend build output
+node_modules/
+dist/
+
+# Keep labelled synthetic fixtures tracked even if broader data rules (*.csv, *.jsonl, data/) are added
+!backend/tests/fixtures/
+!backend/tests/fixtures/**
+!frontend/api/__fixtures__/
+!frontend/api/__fixtures__/**
