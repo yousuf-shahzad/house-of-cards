@@ -2,6 +2,7 @@
 
 import { useRef, type KeyboardEvent, type ReactNode } from "react";
 import { EtfChip } from "@/app/ui/etf-chip";
+import { etfVisual } from "@/app/ui/etf-color";
 import { Pct, formatPct } from "@/app/ui/pct";
 import { cx } from "@/utils/cx";
 
@@ -10,6 +11,8 @@ export interface HeatmapMatrixProps {
   etfs: readonly string[];
   /** Symmetric NxN matrix of weights (fractions of 1). Diagonal = ETF holdings_weight; off-diagonal = pair overlap. */
   matrix: readonly (readonly number[])[];
+  /** Optional lookup returning an ETF's index in `AnalysisResponse.etfs` so `etfVisual(index)` stays consistent across pages. */
+  getEtfIndex?: (ticker: string, fallbackIndex: number) => number;
   /** Currently selected pair [etfA, etfB] (order-insensitive). */
   selectedPair?: readonly [string, string] | null;
   /** Invoked when the user selects an off-diagonal pair cell. */
@@ -35,8 +38,8 @@ function heatBackground(weight: number, isDiagonal: boolean): string | undefined
   if (isDiagonal) return undefined;
   const clamped = Number.isFinite(weight) ? Math.max(0, Math.min(1, weight)) : 0;
   if (clamped <= 0) return undefined;
-  // Smooth semantic mix between secondary surface and accent-500 (14%..58%) so text-primary stays high-contrast in light & dark mode.
-  const pct = Math.round(14 + Math.pow(clamped, 0.75) * 44);
+  // Smooth semantic mix between secondary surface and accent-500 (14%..50%) so text-primary stays high-contrast in both light and dark modes.
+  const pct = Math.round(14 + Math.pow(clamped, 0.75) * 36);
   return `color-mix(in srgb, var(--color-accent-500) ${pct}%, var(--color-background-secondary-default))`;
 }
 
@@ -50,9 +53,36 @@ function isSamePair(
   return (x === a && y === b) || (x === b && y === a);
 }
 
+/** Small visual swatch using `etfVisual(index)` (colour + optional dash pattern for ETFs 6..10). */
+export function EtfColorSwatch({
+  index,
+  className,
+}: {
+  index: number;
+  className?: string;
+}) {
+  const { color, dash } = etfVisual(index);
+  return (
+    <span
+      aria-hidden
+      className={cx("inline-block size-2.5 shrink-0 rounded-full", className)}
+      style={
+        dash
+          ? {
+              backgroundColor: color,
+              boxShadow: "inset 0 0 0 1.5px var(--color-background-primary-default)",
+              border: `1.5px dashed ${color}`,
+            }
+          : { backgroundColor: color }
+      }
+    />
+  );
+}
+
 export function HeatmapMatrix({
   etfs,
   matrix,
+  getEtfIndex,
   selectedPair,
   onSelectPair,
   getCellSubtitle,
@@ -65,6 +95,10 @@ export function HeatmapMatrix({
 }: HeatmapMatrixProps) {
   const cellRefs = useRef<Map<string, HTMLElement>>(new Map());
   const n = etfs.length;
+
+  function resolveEtfIndex(ticker: string, fallbackIndex: number): number {
+    return getEtfIndex ? getEtfIndex(ticker, fallbackIndex) : fallbackIndex;
+  }
 
   function focusCell(r: number, c: number) {
     const row = (r + n) % n;
@@ -111,130 +145,165 @@ export function HeatmapMatrix({
         <div
           role="grid"
           aria-label={ariaLabel}
+          aria-rowcount={n + 1}
+          aria-colcount={n + 1}
           className="grid items-stretch gap-2"
           style={{
-            gridTemplateColumns: `minmax(8.5rem, auto) repeat(${n}, minmax(6.75rem, 1fr))`,
+            gridTemplateColumns: `minmax(9rem, auto) repeat(${n}, minmax(6.75rem, 1fr))`,
             minWidth: `${Math.max(20, (n + 1) * 7.25)}rem`,
           }}
         >
-          {/* Top-start corner cell */}
-          <div role="row" className="contents">
+          {/* Header row */}
+          <div role="row" aria-rowindex={1} className="contents">
             <div
               role="columnheader"
-              className="flex items-end pb-1 pe-2 text-caption-1-medium text-text-tertiary"
+              aria-colindex={1}
+              className="flex items-end pb-1.5 pe-2 text-caption-1-medium text-text-tertiary"
             >
               ETF × ETF
             </div>
-            {etfs.map((colTicker) => (
-              <div
-                key={`col-${colTicker}`}
-                role="columnheader"
-                className="flex flex-col items-center justify-end gap-1 pb-1 text-center"
-              >
-                <EtfChip ticker={colTicker} />
-              </div>
-            ))}
+            {etfs.map((colTicker, colIdx) => {
+              const visualIdx = resolveEtfIndex(colTicker, colIdx);
+              const { color, dash } = etfVisual(visualIdx);
+              return (
+                <div
+                  key={`col-${colTicker}`}
+                  role="columnheader"
+                  aria-colindex={colIdx + 2}
+                  className="flex flex-col items-center justify-end gap-1.5 rounded-xl bg-background-secondary-default px-2 py-2 text-center"
+                  style={{
+                    borderBottom: `3px ${dash ? "dashed" : "solid"} ${color}`,
+                  }}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <EtfColorSwatch index={visualIdx} />
+                    <EtfChip ticker={colTicker} />
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* Matrix rows */}
-          {etfs.map((rowTicker, rowIdx) => (
-            <div key={`row-${rowTicker}`} role="row" className="contents">
+          {etfs.map((rowTicker, rowIdx) => {
+            const visualIdx = resolveEtfIndex(rowTicker, rowIdx);
+            const { color, dash } = etfVisual(visualIdx);
+            return (
               <div
-                role="rowheader"
-                className="flex flex-col items-start justify-center gap-1 rounded-xl bg-background-secondary-default px-3 py-2"
+                key={`row-${rowTicker}`}
+                role="row"
+                aria-rowindex={rowIdx + 2}
+                className="contents"
               >
-                <EtfChip ticker={rowTicker} />
-                {renderRowMeta ? (
-                  <div className="text-caption-1-regular text-text-secondary">
-                    {renderRowMeta(rowTicker, rowIdx)}
+                <div
+                  role="rowheader"
+                  aria-colindex={1}
+                  className="flex flex-col items-start justify-center gap-1 rounded-xl bg-background-secondary-default px-3 py-2"
+                  style={{
+                    borderInlineStart: `3px ${dash ? "dashed" : "solid"} ${color}`,
+                  }}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <EtfColorSwatch index={visualIdx} />
+                    <EtfChip ticker={rowTicker} />
                   </div>
-                ) : null}
-              </div>
+                  {renderRowMeta ? (
+                    <div className="text-caption-1-regular text-text-secondary">
+                      {renderRowMeta(rowTicker, rowIdx)}
+                    </div>
+                  ) : null}
+                </div>
 
-              {etfs.map((colTicker, colIdx) => {
-                const isDiagonal = rowIdx === colIdx;
-                const value = matrix[rowIdx]?.[colIdx] ?? 0;
-                const selected = !isDiagonal && isSamePair(selectedPair, rowTicker, colTicker);
-                const subtitle = getCellSubtitle
-                  ? getCellSubtitle(rowTicker, colTicker, value, isDiagonal)
-                  : isDiagonal
-                    ? diagonalCaption
-                    : pairCaption;
-                const title = getCellTitle
-                  ? getCellTitle(rowTicker, colTicker, value, isDiagonal)
-                  : isDiagonal
-                    ? `${rowTicker} covered holdings weight: ${formatPct(value)}`
-                    : `${rowTicker} × ${colTicker} overlap: ${formatPct(value)}`;
-                const bg = heatBackground(value, isDiagonal);
-                const cellKey = `${rowIdx}:${colIdx}`;
+                {etfs.map((colTicker, colIdx) => {
+                  const isDiagonal = rowIdx === colIdx;
+                  const value = matrix[rowIdx]?.[colIdx] ?? 0;
+                  const selected =
+                    !isDiagonal && isSamePair(selectedPair, rowTicker, colTicker);
+                  const subtitle = getCellSubtitle
+                    ? getCellSubtitle(rowTicker, colTicker, value, isDiagonal)
+                    : isDiagonal
+                      ? diagonalCaption
+                      : pairCaption;
+                  const title = getCellTitle
+                    ? getCellTitle(rowTicker, colTicker, value, isDiagonal)
+                    : isDiagonal
+                      ? `${rowTicker} covered holdings weight: ${formatPct(value)}`
+                      : `${rowTicker} × ${colTicker} overlap: ${formatPct(value)}`;
+                  const bg = heatBackground(value, isDiagonal);
+                  const cellKey = `${rowIdx}:${colIdx}`;
 
-                if (isDiagonal) {
+                  if (isDiagonal) {
+                    return (
+                      <div
+                        key={cellKey}
+                        ref={(node) => {
+                          if (node) cellRefs.current.set(cellKey, node);
+                          else cellRefs.current.delete(cellKey);
+                        }}
+                        role="gridcell"
+                        aria-colindex={colIdx + 2}
+                        aria-readonly="true"
+                        tabIndex={0}
+                        title={title}
+                        aria-label={title}
+                        onKeyDown={(e) => handleKeyDown(e, rowIdx, colIdx)}
+                        className={cx(
+                          "flex min-h-[4.75rem] flex-col items-center justify-center gap-1 rounded-2xl p-2.5 text-center",
+                          "border border-dashed border-border-button-default bg-background-secondary-default",
+                          "outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
+                        )}
+                      >
+                        <Pct
+                          value={value}
+                          className="text-title-3-semibold text-text-secondary"
+                        />
+                        <span className="text-caption-1-regular text-text-tertiary">
+                          {subtitle}
+                        </span>
+                      </div>
+                    );
+                  }
+
                   return (
-                    <div
+                    <button
                       key={cellKey}
                       ref={(node) => {
                         if (node) cellRefs.current.set(cellKey, node);
                         else cellRefs.current.delete(cellKey);
                       }}
+                      type="button"
                       role="gridcell"
-                      tabIndex={0}
-                      title={title}
+                      aria-colindex={colIdx + 2}
+                      aria-selected={selected}
+                      aria-pressed={selected}
                       aria-label={title}
+                      title={title}
+                      onClick={() => onSelectPair?.(rowTicker, colTicker)}
                       onKeyDown={(e) => handleKeyDown(e, rowIdx, colIdx)}
+                      style={bg ? { backgroundColor: bg } : undefined}
                       className={cx(
-                        "flex min-h-[4.75rem] flex-col items-center justify-center gap-1 rounded-2xl p-2.5 text-center",
-                        "border border-dashed border-border-button-default bg-background-secondary-default",
+                        "flex min-h-[4.75rem] cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl p-2.5 text-center",
+                        "border transition-[border-color,box-shadow,transform] duration-150 ease",
                         "outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
+                        !bg && "bg-background-secondary-default hover:bg-background-secondary-hover",
+                        selected
+                          ? "border-border-focus-ring ring-2 ring-border-focus-ring"
+                          : "border-border-button-default hover:border-border-button-hover",
                       )}
                     >
                       <Pct
                         value={value}
-                        className="text-title-3-semibold text-text-secondary"
+                        className="text-title-3-semibold text-text-primary"
                       />
-                      <span className="text-caption-1-regular text-text-tertiary">
+                      <span className="text-caption-1-medium text-text-secondary">
                         {subtitle}
                       </span>
-                    </div>
+                    </button>
                   );
-                }
-
-                return (
-                  <button
-                    key={cellKey}
-                    ref={(node) => {
-                      if (node) cellRefs.current.set(cellKey, node);
-                      else cellRefs.current.delete(cellKey);
-                    }}
-                    type="button"
-                    role="gridcell"
-                    aria-selected={selected}
-                    aria-label={title}
-                    title={title}
-                    onClick={() => onSelectPair?.(rowTicker, colTicker)}
-                    onKeyDown={(e) => handleKeyDown(e, rowIdx, colIdx)}
-                    style={bg ? { backgroundColor: bg } : undefined}
-                    className={cx(
-                      "flex min-h-[4.75rem] cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl p-2.5 text-center",
-                      "border transition-[border-color,box-shadow,transform] duration-150 ease",
-                      "outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
-                      !bg && "bg-background-secondary-default hover:bg-background-secondary-hover",
-                      selected
-                        ? "border-accent-500 ring-2 ring-accent-500"
-                        : "border-border-button-default hover:border-border-button-hover",
-                    )}
-                  >
-                    <Pct
-                      value={value}
-                      className="text-title-3-semibold text-text-primary"
-                    />
-                    <span className="text-caption-1-medium text-text-secondary">
-                      {subtitle}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          ))}
+                })}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -259,7 +328,7 @@ export function HeatmapMatrix({
           <span>Higher overlap</span>
         </div>
         <span>
-          Diagonal cells (<span className="text-text-secondary">dashed</span>) show each ETF’s covered holdings weight; click any off-diagonal cell to inspect that pair.
+          Diagonal cells (<span className="text-text-secondary">dashed</span>) show each ETF’s covered holdings weight; use arrow keys or click any pair cell to inspect.
         </span>
       </div>
     </div>

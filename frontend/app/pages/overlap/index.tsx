@@ -1,16 +1,17 @@
 "use client";
 
-// F3: ETF overlap page (heatmap matrix + pair detail). Owner: Bekarys's Gemini.
+// F3 + P1: ETF overlap page (heatmap matrix + pair detail). Owner: Bekarys's Gemini.
 import { useEffect, useMemo, useState } from "react";
 import {
   RiArrowRightLine,
+  RiErrorWarningLine,
   RiGitMergeLine,
   RiGridLine,
   RiLinksLine,
   RiRefreshLine,
   RiStackLine,
 } from "@remixicon/react";
-import { api } from "@/api/client";
+import { api, ApiError } from "@/api/client";
 import type {
   CompanyExposure,
   EtfReport,
@@ -20,8 +21,9 @@ import type {
 import { useAnalysis } from "@/app/analysis";
 import { AsOfBadge } from "@/app/ui/as-of-badge";
 import { EtfChip } from "@/app/ui/etf-chip";
+import { etfVisual } from "@/app/ui/etf-color";
 import { Pct, formatPct } from "@/app/ui/pct";
-import { HeatmapMatrix } from "@/components/application/heatmap";
+import { EtfColorSwatch, HeatmapMatrix } from "@/components/application/heatmap";
 import { Chip } from "@/components/base/badges/chip";
 import { Button, ButtonLink } from "@/components/base/buttons/button";
 import {
@@ -43,6 +45,20 @@ type OverlapBasis = "company" | "security";
 
 function canonicalPairKey(a: string, b: string): string {
   return a < b ? `${a}::${b}` : `${b}::${a}`;
+}
+
+function errorCopy(error: ApiError): string {
+  const tickers = (error.details as { tickers?: string[] } | undefined)?.tickers;
+  if (error.code === "UNKNOWN_TICKER" && tickers?.length) {
+    return `We couldn't find ${tickers.join(", ")} in any data source. Check the ticker on the Portfolio page.`;
+  }
+  if (error.code === "SOURCES_UNAVAILABLE") {
+    return "None of the data sources could be reached, so we have no holdings to compare.";
+  }
+  if (error.code === "NETWORK_ERROR") {
+    return "We couldn't reach the analysis service. Check that the backend is running.";
+  }
+  return error.message;
 }
 
 const SECTOR_LABELS: Record<string, string> = {
@@ -74,12 +90,13 @@ function QuickExamples({ onLoad }: { onLoad: (example: ExamplePortfolio) => void
   if (examples.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-2 pt-1">
+    <div className="flex flex-wrap items-center gap-2">
       {examples.map((example) => (
         <Button
           key={example.id}
           variant="secondary"
           size="small"
+          aria-label={`Load example: ${example.name}`}
           onClick={() => onLoad(example)}
         >
           Load {example.name}
@@ -102,6 +119,21 @@ export default function OverlapPage() {
     }
     return map;
   }, [analysis]);
+
+  /** Maps upper-case ticker -> index in `analysis.etfs` for consistent `etfVisual(index)` colours across pages. */
+  const etfIndexMap = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!analysis) return map;
+    analysis.etfs.forEach((etf, idx) => {
+      map.set(etf.ticker.toUpperCase(), idx);
+    });
+    return map;
+  }, [analysis]);
+
+  const unavailableEtfs = useMemo(
+    () => (analysis ? analysis.etfs.filter((etf) => etf.status === "unavailable") : []),
+    [analysis],
+  );
 
   const companyMap = useMemo(() => {
     const map = new Map<string, CompanyExposure>();
@@ -160,7 +192,11 @@ export default function OverlapPage() {
   if (!analysis) {
     if (status === "loading") {
       return (
-        <section className="suite-card" aria-label="Loading overlap analysis">
+        <section
+          className="suite-card"
+          aria-live="polite"
+          aria-label="Loading overlap analysis"
+        >
           <div className="flex items-center gap-3">
             <Spinner size="sm" aria-label="Analysing" />
             <p className="text-body-medium text-text-primary">
@@ -174,16 +210,22 @@ export default function OverlapPage() {
     if (status === "error" && error) {
       return (
         <section className="suite-card" role="alert" aria-label="Overlap error">
-          <p className="text-body-medium text-text-error-primary">{error.message}</p>
+          <div className="flex items-center gap-2 text-text-error-primary">
+            <RiErrorWarningLine className="size-5 shrink-0" aria-hidden />
+            <h2 className="text-headline-medium">Could not compute overlap</h2>
+          </div>
+          <p className="text-body-regular text-text-secondary">{errorCopy(error)}</p>
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="secondary"
-              size="small"
-              leadingIcon={RiRefreshLine}
-              onClick={retry}
-            >
-              Try again
-            </Button>
+            {error.code !== "UNKNOWN_TICKER" && (
+              <Button
+                variant="secondary"
+                size="small"
+                leadingIcon={RiRefreshLine}
+                onClick={retry}
+              >
+                Try again
+              </Button>
+            )}
             <ButtonLink variant="ghost" size="small" href="#/portfolio">
               Edit portfolio
             </ButtonLink>
@@ -234,10 +276,10 @@ export default function OverlapPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Stale / reloading notice when draft rows changed */}
+      {/* Stale / reloading / error notice when draft rows changed */}
       {(stale || status === "loading" || status === "error") && (
         <div
-          role="status"
+          role={status === "error" ? "alert" : "status"}
           aria-live="polite"
           className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border-button-default bg-background-secondary-default px-4 py-3"
         >
@@ -245,20 +287,20 @@ export default function OverlapPage() {
             {status === "loading" ? (
               <Spinner size="sm" aria-label="Updating" />
             ) : (
-              <Chip variant="caption" color="yellow">
-                Stale view
+              <Chip variant="caption" color={status === "error" ? "rose" : "yellow"}>
+                {status === "error" ? "Update failed" : "Stale view"}
               </Chip>
             )}
             <p className="text-body-2-regular text-text-secondary">
               {status === "loading"
                 ? "Updating overlap matrix for your latest portfolio changes…"
                 : status === "error" && error
-                  ? `Latest update failed (${error.message}). Showing last valid analysis.`
+                  ? `${errorCopy(error)} Showing last valid analysis.`
                   : "Showing the last valid analysis. Finish editing your portfolio so allocations total 100%."}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {status === "error" && (
+            {status === "error" && error?.code !== "UNKNOWN_TICKER" && (
               <Button
                 variant="secondary"
                 size="xs"
@@ -272,6 +314,37 @@ export default function OverlapPage() {
               Portfolio
             </ButtonLink>
           </div>
+        </div>
+      )}
+
+      {/* Unavailable ETF notice when one or more ETFs failed to load */}
+      {unavailableEtfs.length > 0 && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border-button-default bg-background-secondary-default px-4 py-3"
+        >
+          <div className="flex flex-wrap items-center gap-2 text-body-2-regular text-text-secondary">
+            <Chip variant="caption" color="rose">
+              Missing ETF data
+            </Chip>
+            <span>
+              Holdings were unavailable for{" "}
+              {unavailableEtfs.map((etf, idx) => (
+                <span key={etf.ticker} className="inline-flex items-center gap-1">
+                  {idx > 0 && ", "}
+                  <strong className="text-body-2-medium text-text-primary">
+                    {etf.ticker}
+                  </strong>{" "}
+                  (<Pct value={etf.allocation} digits={1} /> allocation)
+                </span>
+              ))}
+              . Unavailable ETFs are omitted from the overlap matrix.
+            </span>
+          </div>
+          <ButtonLink variant="ghost" size="xs" href="#/risk">
+            See Risk &amp; data
+          </ButtonLink>
         </div>
       )}
 
@@ -311,6 +384,9 @@ export default function OverlapPage() {
           <HeatmapMatrix
             etfs={etfs}
             matrix={activeMatrix}
+            getEtfIndex={(ticker, fallbackIdx) =>
+              etfIndexMap.get(ticker.toUpperCase()) ?? fallbackIdx
+            }
             selectedPair={activePair ? [activePair.etf_a, activePair.etf_b] : null}
             onSelectPair={(a, b) => setSelectedKey(canonicalPairKey(a, b))}
             renderRowMeta={(ticker) => {
@@ -322,7 +398,7 @@ export default function OverlapPage() {
                     <Pct value={report.allocation} digits={0} /> alloc
                   </span>
                   <span className="text-text-tertiary">·</span>
-                  <span>{report.company_count} co.</span>
+                  <span>{report.company_count.toLocaleString()} co.</span>
                 </span>
               );
             }}
@@ -331,8 +407,8 @@ export default function OverlapPage() {
               const pair = pairMap.get(canonicalPairKey(rowTicker, colTicker));
               if (!pair) return "Overlap";
               return basis === "company"
-                ? `${pair.shared_companies} shared co.`
-                : `${pair.shared_securities} shared sec.`;
+                ? `${pair.shared_companies.toLocaleString()} shared co.`
+                : `${pair.shared_securities.toLocaleString()} shared sec.`;
             }}
             getCellTitle={(rowTicker, colTicker, val, isDiagonal) => {
               if (isDiagonal) {
@@ -347,7 +423,9 @@ export default function OverlapPage() {
           {etfs.length < 2 && (
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-background-secondary-default p-4">
               <p className="text-body-regular text-text-secondary">
-                Your portfolio currently has only one loaded ETF ({etfs[0] ?? "none"}). Add at least two ETFs to see pairwise overlap.
+                {etfs.length === 0
+                  ? "None of the ETFs in your portfolio could be loaded for overlap comparison."
+                  : `Only one loaded ETF (${etfs[0]}) is available. Add at least two loaded ETFs to compare pairwise overlap.`}
               </p>
               <ButtonLink
                 variant="secondary"
@@ -355,7 +433,7 @@ export default function OverlapPage() {
                 href="#/portfolio"
                 trailingIcon={RiArrowRightLine}
               >
-                Add another ETF
+                Edit portfolio
               </ButtonLink>
             </div>
           )}
@@ -368,6 +446,7 @@ export default function OverlapPage() {
             allPairs={sortedPairs}
             basis={basis}
             etfMap={etfMap}
+            etfIndexMap={etfIndexMap}
             companyMap={companyMap}
             onSelectPair={(a, b) => setSelectedKey(canonicalPairKey(a, b))}
           />
@@ -377,11 +456,40 @@ export default function OverlapPage() {
   );
 }
 
+function EtfWeightBar({
+  index,
+  widthPct,
+}: {
+  index: number;
+  widthPct: number;
+}) {
+  const { color, dash } = etfVisual(index);
+  const clamped = Math.max(0, Math.min(100, widthPct));
+  return (
+    <div
+      className="h-1.5 w-full overflow-hidden rounded-full bg-background-secondary-default"
+      aria-hidden
+    >
+      <div
+        className="h-full rounded-full transition-[width] duration-150 ease"
+        style={{
+          width: `${clamped}%`,
+          backgroundColor: color,
+          backgroundImage: dash
+            ? "repeating-linear-gradient(135deg, transparent 0 4px, var(--color-background-primary-default) 4px 6px)"
+            : undefined,
+        }}
+      />
+    </div>
+  );
+}
+
 function PairDetailSection({
   pair,
   allPairs,
   basis,
   etfMap,
+  etfIndexMap,
   companyMap,
   onSelectPair,
 }: {
@@ -389,11 +497,14 @@ function PairDetailSection({
   allPairs: OverlapPair[];
   basis: OverlapBasis;
   etfMap: Map<string, EtfReport>;
+  etfIndexMap: Map<string, number>;
   companyMap: Map<string, CompanyExposure>;
   onSelectPair: (a: string, b: string) => void;
 }) {
   const reportA = etfMap.get(pair.etf_a.toUpperCase());
   const reportB = etfMap.get(pair.etf_b.toUpperCase());
+  const indexA = etfIndexMap.get(pair.etf_a.toUpperCase()) ?? 0;
+  const indexB = etfIndexMap.get(pair.etf_b.toUpperCase()) ?? 1;
   const identityDelta = Math.max(0, pair.weighted_overlap - pair.weighted_overlap_securities);
   const maxSharedWeight = useMemo(() => {
     if (pair.top_shared.length === 0) return 0.01;
@@ -414,9 +525,15 @@ function PairDetailSection({
             SELECTED PAIR BREAKDOWN
           </span>
           <div className="flex flex-wrap items-center gap-2">
-            <EtfChip ticker={pair.etf_a} />
+            <span className="inline-flex items-center gap-1.5">
+              <EtfColorSwatch index={indexA} />
+              <EtfChip ticker={pair.etf_a} />
+            </span>
             <span className="text-title-3-semibold text-text-tertiary">×</span>
-            <EtfChip ticker={pair.etf_b} />
+            <span className="inline-flex items-center gap-1.5">
+              <EtfColorSwatch index={indexB} />
+              <EtfChip ticker={pair.etf_b} />
+            </span>
             <h2 className="text-title-2-medium text-text-primary">
               {reportA?.name && reportB?.name
                 ? `${reportA.name} & ${reportB.name}`
@@ -426,6 +543,7 @@ function PairDetailSection({
           <div className="flex flex-wrap items-center gap-3 text-body-2-regular text-text-secondary">
             {reportA && (
               <span className="inline-flex items-center gap-1.5">
+                <EtfColorSwatch index={indexA} />
                 <span className="text-body-2-medium text-text-primary">{pair.etf_a}:</span>
                 <Pct value={reportA.allocation} digits={0} /> portfolio alloc
                 <AsOfBadge date={reportA.as_of} />
@@ -433,6 +551,7 @@ function PairDetailSection({
             )}
             {reportB && (
               <span className="inline-flex items-center gap-1.5">
+                <EtfColorSwatch index={indexB} />
                 <span className="text-body-2-medium text-text-primary">{pair.etf_b}:</span>
                 <Pct value={reportB.allocation} digits={0} /> portfolio alloc
                 <AsOfBadge date={reportB.as_of} />
@@ -464,7 +583,7 @@ function PairDetailSection({
                   aria-pressed={isCurrent}
                   onClick={() => onSelectPair(item.etf_a, item.etf_b)}
                 >
-                  {item.etf_a} × {item.etf_b} ({formatPct(val, 1)})
+                  {item.etf_a} × {item.etf_b} (<Pct value={val} digits={1} />)
                 </Button>
               );
             })}
@@ -491,7 +610,7 @@ function PairDetailSection({
               />
               {identityDelta > 1e-6 && (
                 <Chip variant="caption" color="blue">
-                  +{formatPct(identityDelta)} merged
+                  +<Pct value={identityDelta} /> merged
                 </Chip>
               )}
             </div>
@@ -539,7 +658,7 @@ function PairDetailSection({
             </span>
             <p className="text-caption-1-regular text-text-tertiary">
               {reportA && reportB
-                ? `Out of ${reportA.company_count} in ${pair.etf_a} and ${reportB.company_count} in ${pair.etf_b}`
+                ? `Out of ${reportA.company_count.toLocaleString()} in ${pair.etf_a} and ${reportB.company_count.toLocaleString()} in ${pair.etf_b}`
                 : "Issuers held with positive weight in both ETFs"}
             </p>
           </div>
@@ -563,7 +682,7 @@ function PairDetailSection({
             </span>
             <p className="text-caption-1-regular text-text-tertiary">
               {reportA && reportB
-                ? `Out of ${reportA.holdings_count} in ${pair.etf_a} and ${reportB.holdings_count} in ${pair.etf_b}`
+                ? `Out of ${reportA.holdings_count.toLocaleString()} in ${pair.etf_a} and ${reportB.holdings_count.toLocaleString()} in ${pair.etf_b}`
                 : "Distinct security listings held in both ETFs"}
             </p>
           </div>
@@ -582,7 +701,7 @@ function PairDetailSection({
             </p>
           </div>
           <Chip variant="caption" color="neutral">
-            Showing top {pair.top_shared.length} of {pair.shared_companies}
+            Showing top {pair.top_shared.length} of {pair.shared_companies.toLocaleString()}
           </Chip>
         </div>
 
@@ -599,8 +718,18 @@ function PairDetailSection({
           >
             <TableHeader>
               <TableColumn isRowHeader>Company</TableColumn>
-              <TableColumn>In {pair.etf_a}</TableColumn>
-              <TableColumn>In {pair.etf_b}</TableColumn>
+              <TableColumn>
+                <span className="inline-flex items-center gap-1.5">
+                  <EtfColorSwatch index={indexA} />
+                  <span>In {pair.etf_a}</span>
+                </span>
+              </TableColumn>
+              <TableColumn>
+                <span className="inline-flex items-center gap-1.5">
+                  <EtfColorSwatch index={indexB} />
+                  <span>In {pair.etf_b}</span>
+                </span>
+              </TableColumn>
               <TableColumn>Overlap (min)</TableColumn>
               <TableColumn>Share of overlap</TableColumn>
             </TableHeader>
@@ -615,8 +744,8 @@ function PairDetailSection({
                   pair.weighted_overlap > 0
                     ? item.min_weight / pair.weighted_overlap
                     : 0;
-                const barWidthA = Math.min(100, (item.weight_a / maxSharedWeight) * 100);
-                const barWidthB = Math.min(100, (item.weight_b / maxSharedWeight) * 100);
+                const barWidthA = (item.weight_a / maxSharedWeight) * 100;
+                const barWidthB = (item.weight_b / maxSharedWeight) * 100;
 
                 return (
                   <TableRow key={item.company_key} id={item.company_key}>
@@ -658,12 +787,7 @@ function PairDetailSection({
                           value={item.weight_a}
                           className="text-body-medium text-text-primary"
                         />
-                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-background-secondary-default">
-                          <div
-                            className="h-full rounded-full bg-chart-6"
-                            style={{ width: `${barWidthA}%` }}
-                          />
-                        </div>
+                        <EtfWeightBar index={indexA} widthPct={barWidthA} />
                       </div>
                     </TableCell>
 
@@ -673,12 +797,7 @@ function PairDetailSection({
                           value={item.weight_b}
                           className="text-body-medium text-text-primary"
                         />
-                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-background-secondary-default">
-                          <div
-                            className="h-full rounded-full bg-chart-1"
-                            style={{ width: `${barWidthB}%` }}
-                          />
-                        </div>
+                        <EtfWeightBar index={indexB} widthPct={barWidthB} />
                       </div>
                     </TableCell>
 

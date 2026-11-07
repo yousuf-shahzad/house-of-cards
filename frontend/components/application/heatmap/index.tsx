@@ -1,1 +1,5 @@
-export { HeatmapMatrix, type HeatmapMatrixProps } from "./heatmap";
+export {
+  EtfColorSwatch,
+  HeatmapMatrix,
+  type HeatmapMatrixProps,
+} from "./heatmap";
