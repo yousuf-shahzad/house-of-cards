@@ -158,3 +158,40 @@ def test_malformed_sector_breakdown_is_dropped_with_a_warning(breakdown):
 def test_malformed_fund_files_raise_parse_error(fund):
     with pytest.raises(SourceParseError):
         TickerInsideAdapter(client(fund), Settings()).fetch("ZZTI")
+
+
+def test_sector_fetches_are_bounded_and_shared_across_parallel_etfs(monkeypatch):
+    import threading
+    import time
+    from concurrent.futures import ThreadPoolExecutor
+
+    import hoc.sources.tickerinside.reference as reference_module
+
+    monkeypatch.setattr(reference_module, "SECTOR_REQUEST_SPACING", 0)
+    symbols = [f"ZZS{i:02d}" for i in range(20)]
+    http = FakeHttpClient()
+    http.add(f"{BASE}/securities.json", json.dumps({"securities": [[s, 1, 1.0, s, 1, 1] for s in symbols]}))
+    http.add(f"{BASE}/identifiers.json", json.dumps({"fields": FIELDS, "securities": []}))
+    for s in symbols:
+        http.add(f"{BASE}/sec/{s.lower()}.json", json.dumps({"sector": "Energy"}))
+    in_flight, peak, lock = 0, 0, threading.Lock()
+    serve = http.get
+
+    def slow_get(url, **kwargs):
+        nonlocal in_flight, peak
+        with lock:
+            in_flight += 1
+            peak = max(peak, in_flight)
+        time.sleep(0.01)
+        with lock:
+            in_flight -= 1
+        return serve(url, **kwargs)
+
+    monkeypatch.setattr(http, "get", slow_get)
+    ref = TickerInsideReference(http, Settings())
+    with ThreadPoolExecutor(3) as etfs:  # three ETFs with overlapping holdings, loading at once
+        results = list(etfs.map(ref.lookup_symbols, [symbols, symbols[5:], symbols[::-1]]))
+    assert all(info.sector_label == "Energy" for r in results for info in r.values())
+    sector_urls = [url for _, url in http.requests if "/sec/" in url]
+    assert sorted(sector_urls) == sorted(set(sector_urls)) and len(sector_urls) == 20
+    assert peak <= reference_module.SECTOR_WORKERS + 1  # 4 workers + at most one bulk-file read
