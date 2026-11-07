@@ -3,14 +3,14 @@
   el.innerHTML = `
     <style>
       #header .bar { display: flex; align-items: center; justify-content: space-between;
-        flex-wrap: wrap; gap: 12px; padding: 14px 20px; border-bottom: 1px solid #ddd; }
-      #header .title { font-weight: 700; font-size: 1.25rem; text-decoration: none; color: inherit; }
+        flex-wrap: wrap; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--surface); }
+      #header .title { font-weight: 700; font-size: 1.25rem; text-decoration: none; color: var(--text); }
       #header nav { display: flex; gap: 16px; }
-      #header nav a { text-decoration: none; color: inherit; }
-      #header nav a:hover { text-decoration: underline; }
+      #header nav a { text-decoration: none; color: var(--text); }
+      #header nav a:hover { color: var(--accent); }
     </style>
     <div class="bar">
-      <a class="title" href="#top">Hackathon Test Site</a>
+      <a class="title" href="#header">Hackathon Test Site</a>
       <nav aria-label="Main">
         <a href="#hero">Home</a>
         <a href="#features">Features</a>
