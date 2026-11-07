@@ -94,7 +94,7 @@ TickerInside answers served by `FakeHttpClient`, so it needs no network.
 
 | | theirs | ours | why |
 |---|---:|---:|---|
-| share of IVV+QQQ+XLK looked through | 100% | 99.9375% | we exclude cash, derivatives and FX lines; they keep every line |
+| share of IVV+QQQ+XLK looked through | 100% | 99.9375% | theirs is 100% by construction. Our 0.0625 pp gap is mostly the funds' own reported weights falling short of 100% (+0.0644 pp unexplained), partly offset by net short derivative/cash lines we exclude (-0.0020 pp). Corrected after Yousuf's Codex's review; see V1-results.md |
 | top-10 weight (% of the looked-through funds) | 42.7 | 44.447 | Alphabet enters our top 10 as one company (3.46); they rank GOOGL and GOOG separately. Recomputed from the rows above, theirs is 42.65 and ours 44.447 |
 | distinct companies | 520 tickers (3 funds) | 1,680 companies, 1,683 securities (4 funds) | different scope; they count tickers, we merge share classes |
 
