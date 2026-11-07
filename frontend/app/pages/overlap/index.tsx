@@ -361,8 +361,8 @@ export default function OverlapPage() {
               </h2>
               <p className="mt-1 text-body-regular text-text-secondary">
                 {basis === "company"
-                  ? "Company-level overlap merges dual share classes and cross-listed ADRs into a single issuer before summing min(weight A, weight B)."
-                  : "Security-level overlap compares exact listing keys only, without merging multiple share classes of the same company."}
+                  ? "Company-level overlap merges dual share classes and cross-listed ADRs into one company before adding up the weight held by both ETFs."
+                  : "Security-level overlap compares exact stock listings only, without merging multiple share classes of the same company."}
               </p>
             </div>
 
@@ -412,11 +412,11 @@ export default function OverlapPage() {
             }}
             getCellTitle={(rowTicker, colTicker, val, isDiagonal) => {
               if (isDiagonal) {
-                return `${rowTicker} covered holdings weight: ${formatPct(val)} (unadjusted for cash/exclusions)`;
+                return `Covered NAV (${formatPct(val)}): the share of ${rowTicker} we could look through, excluding cash and derivatives.`;
               }
               const pair = pairMap.get(canonicalPairKey(rowTicker, colTicker));
               if (!pair) return `${rowTicker} × ${colTicker}: ${formatPct(val)}`;
-              return `${rowTicker} × ${colTicker}: ${formatPct(pair.weighted_overlap)} company overlap (${pair.shared_companies} companies), ${formatPct(pair.weighted_overlap_securities)} security overlap (${pair.shared_securities} securities)`;
+              return `${rowTicker} × ${colTicker}: ${formatPct(pair.weighted_overlap)} of weight in the same ${pair.shared_companies} companies (${formatPct(pair.weighted_overlap_securities)} across ${pair.shared_securities} exact securities).`;
             }}
           />
 
@@ -558,6 +558,43 @@ function PairDetailSection({
               </span>
             )}
           </div>
+          <p className="text-body-regular text-text-secondary">
+            {pair.shared_companies > 0 ? (
+              <>
+                <strong className="text-body-medium text-text-primary">
+                  {pair.etf_a}
+                </strong>{" "}
+                and{" "}
+                <strong className="text-body-medium text-text-primary">
+                  {pair.etf_b}
+                </strong>{" "}
+                have{" "}
+                <Pct
+                  value={pair.weighted_overlap}
+                  className="text-body-medium text-text-primary"
+                />{" "}
+                of their weight in the same{" "}
+                <strong className="text-body-medium text-text-primary">
+                  {pair.shared_companies.toLocaleString()}{" "}
+                  {pair.shared_companies === 1 ? "company" : "companies"}
+                </strong>
+                {pair.top_shared[0]
+                  ? `, led by ${pair.top_shared[0].company_name} (${formatPct(pair.top_shared[0].min_weight)} in common).`
+                  : "."}
+              </>
+            ) : (
+              <>
+                <strong className="text-body-medium text-text-primary">
+                  {pair.etf_a}
+                </strong>{" "}
+                and{" "}
+                <strong className="text-body-medium text-text-primary">
+                  {pair.etf_b}
+                </strong>{" "}
+                do not hold any of the same companies (<Pct value={0} /> overlap).
+              </>
+            )}
+          </p>
         </div>
 
         {/* Pair switcher pills when >1 pair exists */}
@@ -615,7 +652,7 @@ function PairDetailSection({
               )}
             </div>
             <p className="text-caption-1-regular text-text-tertiary">
-              Sum of min(w_a, w_b) after merging share classes &amp; aliases
+              Common weight held by both ETFs after merging share classes &amp; aliases
             </p>
           </div>
         </div>
@@ -697,7 +734,7 @@ function PairDetailSection({
               Top shared companies
             </h3>
             <p className="text-body-2-regular text-text-secondary">
-              Ranked by overlapping ETF weight min(weight in {pair.etf_a}, weight in {pair.etf_b}). Weights are unadjusted fractions of each ETF’s NAV.
+              Ranked by the smaller of the two ETF weights (the weight both ETFs hold in common).
             </p>
           </div>
           <Chip variant="caption" color="neutral">
