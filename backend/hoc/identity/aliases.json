@@ -1,4 +1,593 @@
 {
-  "_comment": "Curated cross-listing / share-class aliases (package d, fed by research R1). Each entry needs a source note. Keep under 50 entries.",
-  "aliases": []
+  "_comment": "Curated cross-listing / share-class aliases (package d). Entries from research R1 (docs/hoc/research/R1-identity.md, Kendrick's Gemini, 2026-11-07); each note gives the evidence. Keep under 50 entries.",
+  "aliases": [
+    {
+      "id": "TSMC",
+      "company_name": "Taiwan Semiconductor Manufacturing Co., Ltd.",
+      "identifiers": [
+        "TSM",
+        "2330.TW",
+        "US8740391003",
+        "TW0002330008"
+      ],
+      "note": "NYSE ADR (TSM, CIK 0001046179) <-> TWSE local listing (2330.TW, 15.06% of EEM, 1.22% of ACWI, 2.76% of VXUS)"
+    },
+    {
+      "id": "SAMSUNG_ELEC",
+      "company_name": "Samsung Electronics Co., Ltd.",
+      "identifiers": [
+        "005930.KR",
+        "005935.KR",
+        "005930.KS",
+        "005935.KS",
+        "SMSN.GB",
+        "KR7005930003",
+        "KR7005931001"
+      ],
+      "note": "KRX common (005930.KR, 6.31% of EEM) and non-voting preferred (005935.KR, 0.79% of EEM) held together in EEM, ACWI, VXUS"
+    },
+    {
+      "id": "ASML",
+      "company_name": "ASML Holding N.V.",
+      "identifiers": [
+        "ASML",
+        "ASML.NL",
+        "ASML.AS",
+        "USN070592100",
+        "NL0010273215"
+      ],
+      "note": "Nasdaq NY registry shares (ASML in QQQ, CIK 0000937966) <-> Euronext Amsterdam ordinary (ASML.NL in ACWI, VXUS)"
+    },
+    {
+      "id": "ALIBABA",
+      "company_name": "Alibaba Group Holding Ltd.",
+      "identifiers": [
+        "BABA",
+        "9988.HK",
+        "US01609W1027",
+        "KYG017191142"
+      ],
+      "note": "NYSE ADR (BABA, CIK 0001577552) <-> HKEX primary listing (9988.HK, 3.38% of EEM, held in ACWI, VXUS)"
+    },
+    {
+      "id": "TENCENT",
+      "company_name": "Tencent Holdings Ltd.",
+      "identifiers": [
+        "700.HK",
+        "0700.HK",
+        "TCEHY",
+        "KYG875721634"
+      ],
+      "note": "HKEX ordinary shares (700.HK in TickerInside vs 0700.HK in iShares, 5.14% of EEM) <-> US ADR (TCEHY)"
+    },
+    {
+      "id": "PDD_HOLDINGS",
+      "company_name": "PDD Holdings Inc.",
+      "identifiers": [
+        "PDD",
+        "US7223041028"
+      ],
+      "note": "Nasdaq ADR held across QQQ (0.43%), EEM (0.39%), ACWI (0.12%), and VXUS (0.16%); lacks CIK in TickerInside identifiers.json"
+    },
+    {
+      "id": "INFOSYS",
+      "company_name": "Infosys Ltd.",
+      "identifiers": [
+        "INFY",
+        "INFY.IN",
+        "INFY.NS",
+        "US4567881085",
+        "INE009A01021"
+      ],
+      "note": "NYSE ADR (INFY, CIK 0001067491) <-> NSE/BSE local listing (INFY.IN in EEM, ACWI, VXUS)"
+    },
+    {
+      "id": "HDFC_BANK",
+      "company_name": "HDFC Bank Ltd.",
+      "identifiers": [
+        "HDB",
+        "HDFCBANK.IN",
+        "HDFCBANK.NS",
+        "US40415F1012",
+        "INE040A01034"
+      ],
+      "note": "NYSE ADR (HDB, CIK 0001144967) <-> NSE/BSE local listing (HDFCBANK.IN in EEM, ACWI, VXUS)"
+    },
+    {
+      "id": "ICICI_BANK",
+      "company_name": "ICICI Bank Ltd.",
+      "identifiers": [
+        "IBN",
+        "ICICIBANK.IN",
+        "ICICIBANK.NS",
+        "US45104G1040",
+        "INE090A01021"
+      ],
+      "note": "NYSE ADR (IBN, CIK 0001103838) <-> NSE/BSE local listing (ICICIBANK.IN in EEM, ACWI, VXUS)"
+    },
+    {
+      "id": "DR_REDDYS",
+      "company_name": "Dr. Reddy's Laboratories Ltd.",
+      "identifiers": [
+        "RDY",
+        "DRREDDY.IN",
+        "DRREDDY.NS",
+        "US2561352038",
+        "INE089A01031"
+      ],
+      "note": "NYSE ADR (RDY in VXUS, CIK 0001135951) <-> NSE local listing (DRREDDY.IN in EEM, ACWI)"
+    },
+    {
+      "id": "ROCHE",
+      "company_name": "Roche Holding AG",
+      "identifiers": [
+        "RO.CH",
+        "ROP.CH",
+        "ROG.CH",
+        "RHHBY",
+        "CH0012032048",
+        "CH0012032113"
+      ],
+      "note": "SIX Swiss non-voting Genussschein (ROP.CH/ROG.CH) and bearer shares (RO.CH) both held in ACWI and VXUS"
+    },
+    {
+      "id": "RIO_TINTO",
+      "company_name": "Rio Tinto Group",
+      "identifiers": [
+        "RIO",
+        "RIO.GB",
+        "RIO.L",
+        "RIO.AU",
+        "RIO.AX",
+        "US7672041008",
+        "GB0007188757",
+        "AU000000RIO1"
+      ],
+      "note": "Dual-listed company (Rio Tinto plc RIO.GB on LSE + Rio Tinto Ltd RIO.AU on ASX + NYSE ADR RIO) held together in ACWI, VXUS"
+    },
+    {
+      "id": "BHP_GROUP",
+      "company_name": "BHP Group Ltd.",
+      "identifiers": [
+        "BHP",
+        "BHP.AU",
+        "BHP.AX",
+        "BHP.GB",
+        "BHP.L",
+        "US0886061086",
+        "AU000000BHP4"
+      ],
+      "note": "ASX primary listing (BHP.AU in ACWI, VXUS) <-> NYSE ADR (BHP) and LSE listing (BHP.GB)"
+    },
+    {
+      "id": "SHELL",
+      "company_name": "Shell plc",
+      "identifiers": [
+        "SHEL",
+        "SHEL.GB",
+        "SHEL.L",
+        "SHELL.NL",
+        "SHELL.AS",
+        "US7802593050",
+        "GB00BP6MXD84"
+      ],
+      "note": "NYSE ADR (SHEL, CIK 0001306965) <-> LSE/Euronext ordinary shares (SHEL.GB / SHELL.NL in ACWI, VXUS)"
+    },
+    {
+      "id": "UNILEVER",
+      "company_name": "Unilever plc",
+      "identifiers": [
+        "UL",
+        "ULVR.GB",
+        "ULVR.L",
+        "UNA.NL",
+        "UNA.AS",
+        "US9047677045",
+        "GB00B10RZP78"
+      ],
+      "note": "NYSE ADR (UL, CIK 0000217410) <-> LSE/Euronext ordinary shares (ULVR.GB / UNA.NL in ACWI, VXUS)"
+    },
+    {
+      "id": "ASTRAZENECA",
+      "company_name": "AstraZeneca plc",
+      "identifiers": [
+        "AZN",
+        "AZN.GB",
+        "AZN.L",
+        "AZN.SE",
+        "US0463531089",
+        "GB0009895292"
+      ],
+      "note": "Nasdaq ADR (AZN, CIK 0000901832) <-> LSE/Stockholm ordinary shares (AZN.GB in ACWI, VXUS)"
+    },
+    {
+      "id": "NOVO_NORDISK",
+      "company_name": "Novo Nordisk A/S",
+      "identifiers": [
+        "NVO",
+        "NOVOB.DK",
+        "NOVO-B.CO",
+        "US6701002056",
+        "DK0062498333"
+      ],
+      "note": "NYSE ADR (NVO, CIK 0000353278) <-> Nasdaq Copenhagen Class B shares (NOVOB.DK in ACWI, VXUS)"
+    },
+    {
+      "id": "SAP_SE",
+      "company_name": "SAP SE",
+      "identifiers": [
+        "SAP",
+        "SAP.DE",
+        "US8030542042",
+        "DE0007164600"
+      ],
+      "note": "NYSE ADR (SAP, CIK 0001000184) <-> Xetra ordinary shares (SAP.DE in ACWI, VXUS)"
+    },
+    {
+      "id": "NOVARTIS",
+      "company_name": "Novartis AG",
+      "identifiers": [
+        "NVS",
+        "NOVN.CH",
+        "US66987V1098",
+        "CH0012005267"
+      ],
+      "note": "NYSE ADR (NVS, CIK 0001114448) <-> SIX Swiss ordinary shares (NOVN.CH in ACWI, VXUS)"
+    },
+    {
+      "id": "FERROVIAL",
+      "company_name": "Ferrovial SE",
+      "identifiers": [
+        "FER",
+        "FER.ES",
+        "FER.NL",
+        "NL0015001FS8"
+      ],
+      "note": "Nasdaq listing (FER in QQQ, CIK 0001468522) <-> Madrid/Amsterdam listing (FER.ES in ACWI, VXUS)"
+    },
+    {
+      "id": "TOYOTA",
+      "company_name": "Toyota Motor Corp.",
+      "identifiers": [
+        "TM",
+        "7203.JP",
+        "7203.T",
+        "US8923313071",
+        "JP3633400001"
+      ],
+      "note": "NYSE ADR (TM, CIK 0001094517) <-> TSE ordinary shares (7203.JP in ACWI, VXUS)"
+    },
+    {
+      "id": "SONY",
+      "company_name": "Sony Group Corp.",
+      "identifiers": [
+        "SONY",
+        "6758.JP",
+        "6758.T",
+        "US8356993076",
+        "JP3435000009"
+      ],
+      "note": "NYSE ADR (SONY, CIK 0000313838) <-> TSE ordinary shares (6758.JP in ACWI, VXUS)"
+    },
+    {
+      "id": "HSBC",
+      "company_name": "HSBC Holdings plc",
+      "identifiers": [
+        "HSBC",
+        "HSBA.GB",
+        "HSBA.L",
+        "5.HK",
+        "0005.HK",
+        "US4042804066",
+        "GB0005405286"
+      ],
+      "note": "NYSE ADR (HSBC) <-> LSE/HKEX ordinary shares (HSBA.GB in ACWI, VXUS)"
+    },
+    {
+      "id": "BP_PLC",
+      "company_name": "BP p.l.c.",
+      "identifiers": [
+        "BP",
+        "BP.GB",
+        "BP.L",
+        "US0556221044",
+        "GB0007980591"
+      ],
+      "note": "NYSE ADR (BP, CIK 0000313807) <-> LSE ordinary shares (BP.GB in ACWI, VXUS)"
+    },
+    {
+      "id": "GSK_PLC",
+      "company_name": "GSK plc",
+      "identifiers": [
+        "GSK",
+        "GSK.GB",
+        "GSK.L",
+        "US37733W2044",
+        "GB00BN7SWP63"
+      ],
+      "note": "NYSE ADR (GSK, CIK 0001131399) <-> LSE ordinary shares (GSK.GB in ACWI, VXUS)"
+    },
+    {
+      "id": "SANOFI",
+      "company_name": "Sanofi",
+      "identifiers": [
+        "SNY",
+        "SAN.FR",
+        "SAN.PA",
+        "US80105N1054",
+        "FR0000120578"
+      ],
+      "note": "Nasdaq ADR (SNY, CIK 0001121404) <-> Euronext Paris ordinary shares (SAN.FR in ACWI, VXUS)"
+    },
+    {
+      "id": "TOTALENERGIES",
+      "company_name": "TotalEnergies SE",
+      "identifiers": [
+        "TTE",
+        "TTE.FR",
+        "TTE.PA",
+        "US89151E1091",
+        "FR0000120271"
+      ],
+      "note": "NYSE ADR (TTE, CIK 0000879764) <-> Euronext Paris ordinary shares (TTE.FR in ACWI, VXUS)"
+    },
+    {
+      "id": "PETROBRAS",
+      "company_name": "Petroleo Brasileiro S.A. - Petrobras",
+      "identifiers": [
+        "PBR",
+        "PBR.A",
+        "PETR4.BR",
+        "PETR3.BR",
+        "PETR4.SA",
+        "PETR3.SA",
+        "US71654V4086",
+        "US71654V1017",
+        "BRPETRACNPR6",
+        "BRPETRACNOR9"
+      ],
+      "note": "B3 preferred (PETR4.BR) and common (PETR3.BR) both held in EEM, ACWI, VXUS <-> NYSE ADRs (PBR, PBR.A)"
+    },
+    {
+      "id": "ITAU_UNIBANCO",
+      "company_name": "Itau Unibanco Holding S.A.",
+      "identifiers": [
+        "ITUB",
+        "ITUB4.BR",
+        "ITUB3.BR",
+        "ITUB4.SA",
+        "ITUB3.SA",
+        "US4655621062",
+        "BRITUBACNPR1",
+        "BRITUBACNOR4"
+      ],
+      "note": "B3 preferred (ITUB4.BR) and common (ITUB3.BR) in EEM, ACWI, VXUS <-> NYSE ADR (ITUB)"
+    },
+    {
+      "id": "VALE",
+      "company_name": "Vale S.A.",
+      "identifiers": [
+        "VALE",
+        "VALE3.BR",
+        "VALE3.SA",
+        "US91912E1055",
+        "BRVALEACNOR0"
+      ],
+      "note": "NYSE ADR (VALE, CIK 0000917851) <-> B3 common shares (VALE3.BR in EEM, ACWI, VXUS)"
+    },
+    {
+      "id": "BANCO_BRADESCO",
+      "company_name": "Banco Bradesco S.A.",
+      "identifiers": [
+        "BBD",
+        "BBDO",
+        "BBDC4.BR",
+        "BBDC3.BR",
+        "BBDC4.SA",
+        "BBDC3.SA",
+        "US0594603039",
+        "BRBBDCACNPR8",
+        "BRBBDCACNOR1"
+      ],
+      "note": "B3 preferred (BBDC4.BR) and common (BBDC3.BR) both held in EEM, ACWI, VXUS <-> NYSE ADRs (BBD, BBDO)"
+    },
+    {
+      "id": "EMBRAER",
+      "company_name": "Embraer S.A.",
+      "identifiers": [
+        "EMBJ",
+        "ERJ",
+        "EMBJ3.BR",
+        "EMBR3.BR",
+        "EMBR3.SA",
+        "US29082A1079",
+        "BREMBJACNOR2"
+      ],
+      "note": "NYSE ADR (EMBJ in VXUS, CIK 0001355444) <-> B3 local shares (EMBJ3.BR in EEM, ACWI, VXUS)"
+    },
+    {
+      "id": "HYUNDAI_MOTOR",
+      "company_name": "Hyundai Motor Co.",
+      "identifiers": [
+        "005380.KR",
+        "005385.KR",
+        "005387.KR",
+        "005380.KS",
+        "005385.KS",
+        "005387.KS",
+        "KR7005380001",
+        "KR7005381009",
+        "KR7005382007"
+      ],
+      "note": "KRX common (005380.KR), 1st preferred (005385.KR), and 2nd preferred (005387.KR) all held together in EEM, ACWI, VXUS"
+    },
+    {
+      "id": "LG_ELECTRONICS",
+      "company_name": "LG Electronics Inc.",
+      "identifiers": [
+        "066570.KR",
+        "066575.KR",
+        "066570.KS",
+        "066575.KS",
+        "KR7066570003",
+        "KR7066571001"
+      ],
+      "note": "KRX common (066570.KR) and preferred (066575.KR) both held in VXUS, EEM, ACWI"
+    },
+    {
+      "id": "BYD",
+      "company_name": "BYD Co., Ltd.",
+      "identifiers": [
+        "1211.HK",
+        "002594.CN",
+        "CNE100000296",
+        "CNE000001526"
+      ],
+      "note": "HKEX H-shares (1211.HK) and SZSE A-shares (002594.CN) both held simultaneously in EEM, ACWI, VXUS"
+    },
+    {
+      "id": "PING_AN",
+      "company_name": "Ping An Insurance (Group) Co. of China, Ltd.",
+      "identifiers": [
+        "2318.HK",
+        "601318.CN",
+        "CNE1000003X6",
+        "CNE000001R84"
+      ],
+      "note": "HKEX H-shares (2318.HK) and SSE A-shares (601318.CN) both held simultaneously in EEM, ACWI, VXUS"
+    },
+    {
+      "id": "BANK_OF_CHINA",
+      "company_name": "Bank of China Ltd.",
+      "identifiers": [
+        "3988.HK",
+        "601988.CN",
+        "CNE1000001Z5",
+        "CNE000001N05"
+      ],
+      "note": "HKEX H-shares (3988.HK) and SSE A-shares (601988.CN) both held simultaneously in EEM, ACWI, VXUS"
+    },
+    {
+      "id": "PETROCHINA",
+      "company_name": "PetroChina Co., Ltd.",
+      "identifiers": [
+        "857.HK",
+        "0857.HK",
+        "601857.CN",
+        "CNE1000003W8",
+        "CNE000001R27"
+      ],
+      "note": "HKEX H-shares (857.HK) and SSE A-shares (601857.CN) both held simultaneously in EEM, ACWI, VXUS"
+    },
+    {
+      "id": "CHINA_SHENHUA",
+      "company_name": "China Shenhua Energy Co., Ltd.",
+      "identifiers": [
+        "1088.HK",
+        "601088.CN",
+        "CNE1000002R0",
+        "CNE100000767"
+      ],
+      "note": "HKEX H-shares (1088.HK) and SSE A-shares (601088.CN) both held simultaneously in EEM, ACWI, VXUS"
+    },
+    {
+      "id": "CHINA_LIFE",
+      "company_name": "China Life Insurance Co., Ltd.",
+      "identifiers": [
+        "2628.HK",
+        "601628.CN",
+        "CNE1000002L3",
+        "CNE000001Q93"
+      ],
+      "note": "HKEX H-shares (2628.HK) and SSE A-shares (601628.CN) both held simultaneously in EEM, ACWI, VXUS"
+    },
+    {
+      "id": "ZIJIN_MINING",
+      "company_name": "Zijin Mining Group Co., Ltd.",
+      "identifiers": [
+        "2899.HK",
+        "601899.CN",
+        "CNE100000502",
+        "CNE100000B24"
+      ],
+      "note": "HKEX H-shares (2899.HK) and SSE A-shares (601899.CN) both held simultaneously in EEM, ACWI, VXUS"
+    },
+    {
+      "id": "YUM_CHINA",
+      "company_name": "Yum China Holdings, Inc.",
+      "identifiers": [
+        "YUMC",
+        "9987.HK",
+        "US98850P1093"
+      ],
+      "note": "NYSE listing (YUMC in VXUS, CIK 0001673358) <-> HKEX dual-primary listing (9987.HK in EEM, ACWI)"
+    },
+    {
+      "id": "H_WORLD",
+      "company_name": "H World Group Ltd.",
+      "identifiers": [
+        "HTHT",
+        "1179.HK",
+        "US44332N1063",
+        "KYG465871130"
+      ],
+      "note": "Nasdaq ADR (HTHT in EEM, ACWI) <-> HKEX listing (1179.HK in VXUS)"
+    },
+    {
+      "id": "CHUNGHWA_TELECOM",
+      "company_name": "Chunghwa Telecom Co., Ltd.",
+      "identifiers": [
+        "CHT",
+        "2412.TW",
+        "US17133Q5027",
+        "TW0002412004"
+      ],
+      "note": "NYSE ADR (CHT in VXUS, CIK 0001132924) <-> TWSE local listing (2412.TW in EEM, ACWI, VXUS)"
+    },
+    {
+      "id": "ANGLOGOLD",
+      "company_name": "AngloGold Ashanti plc",
+      "identifiers": [
+        "AU",
+        "ANG.ZA",
+        "GB00BRXH2664"
+      ],
+      "note": "NYSE listing (AU in VXUS, CIK 0001973832) <-> JSE listing (ANG.ZA in EEM, ACWI)"
+    },
+    {
+      "id": "TEVA",
+      "company_name": "Teva Pharmaceutical Industries Ltd.",
+      "identifiers": [
+        "TEVA",
+        "TEVA.IL",
+        "US8816242098",
+        "IL0006290147"
+      ],
+      "note": "NYSE ADR (TEVA in ACWI) <-> TASE local listing (TEVA.IL in VXUS)"
+    },
+    {
+      "id": "VOLKSWAGEN",
+      "company_name": "Volkswagen AG",
+      "identifiers": [
+        "VOW.DE",
+        "VOW3.DE",
+        "DE0007664005",
+        "DE0007664039"
+      ],
+      "note": "Xetra ordinary (VOW.DE) and preferred (VOW3.DE) shares both held in ACWI and VXUS"
+    },
+    {
+      "id": "BERKSHIRE",
+      "company_name": "Berkshire Hathaway Inc.",
+      "identifiers": [
+        "BRK.A",
+        "BRK.B",
+        "BRKA",
+        "BRKB",
+        "US0846701086",
+        "US0846707026"
+      ],
+      "note": "Class A and Class B shares; bridges iShares dotless BRKB with TickerInside BRK.B"
+    }
+  ]
 }
