@@ -110,3 +110,44 @@ def test_fake_reference_lookups(fake_reference):
     assert set(found) == {"ZZBET.A", "ZZBET.B"}
     assert found["ZZBET.A"].cik == found["ZZBET.B"].cik == "9990000002"
     assert fake_reference.lookup_isins(["ZZ0000000ZT1"]) == {}
+
+
+class Malformed:
+    """An adapter whose upstream data slips past its own checks."""
+
+    name = "tickerinside"
+
+    def __init__(self, exc: Exception) -> None:
+        self.exc = exc
+
+    def supports(self, ticker: str) -> bool:
+        return True
+
+    def fetch(self, ticker: str) -> RawEtfHoldings:
+        raise self.exc
+
+
+@pytest.mark.parametrize("exc", [ValueError("bad sector value"), AttributeError(), KeyError("holdings"), TypeError("x")])
+def test_malformed_upstream_data_is_a_parse_error_not_a_crash(exc):
+    reg = SourceRegistry([Malformed(exc), adapter("sec_nport", "ok")])
+    result = reg.fetch_with_fallback("ZZBAD")
+    assert result.raw.source == "sec_nport"
+    assert result.attempts[0].outcome == "parse_error" and "malformed data" in result.attempts[0].message
+
+
+def test_nan_weight_is_rejected_by_the_contract_and_becomes_a_parse_error():
+    import math
+
+    from hoc.contract import RawHolding
+
+    with pytest.raises(ValueError):
+        RawHolding(source_symbol="ZZALP", weight=math.nan)
+
+    class NanAdapter(Malformed):
+        def fetch(self, ticker: str) -> RawEtfHoldings:
+            return RawEtfHoldings(etf_ticker=ticker, source="tickerinside", as_of=date(2026, 1, 1),
+                                  retrieved_at=datetime(2026, 1, 2, tzinfo=UTC), source_url="https://example.invalid",
+                                  holdings=[RawHolding(source_symbol="ZZALP", weight=float("inf"))])
+
+    result = SourceRegistry([NanAdapter(None)]).fetch_with_fallback("ZZBAD")
+    assert result.status == "unavailable" and result.attempts[0].outcome == "parse_error"

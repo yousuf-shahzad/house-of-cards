@@ -13,7 +13,7 @@ from collections.abc import Iterable
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import PlainSerializer
+from pydantic import AfterValidator, PlainSerializer
 
 WEIGHT_DECIMALS = 10
 
@@ -22,8 +22,15 @@ def _round_weight(value: float) -> float:
     return round(value, WEIGHT_DECIMALS)
 
 
-Weight = Annotated[float, PlainSerializer(_round_weight, return_type=float)]
-"""A fraction of 1. Serialised rounded to 10 dp (exact for products of two 4-dp percentages)."""
+def _finite_weight(value: float) -> float:
+    # NaN/inf would pass every range check and serialise as null, breaking reconciliation.
+    if not math.isfinite(value):
+        raise ValueError("weight must be a finite number")
+    return value
+
+
+Weight = Annotated[float, AfterValidator(_finite_weight), PlainSerializer(_round_weight, return_type=float)]
+"""A finite fraction of 1. Serialised rounded to 10 dp (exact for products of two 4-dp percentages)."""
 
 
 def wsum(values: Iterable[float]) -> float:

@@ -95,14 +95,49 @@ class Identity:
     alias_name: str | None
 
 
+# Exchange-name fragments (lower case) -> ISO2 of the listing country, from iShares' Exchange column
+# (EEM, ACWI, IEFA, IVV read 2026-11-07). First match wins, so specific names come before generic ones.
+EXCHANGE_COUNTRY: tuple[tuple[str, str], ...] = (
+    ("nyse euronext - euronext paris", "FR"), ("euronext paris", "FR"), ("euronext amsterdam", "NL"),
+    ("euronext brussels", "BE"), ("euronext lisbon", "PT"), ("nasdaq omx helsinki", "FI"),
+    ("copenhagen", "DK"), ("nasdaq omx nordic", "SE"), ("stockholm", "SE"),
+    ("nyse", "US"), ("nasdaq", "US"), ("cboe", "US"), ("index and options market", "US"), ("arca", "US"),
+    ("tokyo", "JP"), ("osaka", "JP"), ("hong kong", "HK"), ("shanghai", "CN"), ("shenzhen", "CN"),
+    ("national stock exchange of india", "IN"), ("bse ltd", "IN"), ("london", "GB"), ("asx", "AU"),
+    ("xetra", "DE"), ("deutsche boerse", "DE"), ("frankfurt", "DE"), ("six swiss", "CH"),
+    ("korea exchange", "KR"), ("taiwan", "TW"), ("gretai", "TW"), ("tel aviv", "IL"), ("borsa italiana", "IT"),
+    ("singapore", "SG"), ("toronto", "CA"), ("xbsp", "BR"), ("b3", "BR"), ("bolsa de madrid", "ES"),
+    ("oslo", "NO"), ("saudi", "SA"), ("johannesburg", "ZA"), ("bolsa mexicana", "MX"), ("bursa malaysia", "MY"),
+    ("warsaw", "PL"), ("thailand", "TH"), ("istanbul", "TR"), ("wiener", "AT"), ("standard-classica", "RU"),
+    ("athens", "GR"), ("abu dhabi", "AE"), ("dubai", "AE"), ("qatar", "QA"), ("santiago", "CL"),
+    ("indonesia", "ID"), ("new zealand", "NZ"), ("philippine", "PH"), ("irish", "IE"), ("kuwait", "KW"),
+    ("budapest", "HU"), ("colombia", "CO"), ("prague", "CZ"), ("egyptian", "EG"),
+)
+
+
+def listing_country(exchange: str | None) -> str | None:
+    name = (exchange or "").lower()
+    return next((iso for fragment, iso in EXCHANGE_COUNTRY if fragment in name), None) if name else None
+
+
 def listing_symbol(line: RawHolding, source: str) -> str | None:
-    """The line's symbol in the TickerInside convention."""
-    symbol = (line.source_symbol or "").strip().upper() or None
-    # shortcut: iShares US class shares come as 'BRKB' (no dot) and stay unmerged with 'BRK.B' at
-    # security level (CIK still merges the company); upgrade if shared-security counts matter.
-    if symbol and source == "ishares" and line.country and line.country.upper() != "US" and "." not in symbol:
-        symbol = f"{symbol}.{line.country.upper()}"
-    return symbol
+    """The line's symbol in the TickerInside convention: US 'BRK.B'; elsewhere '{local}.{ISO2}'.
+
+    TickerInside symbols are already in it. Issuer files (iShares) give 'BRK B', 'NOVO B', 'RR.' and bare
+    local codes ('2330') plus an exchange name, so the listing country comes from the exchange (falling
+    back to the line's country, which for iShares is the issuer's location). Class letters join with a dot
+    in the US ('BRK.B') but with nothing elsewhere ('NOVOB.DK'), as TickerInside writes them.
+    """
+    raw = (line.source_symbol or "").strip().upper().rstrip(".")
+    if source != "ishares":  # TickerInside and N-PORT (OpenFIGI) symbols are already formatted
+        return re.sub(r"[ /]+", ".", raw) or None
+    country = listing_country(line.exchange) or (line.country or "").upper() or None
+    if not country or country == "US":
+        return re.sub(r"[ /]+", ".", raw) or None
+    local = re.sub(r"[ /]+", "", raw)
+    if not local:
+        return None
+    return local if local.endswith(f".{country}") else f"{local}.{country}"
 
 
 def resolve(line: RawHolding, symbol: str | None, info: SecurityInfo | None, aliases: Aliases,
