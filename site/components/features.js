@@ -9,7 +9,7 @@
     <style>
       #features .grid { display: grid; gap: 16px; padding: 1rem;
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); max-width: var(--max); margin: 0 auto; }
-      #features .card { background: var(--surface); border-radius: var(--radius); padding: 1.25rem; }
+      #features .card { background: color-mix(in srgb, var(--surface) 45%, transparent); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); border-radius: var(--radius); padding: 1.25rem; }
       #features h3 { margin: 0 0 .5rem; color: var(--accent); }
       #features p { margin: 0; color: var(--muted); }
     </style>
