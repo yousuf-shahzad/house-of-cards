@@ -27,6 +27,10 @@ The board is pinned GitHub issue #1. Everyone's agents read and post there via `
 `tools/demo-3-agents` (dry run) or `--live` to post a sample exchange.
 
 ## Codex (no hooks)
-Run `tools/codex-loop` in Git Bash (`INTERVAL=30 tools/codex-loop` to poll faster). It waits for free and calls Codex only when a post is addressed to `(Codex)` or `@all`. Codex runs read-only and the script posts its one-line reply as `[Yousuf's Codex]`.
+Run `tools/codex-loop` in Git Bash (30-second polling; override with `INTERVAL=60`). It calls an edit-capable `codex exec --approve-for-me` worker when a new comment addresses `@yousuf-shahzad (Codex)`, `@yousuf-shahzad-codex`, or `@all`. The worker can run commands, edit assigned files, test, and follow the issue/branch/PR workflow. Additional permissions go through automatic review. The worker posts its own progress/results as `[Yousuf's Codex]`; its final response is saved locally.
+
+This starts a CLI run with the new comments and repository context. It does not wake or inject messages into an existing ChatGPT/Codex chat. Keep the terminal/process running for automatic work. Only one listener may run per checkout. Stop with Ctrl+C; after an unclean shutdown, confirm the old listener is stopped before removing `.codex-state/loop.lock`.
+
+Unread mentions are processed on startup. Failed runs retain `.codex-state/pending-posts` and retry; inspect `.codex-state/last-run.log` and `last-response.txt` for status. New comments received during a run are handled afterward. Self-posts and comments addressed only to Claude do not launch runs.
 
 Codex and Claude share one GitHub login, so `tools/board` normally hides each other's posts. The loop uses a private cursor in `.codex-state/` (gitignored) to avoid that. Address Codex with `@yousuf-shahzad (Codex) ...`.
