@@ -6,11 +6,11 @@
 # Codex shares the yousuf-shahzad GitHub login with Claude, and tools/board hides posts from
 # your own login and keeps one read cursor per checkout. So the loop uses a private copy of
 # tools/board (own cursor, in .codex-state/) with a fake BOARD_LOGIN, so it sees Claude's posts.
-# Codex runs read-only with no network or token; this script posts its one-line reply.
+# Codex can edit and run commands; additional permissions go through automatic review.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 OWNER="${OWNER:-Yousuf}"; ME="${OWNER}'s Codex"
-INTERVAL="${INTERVAL:-60}"
+INTERVAL="${INTERVAL:-30}"
 export BOARD_LOGIN="${BOARD_LOGIN:-yousuf-shahzad-codex}"
 export BOARD_REPO="${BOARD_REPO:-$(gh repo view --json nameWithOwner -q .nameWithOwner)}"
 
@@ -18,21 +18,48 @@ mkdir -p .codex-state/tools && cp tools/board .codex-state/tools/board
 [ -d .codex-state/.git ] || git init -q .codex-state   # own ROOT, so own .board cursor
 bd() { (cd .codex-state && tools/board "$@"); }
 
-PROMPT="You are $ME, one of two agents (the other is ${OWNER}'s Claude) sharing the GitHub login yousuf-shahzad. Follow AGENTS.md. Below are recent board posts. Some are addressed to Codex or @all. Your whole final message is posted to the board for you, so output ONLY one short line of reply text with no prefix and no quotes, or the single word NOOP if nothing needs a reply (ignore posts addressed to Claude, and do not reply just to acknowledge). You cannot run commands or edit files."
+mkdir .codex-state/loop.lock 2>/dev/null || { echo "Codex listener already running (or stale .codex-state/loop.lock)." >&2; exit 1; }
+trap 'rmdir .codex-state/loop.lock' EXIT
+trap 'exit 130' INT TERM
+PENDING=.codex-state/pending-posts
 
-bd unread >/dev/null 2>&1  # skip history on start
-echo "[$ME] listening on the board (every ${INTERVAL}s). Ctrl+C to stop."
-while bd wait --interval "$INTERVAL" >/dev/null 2>&1; do
-  NEW="$(bd read -n 5 2>&1)"
-  MINE="$(printf '%s\n' "$NEW" | grep -iE '\(Codex\)|@all|@yousuf-shahzad-codex' | grep -v "^\[$ME\]" || true)"
-  [ -z "$MINE" ] && continue
+PROMPT="You are $ME, the edit-capable board worker for this repository. Follow AGENTS.md and read the latest board context before acting. You CAN run commands, edit your assigned files, test, and use the repository's issue/branch/PR workflow. Use Git Bash for tools/board. Work only on current assignments addressed to Codex or @all; respect the lead's reassignments and do not redo completed work. Ignore your own posts and posts addressed only to Claude. Complete authorized work, and post progress/results yourself via tools/board with the [$ME] prefix. If no action or reply is needed, do not post. Your final response is saved locally, not posted automatically. Do not start another listener or change listener state. If automatic review denies a required permission, report the precise blocker on the board."
+
+# Match complete new comments, never an old mention in a last-N context window.
+addressed() {
+  awk -v me="[$ME]" '
+    function emit() {
+      text = tolower(body)
+      if (index(body, me) != 1 && (text ~ /@all([^a-z0-9_-]|$)/ ||
+          text ~ /@yousuf-shahzad[[:space:]]*\(codex\)/ ||
+          text ~ /@yousuf-shahzad-codex([^a-z0-9_-]|$)/)) printf "%s%s", header, body
+    }
+    /^--- @/ { emit(); header = $0 "\n"; body = ""; next }
+    { body = body $0 "\n" }
+    END { emit() }
+  '
+}
+
+echo "[$ME] edit-capable listener (every ${INTERVAL}s, automatic approval review). Ctrl+C to stop."
+# Process any unread mention on startup; preserve a failed batch across restarts.
+if [ ! -s "$PENDING" ]; then
+  bd unread > "$PENDING" || { echo "Board unavailable; restart to retry." >&2; exit 1; }
+fi
+while :; do
+  if [ ! -s "$PENDING" ]; then
+    bd wait --interval "$INTERVAL" > "$PENDING" || { sleep "$INTERVAL"; continue; }
+  fi
+  NEW="$(cat "$PENDING")"
+  MINE="$(printf '%s\n' "$NEW" | addressed)"
+  if [ -z "$MINE" ]; then rm -f "$PENDING"; continue; fi
   echo "[$(date +%T)] post for Codex, running codex"
-  OUT="$(mktemp)"
-  printf '%s\n\nRECENT POSTS:\n%s\n' "$PROMPT" "$NEW" | \
-    codex exec --skip-git-repo-check --sandbox read-only -o "$OUT" - >/dev/null 2>&1
-  REPLY="$(tr -d '\r' < "$OUT" | head -n 3 | tr '\n' ' ' | sed 's/^ *//;s/ *$//')"; rm -f "$OUT"
-  case "$REPLY" in
-    ""|NOOP*) echo "[$(date +%T)] codex: no reply" ;;
-    *) tools/board post "[$ME] $REPLY" >/dev/null && echo "[$(date +%T)] codex replied" ;;
-  esac
+  if printf '%s\n\nNEW BOARD POSTS:\n%s\n' "$PROMPT" "$NEW" | \
+      codex exec --approve-for-me -o .codex-state/last-response.txt - \
+      > .codex-state/last-run.log 2>&1; then
+    rm -f "$PENDING"
+    echo "[$(date +%T)] Codex work finished; waiting for mentions"
+  else
+    echo "[$(date +%T)] Codex failed; see .codex-state/last-run.log; retrying in ${INTERVAL}s" >&2
+    sleep "$INTERVAL"
+  fi
 done
