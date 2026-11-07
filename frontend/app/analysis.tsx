@@ -41,7 +41,7 @@ export function validateRows(rows: DraftRow[]): Validation {
     else if (!TICKER_PATTERN.test(ticker)) issues.add("invalid-ticker");
     if (ticker && seen.has(ticker)) issues.add("duplicate-ticker");
     seen.add(ticker);
-    if (row.allocationPct === null || !Number.isFinite(row.allocationPct) || row.allocationPct <= 0) {
+    if (row.allocationPct === null || !Number.isFinite(row.allocationPct) || row.allocationPct < 0) {
       issues.add("invalid-allocation");
     } else {
       amounts.push(row.allocationPct);

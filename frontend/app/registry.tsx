@@ -4,11 +4,12 @@ import { lazy, type ComponentType, type LazyExoticComponent } from "react";
 import {
   RiBarChartHorizontalLine,
   RiGridLine,
+  RiNodeTree,
   RiPieChartLine,
   RiShieldCheckLine,
 } from "@remixicon/react";
 
-export type PageKey = "portfolio" | "exposures" | "overlap" | "risk";
+export type PageKey = "portfolio" | "exposures" | "overlap" | "network" | "risk";
 
 export type PageDefinition = {
   key: PageKey;
@@ -47,6 +48,15 @@ export const pages: readonly PageDefinition[] = [
     title: "ETF overlap",
     description: "How much your ETFs hold the same companies.",
     Component: lazy(() => import("./pages/overlap")),
+  },
+  {
+    key: "network",
+    label: "Network",
+    href: "#/network",
+    icon: RiNodeTree,
+    title: "Where your money flows",
+    description: "Each ETF linked to the largest companies it gives you.",
+    Component: lazy(() => import("./pages/network")),
   },
   {
     key: "risk",
