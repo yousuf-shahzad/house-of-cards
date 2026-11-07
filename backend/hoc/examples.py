@@ -25,4 +25,10 @@ EXAMPLES: tuple[ExampleDefinition, ...] = (
         description="S&P 500, Nasdaq-100, US tech and emerging markets: heavy mega-cap overlap.",
         holdings=(("IVV", 0.40), ("QQQ", 0.25), ("XLK", 0.15), ("EEM", 0.20)),
     ),
+    ExampleDefinition(
+        id="global-core",
+        name="Global market with a Nasdaq-100 tilt",
+        description="Total US market, total international ex-US and Nasdaq-100 across broad global equity.",
+        holdings=(("VTI", 0.50), ("VXUS", 0.30), ("QQQ", 0.20)),
+    ),
 )
