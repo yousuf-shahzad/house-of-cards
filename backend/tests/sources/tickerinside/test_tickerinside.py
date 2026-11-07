@@ -122,3 +122,24 @@ def test_live_xlk(tmp_path):
     assert sum(h.weight for h in raw.holdings) == pytest.approx(1, abs=0.02)
     etf = normalise_etf(raw, TickerInsideReference(http, settings), Aliases())
     assert etf.holdings_weight > 0.95
+
+
+def test_stock_sectors_fetched_for_heaviest_symbols(monkeypatch):
+    import hoc.sources.tickerinside.reference as reference_module
+
+    monkeypatch.setattr(reference_module, "SECTOR_LOOKUP_LIMIT", 2)
+    http = client()
+    http.add(f"{BASE}/sec/zzalp.json", json.dumps({"sector": "Information Technology"}), content_type="application/json")
+    http.add(f"{BASE}/sec/zzbet.a.json", json.dumps({"sector": "Financials"}), content_type="application/json")
+    http.add(f"{BASE}/sec/zzbet.b.json", "missing", status=404)
+    settings = Settings()
+    ref = TickerInsideReference(http, settings)
+    etf = normalise_etf(TickerInsideAdapter(http, settings).fetch("ZZTI"), ref, Aliases())
+    sectors = {h.symbol: (h.sector, h.sector_source) for h in etf.holdings}
+    assert sectors["ZZALP"] == ("information_technology", "reference")
+    assert sectors["ZZBET.A"] == ("financials", "reference")  # 2nd heaviest (tie with ZZBET.B, by symbol)
+    assert sectors["ZZBET.B"] == ("unknown", "none")  # beyond the limit: never requested
+    assert not any("zzbet.b" in url or "9999.tw" in url for _, url in http.requests)
+    calls = len(http.requests)
+    ref.lookup_symbols(["ZZALP"])
+    assert len(http.requests) == calls  # memoised per stock

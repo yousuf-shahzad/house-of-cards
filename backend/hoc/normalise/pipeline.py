@@ -68,7 +68,12 @@ def normalise_etf(raw: RawEtfHoldings, reference: ReferenceProvider, aliases: Al
     ]
 
     symbols = [listing_symbol(h, raw.source) for h in kept]
-    by_symbol = reference.lookup_symbols(sorted({s for s in symbols if s}))
+    # Heaviest first: providers may bound per-symbol work (TickerInside sector files) to the first N.
+    heaviest: dict[str, float] = defaultdict(float)
+    for line, symbol in zip(kept, symbols, strict=True):
+        if symbol:
+            heaviest[symbol] += line.weight
+    by_symbol = reference.lookup_symbols(sorted(heaviest, key=lambda s: (-heaviest[s], s)))
     no_symbol_isins = sorted({h.isin.upper() for h, s in zip(kept, symbols, strict=True) if h.isin and not s})
     by_isin = reference.lookup_isins(no_symbol_isins) if no_symbol_isins else {}
 
