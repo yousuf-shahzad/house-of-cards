@@ -124,6 +124,35 @@ export function Workspace() {
               <Page />
             </Suspense>
           </PageBoundary>
+          {analysis && analysis.attributions.length > 0 && (
+            <footer
+              aria-label="Data attributions"
+              className="mt-6 border-t border-separator-border pt-4 text-caption-1-regular text-text-tertiary"
+            >
+              <ul className="flex flex-col gap-1.5">
+                {analysis.attributions.map((attr, idx) => (
+                  <li key={`${attr.source}-${idx}`} className="flex flex-wrap items-center gap-2">
+                    <span>{attr.text}</span>
+                    {attr.licence && (
+                      <Chip variant="caption" color="neutral">
+                        {attr.licence}
+                      </Chip>
+                    )}
+                    {attr.url && (
+                      <a
+                        href={attr.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline hover:text-text-secondary"
+                      >
+                        Source
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </footer>
+          )}
         </main>
       </div>
     </div>

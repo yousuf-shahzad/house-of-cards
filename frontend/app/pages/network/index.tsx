@@ -1,6 +1,7 @@
 // Network page: which ETF gives you which company. Owner: Yousuf's Claude.
 import { useMemo, useState, type KeyboardEvent } from "react";
 import { RiRefreshLine } from "@remixicon/react";
+import type { ApiError } from "@/api/client";
 import type { CompanyExposure } from "@/api/types";
 import { useAnalysis } from "@/app/analysis";
 import { AsOfBadge } from "@/app/ui/as-of-badge";
@@ -15,6 +16,20 @@ const LIMITS = [10, 20, 50];
 const DEFAULT_LIMIT = 20;
 
 const humanise = (value: string) => value.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+
+function errorCopy(error: ApiError): string {
+  const tickers = (error.details as { tickers?: string[] } | undefined)?.tickers;
+  if (error.code === "UNKNOWN_TICKER" && tickers?.length) {
+    return `We couldn't find ${tickers.join(", ")} in any data source. Check the ticker on the Portfolio page.`;
+  }
+  if (error.code === "SOURCES_UNAVAILABLE") {
+    return "None of the data sources could be reached, so we have no holdings to show.";
+  }
+  if (error.code === "NETWORK_ERROR") {
+    return "We couldn't reach the analysis service. Check that the backend is running.";
+  }
+  return error.message;
+}
 
 function Dot({ index }: { index: number }) {
   return (
@@ -265,11 +280,16 @@ export default function NetworkPage() {
     if (status === "error" && error) {
       return (
         <section className="suite-card" role="alert">
-          <p className="text-body-regular text-text-error-primary">{error.message}</p>
-          <div>
-            <Button variant="secondary" size="small" leadingIcon={RiRefreshLine} onClick={retry}>
-              Try again
-            </Button>
+          <p className="text-body-regular text-text-error-primary">{errorCopy(error)}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            {error.code !== "UNKNOWN_TICKER" && (
+              <Button variant="secondary" size="small" leadingIcon={RiRefreshLine} onClick={retry}>
+                Try again
+              </Button>
+            )}
+            <ButtonLink variant="ghost" size="small" href="#/portfolio">
+              Edit portfolio
+            </ButtonLink>
           </div>
         </section>
       );
@@ -336,7 +356,7 @@ export default function NetworkPage() {
         )}
         {status === "error" && error && (
           <p role="alert" className="text-body-regular text-text-error-primary">
-            Couldn't update, so this shows your last result: {error.message}
+            Couldn't update, so this shows your last result: {errorCopy(error)}
           </p>
         )}
         {graph.companies.length === 0 ? (

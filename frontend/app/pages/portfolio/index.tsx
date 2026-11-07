@@ -138,7 +138,7 @@ function Row({ row, report, flagged }: { row: DraftRow; report?: EtfReport; flag
         formatOptions={{ maximumFractionDigits: 2 }}
         value={row.allocationPct ?? Number.NaN}
         onChange={(pct) => updateRow(row.id, { allocationPct: Number.isNaN(pct) ? null : pct })}
-        className="col-start-1 sm:col-start-2 sm:row-start-1"
+        className="col-span-2 sm:col-span-1 sm:col-start-2 sm:row-start-1"
       />
       <Slider
         aria-label={`Allocation slider for ${label}`}
