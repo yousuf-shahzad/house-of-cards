@@ -214,3 +214,74 @@ def test_end_to_end_with_real_packages(fake_source, fake_reference):
     assert exposure == pytest.approx(body["coverage"]["covered_weight"], abs=1e-9)
     assert [e["ticker"] for e in body["etfs"]] == ["ZZAAA", "ZZBBB"]
     assert "Coverage: covered" in cli.summary(AnalysisResponse.model_validate(body))
+
+
+# ---------- startup warm-up and robustness ----------
+
+
+def test_startup_warm_up_preloads_examples_without_blocking(make_service, monkeypatch):
+    monkeypatch.setattr("hoc.service.EXAMPLES", (
+        ExampleDefinition("zz", "ZZ", "synthetic", (("ZZAAA", 0.6), ("ZZBBB", 0.4))),))
+    service, source = make_service()
+    app = create_app(lambda: service, Settings(), warm=True)
+    with TestClient(app) as warmed:  # entering runs the lifespan, which starts the thread
+        app.state.warm_up_thread.join(timeout=10)
+        assert sorted(source.calls) == ["ZZAAA", "ZZBBB"]
+        response = warmed.post("/api/analysis", json={"holdings": [
+            {"ticker": "ZZAAA", "allocation": 0.6}, {"ticker": "ZZBBB", "allocation": 0.4}]})
+    assert response.status_code == 200
+    assert sorted(source.calls) == ["ZZAAA", "ZZBBB"]  # the first analysis was served from the memo
+
+
+def test_failed_warm_up_still_serves(make_service, monkeypatch):
+    service, _ = make_service()
+    monkeypatch.setattr(service, "examples", lambda: 1 / 0)
+    app = create_app(lambda: service, Settings(), warm=True)
+    with TestClient(app) as warmed:
+        app.state.warm_up_thread.join(timeout=10)
+        assert warmed.get("/api/health").status_code == 200
+
+
+def test_apps_do_not_warm_up_unless_asked(make_service):
+    service, source = make_service()
+    app = create_app(lambda: service, Settings())
+    with TestClient(app):
+        assert app.state.warm_up_thread is None and source.calls == []
+
+
+def test_adapter_bug_costs_one_etf_not_a_500(make_service, monkeypatch):
+    service, source = make_service()
+    real_fetch = source.fetch
+
+    def buggy(ticker):
+        if ticker == "ZZBBB":
+            raise AttributeError("'str' object has no attribute 'get'")  # e.g. a malformed upstream field
+        return real_fetch(ticker)
+
+    monkeypatch.setattr(source, "fetch", buggy)
+    response = client(service).post("/api/analysis", json={"holdings": [
+        {"ticker": "ZZAAA", "allocation": 0.5}, {"ticker": "ZZBBB", "allocation": 0.5}]})
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert {e["ticker"]: e["status"] for e in body["etfs"]}["ZZBBB"] == "unavailable"
+    assert body["coverage"]["missing_allocation"] == pytest.approx(0.5)
+
+
+def test_concurrent_loads_of_one_etf_fetch_once(make_service, monkeypatch):
+    import threading
+    import time
+
+    service, source = make_service()
+    real_fetch = source.fetch
+
+    def slow(ticker):
+        time.sleep(0.2)
+        return real_fetch(ticker)
+
+    monkeypatch.setattr(source, "fetch", slow)
+    threads = [threading.Thread(target=service.load_etf, args=("ZZAAA",)) for _ in range(3)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert source.calls == ["ZZAAA"]

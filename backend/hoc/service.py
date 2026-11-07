@@ -7,6 +7,8 @@ these methods.
 
 from __future__ import annotations
 
+import logging
+import threading
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
@@ -34,6 +36,7 @@ from hoc.portfolio.analyse import analyse
 from hoc.portfolio.validation import validate_request
 
 MAX_WORKERS = 8
+log = logging.getLogger("hoc.service")
 
 
 def _attempts(failures: Sequence[EtfFailure]) -> dict[str, list[dict]]:
@@ -48,6 +51,8 @@ class EtfService:
         self.settings = settings
         # ponytail: memo lives as long as the process (the disk cache holds the 24 h TTL); restart to refresh.
         self._memo: dict[tuple[str, str | None], EtfHoldings] = {}
+        self._locks: dict[tuple[str, str | None], threading.Lock] = {}
+        self._locks_guard = threading.Lock()
 
     @classmethod
     def from_settings(cls, settings) -> EtfService:
@@ -65,12 +70,28 @@ class EtfService:
         return HealthResponse(version=__version__, offline=self.settings.offline, sources=self.registry.names)
 
     def load_etf(self, ticker: str, source: SourceName | None = None) -> EtfHoldings | EtfFailure:
-        """Successes are memoised; failures are not (an outage should not stick)."""
+        """Successes are memoised; failures are not (an outage should not stick). Concurrent loads of the
+        same ETF (the startup warm-up and a first request) wait for one fetch instead of doing two."""
         ticker = ticker.upper()
         key = (ticker, source)
-        if key in self._memo:
-            return self._memo[key]
-        result = self.registry.fetch_with_fallback(ticker, only=source)
+        with self._locks_guard:
+            lock = self._locks.setdefault(key, threading.Lock())
+        with lock:
+            if key in self._memo:
+                return self._memo[key]
+            loaded = self._load_uncached(ticker, source)
+            if isinstance(loaded, EtfHoldings):
+                self._memo[key] = loaded
+            return loaded
+
+    def _load_uncached(self, ticker: str, source: SourceName | None) -> EtfHoldings | EtfFailure:
+        try:
+            result = self.registry.fetch_with_fallback(ticker, only=source)
+        except Exception as exc:  # an adapter bug must cost this ETF, never the whole analysis (no 500)
+            log.exception("unexpected error fetching %s", ticker)
+            return EtfFailure(etf_ticker=ticker, status="unavailable",
+                              message=f"Could not load {ticker}: a data source failed unexpectedly "
+                                      f"({type(exc).__name__})")
         if result.raw is None:
             status = "not_found" if result.status == "not_found" else "unavailable"
             message = (f"No data source has {ticker}" if status == "not_found"
@@ -81,9 +102,12 @@ class EtfService:
         except (SourceError, ValueError) as exc:
             return EtfFailure(etf_ticker=ticker, status="unavailable", attempts=result.attempts,
                               message=f"Could not use {result.raw.source} data for {ticker}: {exc}")
-        holdings = holdings.model_copy(update={"attempts": result.attempts})
-        self._memo[key] = holdings
-        return holdings
+        except Exception as exc:
+            log.exception("unexpected error normalising %s from %s", ticker, result.raw.source)
+            return EtfFailure(etf_ticker=ticker, status="unavailable", attempts=result.attempts,
+                              message=f"Could not use {result.raw.source} data for {ticker} "
+                                      f"({type(exc).__name__})")
+        return holdings.model_copy(update={"attempts": result.attempts})
 
     def _load_many(self, tickers: Sequence[str]) -> dict[str, EtfHoldings | EtfFailure]:
         tickers = list(dict.fromkeys(t.upper() for t in tickers))

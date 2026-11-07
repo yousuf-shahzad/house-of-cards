@@ -9,7 +9,7 @@ import argparse
 import sys
 
 from hoc.config import Settings
-from hoc.contract import AnalysisResponse, EtfHoldings, HocError, PortfolioItem, PortfolioRequest
+from hoc.contract import AnalysisResponse, EtfHoldings, HocError, PortfolioItem, PortfolioRequest, Sector
 from hoc.examples import EXAMPLES
 from hoc.service import EtfService
 
@@ -88,11 +88,13 @@ def main(argv: list[str] | None = None) -> int:
 
     service = EtfService.from_settings(Settings.from_env())
     if args.command == "warm":
+        # Loading an ETF fetches its holdings, the reference files and per-stock sector data, all cached.
         failed = 0
-        for ticker in tickers:
-            etf = service.load_etf(ticker)
+        for ticker, etf in service._load_many(tickers).items():
             if isinstance(etf, EtfHoldings):
-                print(f"{ticker:<8} ok    {etf.source} as of {etf.as_of}, {len(etf.holdings)} holdings")
+                known = sum(h.weight for h in etf.holdings if h.sector != Sector.unknown)
+                print(f"{ticker:<8} ok    {etf.source} as of {etf.as_of}, {len(etf.holdings)} holdings, "
+                      f"company sectors for {pct(known)} of weight (basis {etf.sector_basis})")
             else:
                 failed += 1
                 print(f"{ticker:<8} {etf.status}  {etf.message}")
