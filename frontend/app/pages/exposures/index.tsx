@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, type KeyboardEvent } from "react";
 import {
+  RiAlertLine,
   RiArrowDownSLine,
+  RiArrowLeftSLine,
   RiArrowRightSLine,
   RiArrowRightUpLine,
   RiBarChartHorizontalLine,
@@ -34,6 +36,7 @@ import type {
 import { useAnalysis } from "@/app/analysis";
 import { AsOfBadge } from "@/app/ui/as-of-badge";
 import { EtfChip } from "@/app/ui/etf-chip";
+import { etfVisual } from "@/app/ui/etf-color";
 import { Pct, formatPct } from "@/app/ui/pct";
 import { Chip, type ChipColor } from "@/components/base/badges/chip";
 import { StatusDot } from "@/components/base/badges/status-dot";
@@ -57,18 +60,6 @@ import {
 } from "@/components/base/table/table";
 import { ChevronSortDown } from "@/components/foundations/icons/chevrons";
 import { cx } from "@/utils/cx";
-
-const ETF_SERIES_PALETTE = [
-  { fill: "var(--color-chart-6-active)", dotClass: "bg-chart-6-active" },
-  { fill: "var(--color-chart-1-active)", dotClass: "bg-chart-1-active" },
-  { fill: "var(--color-chart-5-active)", dotClass: "bg-chart-5-active" },
-  { fill: "var(--color-chart-8-active)", dotClass: "bg-chart-8-active" },
-  { fill: "var(--color-chart-3-active)", dotClass: "bg-chart-3-active" },
-  { fill: "var(--color-chart-7-active)", dotClass: "bg-chart-7-active" },
-  { fill: "var(--color-chart-9-active)", dotClass: "bg-chart-9-active" },
-  { fill: "var(--color-chart-2-active)", dotClass: "bg-chart-2-active" },
-  { fill: "var(--color-chart-4-active)", dotClass: "bg-chart-4-active" },
-] as const;
 
 const SECTOR_LABELS: Record<Sector, string> = {
   information_technology: "Information Technology",
@@ -146,7 +137,7 @@ export default function ExposuresPage() {
 
   // Chart state
   const [chartLimit, setChartLimit] = useState<"20" | "10">("20");
-  const [hoveredChartIdx, setHoveredChartIdx] = useState<number | null>(null);
+  const [activeChartIdx, setActiveChartIdx] = useState<number>(0);
 
   // Table state
   const [query, setQuery] = useState("");
@@ -188,10 +179,11 @@ export default function ExposuresPage() {
     [analysis],
   );
 
-  const etfColorMap = useMemo(() => {
-    const map = new Map<string, (typeof ETF_SERIES_PALETTE)[number]>();
+  // Colour convention across all pages: etfVisual(index) by position in analysis.etfs
+  const etfVisualMap = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof etfVisual>>();
     etfTickers.forEach((ticker, index) => {
-      map.set(ticker, ETF_SERIES_PALETTE[index % ETF_SERIES_PALETTE.length]);
+      map.set(ticker, etfVisual(index));
     });
     return map;
   }, [etfTickers]);
@@ -204,6 +196,11 @@ export default function ExposuresPage() {
     }
     return map;
   }, [analysis]);
+
+  const unavailableEtfs = useMemo(
+    () => (analysis ? analysis.etfs.filter((etf) => etf.status === "unavailable") : []),
+    [analysis],
+  );
 
   const topLimit = chartLimit === "10" ? 10 : 20;
 
@@ -235,12 +232,29 @@ export default function ExposuresPage() {
     });
   }, [analysis, etfTickers, topLimit]);
 
-  const activeChartPoint = useMemo(() => {
-    if (hoveredChartIdx !== null && hoveredChartIdx >= 0 && hoveredChartIdx < chartData.length) {
-      return chartData[hoveredChartIdx];
-    }
-    return chartData[0] ?? null;
-  }, [chartData, hoveredChartIdx]);
+  const clampedChartIdx =
+    chartData.length > 0 ? Math.min(Math.max(0, activeChartIdx), chartData.length - 1) : 0;
+  const activeChartPoint = chartData[clampedChartIdx] ?? null;
+
+  const handleChartKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLElement>) => {
+      if (chartData.length === 0) return;
+      if (event.key === "ArrowDown" || event.key === "ArrowRight") {
+        event.preventDefault();
+        setActiveChartIdx((prev) => (prev + 1) % chartData.length);
+      } else if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
+        event.preventDefault();
+        setActiveChartIdx((prev) => (prev - 1 + chartData.length) % chartData.length);
+      } else if (event.key === "Home") {
+        event.preventDefault();
+        setActiveChartIdx(0);
+      } else if (event.key === "End") {
+        event.preventDefault();
+        setActiveChartIdx(chartData.length - 1);
+      }
+    },
+    [chartData.length],
+  );
 
   const availableSectors = useMemo(() => {
     if (!analysis) return [];
@@ -307,12 +321,14 @@ export default function ExposuresPage() {
         cell: ({ row }) => {
           const item = row.original;
           const isExpanded = !!expandedKeys[item.company_key];
+          const panelId = `contrib-panel-${item.rank}`;
           return (
             <div className="flex items-start gap-1.5 py-0.5">
               <button
                 type="button"
                 onClick={() => toggleRowExpanded(item.company_key)}
                 aria-expanded={isExpanded}
+                aria-controls={isExpanded ? panelId : undefined}
                 aria-label={`${isExpanded ? "Collapse" : "Expand"} contributions for ${item.company_name}`}
                 className={cx(
                   "inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md",
@@ -340,6 +356,7 @@ export default function ExposuresPage() {
         cell: ({ row }) => {
           const item = row.original;
           const isExpanded = !!expandedKeys[item.company_key];
+          const panelId = `contrib-panel-${item.rank}`;
           const hasMergedSecurities = item.securities.length > 1 || item.symbols.length > 1;
           return (
             <div className="flex min-w-0 flex-col gap-2 py-0.5">
@@ -347,7 +364,9 @@ export default function ExposuresPage() {
                 <button
                   type="button"
                   onClick={() => toggleRowExpanded(item.company_key)}
-                  className="cursor-pointer text-start text-body-medium text-text-primary hover:underline focus-visible:ring-2 focus-visible:ring-border-focus-ring outline-none"
+                  aria-expanded={isExpanded}
+                  aria-controls={isExpanded ? panelId : undefined}
+                  className="cursor-pointer rounded-sm text-start text-body-medium text-text-primary hover:underline focus-visible:ring-2 focus-visible:ring-border-focus-ring outline-none"
                 >
                   {item.company_name}
                 </button>
@@ -370,7 +389,12 @@ export default function ExposuresPage() {
               </div>
 
               {isExpanded && (
-                <div className="mt-1 flex flex-col gap-3 rounded-xl border border-separator-border bg-background-secondary-default p-3">
+                <div
+                  id={panelId}
+                  role="region"
+                  aria-label={`Per-ETF contributions and securities for ${item.company_name}`}
+                  className="mt-1 flex flex-col gap-3 rounded-xl border border-separator-border bg-background-secondary-default p-3"
+                >
                   {/* Per-ETF contribution breakdown */}
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between gap-2">
@@ -383,8 +407,7 @@ export default function ExposuresPage() {
                     </div>
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                       {item.contributions.map((contrib) => {
-                        const palette =
-                          etfColorMap.get(contrib.etf_ticker) ?? ETF_SERIES_PALETTE[0];
+                        const visual = etfVisualMap.get(contrib.etf_ticker) ?? etfVisual(0);
                         const etfAlloc = etfAllocationMap.get(contrib.etf_ticker);
                         const shareOfCompany =
                           item.exposure > 0 ? contrib.contribution / item.exposure : 0;
@@ -396,7 +419,8 @@ export default function ExposuresPage() {
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-1.5">
                                 <span
-                                  className={cx("size-2 rounded-full", palette.dotClass)}
+                                  className="size-2.5 shrink-0 rounded-full"
+                                  style={{ backgroundColor: visual.color }}
                                   aria-hidden
                                 />
                                 <EtfChip ticker={contrib.etf_ticker} />
@@ -422,7 +446,7 @@ export default function ExposuresPage() {
                                 />
                               </span>
                               <span className="text-text-tertiary tabular-nums">
-                                {formatPct(shareOfCompany, 1)} of this holding
+                                <Pct value={shareOfCompany} digits={1} /> of this holding
                               </span>
                             </div>
                             {contrib.security_keys.length > 0 && (
@@ -529,14 +553,14 @@ export default function ExposuresPage() {
                   <EtfChip key={c.etf_ticker} ticker={c.etf_ticker} />
                 ))}
               </div>
-              {/* Proportional mini bar across contributing ETFs */}
+              {/* Proportional mini bar across contributing ETFs using etfVisual(index) */}
               {item.exposure > 0 && (
                 <div
                   className="flex h-1.5 w-28 overflow-hidden rounded-full bg-background-tertiary-default"
                   aria-hidden
                 >
                   {item.contributions.map((c) => {
-                    const palette = etfColorMap.get(c.etf_ticker) ?? ETF_SERIES_PALETTE[0];
+                    const visual = etfVisualMap.get(c.etf_ticker) ?? etfVisual(0);
                     const widthPct = Math.max(
                       0,
                       Math.min(100, (c.contribution / item.exposure) * 100),
@@ -544,8 +568,11 @@ export default function ExposuresPage() {
                     return (
                       <span
                         key={c.etf_ticker}
-                        className={cx("h-full", palette.dotClass)}
-                        style={{ width: `${widthPct}%` }}
+                        className="h-full"
+                        style={{
+                          width: `${widthPct}%`,
+                          backgroundColor: visual.color,
+                        }}
                       />
                     );
                   })}
@@ -573,6 +600,7 @@ export default function ExposuresPage() {
                 size="xs"
                 onClick={() => toggleRowExpanded(item.company_key)}
                 aria-expanded={isExpanded}
+                aria-label={`${isExpanded ? "Hide" : "Show"} details for ${item.company_name}`}
               >
                 {isExpanded ? "Hide" : "Details"}
               </Button>
@@ -581,7 +609,7 @@ export default function ExposuresPage() {
         },
       },
     ],
-    [etfAllocationMap, etfColorMap, expandedKeys, tableSize, toggleRowExpanded],
+    [etfAllocationMap, etfVisualMap, expandedKeys, tableSize, toggleRowExpanded],
   );
 
   const table = useReactTable({
@@ -726,10 +754,11 @@ export default function ExposuresPage() {
 
   return (
     <div className="flex w-full flex-col gap-6">
-      {/* Stale / background refresh or error notice banner while keeping previous analysis visible */}
+      {/* Stale / background refresh banner while keeping previous analysis visible */}
       {(stale || status === "loading") && (
         <div
           role="status"
+          aria-live="polite"
           className="flex items-center justify-between gap-3 rounded-2xl border border-border-button-default bg-background-secondary-default px-4 py-2.5"
         >
           <div className="flex items-center gap-2 text-body-2-medium text-text-secondary">
@@ -754,6 +783,35 @@ export default function ExposuresPage() {
             Retry
           </Button>
         </div>
+      )}
+
+      {/* Unavailable ETF partial-outage alert (never renormalised per contract) */}
+      {unavailableEtfs.length > 0 && (
+        <section
+          role="alert"
+          aria-label="Unavailable ETF warning"
+          className="flex flex-col gap-2 rounded-2xl border border-border-error-default bg-background-secondary-default p-4"
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <RiAlertLine className="size-5 shrink-0 text-text-error-primary" aria-hidden />
+            <h2 className="text-body-medium text-text-error-primary">
+              Partial portfolio coverage: {unavailableEtfs.length}{" "}
+              {unavailableEtfs.length === 1 ? "ETF" : "ETFs"} unavailable (
+              <Pct value={analysis.coverage.missing_allocation} digits={2} /> of portfolio)
+            </h2>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {unavailableEtfs.map((etf) => (
+                <EtfChip key={etf.ticker} ticker={etf.ticker} />
+              ))}
+            </div>
+          </div>
+          <p className="text-body-2-regular text-text-secondary">
+            Exposures are never renormalised over missing funds: effective weights below represent
+            fractions of your full portfolio, leaving the{" "}
+            <Pct value={analysis.coverage.missing_allocation} digits={2} /> missing allocation
+            explicitly visible.
+          </p>
+        </section>
       )}
 
       {/* Summary KPI Cards */}
@@ -848,6 +906,7 @@ export default function ExposuresPage() {
       {/* Top-20 Stacked Bar Chart of Per-ETF Contributions */}
       <section
         aria-label="Top company exposures chart"
+        onKeyDown={handleChartKeyDown}
         className="flex w-full flex-col gap-5 rounded-3xl border border-border-button-default bg-background-secondary-default p-5"
       >
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -862,21 +921,30 @@ export default function ExposuresPage() {
             </div>
             <p className="text-body-2-regular text-text-secondary">
               Each bar stacks <span className="font-mono">A_e × w_e,c</span> across your ETFs
-              without renormalisation. Hover a bar to inspect per-ETF contributions.
+              without renormalisation. Hover a bar or use the keyboard controls to inspect per-ETF
+              contributions.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {/* Legend */}
-            <dl className="flex flex-wrap items-center gap-3 text-body-2-medium text-text-secondary">
-              {analysis.etfs.map((etf) => {
-                const palette = etfColorMap.get(etf.ticker) ?? ETF_SERIES_PALETTE[0];
+            {/* Legend using etfVisual(index) */}
+            <dl className="flex flex-wrap items-center gap-2.5 text-body-2-medium text-text-secondary">
+              {analysis.etfs.map((etf, idx) => {
+                const visual = etfVisual(idx);
                 return (
                   <div
                     key={etf.ticker}
                     className="flex items-center gap-1.5 rounded-full border border-separator-border bg-background-primary-default px-2.5 py-1"
                   >
-                    <span className={cx("size-2.5 rounded-full", palette.dotClass)} aria-hidden />
+                    <span
+                      className="size-2.5 shrink-0 rounded-full"
+                      style={{
+                        backgroundColor: visual.color,
+                        outline: visual.dash ? "1px dashed var(--color-text-secondary)" : undefined,
+                        outlineOffset: visual.dash ? "1px" : undefined,
+                      }}
+                      aria-hidden
+                    />
                     <dt className="font-mono text-caption-1-semibold text-text-primary">
                       {etf.ticker}
                     </dt>
@@ -896,7 +964,7 @@ export default function ExposuresPage() {
                   const next = [...keys][0];
                   if (next === "10" || next === "20") {
                     setChartLimit(next);
-                    setHoveredChartIdx(null);
+                    setActiveChartIdx(0);
                   }
                 }}
               >
@@ -907,10 +975,37 @@ export default function ExposuresPage() {
           </div>
         </div>
 
-        {/* Interactive Hovered / Selected Company Readout Strip */}
+        {/* Interactive & Keyboard-Accessible Company Readout Strip */}
         {activeChartPoint && (
-          <div className="flex flex-col justify-between gap-3 rounded-2xl border border-separator-border bg-background-primary-default px-4 py-3 sm:flex-row sm:items-center">
+          <div
+            role="region"
+            aria-live="polite"
+            aria-label="Selected chart company contribution breakdown"
+            className="flex flex-col justify-between gap-3 rounded-2xl border border-separator-border bg-background-primary-default px-4 py-3 sm:flex-row sm:items-center"
+          >
             <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="secondary"
+                  size="xs"
+                  iconOnly
+                  leadingIcon={RiArrowLeftSLine}
+                  aria-label="Previous company in chart"
+                  disabled={chartData.length <= 1}
+                  onClick={() =>
+                    setActiveChartIdx((prev) => (prev - 1 + chartData.length) % chartData.length)
+                  }
+                />
+                <Button
+                  variant="secondary"
+                  size="xs"
+                  iconOnly
+                  leadingIcon={RiArrowRightSLine}
+                  aria-label="Next company in chart"
+                  disabled={chartData.length <= 1}
+                  onClick={() => setActiveChartIdx((prev) => (prev + 1) % chartData.length)}
+                />
+              </div>
               <Chip variant="caption" color="neutral">
                 #{activeChartPoint.rank}
               </Chip>
@@ -933,13 +1028,17 @@ export default function ExposuresPage() {
             </div>
             <div className="flex flex-wrap items-center gap-3">
               {activeChartPoint.company.contributions.map((c) => {
-                const palette = etfColorMap.get(c.etf_ticker) ?? ETF_SERIES_PALETTE[0];
+                const visual = etfVisualMap.get(c.etf_ticker) ?? etfVisual(0);
                 return (
                   <div
                     key={c.etf_ticker}
                     className="flex items-center gap-1.5 text-caption-1-regular text-text-secondary"
                   >
-                    <span className={cx("size-2 rounded-full", palette.dotClass)} aria-hidden />
+                    <span
+                      className="size-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: visual.color }}
+                      aria-hidden
+                    />
                     <span className="font-mono text-caption-1-semibold text-text-primary">
                       {c.etf_ticker}:
                     </span>
@@ -957,7 +1056,10 @@ export default function ExposuresPage() {
         {/* Recharts Horizontal Stacked Bar Chart */}
         {chartData.length > 0 ? (
           <div
-            className="w-full"
+            tabIndex={0}
+            role="group"
+            aria-label={`Stacked bar chart of top ${chartData.length} companies. Use Up and Down arrow keys to inspect each company's per-ETF contributions.`}
+            className="w-full rounded-xl focus-visible:ring-2 focus-visible:ring-border-focus-ring outline-none"
             style={{ height: `${Math.max(260, chartData.length * 32 + 36)}px` }}
           >
             <ResponsiveContainer width="100%" height="100%">
@@ -969,10 +1071,9 @@ export default function ExposuresPage() {
                 onMouseMove={(state) => {
                   const index = Number(state?.activeTooltipIndex);
                   if (state?.isTooltipActive && Number.isFinite(index)) {
-                    setHoveredChartIdx(index);
+                    setActiveChartIdx(index);
                   }
                 }}
-                onMouseLeave={() => setHoveredChartIdx(null)}
               >
                 <XAxis
                   type="number"
@@ -996,7 +1097,7 @@ export default function ExposuresPage() {
                   cursor={{ fill: "var(--color-chart-track)", opacity: 0.45 }}
                 />
                 {etfTickers.map((ticker, idx) => {
-                  const palette = etfColorMap.get(ticker) ?? ETF_SERIES_PALETTE[0];
+                  const visual = etfVisual(idx);
                   const isLast = idx === etfTickers.length - 1;
                   return (
                     <Bar
@@ -1004,7 +1105,9 @@ export default function ExposuresPage() {
                       dataKey={`etf_${ticker}`}
                       name={ticker}
                       stackId="exposure"
-                      fill={palette.fill}
+                      fill={visual.color}
+                      stroke={visual.dash ? "var(--color-background-primary-default)" : undefined}
+                      strokeDasharray={visual.dash}
                       radius={isLast ? [0, 4, 4, 0] : [0, 0, 0, 0]}
                       isAnimationActive
                       animationDuration={350}
@@ -1050,7 +1153,7 @@ export default function ExposuresPage() {
                 )}
               </div>
               <p className="text-caption-1-regular text-text-tertiary">
-                Click any company row or Details button to expand per-ETF contributions and merged
+                Select any company row or Details button to expand per-ETF contributions and merged
                 security listings.
               </p>
             </div>
@@ -1158,6 +1261,7 @@ export default function ExposuresPage() {
                 {headers.map((header) => {
                   const id = header.column.id;
                   const canSort = header.column.getCanSort();
+                  const sortedDir = header.column.getIsSorted();
                   const label = flexRender(header.column.columnDef.header, header.getContext());
                   return (
                     <TableColumn
@@ -1170,13 +1274,20 @@ export default function ExposuresPage() {
                         <button
                           type="button"
                           onClick={header.column.getToggleSortingHandler()}
+                          aria-label={`Sort by ${typeof label === "string" ? label : id}${
+                            sortedDir === "asc"
+                              ? " (currently ascending)"
+                              : sortedDir === "desc"
+                                ? " (currently descending)"
+                                : ""
+                          }`}
                           className={cx(
-                            "flex cursor-pointer items-center gap-1 focus-visible:ring-2 focus-visible:ring-border-focus-ring outline-none",
+                            "flex cursor-pointer items-center gap-1 rounded-sm focus-visible:ring-2 focus-visible:ring-border-focus-ring outline-none",
                             id === "exposure" && "ms-auto justify-end",
                           )}
                         >
                           {label}
-                          <SortChevron dir={header.column.getIsSorted()} />
+                          <SortChevron dir={sortedDir} />
                         </button>
                       ) : (
                         label
