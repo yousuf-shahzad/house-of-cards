@@ -111,6 +111,18 @@ def test_partial_outage_reaches_analyse_with_failures(make_service, no_validatio
     assert seen == {"loaded": {"ZZAAA"}, "failures": {"ZZBBB"}, "aware": True}
 
 
+def test_analysis_route_with_real_maths(make_service):
+    service, _ = make_service(unavailable=["ZZCCC"])
+    response = client(service).post("/api/analysis", json={"holdings": [
+        {"ticker": "ZZAAA", "allocation": 0.5}, {"ticker": "ZZBBB", "allocation": 0.3},
+        {"ticker": "ZZCCC", "allocation": 0.2}]})
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert {e["ticker"]: e["status"] for e in body["etfs"]}["ZZCCC"] == "unavailable"
+    assert body["coverage"]["missing_allocation"] == pytest.approx(0.2)
+    assert "Coverage: covered" in cli.summary(AnalysisResponse.model_validate(body))
+
+
 def test_validation_runs_before_any_fetch(make_service, monkeypatch):
     service, source = make_service()
 
