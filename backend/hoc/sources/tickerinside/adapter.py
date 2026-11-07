@@ -12,6 +12,7 @@ Facts verified 2026-11-07 (see docs/hoc/PLAN.md):
 
 from __future__ import annotations
 
+import math
 import re
 from datetime import date
 from typing import ClassVar
@@ -49,6 +50,8 @@ class TickerInsideAdapter:
             if not isinstance(holdings, dict) or not holdings:
                 raise ValueError("empty holdings")
             pct = {str(s).upper(): float(w) for s, w in holdings.items()}
+            if not all(math.isfinite(w) for w in pct.values()):
+                raise ValueError("non-finite weight")
         except (KeyError, TypeError, ValueError) as exc:
             raise SourceParseError(f"TickerInside {path} is not a fund holdings file ({exc})") from exc
 
@@ -77,12 +80,34 @@ class TickerInsideAdapter:
                 country=country_of(symbol), cik=ident.get("cik"), figi=ident.get("composite_figi"),
             ))
 
-        sectors = (data.get("breakdown") or {}).get("sectors_pct") or None
-        return RawEtfHoldings(
-            etf_ticker=ticker, etf_name=data.get("name"), source="tickerinside",
-            source_layer=data.get("source_layer"), as_of=as_of, retrieved_at=response.fetched_at,
-            source_url=data.get("page_url") or f"{BASE_URL}/{path}", filing_url=data.get("filing_url"),
-            attribution=data.get("cite_as"), licence=data.get("license") or LICENCE,
-            reported_sector_weights={k: float(v) / 100 for k, v in sectors.items()} if sectors else None,
-            holdings=lines, warnings=warnings,
-        )
+        sectors = _sector_weights(data.get("breakdown"))
+        if sectors is _MALFORMED:
+            sectors = None
+            warnings.append("TickerInside sector breakdown is malformed and was ignored")
+        try:
+            return RawEtfHoldings(
+                etf_ticker=ticker, etf_name=data.get("name"), source="tickerinside",
+                source_layer=data.get("source_layer"), as_of=as_of, retrieved_at=response.fetched_at,
+                source_url=data.get("page_url") or f"{BASE_URL}/{path}", filing_url=data.get("filing_url"),
+                attribution=data.get("cite_as"), licence=data.get("license") or LICENCE,
+                reported_sector_weights=sectors, holdings=lines, warnings=warnings,
+            )
+        except ValueError as exc:  # pydantic ValidationError: a field had the wrong type upstream
+            raise SourceParseError(f"TickerInside {path} has malformed fields") from exc
+
+
+_MALFORMED = object()
+
+
+def _sector_weights(breakdown):
+    """breakdown.sectors_pct (percent) -> fractions; None if absent, _MALFORMED if unusable."""
+    if breakdown is None:
+        return None
+    try:
+        sectors = breakdown.get("sectors_pct")
+        if not sectors:
+            return None
+        weights = {str(k): float(v) / 100 for k, v in sectors.items()}
+    except (AttributeError, TypeError, ValueError):
+        return _MALFORMED
+    return weights if all(math.isfinite(w) for w in weights.values()) else _MALFORMED

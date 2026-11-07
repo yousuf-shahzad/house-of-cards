@@ -6,8 +6,14 @@ import json
 
 import pytest
 
-from hoc.contract import RawEtfHoldings, Sector, wsum
-from hoc.identity.resolver import Aliases, aliases_from_entries, clean_company_name, load_aliases
+from hoc.contract import RawEtfHoldings, RawHolding, Sector, wsum
+from hoc.identity.resolver import (
+    Aliases,
+    aliases_from_entries,
+    clean_company_name,
+    listing_symbol,
+    load_aliases,
+)
 from hoc.normalise.pipeline import map_sector, normalise_etf
 
 
@@ -126,3 +132,20 @@ def test_company_name_prefers_longest_clean_name(fake_source, fake_reference, al
                              strict=True)]
     etf = normalise_etf(raw.model_copy(update={"holdings": lines}), fake_reference, aliases)
     assert {h.company_name for h in etf.holdings if h.company_key == "CIK:9990000002"} == {"ZZ Beta Holdings"}
+
+
+@pytest.mark.parametrize(("symbol", "exchange", "country", "expected"), [
+    ("BRK B", "NYSE", None, "BRK.B"), ("BF/B", "NYSE", "US", "BF.B"), ("AAPL", "NASDAQ", None, "AAPL"),
+    ("2330", "Taiwan Stock Exchange", None, "2330.TW"), ("700", "Hong Kong Exchanges And Clearing Ltd", "CN", "700.HK"),
+    ("DELTA.R", "Stock Exchange Of Thailand", None, "DELTA.R.TH"), ("ASML", "Euronext Amsterdam", "NL", "ASML.NL"),
+    ("NOVO B", "Omx Nordic Exchange Copenhagen A/S", "DK", "NOVOB.DK"), ("RR.", "London Stock Exchange", "GB", "RR.GB"), ("XYZ", None, "BR", "XYZ.BR"),
+    ("9999.TW", None, "TW", "9999.TW"),
+])
+def test_ishares_symbols_follow_tickerinside_convention(symbol, exchange, country, expected):
+    line = RawHolding(source_symbol=symbol, weight=0.1, exchange=exchange, country=country)
+    assert listing_symbol(line, "ishares") == expected
+
+
+def test_only_ishares_symbols_get_a_listing_suffix():
+    line = RawHolding(source_symbol="TSM", weight=0.1, country="TW")  # US ADR of a Taiwanese issuer
+    assert listing_symbol(line, "sec_nport") == listing_symbol(line, "tickerinside") == "TSM"
