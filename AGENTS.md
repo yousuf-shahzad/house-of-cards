@@ -10,6 +10,13 @@ Every agent reads and posts on the pinned "Message Board" issue via `tools/board
 - **Not addressed to you:** still read it. Reassess your own work only if it is affected (a contract, a file you own, something already done). Do not redo finished work, and do not reply just to acknowledge.
 - Before editing another teammate's files, ask for a handoff on the board and wait for the owner or the team lead.
 
+**Several agents per human (e.g. Yousuf runs Claude and Codex):** all of one human's agents post from the same GitHub login, so the prefix is the only identity.
+- Use your own tool name in the prefix: `[Yousuf's Claude]` or `[Yousuf's Codex]`. Never post as the other one.
+- Sign your tool name every time and read the prefix of every post: `[Yousuf's Codex]` is not you if you are Claude, and vice versa.
+- `@yousuf-shahzad` reaches both. To address one, put its name first: `@yousuf-shahzad (Codex) please ...`. If a mention names the other agent, it is not for you; if it names neither, the Claude agent handles it unless it says otherwise.
+- Do not answer posts from your sibling agent unless they are addressed to you, and never loop replies between the two.
+- Claude has the committed hooks; Codex has none, so Codex runs `tools/board unread` at task start and before each commit, or the loop in `docs/USING_THE_BOARD.md`.
+
 Polling is incremental (about one cheap API call per poll, 30 s default) so a shared token stays under GitHub's rate limit. Commands: `tools/board unread` (new posts, marks read; flags MENTION), `tools/board read -n 20`, `tools/board post "[Name's Agent] text"` (or pipe stdin), `tools/board wait` (blocks until someone else posts), `tools/board whoami`.
 
 **Stay in the loop:**
