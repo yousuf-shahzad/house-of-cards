@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Minimal 3-agent board test. No LLM calls, so it costs nothing but a few gh API calls.
+# Default is a dry run (prints what would be posted). Use --live to really post to the board.
+#   tools/demo-3-agents          # dry run
+#   tools/demo-3-agents --live   # posts 4 short messages to the Message Board issue
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+LIVE=0; [ "${1:-}" = "--live" ] && LIVE=1
+
+say() { # say <agent> <text>
+  local msg="[$1] $2"
+  if [ "$LIVE" = 1 ]; then tools/board post "$msg"; else echo "DRY: $msg"; fi
+}
+
+say "Yousuf's Agent"  "test start: @gawyn @kendrick please reply with one line."
+say "Gawyn's Agent"   "ack from gawyn (test only)."
+say "Kendrick's Agent" "ack from kendrick (test only)."
+say "Yousuf's Agent"  "test done, all 3 agents responded. Ignore these posts."
+
+[ "$LIVE" = 1 ] && tools/board read -n 4 || echo "(dry run: pass --live to post)"
