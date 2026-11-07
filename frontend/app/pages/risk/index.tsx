@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, type CSSProperties } from "react";
 import {
   RiAlertLine,
   RiArrowDownSLine,
@@ -20,7 +20,7 @@ import {
   RiSparklingLine,
 } from "@remixicon/react";
 
-import { api } from "@/api/client";
+import { api, ApiError } from "@/api/client";
 import type {
   DataGap,
   EtfReport,
@@ -164,6 +164,42 @@ function cleanSignedZero(value: number, digits = 2): number {
   return Math.abs(value) < threshold ? 0 : value;
 }
 
+function errorCopy(error: ApiError): string {
+  const tickers = (error.details as { tickers?: string[] } | undefined)?.tickers;
+  if (error.code === "UNKNOWN_TICKER" && tickers?.length) {
+    return `We couldn't find ${tickers.join(", ")} in any data source. Check the ticker on the Portfolio page.`;
+  }
+  if (error.code === "SOURCES_UNAVAILABLE") {
+    return "None of the data sources could be reached, so we have no holdings to evaluate.";
+  }
+  if (error.code === "NETWORK_ERROR") {
+    return "We couldn't reach the analysis service. Check that the backend is running.";
+  }
+  return error.message;
+}
+
+function etfBarStyle(index: number, widthPct: number): CSSProperties {
+  const { color, dash } = etfVisual(index);
+  return {
+    width: `${widthPct}%`,
+    backgroundColor: color,
+    backgroundImage: dash
+      ? "repeating-linear-gradient(135deg, transparent 0 4px, var(--color-background-primary-default) 4px 6px)"
+      : undefined,
+  };
+}
+
+function etfDotStyle(index: number): CSSProperties {
+  const { color, dash } = etfVisual(index);
+  return dash
+    ? {
+        backgroundColor: color,
+        boxShadow: "inset 0 0 0 1.5px var(--color-background-primary-default)",
+        border: `1.5px dashed ${color}`,
+      }
+    : { backgroundColor: color };
+}
+
 export default function RiskPage() {
   const { analysis, status, stale, error, retry, setRows } = useAnalysis();
   const [loadingExample, setLoadingExample] = useState(false);
@@ -264,11 +300,13 @@ export default function RiskPage() {
               Could not load risk &amp; data report ({error.code})
             </h2>
           </div>
-          <p className="text-body-regular text-text-secondary">{error.message}</p>
+          <p className="text-body-regular text-text-secondary">{errorCopy(error)}</p>
           <div className="flex flex-wrap items-center gap-3">
-            <Button variant="primary" size="small" leadingIcon={RiRefreshLine} onClick={retry}>
-              Retry analysis
-            </Button>
+            {error.code !== "UNKNOWN_TICKER" && (
+              <Button variant="primary" size="small" leadingIcon={RiRefreshLine} onClick={retry}>
+                Retry analysis
+              </Button>
+            )}
             <Button
               variant="secondary"
               size="small"
@@ -366,12 +404,25 @@ export default function RiskPage() {
           <div className="flex items-center gap-2 text-body-2-medium text-text-error-primary">
             <RiErrorWarningLine className="size-4 shrink-0" aria-hidden />
             <span>
-              {error.code}: {error.message} (showing last valid analysis)
+              {errorCopy(error)} (showing last valid analysis)
             </span>
           </div>
-          <Button variant="secondary" size="xs" leadingIcon={RiRefreshLine} onClick={retry}>
-            Retry
-          </Button>
+          <div className="flex items-center gap-2">
+            {error.code !== "UNKNOWN_TICKER" && (
+              <Button variant="secondary" size="xs" leadingIcon={RiRefreshLine} onClick={retry}>
+                Retry
+              </Button>
+            )}
+            <Button
+              variant="secondary"
+              size="xs"
+              onClick={() => {
+                location.hash = "#/portfolio";
+              }}
+            >
+              Edit portfolio
+            </Button>
+          </div>
         </div>
       )}
 
@@ -408,7 +459,7 @@ export default function RiskPage() {
                 >
                   <span
                     className="size-2 rounded-full"
-                    style={{ backgroundColor: etfVisual(idx).color }}
+                    style={etfDotStyle(idx)}
                     aria-hidden
                   />
                   <EtfChip ticker={u.ticker} />
@@ -434,7 +485,7 @@ export default function RiskPage() {
       >
         {/* Card 1: Top-5 / Top-10 / Top-20 Concentration */}
         <div className="flex flex-col justify-between gap-3 rounded-2xl border border-border-button-default bg-background-secondary-default p-4">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-body-2-medium text-text-secondary">Top-N concentration</span>
             <SegmentedControl
               aria-label="Top N concentration selector"
@@ -459,8 +510,8 @@ export default function RiskPage() {
               className="text-title-2-medium text-text-primary"
             />
             <span className="text-caption-1-regular text-text-tertiary tabular-nums">
-              Top 5: <Pct value={concentration.top5} digits={1} /> · Top 10:{" "}
-              <Pct value={concentration.top10} digits={1} />
+              Top 5: <Pct value={concentration.top5} digits={2} /> · Top 10:{" "}
+              <Pct value={concentration.top10} digits={2} />
             </span>
           </div>
 
@@ -792,7 +843,6 @@ export default function RiskPage() {
                     >
                       {company.contributions.map((c) => {
                         const etfIdx = etfIndexMap.get(c.etf_ticker) ?? 0;
-                        const visual = etfVisual(etfIdx);
                         const segPct =
                           company.exposure > 0
                             ? (c.contribution / company.exposure) * widthPct
@@ -801,10 +851,7 @@ export default function RiskPage() {
                           <span
                             key={c.etf_ticker}
                             className="h-full"
-                            style={{
-                              width: `${segPct}%`,
-                              backgroundColor: visual.color,
-                            }}
+                            style={etfBarStyle(etfIdx, segPct)}
                           />
                         );
                       })}
@@ -855,7 +902,7 @@ export default function RiskPage() {
                   >
                     <span
                       className="size-2.5 rounded-full"
-                      style={{ backgroundColor: etfVisual(idx).color }}
+                      style={etfDotStyle(idx)}
                       aria-hidden
                     />
                     <EtfChip ticker={etf.ticker} />
@@ -906,7 +953,6 @@ export default function RiskPage() {
                     <div className="hidden flex-wrap items-center gap-2 sm:flex">
                       {sec.by_etf.map((contrib) => {
                         const etfIdx = etfIndexMap.get(contrib.etf_ticker) ?? 0;
-                        const visual = etfVisual(etfIdx);
                         return (
                           <span
                             key={contrib.etf_ticker}
@@ -914,7 +960,7 @@ export default function RiskPage() {
                           >
                             <span
                               className="size-2 rounded-full"
-                              style={{ backgroundColor: visual.color }}
+                              style={etfDotStyle(etfIdx)}
                               aria-hidden
                             />
                             <span className="font-mono text-text-tertiary">
@@ -941,7 +987,6 @@ export default function RiskPage() {
                   {sectorBarMode === "stacked" ? (
                     sec.by_etf.map((contrib) => {
                       const etfIdx = etfIndexMap.get(contrib.etf_ticker) ?? 0;
-                      const visual = etfVisual(etfIdx);
                       const segWidthPct =
                         maxSectorWeight > 0
                           ? Math.min(100, (contrib.contribution / maxSectorWeight) * 100)
@@ -950,10 +995,7 @@ export default function RiskPage() {
                         <div
                           key={contrib.etf_ticker}
                           className="h-full transition-[width] duration-200"
-                          style={{
-                            width: `${segWidthPct}%`,
-                            backgroundColor: visual.color,
-                          }}
+                          style={etfBarStyle(etfIdx, segWidthPct)}
                           title={`${contrib.etf_ticker}: ${formatPct(contrib.contribution)}`}
                         />
                       );
@@ -1015,7 +1057,7 @@ export default function RiskPage() {
                       <div className="flex items-center gap-2">
                         <span
                           className="size-2.5 shrink-0 rounded-full"
-                          style={{ backgroundColor: etfVisual(idx).color }}
+                          style={etfDotStyle(idx)}
                           aria-hidden
                         />
                         <EtfChip ticker={etf.ticker} />
@@ -1142,7 +1184,7 @@ export default function RiskPage() {
                             {isExpanded ? (
                               <RiArrowDownSLine className="size-3.5" aria-hidden />
                             ) : (
-                              <RiArrowRightSLine className="size-3.5" aria-hidden />
+                              <RiArrowRightSLine className="size-3.5 rtl:rotate-180" aria-hidden />
                             )}
                             <span>
                               {etf.warnings.length > 0
@@ -1341,7 +1383,7 @@ export default function RiskPage() {
                           {typeof etfIdx === "number" && (
                             <span
                               className="size-2 rounded-full"
-                              style={{ backgroundColor: etfVisual(etfIdx).color }}
+                              style={etfDotStyle(etfIdx)}
                               aria-hidden
                             />
                           )}
@@ -1354,7 +1396,7 @@ export default function RiskPage() {
                       <span className="text-caption-1-medium text-text-secondary tabular-nums">
                         Impact:{" "}
                         <Pct
-                          value={gap.portfolio_weight}
+                          value={cleanSignedZero(gap.portfolio_weight)}
                           digits={2}
                           className="text-text-primary"
                         />
