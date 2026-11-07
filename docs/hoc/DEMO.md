@@ -1,0 +1,18 @@
+# House of Cards — 3-Minute Pitch Demo Script
+
+## Pre-Flight (Before the Pitch)
+
+- **Warm the disk cache:** From `backend/`, run `uv run python -m hoc.cli warm` first (and `uv run python -m hoc.cli warm --example global-core`) so reference data, sector breakdowns, and all example ETFs (`IVV`, `QQQ`, `XLK`, `EEM`, `VTI`, `VXUS`) are cached on disk and load in `< 0.1 s` during the live pitch.
+- **Start backend & frontend:** Run `uv run uvicorn hoc.api.app:app --port 8000` in `backend/` and `npm run dev` in `frontend/`, then open `http://localhost:5173`.
+
+---
+
+## 3-Minute Live Walkthrough (One Step per Bullet)
+
+- **0:00 — Frame the problem & load `us-core-tilt` (`#/portfolio`):** Click **"US core with a tech tilt"** (`IVV` 40%, `QQQ` 25%, `XLK` 15%, `EEM` 20%) and hit **Analyse portfolio** — what looks like a diversified 4-ETF portfolio across S&P 500, Nasdaq-100, US Tech, and Emerging Markets actually concentrates **37.14%** of your money into just 10 companies (`49.8` effective companies out of `1,667` distinct issuers, `HHI 0.0201`).
+- **0:35 — Reveal true single-stock concentration (`#/exposures`):** Point out the top holdings stacked by ETF contribution — **Apple (`7.37%`)**, **Nvidia (`6.89%`)**, and **Microsoft (`5.60%`)** each appear across 3 ETFs (`IVV`, `QQQ`, `XLK`), contributing nearly **20%** of the entire portfolio by themselves.
+- **1:00 — Show share-class & cross-listing identity resolution (`#/exposures`):** Click or expand **#4 Alphabet Inc. (`3.46%` across `IVV` and `QQQ`)** to show `GOOGL` Class A (`1.86%`) and `GOOG` Class C (`1.60%`) merged under `CIK:0001652044`, then point to **#12 Samsung Electronics Co., Ltd. (`1.43%` in `EEM`)** where Korean common (`005930.KR`, `1.26%`) and preferred (`005935.KR`, `0.17%`) merge into a single issuer (`1,683` securities collapsed into `1,667` companies).
+- **1:35 — Expose hidden fund-to-fund redundancy (`#/overlap` & `#/network`):** Open the Overlap Matrix and select **`IVV` × `QQQ`** to highlight **48.82% weighted company overlap** (`85` shared companies, `86` shared securities) and **`QQQ` × `XLK` at 50.11%** (`35` shared companies), then switch briefly to **Network (`#/network`)** to visualise how the 3 US ETFs form a tightly coupled mega-cap cluster while `EEM` connects via **TSMC (`#5, 3.01%`)**.
+- **2:05 — Audit coverage reconciliation & disclosure freshness (`#/risk`):** Show **99.93% covered NAV** (`0.00%` excluded net short futures/cash in `XLK`, `0.00%` missing, `0.07%` unexplained weight residual) so every basis point reconciles to `100.00%`, and point out the **Data Gaps & Sources table** flagging **`QQQ`'s SEC Form N-PORT disclosure (`2026-06-30`, 130 days old)** alongside daily `2026-11-05` issuer disclosures for `IVV`, `XLK`, and `EEM`.
+- **2:30 — Change an allocation live (`#/portfolio`):** Shift `10%` from `IVV` into `QQQ` (**`IVV` 30%, `QQQ` 35%, `XLK` 15%, `EEM` 20%**) and re-run — in under `100 ms` from the in-memory memo, Top-10 concentration jumps from **37.14% → 37.97%** (`effective companies 49.8 → 48.4`), **Nvidia rises to `6.95%`**, and **Alphabet climbs from `3.46% → 3.62%`**.
+- **2:50 — Scale to 11,800+ companies with `global-core` (`#/portfolio`):** Load the second verified example, **"Global market with a Nasdaq-100 tilt"** (`VTI` 50%, `VXUS` 30%, `QQQ` 20%), spanning **12,287 raw lines (`3,483` in `VTI`, `8,702` in `VXUS`, `102` in `QQQ`)** and **11,801 distinct companies** at **99.50% coverage** — showing `VTI` × `QQQ` still overlaps **48.16%** (`91` companies) while `VXUS` × `QQQ` catches cross-listed global giants like **ASML (`ALIAS:ASML`)**, **PDD Holdings**, and **Ferrovial**.
