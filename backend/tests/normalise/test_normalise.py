@@ -149,3 +149,13 @@ def test_ishares_symbols_follow_tickerinside_convention(symbol, exchange, countr
 def test_only_ishares_symbols_get_a_listing_suffix():
     line = RawHolding(source_symbol="TSM", weight=0.1, country="TW")  # US ADR of a Taiwanese issuer
     assert listing_symbol(line, "sec_nport") == listing_symbol(line, "tickerinside") == "TSM"
+
+
+def test_mixed_sources_share_one_security_and_company(fake_source, fake_reference, aliases):
+    """An issuer file's 'ZZBET B' (iShares spelling) and a TickerInside-style 'ZZBET.B' are one listing."""
+    raw = fake_source.fetch("ZZAAA")
+    issuer_line = RawHolding(source_symbol="ZZBET B", name="ZZ BETA HOLDINGS CLASS B", weight=0.5, exchange="NYSE")
+    issuer = raw.model_copy(update={"etf_ticker": "ZZISH", "source": "ishares", "holdings": [issuer_line]})
+    a = by_symbol(normalise_etf(issuer, fake_reference, aliases))["ZZBET.B"]
+    b = by_symbol(norm(fake_source, fake_reference, aliases, "ZZAAA"))["ZZBET.B"]
+    assert (a.security_key, a.company_key) == (b.security_key, b.company_key) == ("SYM:ZZBET.B", "CIK:9990000002")
