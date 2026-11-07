@@ -1,9 +1,11 @@
 "use client";
 
 import { useRef, type KeyboardEvent, type ReactNode } from "react";
+import { Focusable } from "react-aria-components";
 import { EtfChip } from "@/app/ui/etf-chip";
 import { etfVisual } from "@/app/ui/etf-color";
 import { Pct, formatPct } from "@/app/ui/pct";
+import { Tooltip, TooltipTrigger } from "@/components/base/tooltip/tooltip";
 import { cx } from "@/utils/cx";
 
 export interface HeatmapMatrixProps {
@@ -227,78 +229,86 @@ export function HeatmapMatrix({
                   const title = getCellTitle
                     ? getCellTitle(rowTicker, colTicker, value, isDiagonal)
                     : isDiagonal
-                      ? `${rowTicker} covered holdings weight: ${formatPct(value)}`
+                      ? `${rowTicker} Covered NAV (${formatPct(value)}): the share of this ETF we could look through, excluding cash and derivatives.`
                       : `${rowTicker} × ${colTicker} overlap: ${formatPct(value)}`;
                   const bg = heatBackground(value, isDiagonal);
                   const cellKey = `${rowIdx}:${colIdx}`;
 
                   if (isDiagonal) {
                     return (
-                      <div
-                        key={cellKey}
-                        ref={(node) => {
-                          if (node) cellRefs.current.set(cellKey, node);
-                          else cellRefs.current.delete(cellKey);
-                        }}
-                        role="gridcell"
-                        aria-colindex={colIdx + 2}
-                        aria-readonly="true"
-                        tabIndex={0}
-                        title={title}
-                        aria-label={title}
-                        onKeyDown={(e) => handleKeyDown(e, rowIdx, colIdx)}
-                        className={cx(
-                          "flex min-h-[4.75rem] flex-col items-center justify-center gap-1 rounded-2xl p-2.5 text-center",
-                          "border border-dashed border-border-button-default bg-background-secondary-default",
-                          "outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
-                        )}
-                      >
-                        <Pct
-                          value={value}
-                          className="text-title-3-semibold text-text-secondary"
-                        />
-                        <span className="text-caption-1-regular text-text-tertiary">
-                          {subtitle}
-                        </span>
-                      </div>
+                      <TooltipTrigger key={cellKey} delay={150}>
+                        <Focusable>
+                          <div
+                            ref={(node) => {
+                              if (node) cellRefs.current.set(cellKey, node);
+                              else cellRefs.current.delete(cellKey);
+                            }}
+                            role="gridcell"
+                            aria-colindex={colIdx + 2}
+                            aria-readonly="true"
+                            tabIndex={0}
+                            title={title}
+                            aria-label={title}
+                            onKeyDown={(e) => handleKeyDown(e, rowIdx, colIdx)}
+                            className={cx(
+                              "flex min-h-[4.75rem] cursor-help flex-col items-center justify-center gap-1 rounded-2xl p-2.5 text-center",
+                              "border border-dashed border-border-button-default bg-background-secondary-default",
+                              "outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
+                            )}
+                          >
+                            <Pct
+                              value={value}
+                              className="text-title-3-semibold text-text-secondary"
+                            />
+                            <span className="text-caption-1-regular text-text-tertiary underline decoration-dotted underline-offset-2">
+                              {subtitle}
+                            </span>
+                          </div>
+                        </Focusable>
+                        <Tooltip size="sm">{title}</Tooltip>
+                      </TooltipTrigger>
                     );
                   }
 
                   return (
-                    <button
-                      key={cellKey}
-                      ref={(node) => {
-                        if (node) cellRefs.current.set(cellKey, node);
-                        else cellRefs.current.delete(cellKey);
-                      }}
-                      type="button"
-                      role="gridcell"
-                      aria-colindex={colIdx + 2}
-                      aria-selected={selected}
-                      aria-pressed={selected}
-                      aria-label={title}
-                      title={title}
-                      onClick={() => onSelectPair?.(rowTicker, colTicker)}
-                      onKeyDown={(e) => handleKeyDown(e, rowIdx, colIdx)}
-                      style={bg ? { backgroundColor: bg } : undefined}
-                      className={cx(
-                        "flex min-h-[4.75rem] cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl p-2.5 text-center",
-                        "border transition-[border-color,box-shadow,transform] duration-150 ease",
-                        "outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
-                        !bg && "bg-background-secondary-default hover:bg-background-secondary-hover",
-                        selected
-                          ? "border-border-focus-ring ring-2 ring-border-focus-ring"
-                          : "border-border-button-default hover:border-border-button-hover",
-                      )}
-                    >
-                      <Pct
-                        value={value}
-                        className="text-title-3-semibold text-text-primary"
-                      />
-                      <span className="text-caption-1-medium text-text-secondary">
-                        {subtitle}
-                      </span>
-                    </button>
+                    <TooltipTrigger key={cellKey} delay={150}>
+                      <Focusable>
+                        <button
+                          ref={(node) => {
+                            if (node) cellRefs.current.set(cellKey, node);
+                            else cellRefs.current.delete(cellKey);
+                          }}
+                          type="button"
+                          role="gridcell"
+                          aria-colindex={colIdx + 2}
+                          aria-selected={selected}
+                          aria-pressed={selected}
+                          aria-label={title}
+                          title={title}
+                          onClick={() => onSelectPair?.(rowTicker, colTicker)}
+                          onKeyDown={(e) => handleKeyDown(e, rowIdx, colIdx)}
+                          style={bg ? { backgroundColor: bg } : undefined}
+                          className={cx(
+                            "flex min-h-[4.75rem] cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl p-2.5 text-center",
+                            "border transition-[border-color,box-shadow,transform] duration-150 ease",
+                            "outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
+                            !bg && "bg-background-secondary-default hover:bg-background-secondary-hover",
+                            selected
+                              ? "border-border-focus-ring ring-2 ring-border-focus-ring"
+                              : "border-border-button-default hover:border-border-button-hover",
+                          )}
+                        >
+                          <Pct
+                            value={value}
+                            className="text-title-3-semibold text-text-primary"
+                          />
+                          <span className="text-caption-1-medium text-text-secondary">
+                            {subtitle}
+                          </span>
+                        </button>
+                      </Focusable>
+                      <Tooltip size="sm">{title}</Tooltip>
+                    </TooltipTrigger>
                   );
                 })}
               </div>
