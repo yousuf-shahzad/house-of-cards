@@ -2,11 +2,17 @@
 tests/snapshots/openapi.json). Owner after W0-B: package f (Bekarys's Claude).
 
 Run: uv run uvicorn hoc.api.app:app --reload --host 127.0.0.1 --port 8000
+The served app warms up in a background thread at startup (example ETFs, reference files, sector data),
+so the first analysis is fast; startup itself never waits for it. Progress goes to the log.
 """
 
 from __future__ import annotations
 
+import logging
+import threading
+import time
 from collections.abc import Callable
+from contextlib import asynccontextmanager
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, FastAPI, Path, Query, Request
@@ -39,13 +45,46 @@ ERRORS = {
 }
 
 router = APIRouter(prefix="/api")
+log = logging.getLogger("hoc.warmup")
+
+
+def _service(state) -> EtfService:
+    with state.service_lock:  # the warm-up thread and the first request may both ask for it
+        if state.service is None:
+            state.service = state.service_factory()
+        return state.service
 
 
 def get_service(request: Request) -> EtfService:
-    state = request.app.state
-    if state.service is None:
-        state.service = state.service_factory()
-    return state.service
+    return _service(request.app.state)
+
+
+def warm_up(state) -> None:
+    """Load every example ETF (holdings, reference files, sector data) into the service memo and disk cache.
+    Never raises: on failure the first request simply loads the data itself."""
+    started = time.monotonic()
+    log.info("loading example ETFs, reference files and sector data")
+    try:
+        for example in _service(state).examples().examples:
+            missing = [e.ticker for e in example.holdings if not e.verified]
+            log.info("example %s: %s", example.id,
+                     "ready" if not missing else f"NOT verified, missing {', '.join(missing)}")
+    except Exception:
+        log.exception("warm-up failed; the first request will load the data instead")
+        return
+    log.info("done in %.1f s", time.monotonic() - started)
+
+
+def _start_warm_up(state) -> threading.Thread:
+    if not log.handlers:  # uvicorn only configures its own loggers
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("INFO:     hoc warm-up: %(message)s"))
+        log.addHandler(handler)
+        log.setLevel(logging.INFO)
+        log.propagate = False
+    thread = threading.Thread(target=warm_up, args=(state,), name="hoc-warm-up", daemon=True)
+    thread.start()
+    return thread
 
 
 Service = Annotated[EtfService, Depends(get_service)]
@@ -81,11 +120,19 @@ def _error(status: int, body: ErrorResponse) -> JSONResponse:
 
 
 def create_app(service_factory: Callable[[], EtfService] | None = None,
-               settings: Settings | None = None) -> FastAPI:
+               settings: Settings | None = None, *, warm: bool = False) -> FastAPI:
+    """warm=True starts warm_up() in a background thread when the app starts (the served app does this)."""
     settings = settings or Settings.from_env()
-    app = FastAPI(title="House of Cards API", version=__version__,
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        app.state.warm_up_thread = _start_warm_up(app.state) if warm else None
+        yield
+
+    app = FastAPI(title="House of Cards API", version=__version__, lifespan=lifespan,
                   description="ETF look-through analysis on real holdings. Weights are fractions of 1.")
     app.state.service = None
+    app.state.service_lock = threading.Lock()
     app.state.service_factory = service_factory or (lambda: EtfService.from_settings(settings))
     app.add_middleware(CORSMiddleware, allow_origins=list(settings.cors_origins),
                        allow_methods=["GET", "POST"], allow_headers=["Content-Type"])
@@ -110,4 +157,4 @@ def create_app(service_factory: Callable[[], EtfService] | None = None,
     return app
 
 
-app = create_app()
+app = create_app(warm=True)
