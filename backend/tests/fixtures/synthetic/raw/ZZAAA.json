@@ -1,0 +1,21 @@
+{
+  "etf_ticker": "ZZAAA",
+  "etf_name": "SYNTHETIC Broad Market Test Fund",
+  "source": "fake",
+  "source_layer": "issuer",
+  "as_of": "2026-11-05",
+  "retrieved_at": "2026-11-07T09:00:00Z",
+  "source_url": "https://example.invalid/synthetic/zzaaa",
+  "attribution": "SYNTHETIC test data, not real holdings",
+  "licence": null,
+  "reported_sector_weights": null,
+  "holdings": [
+    {"source_symbol": "ZZALP", "name": "ZZ Alpha Corp", "weight": 0.30, "sector_label": "Information Technology"},
+    {"source_symbol": "ZZBET.A", "name": "ZZ Beta Holdings Class A", "weight": 0.10, "sector_label": "Financials"},
+    {"source_symbol": "ZZBET.B", "name": "ZZ Beta Holdings Class B", "weight": 0.10, "sector_label": "Financials"},
+    {"source_symbol": "ZZGAM", "name": "ZZ Gamma Therapeutics", "weight": 0.25, "sector_label": "Health Care"},
+    {"source_symbol": "ZZDEL", "name": "ZZ Delta Energy", "weight": 0.20, "sector_label": "Energy"},
+    {"source_symbol": null, "name": "USD CASH", "weight": 0.05, "asset_class": "cash"}
+  ],
+  "warnings": []
+}

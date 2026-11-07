@@ -1,0 +1,16 @@
+{
+  "_comment": "SYNTHETIC reference data for tests only (see README.md).",
+  "symbols": {
+    "ZZALP": {"symbol": "ZZALP", "name": "ZZ Alpha Corp", "cik": "9990000001", "figi": "ZZFIGI000001", "country": "US", "sector_label": "Information Technology"},
+    "ZZBET.A": {"symbol": "ZZBET.A", "name": "ZZ Beta Holdings Class A", "cik": "9990000002", "figi": "ZZFIGI000002", "country": "US", "sector_label": "Financials"},
+    "ZZBET.B": {"symbol": "ZZBET.B", "name": "ZZ Beta Holdings Class B", "cik": "9990000002", "figi": "ZZFIGI000003", "country": "US", "sector_label": "Financials"},
+    "ZZGAM": {"symbol": "ZZGAM", "name": "ZZ Gamma Therapeutics", "cik": "9990000003", "figi": "ZZFIGI000004", "country": "US", "sector_label": "Health Care"},
+    "ZZDEL": {"symbol": "ZZDEL", "name": "ZZ Delta Energy", "cik": "9990000004", "figi": "ZZFIGI000005", "country": "US", "sector_label": "Energy"},
+    "ZZEPS": {"symbol": "ZZEPS", "name": "ZZ Epsilon Semiconductor ADR", "cik": "9990000005", "figi": "ZZFIGI000006", "country": "TW", "sector_label": "Information Technology"},
+    "9999.TW": {"symbol": "9999.TW", "name": "ZZ Epsilon Semiconductor", "figi": "ZZFIGI000007", "exchange": "TWSE", "country": "TW", "sector_label": "Information Technology"}
+  },
+  "isins": {},
+  "aliases_for_tests": [
+    {"id": "ZZEPSILON", "company_name": "ZZ Epsilon Semiconductor", "identifiers": ["ZZEPS", "9999.TW"], "note": "synthetic ADR <-> local listing"}
+  ]
+}

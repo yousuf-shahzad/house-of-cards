@@ -1,0 +1,21 @@
+{
+  "etf_ticker": "ZZBBB",
+  "etf_name": "SYNTHETIC Technology Test Fund",
+  "source": "fake",
+  "source_layer": "sec_nport",
+  "as_of": "2026-06-30",
+  "retrieved_at": "2026-11-07T09:00:00Z",
+  "source_url": "https://example.invalid/synthetic/zzbbb",
+  "filing_url": "https://example.invalid/synthetic/zzbbb/filing",
+  "attribution": "SYNTHETIC test data, not real holdings",
+  "licence": null,
+  "reported_sector_weights": {"technology": 0.62, "financials": 0.30, "unknown": 0.06},
+  "holdings": [
+    {"source_symbol": "ZZALP", "name": "ZZ Alpha Corp", "weight": 0.40},
+    {"source_symbol": "ZZBET.B", "name": "ZZ Beta Holdings Class B", "weight": 0.30},
+    {"source_symbol": "9999.TW", "name": "ZZ Epsilon Semiconductor (local)", "weight": 0.22, "country": "TW"},
+    {"source_symbol": null, "name": "ZZ Unnamed Private Co", "weight": 0.06},
+    {"source_symbol": "ZZFUTZ6", "name": "ZZ INDEX FUTURE DEC26", "weight": 0.02, "asset_class": "derivative"}
+  ],
+  "warnings": []
+}
