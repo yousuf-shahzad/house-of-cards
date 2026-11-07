@@ -1,0 +1,15 @@
+/* Orchestrator-owned base theme. Components use these variables. */
+:root {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --accent: #38bdf8;
+  --radius: 12px;
+  --max: 960px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+main, #header > *, #footer > * { max-width: var(--max); margin: 0 auto; padding: 1rem; }
+a { color: var(--accent); }
+.placeholder { color: var(--muted); border: 1px dashed var(--muted); border-radius: var(--radius); text-align: center; }
