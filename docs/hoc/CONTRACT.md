@@ -9,6 +9,9 @@ The single source of truth for everything that crosses a package boundary. Code:
 
 - **Every weight is a fraction of 1** (`0.05` = 5%), a `float`. Adapters convert percent at the boundary;
   only `frontend/api/client.ts` converts the user's percent input. Nothing else ever sees percent.
+- Weights must be **finite**: the `Weight` type rejects NaN and infinity at construction. An adapter that hits
+  malformed upstream data should raise `SourceParseError`; as a safety net, the registry records any
+  validation/parse exception from an adapter as a `parse_error` attempt, so bad data never becomes a 500.
 - Add weights with `hoc.contract.wsum` (`math.fsum`: exactly rounded, order independent).
 - Every sort has an explicit tie-break (usually the key ascending), so output is deterministic.
 - JSON weights are rounded to 10 decimal places on serialisation.

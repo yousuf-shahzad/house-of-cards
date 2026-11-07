@@ -6,6 +6,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Literal
 
+from pydantic import ValidationError
+
 from hoc.contract import (
     RawEtfHoldings,
     SourceAttempt,
@@ -68,6 +70,12 @@ class SourceRegistry:
                 result.attempts.append(SourceAttempt(source=adapter.name, outcome="unavailable", message=str(exc)))
             except SourceParseError as exc:
                 result.attempts.append(SourceAttempt(source=adapter.name, outcome="parse_error", message=str(exc)))
+            except (ValidationError, ValueError, TypeError, KeyError, AttributeError, IndexError) as exc:
+                # Defence in depth: malformed upstream data that slipped past an adapter's own checks
+                # (e.g. a NaN weight rejected by the contract) is a parse error for that source, never a 500.
+                first_line = (str(exc).splitlines() or [""])[0][:200]
+                message = f"malformed data ({type(exc).__name__}): {first_line}"
+                result.attempts.append(SourceAttempt(source=adapter.name, outcome="parse_error", message=message))
             else:
                 result.attempts.append(SourceAttempt(source=adapter.name, outcome="ok"))
                 result.raw = raw
