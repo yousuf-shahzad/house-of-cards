@@ -1,22 +1,38 @@
 #!/usr/bin/env bash
-# Runs Yousuf's Codex as a board listener. Blocks (free) until someone posts, and only
-# calls Codex when the new posts contain a MENTION. Ctrl+C to stop.
+# Runs Yousuf's Codex as a board listener. Blocks (free) until a post appears, and only
+# calls Codex when the new posts are addressed to Codex. Ctrl+C to stop.
 #   tools/codex-loop            # poll every 60s
 #   INTERVAL=30 tools/codex-loop
+# Codex shares the yousuf-shahzad GitHub login with Claude, and tools/board hides posts from
+# your own login and keeps one read cursor per checkout. So the loop uses a private copy of
+# tools/board (own cursor, in .codex-state/) with a fake BOARD_LOGIN, so it sees Claude's posts.
+# Codex runs read-only with no network or token; this script posts its one-line reply.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 OWNER="${OWNER:-Yousuf}"; ME="${OWNER}'s Codex"
 INTERVAL="${INTERVAL:-60}"
+export BOARD_LOGIN="${BOARD_LOGIN:-yousuf-shahzad-codex}"
+export BOARD_REPO="${BOARD_REPO:-$(gh repo view --json nameWithOwner -q .nameWithOwner)}"
 
-PROMPT="You are $ME, one of two agents (the other is ${OWNER}'s Claude) sharing the GitHub login yousuf-shahzad. Follow AGENTS.md. Below are new board posts. Act only on posts flagged MENTION that are addressed to you: '@yousuf-shahzad (Codex)', '@all', or your own prefix. Ignore posts addressed to Claude or posted by Claude. Reply with: tools/board post \"[$ME] <one short line>\". Keep replies to one line, do not edit files unless a post explicitly asks you to, and do not reply to acknowledge. If nothing is for you, do nothing."
+mkdir -p .codex-state/tools && cp tools/board .codex-state/tools/board
+[ -d .codex-state/.git ] || git init -q .codex-state   # own ROOT, so own .board cursor
+bd() { (cd .codex-state && tools/board "$@"); }
 
-tools/board unread >/dev/null 2>&1  # skip history on start
+PROMPT="You are $ME, one of two agents (the other is ${OWNER}'s Claude) sharing the GitHub login yousuf-shahzad. Follow AGENTS.md. Below are recent board posts. Some are addressed to Codex or @all. Your whole final message is posted to the board for you, so output ONLY one short line of reply text with no prefix and no quotes, or the single word NOOP if nothing needs a reply (ignore posts addressed to Claude, and do not reply just to acknowledge). You cannot run commands or edit files."
+
+bd unread >/dev/null 2>&1  # skip history on start
 echo "[$ME] listening on the board (every ${INTERVAL}s). Ctrl+C to stop."
-while tools/board wait --interval "$INTERVAL" >/dev/null 2>&1; do
-  NEW="$(tools/board unread 2>&1)"
-  if echo "$NEW" | grep -q "MENTION"; then
-    echo "[$(date +%T)] mention seen, running codex"
-    printf '%s\n\nNEW POSTS:\n%s\n' "$PROMPT" "$NEW" | \
-      codex exec --skip-git-repo-check -c 'sandbox_workspace_write.network_access=true' --sandbox workspace-write -
-  fi
+while bd wait --interval "$INTERVAL" >/dev/null 2>&1; do
+  NEW="$(bd read -n 5 2>&1)"
+  MINE="$(printf '%s\n' "$NEW" | grep -iE '\(Codex\)|@all|@yousuf-shahzad-codex' | grep -v "^\[$ME\]" || true)"
+  [ -z "$MINE" ] && continue
+  echo "[$(date +%T)] post for Codex, running codex"
+  OUT="$(mktemp)"
+  printf '%s\n\nRECENT POSTS:\n%s\n' "$PROMPT" "$NEW" | \
+    codex exec --skip-git-repo-check --sandbox read-only -o "$OUT" - >/dev/null 2>&1
+  REPLY="$(tr -d '\r' < "$OUT" | head -n 3 | tr '\n' ' ' | sed 's/^ *//;s/ *$//')"; rm -f "$OUT"
+  case "$REPLY" in
+    ""|NOOP*) echo "[$(date +%T)] codex: no reply" ;;
+    *) tools/board post "[$ME] $REPLY" >/dev/null && echo "[$(date +%T)] codex replied" ;;
+  esac
 done
