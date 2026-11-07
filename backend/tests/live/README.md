@@ -29,5 +29,7 @@ It compares holdings, disclosure and retrieval timestamps with the warmed data.
 The iShares tests also run the real normaliser without optional reference
 enrichment and verify cash/non-equity exclusions and preserved weights.
 The example test calls EtfService.from_settings and checks complete loading,
-coverage reconciliation and exposure totals. It needs package a reference data.
-The TickerInside adapter smoke is added when package a lands. Their implementation stubs are not silently skipped by these tests.
+coverage reconciliation and exposure totals. It uses the production TickerInside reference data.
+The TickerInside XLK smoke checks disclosure freshness, attribution/licence,
+reference identifiers, sector weights and derivative exclusion. Source failures
+are not silently skipped by these tests.

@@ -18,6 +18,7 @@ from hoc.identity.resolver import load_aliases
 from hoc.normalise.pipeline import normalise_etf
 from hoc.sources.ishares.adapter import ISharesAdapter
 from hoc.sources.sec_nport.adapter import SecNportAdapter
+from hoc.sources.tickerinside.adapter import TickerInsideAdapter
 
 pytestmark = pytest.mark.live
 
@@ -94,3 +95,19 @@ def test_offline_replays_ishares_disk_cache(live_http, live_settings, monkeypatc
     assert replay.retrieved_at == warm.retrieved_at
     assert replay.holdings == warm.holdings
 
+
+
+def test_tickerinside_disclosure(live_http, live_settings):
+    raw = TickerInsideAdapter(live_http, live_settings).fetch("XLK")
+    assert_disclosure(raw, source="tickerinside", ticker="XLK", max_age_days=7, min_lines=50)
+    assert raw.attribution and raw.licence == "CC BY 4.0"
+    assert raw.source_layer in {"issuer", "sec_nport"}
+    assert raw.reported_sector_weights
+    assert any(line.cik or line.figi for line in raw.holdings)
+    assert any(line.asset_class == "derivative" for line in raw.holdings)
+    normalised = normalise_etf(raw, NoEnrichment(), load_aliases())
+    assert all(line.asset_class not in EXCLUDED_ASSET_CLASSES for line in normalised.holdings)
+    assert normalised.excluded
+    assert normalised.reported_weight == pytest.approx(
+        normalised.holdings_weight + normalised.excluded_weight
+    )
