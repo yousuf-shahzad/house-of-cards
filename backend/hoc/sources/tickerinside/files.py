@@ -15,9 +15,9 @@ LICENCE = "CC BY 4.0"
 SOURCE = "tickerinside"
 
 
-def get_json(http, settings, path: str) -> tuple[Any, Any]:
+def get_json(http, settings, path: str, ttl: timedelta = TTL) -> tuple[Any, Any]:
     """GET {BASE_URL}/{path} -> (parsed JSON, CachedResponse). 404 -> TickerNotFound."""
-    response = http.get(f"{BASE_URL}/{path}", source=SOURCE, ttl=TTL,
+    response = http.get(f"{BASE_URL}/{path}", source=SOURCE, ttl=ttl,
                         headers={"User-Agent": settings.user_agent})
     if response.status == 404:
         raise TickerNotFound(f"TickerInside has no {path}")
