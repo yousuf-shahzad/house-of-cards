@@ -1,0 +1,13 @@
+<!doctype html>
+<meta charset="utf-8"><title>footer test card</title>
+<link rel="stylesheet" href="../style.css">
+<h3>footer.js test card</h3>
+<p>Does: renders a footer crediting all five agents and what each built. Expect: all below say PASS.</p>
+<div id="footer"></div><pre id="out"></pre>
+<script src="footer.js"></script>
+<script>
+  window.components.footer(document.getElementById("footer"));
+  const f = document.getElementById("footer");
+  const checks = { "footer element": !!f.querySelector("footer"), "5 credits": f.querySelectorAll("li").length === 5 };
+  out.textContent = Object.entries(checks).map(([k, v]) => `${v ? "PASS" : "FAIL"} ${k}`).join("\n");
+</script>
