@@ -1,0 +1,19 @@
+<!doctype html>
+<meta charset="utf-8"><title>about test card</title>
+<link rel="stylesheet" href="../style.css">
+<h3>about.js test card</h3>
+<p>Does: renders 5 agent cards that expand on click. Expect all lines below to say PASS.</p>
+<div id="view"></div><pre id="out"></pre>
+<script src="about.js"></script>
+<script>
+  const v = document.getElementById("view");
+  window.pages.about(v);
+  const cards = v.querySelectorAll(".card");
+  const first = cards[0].querySelector("button");
+  first.click();
+  const opened = cards[0].dataset.open === "true" && first.getAttribute("aria-expanded") === "true";
+  first.click();
+  const closed = cards[0].dataset.open === "false";
+  const checks = { "5 cards": cards.length === 5, "click expands": opened, "click again collapses": closed };
+  out.textContent = Object.entries(checks).map(([k, ok]) => `${ok ? "PASS" : "FAIL"} ${k}`).join("\n");
+</script>
