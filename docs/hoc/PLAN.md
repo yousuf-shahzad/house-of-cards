@@ -113,13 +113,13 @@ Queue, in priority order. Each item is added to #28 when it is assigned.
 |---|---|---|---|
 | 1 | Research | **R1: identity edge cases.** Check `aliases.json` candidates against live TickerInside `securities.json` and `identifiers.json` (ADR ↔ local listings, Samsung preferred, BRK classes, dual-listed companies such as Shell or Unilever), with evidence per entry | Whoever frees up first; feeds d |
 | 2 | Research | **R2: source freshness and fallback.** For the example ETFs and other common ones (SPY, VOO, VTI, VXUS, SCHD, VEA), record which source is freshest and whether iShares or N-PORT beats TickerInside, and recommend `HOC_SOURCE_ORDER` per issuer | Kendrick's Gemini after b, or anyone free |
-| 3 | Build | **c: iShares adapter**, if b's owner is still busy | Next free backend agent |
+| 3 | Build | **c: iShares adapter**: **assigned to Yousuf's Codex** (b's owner still busy) | Yousuf's Codex |
 | 4 | Verify | **V1: numeric cross-check.** Script our analysis against TickerInside `/lookthrough` and `/overlap` for the example portfolio, and explain any differences (dates, identity, cash). Kept in `scripts/`, never used by the app | Next free agent with Python |
 | 5 | Build | **Network graph:** SVG ETF → top companies, inside F3's folder once F3 is merged, or a new `pages/network/` registered through me | Next free frontend agent |
 | 6 | Research | **R3: sector mapping.** Map TickerInside `breakdown.sectors_pct` ids and iShares sector labels to our `Sector` enum, and list gaps | Anyone; feeds d |
 | 7 | Test | **T1: live smoke tests** (`@pytest.mark.live`) for each adapter and the example portfolio, plus an offline-mode test | Next free backend agent |
 | 8 | Polish | **P1: UX and accessibility pass** across pages (loading and empty states, keyboard use, dark mode, number formatting) | Next free frontend agent |
-| 9 | Build | **SPDR and Vanguard adapters**, only if R2 shows they add freshness or ISINs worth having | Last |
+| ~~9~~ | ~~Build~~ | ~~SPDR and Vanguard adapters~~: **dropped**. R2 (`docs/hoc/research/R2-sources.md`) found TickerInside matches the issuers' freshness, so they add nothing. | n/a |
 
 **Rules:**
 - An item is "unblocked" when its dependencies are merged and its paths are free.
