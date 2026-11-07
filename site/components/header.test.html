@@ -2,12 +2,16 @@
 <meta charset="utf-8"><title>header test card</title>
 <link rel="stylesheet" href="../style.css">
 <h3>header.js test card</h3>
-<p>Does: renders the site title and 3 nav links (Home, Features, Credits). Expect: all below say PASS.</p>
+<p>Does: renders the site title, 4 nav links (#/, #/about, #/playground, #/contact) and a mobile menu toggle. Expect: all below say PASS.</p>
 <div id="header"></div><pre id="out"></pre>
 <script src="header.js"></script>
 <script>
   window.components.header(document.getElementById("header"));
   const h = document.getElementById("header");
-  const checks = { "title present": !!h.querySelector(".title"), "3 nav links": h.querySelectorAll("nav a").length === 3 };
+  const checks = { "title present": !!h.querySelector(".title"), "4 nav links": h.querySelectorAll("nav a").length === 4,
+    "hrefs": [...h.querySelectorAll("nav a")].map(a => a.getAttribute("href")).join() === "#/,#/about,#/playground,#/contact" };
+  const btn = h.querySelector(".menu"), nav = h.querySelector("nav");
+  btn.click(); checks["menu opens"] = nav.dataset.open === "true" && btn.getAttribute("aria-expanded") === "true";
+  btn.click(); checks["menu closes"] = nav.dataset.open === "false";
   out.textContent = Object.entries(checks).map(([k, v]) => `${v ? "PASS" : "FAIL"} ${k}`).join("\n");
 </script>
