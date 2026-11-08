@@ -145,7 +145,7 @@ const tidyPct = (value: number) => Math.round(value * 1e4) / 1e4;
 
 export function usePortfolioDraft(): PortfolioDraft {
   const [rows, setDraftRows] = useState<DraftRow[]>([]);
-  const [mode, setModeState] = useState<InputMode>("percent");
+  const [mode, setModeState] = useState<InputMode>("shares");
   const [notice, setNotice] = useState<string | null>(null);
   const [valuationState, setValuationState] = useState<ValuationState | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -253,16 +253,55 @@ export function usePortfolioDraft(): PortfolioDraft {
     [inputs, rows, effectivePct],
   );
 
-  const setRows = useCallback(
-    (next: AllocationInput[]) => {
-      if (mode === "shares" && rows.some((row) => row.shares !== null)) {
-        setNotice("Switched to percentages: the loaded portfolio replaced the share counts you entered.");
-      }
-      setModeState("percent");
-      setDraftRows(next.map((row) => newRow(row.ticker, row.allocationPct)));
-    },
-    [mode, rows],
-  );
+  const setRows = useCallback((next: AllocationInput[]) => {
+    setNotice(null);
+    setModeState("shares");
+    if (next.length === 0) {
+      setDraftRows([]);
+      return;
+    }
+    const sampleRows: DraftRow[] = next.map((row) => ({
+      id: rowId(),
+      ticker: row.ticker.trim().toUpperCase(),
+      allocationPct: row.allocationPct,
+      shares: null,
+      pinned: true,
+    }));
+    setDraftRows(sampleRows);
+
+    api
+      .valuation(sampleRows.map((row) => ({ ticker: row.ticker, shares: 1, overridePct: null })))
+      .then((res) => {
+        const computedShares: number[] = [];
+        for (let i = 0; i < sampleRows.length; i += 1) {
+          const item = sampleRows[i];
+          const match = res.rows[i];
+          const price = match?.price?.price;
+          const pct = item.allocationPct ?? 0;
+          if (typeof price !== "number" || !Number.isFinite(price) || price <= 0 || pct <= 0) {
+            return;
+          }
+          computedShares.push(Math.max(1, Math.round((pct * 100) / price)));
+        }
+        setDraftRows((current) => {
+          if (
+            current.length !== sampleRows.length ||
+            !current.every((row, idx) => row.id === sampleRows[idx].id && row.pinned && row.shares === null)
+          ) {
+            return current;
+          }
+          return sampleRows.map((row, idx) => ({
+            ...row,
+            shares: computedShares[idx],
+            allocationPct: null,
+            pinned: false,
+          }));
+        });
+      })
+      .catch(() => {
+        // Keep the pinned-% fallback already in state if pricing fails.
+      });
+  }, []);
   const copyFrom = useCallback((source: readonly DraftRow[], sourceMode: InputMode) => {
     setNotice(null);
     setModeState(sourceMode);

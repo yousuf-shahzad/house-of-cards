@@ -395,14 +395,14 @@ export function DraftEditor({
   /** Caller's own messages under the draft's messages. */
   messages?: ReactNode;
 }) {
-  const { rows, mode, setMode, setRows, addRow, notice, dismissNotice } = draft;
+  const { rows, mode, setMode, updateRow, addRow, notice, dismissNotice } = draft;
   const counts = new Map<string, number>();
   for (const row of rows) counts.set(normTicker(row.ticker), (counts.get(normTicker(row.ticker)) ?? 0) + 1);
   const isFlagged = (row: DraftRow) => (counts.get(normTicker(row.ticker)) ?? 0) > 1 || (flaggedIds?.has(row.id) ?? false);
   const RowView = mode === "shares" ? SharesRow : PercentRow;
   const splitEvenly = () => {
     const pcts = evenSplit(rows.length);
-    setRows(rows.map((row, i) => ({ ticker: row.ticker, allocationPct: pcts[i] })));
+    rows.forEach((row, i) => updateRow(row.id, { allocationPct: pcts[i] }));
   };
   return (
     <DraftContext.Provider value={draft}>

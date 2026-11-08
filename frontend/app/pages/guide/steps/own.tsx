@@ -59,7 +59,7 @@ export function StepOwn({ onBack }: GuideStepProps) {
         </div>
 
         <ol className="flex flex-col gap-3">
-          {topFive.map((company, index) => {
+          {topFive.map((company) => {
             const etfCount = company.contributions.length;
             const barWidth = Math.min(100, Math.max(4, (company.exposure / topScore) * 100));
             return (
@@ -68,7 +68,6 @@ export function StepOwn({ onBack }: GuideStepProps) {
                 className="flex flex-col gap-2 rounded-2xl border border-separator-border bg-background-primary-default p-4"
               >
                 <p className="text-body-medium text-text-primary">
-                  <span className="mr-2 text-text-tertiary tabular-nums">#{index + 1}</span>
                   <Pct value={company.exposure} digits={2} className="font-semibold text-text-primary" /> of your money
                   ends up in <strong>{company.company_name}</strong>, through{" "}
                   <strong>{etfCount} of your ETFs</strong>.

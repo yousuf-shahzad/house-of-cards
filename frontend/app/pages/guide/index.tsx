@@ -112,7 +112,7 @@ export default function GuidePage() {
         <div className="flex items-center gap-3">
           {step === 1 && !canProceedFromStep1 && (
             <span className="text-caption-1-regular text-text-secondary">
-              Load a sample or enter ETFs totaling 100% to continue
+              Load a sample or enter your ETFs to continue
             </span>
           )}
           {step < total && (
