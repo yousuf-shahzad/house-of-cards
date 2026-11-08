@@ -49,7 +49,15 @@ export function StepSpread({ onBack }: GuideStepProps) {
   const verdict = concentrationVerdict(concentration.hhi);
   const equalHoldingsCount = Math.max(1, Math.round(concentration.effective_companies));
   const topThreeSectors = sectors.filter((item) => item.sector !== "unknown").slice(0, 3);
-  const maxSectorWeight = Math.max(0.01, topThreeSectors[0]?.weight ?? 0.01);
+  const topSector = topThreeSectors[0] ?? null;
+  const sectorConcentrated = Boolean(topSector && topSector.weight >= 0.4);
+  const chipColor =
+    sectorConcentrated && verdict.label === "Diversified" ? "yellow" : verdict.color;
+  const chipLabel =
+    sectorConcentrated && verdict.label === "Diversified"
+      ? "Spread across companies, concentrated in one industry"
+      : verdict.label;
+  const maxSectorWeight = Math.max(0.01, topSector?.weight ?? 0.01);
 
   return (
     <div className="flex flex-col gap-5">
@@ -60,12 +68,20 @@ export function StepSpread({ onBack }: GuideStepProps) {
             <RiScales3Line className="size-5 shrink-0 text-foreground-icon-secondary" aria-hidden />
             <h2 className="text-headline-medium text-text-primary">Overall balance</h2>
           </div>
-          <Chip variant="subtle" color={verdict.color}>
-            {verdict.label}
+          <Chip variant="subtle" color={chipColor}>
+            {chipLabel}
           </Chip>
         </div>
 
-        <p className="text-body-regular text-text-secondary">{verdict.summary}</p>
+        <div className="flex flex-col gap-1.5">
+          <p className="text-body-regular text-text-secondary">{verdict.summary}</p>
+          {sectorConcentrated && topSector && (
+            <p className="text-body-medium text-text-primary">
+              But about half your money (<Pct value={topSector.weight} digits={2} className="font-semibold" />) is in
+              one industry: <strong>{plainSectorName(topSector.sector)}</strong>.
+            </p>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5 rounded-2xl border border-separator-border bg-background-primary-default p-4">

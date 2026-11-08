@@ -177,7 +177,7 @@ export function StepPick({ onNext }: GuideStepProps) {
       <section className="suite-card flex flex-col gap-4" aria-label="Choose how to start">
         <div className="flex flex-col gap-1">
           <p className="text-body-medium text-text-primary">
-            An ETF is a basket of companies. Pick a sample portfolio in one click, or enter the ETFs you own below.
+            Pick a sample portfolio in one click, or enter the ETFs you own below.
           </p>
           <p className="text-body-2-regular text-text-secondary">
             We open each basket to show which companies your money actually sits in.
