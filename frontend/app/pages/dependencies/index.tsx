@@ -70,10 +70,13 @@ import { PAGE_INFO_COPY } from "@/app/pages/guide/copy";
 import { TabInfoBanner } from "@/app/pages/guide";
 import { SUPPLIER_EDGE_TYPES, supplierOptions } from "@/app/ui/failure-suppliers";
 import { formatPct, Pct } from "@/app/ui/pct";
+import { scanBarIndeterminate } from "@/app/ui/scan-activity";
+import { ScanActivity } from "@/app/ui/scan-activity-view";
 import { Chip, type ChipColor } from "@/components/base/badges/chip";
 import { StatusDot } from "@/components/base/badges/status-dot";
 import { Button, ButtonLink } from "@/components/base/buttons/button";
 import { Drawer, DrawerBody, DrawerFooter, DrawerHeader } from "@/components/base/drawer/drawer";
+import { ProgressBar } from "@/components/base/progress/progress";
 import {
   SegmentedControl,
   SegmentedControlItem,
@@ -2116,12 +2119,14 @@ function DependenciesPageContent() {
                 })}
               </div>
 
-              <div className="h-2 w-full overflow-hidden rounded-full bg-background-tertiary-default">
-                <div
-                  className="h-full rounded-full bg-text-primary transition-all duration-300"
-                  style={{ width: `${progressPct}%` }}
-                />
-              </div>
+              <ProgressBar
+                aria-label="Dependency scan progress"
+                size="lg"
+                value={progressPct}
+                maxValue={100}
+                isIndeterminate={scanBarIndeterminate(job, progressPct, depStatus === "starting")}
+              />
+              <ScanActivity job={job} starting={depStatus === "starting"} />
 
               {companiesList.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">

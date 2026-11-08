@@ -11,6 +11,8 @@ import { useDependencies } from "@/app/dependencies-state";
 import { useExperience } from "@/app/experience";
 import { buildMetricCards, metricKind, metricSubject } from "@/app/pages/dependencies/metrics";
 import { formatPct } from "@/app/ui/pct";
+import { scanBarIndeterminate } from "@/app/ui/scan-activity";
+import { ScanActivity } from "@/app/ui/scan-activity-view";
 import { Chip, type ChipColor } from "@/components/base/badges/chip";
 import { Button } from "@/components/base/buttons/button";
 import { ProgressBar } from "@/components/base/progress/progress";
@@ -375,9 +377,17 @@ export default function RisksStep({ showLearnMore = true }: RiskStepProps) {
       <ProgressBar
         label={RISKS_COPY.phasedProgress}
         description={RISKS_COPY.readingNote}
-        isIndeterminate={!job?.steps_total && !job?.progress_total}
+        isIndeterminate={scanBarIndeterminate(
+          stale ? null : job,
+          progressPct,
+          status === "starting" || (stale && analysisStatus === "ready"),
+        )}
         value={progressPct}
         maxValue={100}
+      />
+      <ScanActivity
+        job={stale ? null : job}
+        starting={status === "starting" || (stale && analysisStatus === "ready")}
       />
       {liveResearch.length > 0 && (
         <div className="flex flex-col gap-2 pt-1">
