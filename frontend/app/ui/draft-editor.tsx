@@ -145,6 +145,28 @@ function ValuationIssues({ issues, blocked }: { issues: ValuationIssue[]; blocke
 const DraftContext = createContext<PortfolioDraft | null>(null);
 /** True inside a shares-only editor: no Shares | % switch, % shown as text, no pins. */
 const SharesOnlyContext = createContext(false);
+/** True inside a read-only editor (Try a change's "Your portfolio (now)"): the same rows as text, no controls. */
+const ReadOnlyContext = createContext(false);
+
+/** A read-only stand-in for an input: same height and padding, so read-only and editable rows line up. */
+function ReadOnlyCell({ children, label, className = "" }: { children: ReactNode; label?: string; className?: string }) {
+  return (
+    <span
+      aria-label={label}
+      // 38px = the inputs' 36px field plus their 1px border top and bottom.
+      className={`flex h-[2.375rem] min-w-0 items-center truncate rounded-lg px-2 text-body-regular text-text-primary ${className}`}
+      style={tabular}
+    >
+      {children}
+    </span>
+  );
+}
+
+/** Keeps the remove button's column (and so the row layout) without showing a control. */
+function RemoveSlot({ className }: { className: string }) {
+  return <span aria-hidden className={`size-8 ${className}`} />;
+}
+
 function useDraft(): PortfolioDraft {
   const draft = useContext(DraftContext);
   if (!draft) throw new Error("Draft rows must be rendered inside <DraftEditor>.");
@@ -247,16 +269,47 @@ function TickerField({ row, flagged }: { row: DraftRow; flagged: boolean }) {
   );
 }
 
+// Row grids follow the editor's own width (container queries), not the window, so two editors side by side
+// in Try a change keep the same columns as one full-width editor on the Portfolio page.
+const PERCENT_GRID =
+  "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 @md:grid-cols-[minmax(5rem,8rem)_minmax(5rem,7rem)_minmax(0,1fr)_auto]";
+const SHARES_GRID =
+  "@md:grid-cols-[minmax(5rem,8rem)_minmax(6rem,9rem)_minmax(5rem,8rem)_minmax(0,1fr)_auto]";
+
 function PercentRow({ row, report, flagged }: { row: DraftRow; report?: EtfReport; flagged: boolean }) {
   const { updateRow, removeRow } = useDraft();
+  const readOnly = useContext(ReadOnlyContext);
   const label = normTicker(row.ticker) || "this ETF";
+  if (readOnly) {
+    const pct = row.allocationPct;
+    return (
+      <li className={PERCENT_GRID}>
+        <ReadOnlyCell className="col-start-1 font-medium">{normTicker(row.ticker) || "—"}</ReadOnlyCell>
+        <RemoveSlot className="col-start-2 row-start-1 @md:col-start-4" />
+        <ReadOnlyCell
+          label={`${label} is ${pct === null ? "not set" : `${pct}%`} of your portfolio`}
+          className="col-span-2 @md:col-span-1 @md:col-start-2 @md:row-start-1"
+        >
+          {pct === null ? "—" : `${pct.toFixed(2)}%`}
+        </ReadOnlyCell>
+        <div aria-hidden className="col-span-2 h-1.5 overflow-hidden rounded-full bg-background-tertiary-default @md:col-span-1 @md:col-start-3 @md:row-start-1">
+          <div className="h-full rounded-full bg-text-tertiary" style={{ width: `${Math.min(Math.max(pct ?? 0, 0), 100)}%` }} />
+        </div>
+        {report && (
+          <div className="col-span-2 flex flex-wrap items-center gap-2 @md:col-span-4">
+            <ReportLine report={report} />
+          </div>
+        )}
+      </li>
+    );
+  }
   return (
-    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 sm:grid-cols-[8rem_7rem_minmax(0,1fr)_auto]">
+    <li className={PERCENT_GRID}>
       <TickerField row={row} flagged={flagged} />
       <CloseButton
         aria-label={`Remove ${label}`}
         onClick={() => removeRow(row.id)}
-        className="col-start-2 row-start-1 sm:col-start-4"
+        className="col-start-2 row-start-1 @md:col-start-4"
       />
       <NumberField
         aria-label={`Allocation for ${label}, percent`}
@@ -268,7 +321,7 @@ function PercentRow({ row, report, flagged }: { row: DraftRow; report?: EtfRepor
         formatOptions={{ maximumFractionDigits: 2 }}
         value={row.allocationPct ?? Number.NaN}
         onChange={(pct) => updateRow(row.id, { allocationPct: Number.isNaN(pct) ? null : pct })}
-        className="col-span-2 sm:col-span-1 sm:col-start-2 sm:row-start-1"
+        className="col-span-2 @md:col-span-1 @md:col-start-2 @md:row-start-1"
       />
       <Slider
         aria-label={`Allocation slider for ${label}`}
@@ -277,10 +330,10 @@ function PercentRow({ row, report, flagged }: { row: DraftRow; report?: EtfRepor
         step={1}
         value={row.allocationPct ?? 0}
         onChange={(pct) => updateRow(row.id, { allocationPct: pct })}
-        className="col-span-2 sm:col-span-1 sm:col-start-3 sm:row-start-1"
+        className="col-span-2 @md:col-span-1 @md:col-start-3 @md:row-start-1"
       />
       {report && (
-        <div className="col-span-2 flex flex-wrap items-center gap-2 sm:col-span-4">
+        <div className="col-span-2 flex flex-wrap items-center gap-2 @md:col-span-4">
           <ReportLine report={report} />
         </div>
       )}
@@ -340,19 +393,50 @@ function PriceLine({ row, priced }: { row: DraftRow; priced?: ValuationRowResult
 function SharesRow({ row, report, flagged }: { row: DraftRow; report?: EtfReport; flagged: boolean }) {
   const { updateRow, removeRow, effectivePct, priced } = useDraft();
   const sharesOnly = useContext(SharesOnlyContext);
+  const readOnly = useContext(ReadOnlyContext);
   const label = normTicker(row.ticker) || "this ETF";
   const pct = effectivePct[row.id];
   // The field shows 2 dp, so give it the 2-dp value: blur then commits exactly what is shown.
   const shownPct = pct === null || pct === undefined ? null : Math.round(pct * 100) / 100;
+  if (readOnly) {
+    return (
+      <li className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 ${SHARES_GRID}`}>
+        <ReadOnlyCell className="col-start-1 font-medium">{normTicker(row.ticker) || "—"}</ReadOnlyCell>
+        <RemoveSlot className="col-start-2 row-start-1 @md:col-start-5" />
+        <div className="col-span-2 grid grid-cols-2 gap-3 @md:col-span-2 @md:col-start-2 @md:row-start-1">
+          <ReadOnlyCell label={`Shares of ${label}`}>
+            {row.pinned || row.shares === null ? "—" : shareCount(row.shares)}
+          </ReadOnlyCell>
+          <ReadOnlyCell label={`${label} is ${shownPct === null ? "not priced yet" : `${shownPct}%`} of your portfolio`}>
+            {shownPct === null ? "—" : `${shownPct.toFixed(2)}%`}
+          </ReadOnlyCell>
+        </div>
+        {/* Holds the space of the editable row's pin hint or "Use shares" button, so rows stay level. */}
+        <div aria-hidden className="col-span-2 flex items-center @md:col-span-1 @md:col-start-4 @md:row-start-1">
+          {sharesOnly ? null : row.pinned ? (
+            <span className="invisible h-8 w-28" />
+          ) : (
+            <span className="invisible flex items-center gap-1 text-body-2-regular">
+              <RiPushpinLine className="size-4" /> Or type a % to fix this row
+            </span>
+          )}
+        </div>
+        <div className="col-span-2 flex flex-wrap items-center gap-2 @md:col-span-5">
+          <PriceLine row={row} priced={priced[row.id]} />
+          {report && <ReportLine report={report} />}
+        </div>
+      </li>
+    );
+  }
   return (
-    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 sm:grid-cols-[8rem_9rem_8rem_minmax(0,1fr)_auto]">
+    <li className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 ${SHARES_GRID}`}>
       <TickerField row={row} flagged={flagged} />
       <CloseButton
         aria-label={`Remove ${label}`}
         onClick={() => removeRow(row.id)}
-        className="col-start-2 row-start-1 sm:col-start-5"
+        className="col-start-2 row-start-1 @md:col-start-5"
       />
-      <div className="col-span-2 grid grid-cols-2 gap-3 sm:col-span-2 sm:col-start-2 sm:row-start-1">
+      <div className="col-span-2 grid grid-cols-2 gap-3 @md:col-span-2 @md:col-start-2 @md:row-start-1">
         <NumberField
           aria-label={`Shares of ${label}`}
           isInvalid={!row.pinned && row.shares !== null && !validShares(row.shares)}
@@ -392,7 +476,7 @@ function SharesRow({ row, report, flagged }: { row: DraftRow; report?: EtfReport
         />
         )}
       </div>
-      <div className="col-span-2 flex items-center sm:col-span-1 sm:col-start-4 sm:row-start-1">
+      <div className="col-span-2 flex items-center @md:col-span-1 @md:col-start-4 @md:row-start-1">
         {sharesOnly ? null : row.pinned ? (
           <Button
             variant="ghost"
@@ -409,7 +493,7 @@ function SharesRow({ row, report, flagged }: { row: DraftRow; report?: EtfReport
           </span>
         )}
       </div>
-      <div className="col-span-2 flex flex-wrap items-center gap-2 sm:col-span-5">
+      <div className="col-span-2 flex flex-wrap items-center gap-2 @md:col-span-5">
         <PriceLine row={row} priced={priced[row.id]} />
         {report && <ReportLine report={report} />}
       </div>
@@ -456,6 +540,7 @@ export function DraftEditor({
   status,
   messages,
   sharesOnly = false,
+  readOnly = false,
 }: {
   draft: PortfolioDraft;
   /** Accessible name of the editor section, e.g. "Your ETFs" or "Scenario ETFs". */
@@ -471,12 +556,17 @@ export function DraftEditor({
   messages?: ReactNode;
   /** Shares only (the guided view): hides the Shares | % switch, shows each % as text and drops pins. */
   sharesOnly?: boolean;
+  /**
+   * Read-only (Try a change's "Your portfolio (now)"): the same rows and totals as text, with no switch,
+   * inputs, Add ETF, remove or pins. It never changes the draft.
+   */
+  readOnly?: boolean;
 }) {
   const { rows, mode, setMode, updateRow, addRow, notice, dismissNotice } = draft;
   // A draft left in % mode by the full view switches to shares, keeping every %.
   useEffect(() => {
-    if (sharesOnly && mode === "percent") setMode("shares");
-  }, [sharesOnly, mode, setMode]);
+    if (sharesOnly && !readOnly && mode === "percent") setMode("shares");
+  }, [sharesOnly, readOnly, mode, setMode]);
   const counts = new Map<string, number>();
   for (const row of rows) counts.set(normTicker(row.ticker), (counts.get(normTicker(row.ticker)) ?? 0) + 1);
   const isFlagged = (row: DraftRow) => (counts.get(normTicker(row.ticker)) ?? 0) > 1 || (flaggedIds?.has(row.id) ?? false);
@@ -488,14 +578,18 @@ export function DraftEditor({
   return (
     <DraftContext.Provider value={draft}>
      <SharesOnlyContext.Provider value={sharesOnly}>
-      <section className="suite-card" aria-label={label}>
+     <ReadOnlyContext.Provider value={readOnly}>
+      <section className="suite-card @container" aria-label={label}>
         {!sharesOnly && (
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <span className="text-body-medium text-text-primary">Enter as</span>
+          <span className="text-body-medium text-text-primary">{readOnly ? "Entered as" : "Enter as"}</span>
+          {/* Read-only shows the same control, disabled, so both cards keep the same height. */}
           <SegmentedControl
-            aria-label="Enter holdings as"
+            aria-label={readOnly ? "Holdings entered as" : "Enter holdings as"}
+            isDisabled={readOnly}
             selectedKeys={new Set([mode])}
             onSelectionChange={(keys) => {
+              if (readOnly) return;
               const next = [...keys][0];
               if (next === "percent" || next === "shares") setMode(next);
             }}
@@ -505,7 +599,7 @@ export function DraftEditor({
           </SegmentedControl>
         </div>
         )}
-        {notice && (
+        {notice && !readOnly && (
           <div role="status" className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-body-regular text-text-secondary">{notice}</p>
             <Button variant="ghost" size="small" onClick={dismissNotice}>
@@ -525,7 +619,7 @@ export function DraftEditor({
             {mode === "shares" && (
               <li
                 aria-hidden
-                className="hidden gap-x-3 text-body-2-medium text-text-secondary sm:grid sm:grid-cols-[8rem_9rem_8rem_minmax(0,1fr)_auto]"
+                className={`hidden gap-x-3 text-body-2-medium text-text-secondary @md:grid ${SHARES_GRID}`}
               >
                 <span>ETF</span>
                 <span>Shares held</span>
@@ -542,6 +636,7 @@ export function DraftEditor({
             ))}
           </ul>
         )}
+        {!readOnly && (
         <div className="flex flex-wrap gap-2">
           <Button
             variant="secondary"
@@ -558,7 +653,8 @@ export function DraftEditor({
             </Button>
           )}
         </div>
-        {sharesOnly && mode === "shares" && <PinnedRowsPrompt />}
+        )}
+        {sharesOnly && !readOnly && mode === "shares" && <PinnedRowsPrompt />}
         <DraftStatus extra={status} extraMessages={messages} />
         {mode === "shares" && (
           <p className="text-body-2-regular text-text-tertiary">
@@ -566,6 +662,7 @@ export function DraftEditor({
           </p>
         )}
       </section>
+     </ReadOnlyContext.Provider>
      </SharesOnlyContext.Provider>
     </DraftContext.Provider>
   );

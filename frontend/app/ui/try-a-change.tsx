@@ -521,7 +521,14 @@ export function ChangeIdeas({ heading = "Ideas to try", onTried }: { heading?: s
 
 /** The editable copy of the portfolio, the four headline rows and "More details". */
 export function TryAChange({ editorTitle = "Your new mix" }: { editorTitle?: string }) {
-  const { draft: current, analysis, status: analysisStatus, stale: analysisStale, error: analysisError } = useAnalysis();
+  const {
+    draft: current,
+    analysis,
+    status: analysisStatus,
+    stale: analysisStale,
+    error: analysisError,
+    retry: retryAnalysis,
+  } = useAnalysis();
   const { isBeginner } = useExperience();
   const { scenario, resetToCurrent, compare, compareStatus, result, error, stale } = useScenario();
   const baselineReady = analysisStatus === "ready" && analysis !== null && !analysisStale && !analysisError && current.inputs !== null;
@@ -586,8 +593,39 @@ export function TryAChange({ editorTitle = "Your new mix" }: { editorTitle?: str
   return (
     <div className="flex flex-col gap-6">
       <ChangeIdeas heading="Ideas" />
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+      {/* FIX-69: the current portfolio (read-only) beside the new mix (editable), with the same rows and columns.
+          Equal columns from 1024 px; narrower screens stack them, current first. Headings and cards share one grid,
+          so a heading that wraps on one side still leaves both cards starting level. */}
+      <div className="grid grid-cols-1 items-start gap-x-6 gap-y-2 lg:grid-cols-2">
+        <div className="order-1 flex min-h-8 min-w-0 flex-wrap items-center justify-between gap-2">
+          <h2 className="text-headline-small text-text-primary">Your portfolio (now)</h2>
+          <ButtonLink href="#/portfolio" variant="ghost" size="small">
+            Edit on Portfolio
+          </ButtonLink>
+        </div>
+        <div className="order-2 min-w-0 lg:order-3">
+        <DraftEditor
+          draft={current}
+          label="Current portfolio ETFs"
+          readOnly
+          sharesOnly={isBeginner}
+          emptyText={{ percent: "No portfolio yet.", shares: "No portfolio yet." }}
+          messages={
+            analysisError ? (
+              <ServerError error={analysisError} retry={retryAnalysis} />
+            ) : analysisStatus === "loading" ? (
+              <div role="status" className="flex items-center gap-2 text-body-2-regular text-text-secondary">
+                <Spinner size="sm" aria-label="Checking current portfolio" /> Checking your current portfolio…
+              </div>
+            ) : (analysisStatus !== "ready" || analysisStale) && current.rows.length > 0 ? (
+              <p role="status" className="text-body-2-regular text-text-secondary">
+                Your current portfolio isn't ready to compare. Finish it on the Portfolio page first.
+              </p>
+            ) : null
+          }
+        />
+        </div>
+        <div className="order-3 mt-4 flex min-h-8 min-w-0 flex-wrap items-center justify-between gap-2 lg:order-2 lg:mt-0">
           <h2 className="text-headline-small text-text-primary">{editorTitle}</h2>
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="ghost" size="small" leadingIcon={RiRefreshLine} onClick={resetToCurrent}>
@@ -598,6 +636,7 @@ export function TryAChange({ editorTitle = "Your new mix" }: { editorTitle?: str
             </Button>
           </div>
         </div>
+        <div className="order-4 min-w-0">
         <DraftEditor
           draft={scenario}
           label="Changed portfolio ETFs"
@@ -608,6 +647,7 @@ export function TryAChange({ editorTitle = "Your new mix" }: { editorTitle?: str
             shares: "Add the ETFs you'd like to try and how many shares of each.",
           }}
         />
+        </div>
       </div>
 
       <section className="suite-card" aria-label="What changes" aria-busy={busy}>
