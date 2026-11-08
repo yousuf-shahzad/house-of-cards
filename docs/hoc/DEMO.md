@@ -61,22 +61,26 @@ The Dependencies page reads top to bottom: audit & coverage bar, AI synthesis, k
   confirmed with verbatim passages (Nvidia 22%, Apple 13%, Broadcom 32%, Micron 17%), and anonymised table rows like
   TSMC's `Customer A` are normalised to `Unnamed customer (Customer A)` (`unnamed_customer`), while keeping the Argon
   AI synthesis intact.
-- **2:40, act on it (Compare):** open **Compare** (`#/compare`). The Scenario is seeded from your current portfolio
-  (`IVV 40 / QQQ 25 / XLK 15 / EEM 20`). Cut `QQQ` to **10%**, remove `XLK`, and add **VTV 30%** (`IVV 40 / QQQ 10 /
-  VTV 30 / EEM 20`), then click **Compare**. Instantly (cache-only, zero Gemini or SEC calls):
-  - **TSMC dependency drops from 12.39% to 4.69% (-7.71 pts)**.
-  - **Top-10 concentration drops from 37.14% to 24.98%**, and **effective companies more than double from 49.8 to 107.0**.
-  - Unanalysed scenario holdings are listed explicitly, with a one-click button to make the scenario your active portfolio.
+- **2:40, act on it (Compare / Try a change):** open **Compare** (`#/compare`) or click **Try a change** in Step 5 of the
+  guided view. The Scenario starts as a copy of your current portfolio in **shares** (`IVV 5 / QQQ 4 / XLK 9 / EEM 34`,
+  with a **Reset to my portfolio** button and concrete one-click **Change ideas** *(coming)*) and auto-compares within
+  ~500 ms as you edit (no Compare button). Swap `XLK` and part of `QQQ` into `VTV` (e.g. `IVV 40 / QQQ 10 / VTV 30 /
+  EEM 20`):
+  - Four headline before/after rows update immediately (cache-only, zero Gemini or SEC calls): **TSMC dependency drops
+    from 12.39% to 4.69% (-7.71 pts)**, **top industry share (`top_sector`)**, **top-10 concentration (37.14% ->
+    24.98%)**, and **effective holdings (49.8 -> 107.0)**.
+  - Full deltas and any unanalysed scenario holdings sit under **More details**, with a one-click button to apply the
+    scenario to your portfolio.
 
 ## Beginner Mode (Guided View, `#/guide`)
 
 On every page load, a welcome modal asks **"Have you analysed an ETF portfolio before?"** with two choices:
 - **"I'm new: guide me"** opens the 5-step guided view (`#/guide`) with no sidebar, a slim top bar (`Step N of 5` + **Simple view / Full view** switch), and plain-English cards (zero jargon: no `HHI`, `GICS`, `look-through`, `10-K`/`20-F`, `CIK`, metric IDs, `"edges"`, tier names, or `"orchestrator"`):
-  1. **Step 1 — Pick your ETFs:** Opens in **shares** by default (with a `%` toggle). Load a sample portfolio in one click (valued as whole shares worth ~$10,000 at latest exchange closes) or enter your own ETFs.
-  2. **Step 2 — What you really own:** Top 5 companies as plain sentences (*"7.37% of your money ends up in Apple, through 3 of your ETFs"*) plus one sentence for the most-overlapping ETF pair (*"IVV and QQQ overlap by 48.82%"*). Entering Step 2 automatically starts the agentic supply-chain check (`light` depth by default) in the background.
+  1. **Step 1 — Pick your ETFs:** Shares-only input (with read-only `%` text). Load a sample portfolio in one click (`IVV 5 / QQQ 4 / XLK 9 / EEM 34 = $9,817.68` at latest exchange closes) or enter your own ETFs.
+  2. **Step 2 — What you really own:** Top 5 companies as plain sentences (*"7.37% of your money ends up in Apple, through 3 of your ETFs"*) plus one sentence for the highest-overlap ETF pair (*"QQQ and XLK overlap by 50.11%"*). Entering Step 2 automatically starts the per-company agentic supply-chain check (`light` depth by default) in the background.
   3. **Step 3 — How spread out is it?:** Combined company + industry concentration verdict chip (**Concentrated in one industry** when the top industry is $\ge 40\%$, matching the full Risk page and noting that **50.64%** sits in **Technology**), *"Your 10 biggest companies are 37.14% of your money"*, *"It behaves like about 50 equal holdings"*, and the top 3 industries.
-  4. **Step 4 — Hidden risks:** Shows a phased progress bar (*"Reading reports -> Double-checking findings -> Writing summary"*) and live/cached results from the background supply-chain check — 3 plain findings (biggest supplier dependency **12.39% on TSMC**, biggest non-US factory country **China 19.03%**, and checked portfolio share **40.43%**), concise `plain_title` + `plain_text` AI cards (with **Read more** for full detail), and a **Go deeper** option (`thorough` depth).
-  5. **Step 5 — What could you do?:** The AI's top 2 diversification suggestions (`plain_title` + `plain_text`) plus three actions: **Try a change** (opens the real-time before/after comparison right inside the simple view, showing 4 headline rows including `top_sector`), **See everything** (switches to Full view on `#/dependencies`), and **Start over**.
+  4. **Step 4 — Hidden risks:** Shows a monotonic phased progress bar (*"Reading reports -> Double-checking findings -> Writing summary"*) and live/cached results from the background supply-chain check — 3 plain findings (biggest supplier dependency **12.39% on TSMC**, biggest non-US factory country **China 19.03%**, and checked portfolio share **40.43%**), concise `plain_title` + `plain_text` AI cards (with **Read more** for full detail), and a single **Go deeper** button (`thorough` depth, replacing results in place).
+  5. **Step 5 — What could you do?:** The AI's top 2 diversification suggestions (`plain_title` + `plain_text`), concrete one-click **Change ideas** *(coming)*, plus three actions: **Try a change** (opens the real-time 4-row before/after comparison right inside the simple view), **See everything** (switches to Full view on `#/dependencies`), and **Start over**.
 - **"I'm experienced: show everything"** opens the full 7-page dashboard above. Toggling the top-bar **Simple view / Full view** switch mid-flow keeps the active portfolio and returns to the same step when switching back.
 
 ## Running the v3 Gold Evaluation Benchmark
