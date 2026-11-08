@@ -708,19 +708,27 @@ function ResearchPanel({
   researchStatus,
   researchJob,
   researchError,
+  resultResearch,
+  researchDepth,
+  isDepRunning,
   edgeById,
   selectEdge,
   onRunResearch,
+  onGoDeeper,
 }: {
   researchStatus: ResearchRunStatus;
   researchJob: ResearchJob | null;
   researchError: ApiError | null;
+  resultResearch: ResearchFinding[];
+  researchDepth: "none" | "light" | "thorough";
+  isDepRunning: boolean;
   edgeById: ReadonlyMap<string, VerifiedEdge>;
   selectEdge: (edgeId: string, openDrawer: boolean) => void;
   onRunResearch: () => void;
+  onGoDeeper: () => void;
 }) {
   const isInvestigating = researchStatus === "starting" || researchStatus === "polling";
-  const findings = researchJob?.findings ?? [];
+  const findings = researchJob?.findings?.length ? researchJob.findings : resultResearch;
   const newEdgesCount = findings.reduce((sum, f) => sum + f.new_edges.length, 0);
   const confirmedCount = findings.filter((f) => f.outcome === "confirmed").length;
   const rejectedCount = findings.filter((f) => f.outcome === "rejected").length;
@@ -738,11 +746,11 @@ function ResearchPanel({
               Investigate uncertain findings
             </h3>
             <Chip variant="caption" color="purple">
-              {researchJob?.status === "done"
-                ? `${findings.length} investigated`
-                : `Investigates up to ${DEFAULT_RESEARCH_ITEMS} uncertain items`}
+              {findings.length > 0
+                ? `${findings.length} investigated (${researchDepth === "thorough" ? "thorough" : "light"})`
+                : `Investigates uncertain & critical items`}
             </Chip>
-            {researchJob?.result && (
+            {(researchJob?.result || findings.length > 0) && (
               <Chip variant="caption" color="lime">
                 Merged into graph &amp; metrics
               </Chip>
@@ -755,21 +763,34 @@ function ResearchPanel({
           </p>
         </div>
 
-        <Button
-          variant="primary"
-          size="small"
-          leadingIcon={isInvestigating ? undefined : researchJob ? RiRefreshLine : RiSparklingLine}
-          disabled={isInvestigating}
-          onClick={onRunResearch}
-        >
-          {isInvestigating
-            ? `Investigating (${researchJob?.progress_done ?? 0}/${
-                researchJob?.progress_total || 6
-              })…`
-            : researchJob
-              ? "Re-run investigation"
-              : "Investigate gaps"}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {researchDepth !== "thorough" && (
+            <Button
+              variant="primary"
+              size="small"
+              leadingIcon={RiSparklingLine}
+              disabled={isDepRunning || isInvestigating}
+              onClick={onGoDeeper}
+            >
+              Go deeper
+            </Button>
+          )}
+          <Button
+            variant={researchDepth === "thorough" ? "primary" : "secondary"}
+            size="small"
+            leadingIcon={isInvestigating ? undefined : researchJob ? RiRefreshLine : RiSparklingLine}
+            disabled={isInvestigating || isDepRunning}
+            onClick={onRunResearch}
+          >
+            {isInvestigating
+              ? `Investigating (${researchJob?.progress_done ?? 0}/${
+                  researchJob?.progress_total || 6
+                })…`
+              : researchJob
+                ? "Re-run investigation"
+                : "Investigate gaps"}
+          </Button>
+        </div>
       </div>
 
       {isInvestigating && (
@@ -1326,6 +1347,7 @@ function DependenciesPageContent() {
     status: depStatus,
     job,
     topN: currentTopN,
+    depth: currentDepth,
     stale: depStale,
     reconnecting,
     error: depError,
@@ -1336,6 +1358,7 @@ function DependenciesPageContent() {
     researchJob,
     researchError,
     runDependencies,
+    goDeeper,
     runResearch,
     selectEdge,
     selectNode,
@@ -1659,6 +1682,17 @@ function DependenciesPageContent() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2.5">
+            {result && result.research_depth !== "thorough" && (
+              <Button
+                variant="secondary"
+                size="small"
+                leadingIcon={RiSparklingLine}
+                disabled={isRunning || topExposures.length === 0}
+                onClick={() => goDeeper()}
+              >
+                {isRunning && currentDepth === "thorough" ? "Going deeper…" : "Go deeper"}
+              </Button>
+            )}
             <Button
               variant="primary"
               size="small"
@@ -1669,7 +1703,7 @@ function DependenciesPageContent() {
               {isRunning
                 ? reconnecting
                   ? "Reconnecting…"
-                  : `Scanning filings (${job?.progress_done ?? 0}/${job?.progress_total ?? topExposures.length})…`
+                  : `Scanning filings (${job?.steps_done || job?.progress_done || 0}/${job?.steps_total || job?.progress_total || topExposures.length})…`
                 : result
                   ? depStale
                     ? "Re-evaluate dependencies"
@@ -1768,49 +1802,79 @@ function DependenciesPageContent() {
           </div>
         )}
 
-        {isRunning && (
-          <div
-            role="status"
-            aria-live="polite"
-            className="flex flex-col gap-3 rounded-2xl border border-border-button-default bg-background-primary-default p-4"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2 text-body-2-medium text-text-primary">
-                <Spinner size="sm" />
-                <span>
-                  {reconnecting
-                    ? "Reconnecting… Waiting for the backend service and resuming your dependency scan…"
-                    : `Extracting and verifying SEC 10-K / 20-F disclosures… (${job?.progress_done ?? 0} of ${job?.progress_total ?? topExposures.length} companies)`}
+        {isRunning && (() => {
+          const activePhase = job?.phase ?? "reading";
+          const stepsDone = job?.steps_done || job?.progress_done || 0;
+          const stepsTotal = job?.steps_total || job?.progress_total || topExposures.length || 15;
+          const progressPct = stepsTotal > 0 ? Math.min(100, Math.round((stepsDone / stepsTotal) * 100)) : 0;
+          const phases: Array<{ id: "reading" | "researching" | "synthesising"; label: string }> = [
+            { id: "reading", label: "Reading reports" },
+            { id: "researching", label: "Double-checking findings" },
+            { id: "synthesising", label: "Writing summary" },
+          ];
+          const phaseOrder = { queued: 0, reading: 0, researching: 1, synthesising: 2, done: 3 } as const;
+          const currentIdx = phaseOrder[activePhase] ?? 0;
+
+          return (
+            <div
+              role="status"
+              aria-live="polite"
+              className="flex flex-col gap-3 rounded-2xl border border-border-button-default bg-background-primary-default p-4"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-body-2-medium text-text-primary">
+                  <Spinner size="sm" />
+                  <span>
+                    {reconnecting
+                      ? "Reconnecting… Waiting for the backend service and resuming your dependency scan…"
+                      : "Reading reports → Double-checking findings → Writing summary"}
+                  </span>
+                </div>
+                <span className="font-mono text-caption-1-regular text-text-tertiary tabular-nums">
+                  {stepsDone} / {stepsTotal} steps{job?.job_id ? ` · Job ${job.job_id.slice(0, 12)}` : ""}
                 </span>
               </div>
-              <span className="font-mono text-caption-1-regular text-text-tertiary">
-                {job?.job_id ? `Job ${job.job_id.slice(0, 12)}` : "Starting job…"}
-              </span>
-            </div>
-            {job && job.progress_total > 0 && (
-              <div className="h-2 w-full overflow-hidden rounded-full bg-background-tertiary-default">
-                <div
-                  className="h-full rounded-full bg-text-primary transition-all duration-300"
-                  style={{
-                    width: `${Math.min(100, Math.round((job.progress_done / job.progress_total) * 100))}%`,
-                  }}
-                />
-              </div>
-            )}
-            {companiesList.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {companiesList.map((comp) => {
-                  const meta = COMPANY_STATUS_META[comp.status] ?? COMPANY_STATUS_META.queued;
+
+              <div className="flex flex-wrap items-center gap-2 text-caption-1-medium">
+                {phases.map((p, idx) => {
+                  const isActive = idx === currentIdx;
+                  const isDone = idx < currentIdx;
                   return (
-                    <Chip key={comp.company_key} variant="caption" color={meta.chipColor}>
-                      {comp.company_name}: {meta.label}
-                    </Chip>
+                    <span key={p.id} className="inline-flex items-center gap-2">
+                      {idx > 0 && <span className="text-text-tertiary">→</span>}
+                      <Chip
+                        variant="caption"
+                        color={isActive ? "blue" : isDone ? "lime" : "neutral"}
+                      >
+                        {p.label}
+                      </Chip>
+                    </span>
                   );
                 })}
               </div>
-            )}
-          </div>
-        )}
+
+              <div className="h-2 w-full overflow-hidden rounded-full bg-background-tertiary-default">
+                <div
+                  className="h-full rounded-full bg-text-primary transition-all duration-300"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+
+              {companiesList.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {companiesList.map((comp) => {
+                    const meta = COMPANY_STATUS_META[comp.status] ?? COMPANY_STATUS_META.queued;
+                    return (
+                      <Chip key={comp.company_key} variant="caption" color={meta.chipColor}>
+                        {comp.company_name}: {meta.label}
+                      </Chip>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </section>
 
       {!result && !isRunning && (
@@ -2108,14 +2172,18 @@ function DependenciesPageContent() {
             selectEdge={selectEdge}
           />
 
-          {/* 4b. Agentic research loop (v3 A-RES: Investigate uncertain findings) */}
+          {/* 4b. Agentic research loop (v3 A-RES + v3.1 built-in sub-agents: Investigate uncertain findings) */}
           <ResearchPanel
             researchStatus={researchStatus}
             researchJob={researchJob}
             researchError={researchError}
+            resultResearch={result.research ?? []}
+            researchDepth={result.research_depth ?? "none"}
+            isDepRunning={isRunning}
             edgeById={edgeById}
             selectEdge={selectEdge}
             onRunResearch={() => runResearch()}
+            onGoDeeper={() => goDeeper()}
           />
 
           {/* 5. Key numbers: one plain-English card per subject (% and company count together) */}

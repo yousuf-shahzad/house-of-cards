@@ -14,6 +14,7 @@ import {
   type EtfSummary,
   type ExamplesResponse,
   type HealthResponse,
+  type ResearchDepth,
   type ResearchJob,
   type ValuationIssue,
   type ValuationRequest,
@@ -57,8 +58,14 @@ export function toValuationRequest(rows: ShareInput[]): ValuationRequest {
   };
 }
 
-export function toDependencyRequest(rows: AllocationInput[], topN: number): DependencyRequest {
-  return { ...toAnalysisRequest(rows), top_n: topN };
+export function toDependencyRequest(
+  rows: AllocationInput[],
+  topN: number,
+  depth?: ResearchDepth,
+): DependencyRequest {
+  return depth
+    ? { ...toAnalysisRequest(rows), top_n: topN, depth }
+    : { ...toAnalysisRequest(rows), top_n: topN };
 }
 
 export function toCompareRequest(baseline: AllocationInput[], candidate: AllocationInput[], topN: number): CompareRequest {
@@ -232,10 +239,18 @@ export const api = {
    * 200 = already done from cache, 202 = queued; both bodies are a DependencyJob, so callers check
    * `status` and poll `dependencyJob(job_id)` every 1–2 s until it is "done" or "error".
    */
-  dependencies: (rows: AllocationInput[], topN = DEFAULT_TOP_N, signal?: AbortSignal) =>
+  dependencies: (
+    rows: AllocationInput[],
+    topN = DEFAULT_TOP_N,
+    signal?: AbortSignal,
+    depth?: ResearchDepth,
+  ) =>
     MOCK_MODE
       ? mockDependencies()
-      : request<DependencyJob>("/api/dependencies", postJson(toDependencyRequest(rows, topN), signal)),
+      : request<DependencyJob>(
+          "/api/dependencies",
+          postJson(toDependencyRequest(rows, topN, depth), signal),
+        ),
   dependencyJob: (jobId: string, signal?: AbortSignal) =>
     MOCK_MODE
       ? mockDependencies()
