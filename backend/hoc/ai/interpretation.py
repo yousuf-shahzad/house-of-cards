@@ -40,7 +40,13 @@ from hoc.ai.client import (
     GeminiError,
     GeminiMissingKeyError,
 )
-from hoc.ai.verifier import find_quote_span, is_generic_company_target, normalise_for_verify
+from hoc.ai.verifier import (
+    find_quote_span,
+    ground_qualifier_in_quote,
+    is_generic_company_target,
+    is_sole_source_grounded_in_quote,
+    normalise_for_verify,
+)
 from hoc.contract import EdgeInterpretation, VerifiedEdge
 from hoc.contract.dependencies import InterpretationFlag
 
@@ -503,6 +509,37 @@ def check_interpretation_rules(
                 f"Reverse-link quote has no reference to filer '{edge.source_company_name}'"
             )
 
+    # 7. Ungrounded sole_source or ungrounded revenue-share/sole-source qualifier
+    dropped_sole = bool(edge.__dict__.get("_ungrounded_sole_source"))
+    sole_grounded = is_sole_source_grounded_in_quote(
+        target_sentence_joined,
+        edge.target_name,
+        target_kind=edge.target_kind,
+    )
+    if (dropped_sole or (edge.sole_source and not flags)) and not sole_grounded:
+        if "judge_unclear" not in flags:
+            flags.append("judge_unclear")
+        reasons.append(
+            f"Claimed sole_source=True for '{edge.target_name}' is not supported by sole/single/only-source wording in target clause"
+        )
+
+    dropped_qual = edge.__dict__.get("_ungrounded_qualifier")
+    raw_qual_claimed = dropped_qual or (edge.qualifier if not flags else None)
+    if raw_qual_claimed:
+        grounded_qual = ground_qualifier_in_quote(
+            str(raw_qual_claimed),
+            target_sentence_joined,
+            edge.target_name,
+            target_kind=edge.target_kind,
+            sole_source=bool(edge.sole_source and sole_grounded),
+        )
+        if grounded_qual is None:
+            if "judge_unclear" not in flags:
+                flags.append("judge_unclear")
+            reasons.append(
+                f"Claimed qualifier ('{raw_qual_claimed}') for '{edge.target_name}' is not grounded in target clause"
+            )
+
     reason_str = "; ".join(reasons) if reasons else None
     return flags, reason_str, context_window
 
@@ -785,7 +822,28 @@ def verify_company_interpretations(
 
     for edge in edges:
         interp = interpretations[edge.edge_id]
-        updated_edge = attach_edge_interpretation(edge, interp)
+        sole_ok = (
+            is_sole_source_grounded_in_quote(
+                edge.evidence_quote,
+                edge.target_name,
+                target_kind=edge.target_kind,
+            )
+            if edge.sole_source
+            else False
+        )
+        qual_ok = ground_qualifier_in_quote(
+            edge.qualifier,
+            edge.evidence_quote,
+            edge.target_name,
+            target_kind=edge.target_kind,
+            sole_source=sole_ok,
+        )
+        updates: dict[str, Any] = {"interpretation": interp}
+        if edge.sole_source != sole_ok:
+            updates["sole_source"] = sole_ok
+        if edge.qualifier != qual_ok:
+            updates["qualifier"] = qual_ok
+        updated_edge = edge.model_copy(update=updates)
         interpretations[edge.edge_id] = interp
         if interp.status == "rejected":
             rejected_edges.append(updated_edge)

@@ -1044,3 +1044,192 @@ def test_v_int_rules_do_not_spill_across_adjacent_sentences_in_300_char_window()
     # The ±300-char context window still includes the surrounding sentences for the judge
     assert "We compete intensely with ZZRival Corp" in ctx
     assert "We do not have long-term commitments" in ctx
+
+
+def test_fix34_ungrounded_sole_source_alongside_other_vendors_dropped_flagged_and_not_critical():
+    from hoc.graph.importance import score_edge_importance
+
+    quote = "We buy components from ZZ Counterparty alongside several other vendors."
+    doc = f"Item 1. Business. {quote}"
+    filing_ref = _make_filing_ref()
+
+    verified, rejected = verify_and_build_edges(
+        [
+            {
+                "edge_type": "supplier",
+                "target_name": "ZZ Counterparty",
+                "target_kind": "company",
+                "sole_source": True,
+                "qualifier": "sole source supplier",
+                "section": "1",
+                "evidence_quote": quote,
+            }
+        ],
+        source_company_key="CIK:0009990001",
+        source_company_name="ZZAlpha Corp",
+        canonical_text=doc,
+        filing_ref=filing_ref,
+    )
+    assert rejected == 0
+    assert len(verified) == 1
+    edge = verified[0]
+    # Keep the ordinary supplier link, drop sole_source and ungrounded sole-source qualifier
+    assert edge.edge_type == "supplier"
+    assert edge.sole_source is False
+    assert edge.qualifier is None
+
+    # Rules layer adds a rules flag ("judge_unclear") both on the verify_and_build_edges output
+    # and when called directly on a raw VerifiedEdge with sole_source=True
+    flags, reason, _ = check_interpretation_rules(edge, doc)
+    assert "judge_unclear" in flags
+    assert reason is not None
+
+    raw_sole_edge = _make_edge(
+        quote=quote,
+        target_name="ZZ Counterparty",
+        edge_type="supplier",
+        sole_source=True,
+    )
+    flags_raw, _, _ = check_interpretation_rules(raw_sole_edge, doc)
+    assert "judge_unclear" in flags_raw
+
+    interp_res = verify_company_interpretations([raw_sole_edge], doc, cache_only=True)
+    assert len(interp_res.edges) == 1
+    assert interp_res.edges[0].sole_source is False
+    assert interp_res.edges[0].interpretation is not None
+    assert interp_res.edges[0].interpretation.status == "flagged"
+    assert "judge_unclear" in interp_res.edges[0].interpretation.flags
+
+    # Importance must be medium (<= 0.55), never critical (0.95)
+    imp = score_edge_importance(edge)
+    assert imp.tier == "medium"
+    assert imp.score <= 0.55
+
+
+def test_fix34_sole_source_scoped_to_target_clause_not_sibling_clause():
+    from hoc.graph.importance import score_edge_importance
+
+    quote = "We buy components from Acme and our sole supplier of packaging is Beta."
+    doc = f"Item 1. Business. {quote}"
+    filing_ref = _make_filing_ref()
+
+    verified, rejected = verify_and_build_edges(
+        [
+            {
+                "edge_type": "supplier",
+                "target_name": "Acme",
+                "target_kind": "company",
+                "sole_source": True,
+                "qualifier": "",
+                "section": "1",
+                "evidence_quote": quote,
+            },
+            {
+                "edge_type": "supplier",
+                "target_name": "Beta",
+                "target_kind": "company",
+                "sole_source": True,
+                "qualifier": "sole supplier of packaging",
+                "section": "1",
+                "evidence_quote": quote,
+            },
+        ],
+        source_company_key="CIK:0009990001",
+        source_company_name="ZZAlpha Corp",
+        canonical_text=doc,
+        filing_ref=filing_ref,
+    )
+    assert rejected == 0
+    by_target = {e.target_name: e for e in verified}
+    assert by_target["Acme"].sole_source is False
+    assert by_target["Beta"].sole_source is True
+
+    flags_acme, _, _ = check_interpretation_rules(by_target["Acme"], doc)
+    flags_beta, _, _ = check_interpretation_rules(by_target["Beta"], doc)
+    assert "judge_unclear" in flags_acme
+    assert flags_beta == []
+
+    imp_acme = score_edge_importance(by_target["Acme"])
+    imp_beta = score_edge_importance(by_target["Beta"])
+    assert imp_acme.tier == "medium"
+    assert imp_acme.score <= 0.55
+    assert imp_beta.tier == "critical"
+    assert imp_beta.score >= 0.90
+
+
+def test_fix34_ungrounded_revenue_qualifier_dropped_and_flagged():
+    from hoc.graph.importance import score_edge_importance
+
+    quote_customer = "Acme is one of our customers."
+    quote_multi = "ZZ represented 8% of revenue; Another Company represented 22% of revenue."
+    doc = f"Item 1. Business. {quote_customer} {quote_multi}"
+    filing_ref = _make_filing_ref()
+
+    verified, rejected = verify_and_build_edges(
+        [
+            {
+                "edge_type": "customer",
+                "target_name": "Acme",
+                "target_kind": "company",
+                "sole_source": False,
+                "qualifier": "90% of revenue",
+                "section": "1",
+                "evidence_quote": quote_customer,
+            },
+            {
+                "edge_type": "customer",
+                "target_name": "ZZ",
+                "target_kind": "company",
+                "sole_source": False,
+                "qualifier": "22% of revenue",
+                "section": "1",
+                "evidence_quote": quote_multi,
+            },
+        ],
+        source_company_key="CIK:0009990001",
+        source_company_name="ZZAlpha Corp",
+        canonical_text=doc,
+        filing_ref=filing_ref,
+    )
+    assert rejected == 0
+    by_target = {e.target_name: e for e in verified}
+    # Both ungrounded qualifiers ("90% of revenue" for Acme, "22% of revenue" from Another Company for ZZ) are dropped
+    assert by_target["Acme"].qualifier is None
+    assert by_target["ZZ"].qualifier is None
+
+    flags_acme, _, _ = check_interpretation_rules(by_target["Acme"], doc)
+    assert "judge_unclear" in flags_acme
+
+    imp_acme = score_edge_importance(by_target["Acme"])
+    assert imp_acme.tier == "medium"
+    assert imp_acme.score <= 0.55
+
+
+def test_fix34_word_boundary_entity_grounding_rejects_microchip_for_amd():
+    quote = "We purchase components from Microchip Technology."
+    doc = f"Item 1. Business. {quote}"
+    assert not verify_quote(
+        quote,
+        doc,
+        target_name="Advanced Micro Devices",
+        target_kind="company",
+    )
+    verified, rejected = verify_and_build_edges(
+        [
+            {
+                "edge_type": "supplier",
+                "target_name": "Advanced Micro Devices",
+                "target_kind": "company",
+                "sole_source": False,
+                "qualifier": "",
+                "section": "1",
+                "evidence_quote": quote,
+            }
+        ],
+        source_company_key="CIK:0009990001",
+        source_company_name="ZZAlpha Corp",
+        canonical_text=doc,
+        filing_ref=_make_filing_ref(),
+    )
+    assert verified == []
+    assert rejected == 1
