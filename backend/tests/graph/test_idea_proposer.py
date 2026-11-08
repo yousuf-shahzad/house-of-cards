@@ -1,0 +1,300 @@
+"""Unit tests for FIX-17 AI change-idea proposer and deterministic rationale verifier."""
+
+from __future__ import annotations
+
+from datetime import UTC, date, datetime
+from pathlib import Path
+from typing import Any
+
+from hoc.config import DEFAULT_ORCHESTRATOR_MODEL, Settings
+from hoc.contract.api import (
+    AnalysisResponse,
+    CompanyExposure,
+    Concentration,
+    Coverage,
+    Overlap,
+    PortfolioItem,
+    PortfolioRequest,
+    SectorExposure,
+)
+from hoc.contract.dependencies import MetricFact
+from hoc.contract.units import Sector
+from hoc.graph.idea_proposer import (
+    DEFAULT_PROPOSER_MODEL,
+    IDEA_PROPOSER_PROMPT_VERSION,
+    PINNED_ETF_UNIVERSE,
+    IdeaProposer,
+    PortfolioIssue,
+    build_portfolio_issues,
+    compute_idea_proposer_cache_key,
+    propose_change_ideas,
+    verify_and_render_proposal_rationale,
+    verify_raw_proposals,
+)
+
+
+def _sample_holdings() -> list[PortfolioItem]:
+    return [
+        PortfolioItem(ticker="IVV", allocation=0.40),
+        PortfolioItem(ticker="QQQ", allocation=0.25),
+        PortfolioItem(ticker="XLK", allocation=0.15),
+        PortfolioItem(ticker="EEM", allocation=0.20),
+    ]
+
+
+def _sample_analysis() -> AnalysisResponse:
+    return AnalysisResponse(
+        generated_at=datetime(2026, 11, 8, 6, 0, tzinfo=UTC),
+        as_of_date=date(2026, 11, 8),
+        request=PortfolioRequest(holdings=_sample_holdings()),
+        etfs=[],
+        coverage=Coverage(
+            total_allocation=1.0,
+            loaded_allocation=1.0,
+            covered_weight=0.999,
+            excluded_weight=0.001,
+            missing_allocation=0.0,
+            unexplained_weight=0.0,
+            unmatched_weight=0.0,
+            sector_known_weight=0.80,
+        ),
+        concentration=Concentration(
+            top5=0.26,
+            top10=0.3714,
+            top20=0.48,
+            hhi=0.0201,
+            effective_companies=49.8,
+            distinct_securities=200,
+            distinct_companies=190,
+        ),
+        exposures=[
+            CompanyExposure(
+                rank=1,
+                company_key="CIK:0000320193",
+                company_name="Apple Inc.",
+                identity_status="resolved",
+                symbols=["AAPL"],
+                sector=Sector.information_technology,
+                exposure=0.0737,
+                etf_count=3,
+                contributions=[],
+                securities=[],
+            )
+        ],
+        exposures_truncated=False,
+        other_exposure=0.0,
+        sectors=[
+            SectorExposure(sector=Sector.information_technology, weight=0.5064, by_etf=[]),
+            SectorExposure(sector=Sector.financials, weight=0.1240, by_etf=[]),
+        ],
+        overlap=Overlap(etfs=["IVV", "QQQ", "XLK", "EEM"], matrix=[[1.0] * 4 for _ in range(4)], pairs=[]),
+        gaps=[],
+        warnings=[],
+        attributions=[],
+    )
+
+
+def _sample_dep_metrics() -> list[MetricFact]:
+    return [
+        MetricFact(
+            metric_id="dep.ALIAS:TSMC",
+            label="Portfolio exposure dependent on Taiwan Semiconductor Manufacturing Co., Ltd.",
+            value=0.1239,
+            unit="fraction",
+            supporting_edge_ids=["e1"],
+        ),
+        MetricFact(
+            metric_id="dep.ALIAS:SAMSUNG_ELEC",
+            label="Portfolio exposure dependent on Samsung Electronics Co., Ltd.",
+            value=0.0942,
+            unit="fraction",
+            supporting_edge_ids=["e2"],
+        ),
+    ]
+
+
+def test_build_portfolio_issues_prioritises_top_sector_at_40pct_without_95pct_gate() -> None:
+    """build_portfolio_issues uses the same >=40% rule as diversificationVerdict even when sector_known_weight < 95%."""
+    analysis = _sample_analysis()
+    issues = build_portfolio_issues(analysis, _sample_dep_metrics())
+    assert issues[0].issue_id == "top_sector"
+    assert issues[0].addresses == "top_sector"
+    assert issues[0].label == "Largest industry (Technology)"
+    assert issues[0].formatted_value == "50.64%"
+    assert issues[1].issue_id == "dep.ALIAS:TSMC"
+    assert issues[1].addresses == "dependency"
+    assert any(i.issue_id == "top10" for i in issues)
+    assert any(i.issue_id == "effective_n" for i in issues)
+    assert DEFAULT_PROPOSER_MODEL == DEFAULT_ORCHESTRATOR_MODEL == "gemini-4-argon"
+
+
+def test_verify_raw_proposals_accepts_valid_and_rejects_traps() -> None:
+    holdings = _sample_holdings()
+    issues = build_portfolio_issues(_sample_analysis(), _sample_dep_metrics())
+
+    raw_payload = {
+        "proposals": [
+            # 1. Valid ADD proposal
+            {
+                "action": "add",
+                "ticker": "RSP",
+                "fraction": 0.2,
+                "swap_from": "",
+                "issue_id": "top_sector",
+                "title": "Add equal-weight US stocks with RSP",
+                "rationale": (
+                    "Adding equal-weight US stocks reduces your {{metric:top_sector}} Technology concentration."
+                ),
+                "cited_metric_ids": ["top_sector"],
+            },
+            # 2. Valid SWAP proposal
+            {
+                "action": "swap",
+                "ticker": "VTV",
+                "fraction": 0.1,
+                "swap_from": "XLK",
+                "issue_id": "dep.ALIAS:TSMC",
+                "title": "Swap tech-heavy XLK into value VTV",
+                "rationale": (
+                    "Shifting out of XLK into VTV lowers your {{metric:dep.ALIAS:TSMC}} chip foundry reliance."
+                ),
+                "cited_metric_ids": ["dep.ALIAS:TSMC"],
+            },
+            # 3. Invalid: ticker outside universe
+            {
+                "action": "add",
+                "ticker": "ZZZZ",
+                "fraction": 0.1,
+                "issue_id": "top_sector",
+                "title": "Add ZZZZ",
+                "rationale": "Reduces {{metric:top_sector}}.",
+                "cited_metric_ids": ["top_sector"],
+            },
+            # 4. Invalid: unverified literal number in rationale
+            {
+                "action": "add",
+                "ticker": "XLV",
+                "fraction": 0.2,
+                "issue_id": "top_sector",
+                "title": "Add health care with XLV",
+                "rationale": "Cuts Technology from 50.6% to 40.5% right away.",
+                "cited_metric_ids": ["top_sector"],
+            },
+            # 5. Invalid: swap_from not held / fraction > held allocation
+            {
+                "action": "swap",
+                "ticker": "XLU",
+                "fraction": 0.3,
+                "swap_from": "XLK",  # XLK is only 0.15
+                "issue_id": "top_sector",
+                "title": "Swap XLK into utilities XLU",
+                "rationale": "Lowers {{metric:top_sector}}.",
+                "cited_metric_ids": ["top_sector"],
+            },
+        ]
+    }
+
+    verified, rejected = verify_raw_proposals(
+        raw_payload,
+        holdings=holdings,
+        issues=issues,
+        universe=PINNED_ETF_UNIVERSE,
+    )
+    assert len(verified) == 2
+    assert verified[0].ticker == "RSP"
+    assert verified[0].action == "add"
+    assert verified[0].fraction == 0.2
+    assert verified[0].addresses == "top_sector"
+    assert verified[0].metric_id is None
+
+    assert verified[1].ticker == "VTV"
+    assert verified[1].action == "swap"
+    assert verified[1].swap_from == "XLK"
+    assert verified[1].addresses == "dependency"
+    assert verified[1].metric_id == "dep.ALIAS:TSMC"
+
+    assert len(rejected) == 3
+    reasons = [r["reason"] for r in rejected]
+    assert any("outside_universe" in r for r in reasons)
+    assert "unverified_literal_number" in reasons
+    assert any("swap_fraction_exceeds_holding" in r for r in reasons)
+
+    # Render verified rationale with baseline/candidate metrics
+    metrics_lookup: dict[str, PortfolioIssue | str] = {i.metric_id: i for i in issues}
+    rendered, err = verify_and_render_proposal_rationale(
+        verified[0].rationale_template,
+        metrics_by_id=metrics_lookup,
+    )
+    assert err is None
+    assert rendered == "Adding equal-weight US stocks reduces your 50.64% Technology concentration."
+
+
+def test_idea_proposer_disk_cache_and_fallback_statuses(tmp_path: Path) -> None:
+    holdings = _sample_holdings()
+    analysis = _sample_analysis()
+    issues = build_portfolio_issues(analysis, _sample_dep_metrics())
+
+    calls: list[str] = []
+
+    def fake_argon(*, model: str, **_: Any) -> dict[str, Any]:
+        calls.append(model)
+        return {
+            "proposals": [
+                {
+                    "action": "add",
+                    "ticker": "XLV",
+                    "fraction": 0.2,
+                    "swap_from": "",
+                    "issue_id": "top_sector",
+                    "title": "Add health care stocks with XLV",
+                    "rationale": "Adding health care lowers your {{metric:top_sector}} Technology share.",
+                    "cited_metric_ids": ["top_sector"],
+                }
+            ]
+        }
+
+    proposer = IdeaProposer(ai_client=fake_argon, cache_dir=tmp_path)
+    assert proposer.read_cached(holdings, issues) is None
+
+    res = proposer.propose(holdings, issues, analysis=analysis)
+    assert res.ai_status == "ok"
+    assert res.model == "gemini-4-argon"
+    assert res.prompt_version == IDEA_PROPOSER_PROMPT_VERSION
+    assert len(res.proposals) == 1
+    assert len(calls) == 1
+
+    # Synchronous cache hit via read_cached or propose(cache_only=True) makes 0 AI calls
+    cached = proposer.read_cached(holdings, issues)
+    assert cached is not None
+    assert cached.ai_status == "ok"
+    assert len(cached.proposals) == 1
+    assert len(calls) == 1
+
+    replay = IdeaProposer(ai_client=None, cache_dir=tmp_path).propose(
+        holdings, issues, cache_only=True
+    )
+    assert replay.ai_status == "ok"
+    assert len(replay.proposals) == 1
+
+    # Missing API key on uncached portfolio returns ai_status="missing_api_key"
+    other_holdings = [PortfolioItem(ticker="IVV", allocation=0.60), PortfolioItem(ticker="QQQ", allocation=0.40)]
+    no_key = IdeaProposer(
+        ai_client=None,
+        settings=Settings(gemini_api_key=None, cache_dir=tmp_path),
+        cache_dir=tmp_path,
+        api_key="",
+    ).propose(other_holdings, issues)
+    assert no_key.ai_status == "missing_api_key"
+    assert no_key.proposals == []
+
+    # Cache key changes when model or holdings change
+    k1 = compute_idea_proposer_cache_key(holdings, issues, model="gemini-4-argon")
+    k2 = compute_idea_proposer_cache_key(holdings, issues, model="gemini-3.8-flash")
+    k3 = compute_idea_proposer_cache_key(other_holdings, issues, model="gemini-4-argon")
+    assert k1 != k2
+    assert k1 != k3
+
+    # Convenience function works identically
+    conv = propose_change_ideas(holdings, issues, cache_dir=tmp_path, cache_only=True)
+    assert conv.ai_status == "ok"
+    assert len(conv.proposals) == 1
