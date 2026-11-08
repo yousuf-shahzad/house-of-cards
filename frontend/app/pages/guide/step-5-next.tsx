@@ -5,19 +5,9 @@ import { useDependencies } from "@/app/dependencies-state";
 import { useExperience } from "@/app/experience";
 import { Button } from "@/components/base/buttons/button";
 import { ClaimCards, type RiskStepProps, topClaims } from "./step-4-risks";
+import { NEXT_COPY } from "./copy";
 
-export const NEXT_COPY = {
-  intro: "A few ideas to make your portfolio less dependent on the same places and companies.",
-  waiting: "The ideas will appear here when the check on the previous step has finished.",
-  none: "The AI didn't suggest any specific changes.",
-  tryChange: "Try a change",
-  tryChangeNote: "Compare your portfolio with a different mix side by side.",
-  seeEverything: "See everything",
-  seeEverythingNote: "Open the full view with every detail and source.",
-  startOver: "Start over",
-} as const;
-
-export default function NextStep({ onJumpToStep }: RiskStepProps) {
+export default function NextStep({ onJumpToStep, onStartOver }: RiskStepProps) {
   const { status, job, stale } = useDependencies();
   const { openExpertPage, setStep } = useExperience();
   const result = !stale && status === "done" ? job?.result ?? null : null;
@@ -38,7 +28,7 @@ export default function NextStep({ onJumpToStep }: RiskStepProps) {
         <Button variant="secondary" onClick={() => openExpertPage("#/dependencies")} title={NEXT_COPY.seeEverythingNote}>
           {NEXT_COPY.seeEverything}
         </Button>
-        <Button variant="ghost" onClick={() => (onJumpToStep ? onJumpToStep(1) : setStep(1))}>
+        <Button variant="ghost" onClick={() => (onStartOver ? onStartOver() : onJumpToStep ? onJumpToStep(1) : setStep(1))}>
           {NEXT_COPY.startOver}
         </Button>
       </div>

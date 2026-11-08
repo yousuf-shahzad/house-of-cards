@@ -14,30 +14,14 @@ import { Button } from "@/components/base/buttons/button";
 import { ProgressBar } from "@/components/base/progress/progress";
 import type { DependencyResult, EdgeType, InsightClaim } from "@/api/types";
 import { useAutoDependencies } from "./use-auto-dependencies";
-
-export const RISKS_COPY = {
-  title: "Hidden risks",
-  intro: "We read the annual reports of your biggest companies to see who they rely on.",
-  reading: (n: number) => `Reading ${n} company annual reports…`,
-  readingNote: "This can take a minute or two the first time. You can go back and come back.",
-  waiting: "Waiting for your portfolio to finish loading…",
-  unavailable: "The supply-chain check isn't available right now. You can still carry on.",
-  noAiKey: "The AI part of this check isn't switched on here, so we can only show what's already been checked.",
-  relies: (pct: string, who: string) => `${pct} of your money relies on ${who}`,
-  reliesThrough: (n: number) => (n === 1 ? "through 1 of your companies" : `through ${n} of your companies`),
-  country: (pct: string, where: string) => `${pct} of your money is in companies with key sites in ${where}`,
-  checked: (pct: string) => `We could check ${pct} of your portfolio`,
-  checkedNote: "The rest belongs to companies that don't publish this kind of detail.",
-  concernsTitle: "What the AI noticed",
-  noConcerns: "The AI didn't point out any specific problems.",
-  learnMore: "Learn more",
-} as const;
+import { RISKS_COPY } from "./copy";
 
 /** Props from the guide stepper (pages/guide/index.tsx). */
 export interface RiskStepProps {
   onNext: () => void;
   onBack: () => void;
   onJumpToStep?: (step: number) => void;
+  onStartOver?: () => void;
 }
 
 const SUPPLY_EDGE_TYPES = new Set<EdgeType>(["supplier", "foundry", "contract_manufacturer", "key_input"]);
