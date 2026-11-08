@@ -15,7 +15,7 @@ def group_weights(holdings, key):
 def exposures(items, loaded):
     companies = defaultdict(list)
     for item in items:
-        if item.ticker in loaded:
+        if item.allocation > 0 and item.ticker in loaded:
             for line in loaded[item.ticker].holdings:
                 companies[line.company_key].append((item, line))
     result = []
@@ -62,7 +62,7 @@ def exposures(items, loaded):
                 sector=representative.sector,
                 country=representative.country,
                 exposure=wsum(value.contribution for value in contributions),
-                etf_count=sum(value.weight_in_etf > 0 for value in contributions),
+                etf_count=sum(value.contribution > 0 for value in contributions),
                 contributions=contributions,
                 securities=security_exposures,
             )

@@ -200,7 +200,7 @@ def test_order_case_precision_and_no_input_mutation(example):
     assert quotes == original_quotes
 
 
-@pytest.mark.parametrize("shares,price", [(1e308, 50), (1e-308, 1e-308)])
+@pytest.mark.parametrize("shares,price", [(1e308, 50), (1e-308, 1e-308), (1_000_000_001, 50)])
 def test_unrepresentable_share_values_block(example, shares, price):
     request, quotes, _ = example
     request.rows[0].shares = shares

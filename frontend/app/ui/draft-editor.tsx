@@ -5,7 +5,7 @@ import { createContext, useContext, useEffect, type ReactNode } from "react";
 import { RiAddLine, RiEqualizerLine, RiPushpinLine, RiRefreshLine, RiUnpinLine } from "@remixicon/react";
 import type { ApiError } from "@/api/client";
 import { MAX_ETFS, PRICE_STALE_DAYS, type EtfReport, type ValuationIssue, type ValuationRowResult } from "@/api/types";
-import type { DraftRow, InputMode, PortfolioDraft, RowIssue } from "@/app/portfolio-draft";
+import { validShares, type DraftRow, type InputMode, type PortfolioDraft, type RowIssue } from "@/app/portfolio-draft";
 import { AsOfBadge } from "@/app/ui/as-of-badge";
 import { Button } from "@/components/base/buttons/button";
 import { CloseButton } from "@/components/base/buttons/close-button";
@@ -29,12 +29,21 @@ export function evenSplit(count: number): number[] {
 
 export function money(value: number, currency = "USD"): string {
   try {
-    return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 2 }).format(value);
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      notation: Math.abs(value) >= 1_000_000_000 ? "compact" : "standard",
+      maximumFractionDigits: 2,
+    }).format(value);
   } catch {
     return `${value.toFixed(2)} ${currency}`;
   }
 }
-const shareCount = (value: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(value);
+const shareCount = (value: number) =>
+  new Intl.NumberFormat("en-US", {
+    notation: Math.abs(value) >= 1_000_000_000 ? "compact" : "standard",
+    maximumFractionDigits: 6,
+  }).format(value);
 
 type ShownIssue = Exclude<RowIssue, "allocation-sum" | "valuation-blocked" | "valuation-error">;
 const ISSUE_TEXT: Record<InputMode, Record<ShownIssue, string>> = {
@@ -54,7 +63,7 @@ const ISSUE_TEXT: Record<InputMode, Record<ShownIssue, string>> = {
     "invalid-ticker": "Tickers use letters, numbers, dots or dashes, up to 12 characters.",
     "duplicate-ticker": "Each ETF can appear only once.",
     "invalid-allocation": "Give every pinned ETF a percentage between 0 and 100.",
-    "invalid-shares": "Enter how many shares you hold of every unpinned ETF, or type a % to pin it.",
+    "invalid-shares": "Enter how many shares you hold of every unpinned ETF (up to 1,000,000,000), or type a % to pin it.",
     "pinned-over-100": "Pinned ETFs add up to more than 100%. Lower a pinned %, or unpin a row.",
     "nothing-to-rescale":
       "The unpinned ETFs have no value to fill the rest of 100%. Enter some shares, or pin rows to total 100%.",
@@ -63,7 +72,7 @@ const ISSUE_TEXT: Record<InputMode, Record<ShownIssue, string>> = {
 
 /** Shares-only editors (the guided view) have no % inputs or pins, so their messages don't mention them. */
 const SHARES_ONLY_TEXT: Partial<Record<ShownIssue, string>> = {
-  "invalid-shares": "Enter how many shares you hold of every ETF.",
+  "invalid-shares": "Enter how many shares you hold of every ETF (up to 1,000,000,000).",
   "nothing-to-rescale": "Enter a share count above 0 for at least one ETF.",
 };
 
@@ -287,7 +296,7 @@ function PriceLine({ row, priced }: { row: DraftRow; priced?: ValuationRowResult
   return (
     <>
       {quote && priced.shares !== null && (
-        <span className="text-body-2-regular text-text-secondary" style={tabular}>
+        <span className="min-w-0 break-words text-body-2-regular text-text-secondary" style={tabular}>
           {shareCount(priced.shares)} sh × {money(quote.price, quote.currency)}
           {priced.value !== null && <> = {money(priced.value, quote.currency)}</>}
         </span>
@@ -336,6 +345,7 @@ function SharesRow({ row, report, flagged }: { row: DraftRow; report?: EtfReport
       <div className="col-span-2 grid grid-cols-2 gap-3 sm:col-span-2 sm:col-start-2 sm:row-start-1">
         <NumberField
           aria-label={`Shares of ${label}`}
+          isInvalid={!row.pinned && row.shares !== null && !validShares(row.shares)}
           placeholder="Shares"
           hideSteppers
           fieldClassName="border border-border-button-default"
