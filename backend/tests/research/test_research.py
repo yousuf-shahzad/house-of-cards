@@ -313,8 +313,7 @@ def test_select_research_items_covers_all_five_kinds() -> None:
         "no_disclosures",
         "single_source",
     }
-    scores = [item.priority_score for item in items]
-    assert scores == sorted(scores, reverse=True)
+    assert [item.item_kind for item in items] == ['flagged_edge', 'undisclosed_customer', 'no_disclosures', 'unresolved_counterparty', 'single_source']
 
 
 def test_strip_unquoted_numbers_preserves_verified_quotes_only() -> None:
@@ -513,9 +512,20 @@ def test_unnamed_customer_below_ten_percent_is_not_selected() -> None:
 
 def test_selection_uses_raw_importance_times_exposure() -> None:
     low = _make_edge(edge_id="low_flagged", interp_status="flagged", score=0.55, tier="medium")
-    high = _make_edge(edge_id="high_confirmed", target_name="ZZSUP", score=0.8, tier="high")
-    analysis, result = _one_edge(low)
-    result = result.model_copy(update={"edges": [low, high]})
+    high = _make_edge(
+        edge_id="high_flagged",
+        source_key="CIK:0009990002",
+        target_name="ZZSUP",
+        interp_status="flagged",
+        score=0.8,
+        tier="high",
+    )
+    analysis, result = _sample_analysis_and_result()
+    companies = [
+        result.companies[0].model_copy(update={"exposure": 0.40}),
+        result.companies[1].model_copy(update={"exposure": 0.40}),
+    ]
+    result = result.model_copy(update={"edges": [low, high], "companies": companies})
     items = select_research_items(result, analysis, max_items=1)
     assert len(items) == 1
     assert items[0].edge is not None
@@ -590,3 +600,259 @@ def test_from_settings_wires_etf_service_and_research_runner_offline(tmp_path) -
     service = EtfService.from_settings(settings)
     assert isinstance(service.research_runner, ResearchLoop)
     assert isinstance(service.research_runner.orchestrator, DependencyOrchestrator)
+
+
+class _VerdictClient(FakeGeminiClient):
+    def __init__(self, outcome: str, edge_id: str, cleared: list[str] | tuple[str, ...] = ()) -> None:
+        super().__init__()
+        self.outcome = outcome
+        self.edge_id = edge_id
+        self.cleared = list(cleared)
+
+    def generate_json(self, prompt, schema, **kwargs):
+        if "verdicts" in schema.get("properties", {}):
+            return {
+                "verdicts": [
+                    {
+                        "edge_id": self.edge_id,
+                        "label": "supports",
+                        "cleared_flags": list(self.cleared),
+                        "reason": "Verified by independent judge.",
+                    }
+                ]
+            }, self.extractor_model
+        return {
+            "action": "conclude",
+            "outcome": self.outcome,
+            "explanation": "Review completed.",
+            "query": "",
+            "candidate_edges": [],
+        }, self.extractor_model
+
+
+def test_research_model_cannot_reject_edge_supported_by_independent_judge() -> None:
+    from hoc.ai.interpretation import verify_edge_interpretation
+
+    edge = _make_edge(edge_id="judge_supported", interp_status="flagged")
+    analysis, result = _one_edge(edge)
+    filing = _sample_filing()
+    client = _VerdictClient("rejected", edge.edge_id)
+    verdict = verify_edge_interpretation(
+        edge.model_copy(update={"interpretation": None}),
+        filing.text,
+        client=client,
+    )
+    assert verdict.status == "confirmed"
+    findings, merged = ResearchLoop(
+        client=client,
+        filings_by_key={edge.source_company_key: filing},
+    ).run(result, analysis, max_items=1)
+    assert edge.edge_id not in findings[0].rejected_edge_ids
+    assert any(e.edge_id == edge.edge_id for e in merged.edges)
+
+
+def test_merge_preserves_independent_judge_that_cleared_rule_flag() -> None:
+    from hoc.ai.interpretation import verify_edge_interpretation
+
+    quote = "Our competitor ZZFAB also manufactures our processors under a foundry agreement."
+    edge = _make_edge(
+        edge_id="judge_cleared",
+        quote=quote,
+        interp_status="flagged",
+        interp_flags=["competitor_mention"],
+    )
+    analysis, result = _one_edge(edge)
+    filing = _sample_filing(text="ITEM 1. BUSINESS\n" + quote)
+    client = _VerdictClient("confirmed", edge.edge_id, ["competitor_mention"])
+    verdict = verify_edge_interpretation(
+        edge.model_copy(update={"interpretation": None}),
+        filing.text,
+        client=client,
+    )
+    assert verdict.status == "confirmed"
+    findings, merged = ResearchLoop(
+        client=client,
+        filings_by_key={edge.source_company_key: filing},
+    ).run(result, analysis, max_items=1)
+    assert findings[0].outcome == "confirmed"
+    assert merged.edges[0].interpretation == verdict
+
+
+def test_initial_filing_fetch_respects_research_deadline() -> None:
+    import time
+
+    edge = _make_edge(edge_id="slow_fetch", interp_status="flagged")
+    analysis, result = _one_edge(edge)
+
+    class SlowFetcher:
+        def latest(self, cik):
+            time.sleep(0.5)
+            return _sample_filing()
+
+    runner = ResearchLoop(
+        client=FakeGeminiClient(),
+        fetcher=SlowFetcher(),  # type: ignore[arg-type]
+        item_timeout_s=0.05,
+        total_timeout_s=0.1,
+    )
+    started = time.monotonic()
+    findings, _ = runner.run(result, analysis, max_items=1)
+    elapsed = time.monotonic() - started
+    assert elapsed < 0.3, f"Filing fetch escaped the budget: {elapsed:.3f}s"
+    assert findings[0].outcome == "unresolved"
+
+
+def test_final_insights_respect_research_deadline() -> None:
+    import time
+
+    edge = _make_edge(edge_id="slow_insights", interp_status="flagged")
+    analysis, result = _one_edge(edge)
+
+    class SlowOrchestrator:
+        def insights(self, analysis, edges, **kwargs):
+            time.sleep(0.5)
+            return result.metrics, result.insights
+
+    runner = ResearchLoop(
+        client=_VerdictClient("confirmed", edge.edge_id),
+        filings_by_key={edge.source_company_key: _sample_filing()},
+        orchestrator=SlowOrchestrator(),
+        item_timeout_s=0.05,
+        total_timeout_s=0.1,
+    )
+    started = time.monotonic()
+    _, merged = runner.run(result, analysis, max_items=1)
+    elapsed = time.monotonic() - started
+    assert elapsed < 0.3, f"Final insights escaped the budget: {elapsed:.3f}s"
+    assert merged.insights.status == "metrics_only"
+
+
+def test_selection_does_not_floor_small_company_exposures() -> None:
+    actual_highest = _make_edge(
+        edge_id="actual_highest",
+        interp_status="flagged",
+        score=0.6,
+        tier="high",
+    )
+    floor_promoted = _make_edge(
+        edge_id="floor_promoted",
+        source_key="CIK:0009990002",
+        interp_status="flagged",
+        score=0.95,
+    )
+    analysis, result = _sample_analysis_and_result()
+    companies = [
+        result.companies[0].model_copy(update={"exposure": 0.004}),
+        result.companies[1].model_copy(update={"exposure": 0.001}),
+    ]
+    result = result.model_copy(update={"edges": [actual_highest, floor_promoted], "companies": companies})
+    items = select_research_items(result, analysis, max_items=1)
+    assert items[0].edge is not None
+    assert items[0].edge.edge_id == actual_highest.edge_id
+
+
+def test_f2_selection_kind_priority_and_one_per_company_kind() -> None:
+    analysis, result = _sample_analysis_and_result()
+    extra_single_1 = _make_edge(
+        edge_id="edge_single_2",
+        source_key="CIK:0009990002",
+        source_name="ZZ Beta Corp",
+        target_name="Taiwan",
+        target_key=None,
+        target_kind="country",
+        edge_type="contract_manufacturer",
+        sole_source=True,
+        quote="Substantially all hardware products are manufactured in Asia, including Taiwan and Japan.",
+        score=0.99,
+        tier="critical",
+    )
+    extra_single_2 = _make_edge(
+        edge_id="edge_single_3",
+        source_key="CIK:0009990002",
+        source_name="ZZ Beta Corp",
+        target_name="Japan",
+        target_key=None,
+        target_kind="country",
+        edge_type="contract_manufacturer",
+        sole_source=True,
+        quote="Substantially all hardware products are manufactured in Asia, including Taiwan and Japan.",
+        score=0.98,
+        tier="critical",
+    )
+    result = result.model_copy(update={"edges": [*result.edges, extra_single_1, extra_single_2]})
+    items = select_research_items(result, analysis, max_items=6)
+    assert [i.item_kind for i in items] == [
+        "flagged_edge",
+        "undisclosed_customer",
+        "no_disclosures",
+        "unresolved_counterparty",
+        "single_source",
+    ]
+    seen_pairs = [(i.subject_key, i.item_kind) for i in items]
+    assert len(seen_pairs) == len(set(seen_pairs))
+
+
+def test_f3_find_in_filing_returns_queried_sentence_with_context_not_opening() -> None:
+    analysis, _result = _sample_analysis_and_result()
+    filing_text = (
+        "ITEM 1. BUSINESS\n"
+        "Company Background The Company designs, manufactures and markets smartphones, personal computers and tablets.\n"
+        "The Company's global supply chain spans multiple continents.\n"
+        "Substantially all of the Company's hardware products are manufactured by outsourcing partners in Asia, including Japan and Taiwan.\n"
+        "Any severe disruption in these regions could materially impact shipments.\n"
+    )
+    filing = _sample_filing(cik="0009990001", text=filing_text)
+    edge = _make_edge(
+        edge_id="apple_japan",
+        target_name="Japan",
+        target_key=None,
+        target_kind="country",
+        edge_type="contract_manufacturer",
+        quote="Substantially all of the Company's hardware products are manufactured by outsourcing partners in Asia, including Japan and Taiwan.",
+        interp_status="flagged",
+    )
+    _, one_res = _one_edge(edge)
+    items = select_research_items(one_res, analysis, max_items=1)
+    runner = ResearchLoop(client=FakeGeminiClient(), filings_by_key={"CIK:0009990001": filing})
+    spans = runner._find_spans_in_filing(filing, "Japan", item=items[0], result=one_res)
+    assert spans
+    assert "Japan" in spans[0]
+    assert "Company Background" not in spans[0]
+
+
+def test_f4_refound_existing_edge_counts_as_confirmed_not_new_evidence() -> None:
+    edge = _make_edge(edge_id="existing_single", interp_status="confirmed", score=0.95, tier="critical")
+    analysis, result = _one_edge(edge)
+    filing = _sample_filing()
+
+    class RefindClient(FakeGeminiClient):
+        def generate_json(self, prompt, schema, **kwargs):
+            if "verdicts" in schema.get("properties", {}):
+                return super().generate_json(prompt, schema, **kwargs)
+            return {
+                "action": "conclude",
+                "query": "ZZFAB",
+                "outcome": "new_evidence",
+                "explanation": f'Verified passage "{edge.evidence_quote}".',
+                "candidate_edges": [
+                    {
+                        "target_name": edge.target_name,
+                        "target_kind": edge.target_kind,
+                        "edge_type": edge.edge_type,
+                        "sole_source": edge.sole_source,
+                        "qualifier": edge.qualifier or "",
+                        "evidence_quote": edge.evidence_quote,
+                        "section": edge.section,
+                    }
+                ],
+            }, self.extractor_model
+
+    findings, merged = ResearchLoop(
+        client=RefindClient(),
+        filings_by_key={edge.source_company_key: filing},
+    ).run(result, analysis, max_items=1)
+    assert len(findings) == 1
+    assert findings[0].outcome == "confirmed"
+    assert findings[0].new_edges == []
+    assert edge.edge_id in findings[0].confirmed_edge_ids
+    assert len(merged.edges) == 1
