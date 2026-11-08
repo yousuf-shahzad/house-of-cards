@@ -254,3 +254,155 @@ def test_reverse_link_customer_edge_maps_to_supplier_dependency() -> None:
     assert "dep.CIK:8880000009" in summary.metrics_by_id
     assert summary.metrics_by_id["dep.CIK:8880000009"].value == pytest.approx(0.34)
     assert summary.metrics_by_id["spof.CIK:8880000009"].value == pytest.approx(0.34)
+
+
+def test_facility_country_resolution_and_unplaced_count() -> None:
+    """Named sites, states/provinces, cities, dotted aliases, and single-country quotes resolve to ISO-2;
+    multi-country quotes and macro-regions stay unplaced in facility.unplaced.count, never facility.<NAME>.
+    """
+    # 1. Examples from live SEC filings (#6715782618)
+    assert canonical_country_info(
+        "Fab 22",
+        qualifier="located in Kaohsiung Nanzih Technology Industrial Park",
+    ) == ("TW", "Taiwan")
+    assert canonical_country_info("Nanjing", qualifier="one fab") == ("CN", "China")
+    assert canonical_country_info("Shanghai", qualifier="one fab") == ("CN", "China")
+    assert canonical_country_info("Gigafactory Shanghai") == ("CN", "China")
+    assert canonical_country_info("Gigafactory Nevada") == ("US", "United States")
+    assert canonical_country_info("Boise, Idaho fab") == ("US", "United States")
+    assert canonical_country_info("Manassas, Virginia fab") == ("US", "United States")
+    assert canonical_country_info("Clay, New York") == ("US", "United States")
+    assert canonical_country_info("Hiroshima manufacturing facility") == ("JP", "Japan")
+    assert canonical_country_info("Gujarat assembly and test facility") == ("IN", "India")
+    assert canonical_country_info("Seattle, Washington area") == ("US", "United States")
+    assert canonical_country_info("Fort Collins, Colorado") == ("US", "United States")
+    assert canonical_country_info("Breinigsville, Pennsylvania") == ("US", "United States")
+    assert canonical_country_info("Silicon Valley") == ("US", "United States")
+    assert canonical_country_info("San Jose, CA") == ("US", "United States")
+    assert canonical_country_info("Vernon Hills, IL") == ("US", "United States")
+
+    # 2. Dotted abbreviations & additional ISO countries
+    assert canonical_country_info("Kaohsiung, R.O.C.") == ("TW", "Taiwan")
+    assert canonical_country_info("London, U.K.") == ("GB", "United Kingdom")
+    assert canonical_country_info("U.S.") == ("US", "United States")
+    assert canonical_country_info("Shenzhen, P.R.C.") == ("CN", "China")
+    assert canonical_country_info("Belfast, Northern Ireland") == ("GB", "United Kingdom")
+    assert canonical_country_info("Laval, Quebec, Canada") == ("CA", "Canada")
+    assert canonical_country_info("Guadalajara and Tonala, Mexico") == ("MX", "Mexico")
+    assert canonical_country_info("Philippines") == ("PH", "Philippines")
+    assert canonical_country_info("Landriano (Italy)") == ("IT", "Italy")
+    assert canonical_country_info("Hong Kong") == ("HK", "Hong Kong")
+    assert canonical_country_info("Spain") == ("ES", "Spain")
+    assert canonical_country_info("Canada Goose manufacturing facility (Romania)") == (
+        "RO",
+        "Romania",
+    )
+
+    # 3. Single-country evidence_quote fallback vs multi-country quote rejection
+    assert canonical_country_info(
+        "Poway facility",
+        qualifier="assembly and production facility",
+        evidence_quote="In February 2025, we expanded into a larger facility in Poway to support increased production.",
+    ) == ("US", "United States")
+    assert canonical_country_info(
+        "Primary assembly plant",
+        qualifier="outsourced assembly",
+        evidence_quote="Our primary assembly plant is located in Penang, Malaysia.",
+    ) == ("MY", "Malaysia")
+    assert (
+        canonical_country_info(
+            "Outsourced manufacturing facilities",
+            qualifier="contract manufacturing locations",
+            evidence_quote="Much of our manufacturing is performed by outsourcing partners located in China, Malaysia, and Mexico.",
+        )
+        is None
+    )
+    assert (
+        canonical_country_info(
+            "Asia",
+            qualifier="outsourced contract manufacturing partners",
+            evidence_quote="Our global manufacturing strategy uses contract manufacturers in Asia.",
+        )
+        is None
+    )
+
+    # 4. End-to-end metrics check: no facility.* metric is keyed on a non-country; unplaced go to facility.unplaced.count
+    exposures = [
+        _make_company(1, "CIK:9990000001", "ZZ Alpha Corp", 0.30, "ZZALP", [("ZZAAA", 0.30)]),
+        _make_company(2, "CIK:9990000002", "ZZ Beta Holdings", 0.20, "ZZBET", [("ZZBBB", 0.20)]),
+    ]
+    edges = [
+        VerifiedEdge(
+            edge_id="e-fab22",
+            source_company_key="CIK:9990000001",
+            source_company_name="ZZ Alpha Corp",
+            source_in_portfolio=True,
+            edge_type="facility",
+            target_name="Fab 22",
+            target_kind="facility",
+            qualifier="located in Kaohsiung Nanzih Technology Industrial Park",
+            evidence_quote="We leased land in the Kaohsiung Nanzih Technology Industrial Park for Fab 22.",
+            section="2",
+            filing=_make_filing("CIK:9990000001", form="20-F"),
+        ),
+        VerifiedEdge(
+            edge_id="e-giga-sh",
+            source_company_key="CIK:9990000002",
+            source_company_name="ZZ Beta Holdings",
+            source_in_portfolio=True,
+            edge_type="facility",
+            target_name="Gigafactory Shanghai",
+            target_kind="facility",
+            qualifier="manufacturing facility",
+            evidence_quote="We operate Gigafactory Shanghai.",
+            section="2",
+            filing=_make_filing("CIK:9990000002"),
+        ),
+        VerifiedEdge(
+            edge_id="e-multi-country",
+            source_company_key="CIK:9990000001",
+            source_company_name="ZZ Alpha Corp",
+            source_in_portfolio=True,
+            edge_type="facility",
+            target_name="Contract partner plants",
+            target_kind="facility",
+            qualifier="assembly plants",
+            evidence_quote="Our contract partner plants are located in China, Malaysia, and Mexico.",
+            section="1",
+            filing=_make_filing("CIK:9990000001"),
+        ),
+        VerifiedEdge(
+            edge_id="e-region-asia",
+            source_company_key="CIK:9990000002",
+            source_company_name="ZZ Beta Holdings",
+            source_in_portfolio=True,
+            edge_type="facility",
+            target_name="Asia",
+            target_kind="region",
+            qualifier="regional hub",
+            evidence_quote="We maintain regional hubs across Asia.",
+            section="1",
+            filing=_make_filing("CIK:9990000002"),
+        ),
+    ]
+
+    metrics = compute_dependency_metrics(exposures, edges)
+    by_id = {m.metric_id: m for m in metrics}
+
+    assert by_id["facility.TW"].value == pytest.approx(0.30)
+    assert by_id["facility.TW"].supporting_edge_ids == ["e-fab22"]
+    assert by_id["facility.CN"].value == pytest.approx(0.20)
+    assert by_id["facility.CN"].supporting_edge_ids == ["e-giga-sh"]
+
+    # Unplaced edges are recorded in facility.unplaced.count and never emit fake country metrics
+    assert by_id["facility.unplaced.count"].value == 2.0
+    assert by_id["facility.unplaced.count"].unit == "count"
+    assert by_id["facility.unplaced.count"].supporting_edge_ids == [
+        "e-multi-country",
+        "e-region-asia",
+    ]
+    for m in metrics:
+        if m.metric_id.startswith("facility.") and m.unit == "fraction":
+            code = m.metric_id.removeprefix("facility.")
+            assert len(code) == 2 and code.isalpha() and code.isupper(), m.metric_id
+
