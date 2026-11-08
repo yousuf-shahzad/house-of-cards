@@ -37,6 +37,20 @@ export default function NextStep({ onJumpToStep, onStartOver, onTryChange }: Ris
         <p className="text-body-2-regular text-text-secondary">{NEXT_COPY.waiting}</p>
       )}
       <ChangeIdeas onTried={() => (onTryChange ? onTryChange() : openExpertPage("#/compare"))} />
+      <p className="text-body-2-regular text-text-secondary">
+        {NEXT_COPY.failurePrompt}{" "}
+        <a
+          href="#/compare"
+          onClick={(event) => {
+            event.preventDefault();
+            if (onTryChange) onTryChange();
+            else openExpertPage("#/compare");
+          }}
+          className="font-medium text-text-primary underline hover:text-text-secondary"
+        >
+          {NEXT_COPY.failureLink}
+        </a>
+      </p>
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <Button
           variant="primary"
