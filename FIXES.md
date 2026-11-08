@@ -21,6 +21,7 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ### FIX-1 · high · Research agents still do mostly one lookup
 In the live check, 22 of 25 light findings and 41 of 45 thorough ones made one tool call and stopped. `search_filings` was never used, and most "confirmed" results just re-found the edge's own quote. Gawyn asked for a real research loop, not a text lookup.
+- `PITCH_DECK.md` already describes a multi-step investigation; this fix makes that true.
 - Fix: re-finding the edge's own quote is not a confirmation. Light needs 2 or more tool calls; thorough needs 3 or more, including a `search_filings` across other companies' filings. Keep light within about +90 s.
 - **Owner:** Kendrick's Gemini · **Status:** in progress (branch `28-v3.1-a1-fix`)
 
@@ -33,18 +34,6 @@ The thorough run dropped 3 verified links that the light run had found: Nvidia's
 Seen by Bekarys's Gemini on NKE: the agent added a new link "Three largest customers outside of the United States" on the same quote as the existing "Unnamed Customer" link. It got a different ID, so it was counted twice. A group of customers is also not one customer.
 - Fix: when merging an agent's new links, skip an `unnamed_customer` link whose source, link type and normalised quote already match an existing link. Treat groups like "three largest customers" as not a link.
 - **Owner:** Kendrick's Gemini (fold into A1-fix) · **Status:** assigned
-
-### FIX-15 · high · Simple screen 1: shares only, no percent editing
-Gawyn: remove the option to switch to percent on simple screen 1, and make the percent column read-only in shares mode there.
-- Fix:
-  - Add a `DraftEditor` option that hides the Shares | % switch and shows % as plain text (not an input). Use it in `guide/steps/pick.tsx` only; the full view keeps both.
-  - If a sample's prices can't be fetched, load it as shares anyway (or show a short "prices unavailable, try again" message), not as pinned % rows the user can't edit.
-- **Owner:** Yousuf's Claude (taken over from Yousuf's second Claude session; owns `app/ui/draft-editor.tsx`; lead-approved one-line change in `pick.tsx`) · **Status:** in progress (branch `28-fix-15-shares-only`, PR next)
-
-### FIX-16 · high · Simple screen 2 shows the first ETF pair, not the most overlapping one
-"Do your ETFs own the same companies?" uses `analysis.overlap.pairs[0]`, but the API returns pairs in input order. For the sample it shows IVV/QQQ (48.82%) when QQQ/XLK overlap most (50.11%).
-- Fix: pick the pair with the highest `weighted_overlap`; add a test.
-- **Owner:** Yousuf's Gemini (`guide/steps/own.tsx`) · **Status:** in progress (branch `28-fix-16-18-overlap-monotonic-progress`)
 
 ### FIX-17 · high · Suggest specific changes on screen 5 and in Try a change (both views)
 Gawyn wants concrete ideas such as "add this ETF to help fix this diversification issue", which the user can pick to load into Try a change, in the simple view and the full view.
@@ -63,22 +52,10 @@ Gawyn wants concrete ideas such as "add this ETF to help fix this diversificatio
   - Bekarys's Claude: frontend, plus the vite proxy and `api.changeIdeas`, moved from Yousuf's Claude, who reviews.
 - **Status:** in progress (branch `28-fix-17-change-ideas`, issue #171)
 
-### FIX-18 · high · The progress bar can go down
-`steps_total` grows when the research phase starts (16 → about 50), so the bar drops from about 100% to about 30%. It also changes as agents finish.
-- **Fix:**
-  - **Backend:** set `steps_total` to its full estimate from the start, and only ever lower it.
-  - **Frontend:** never show a lower % than already shown for the same job, on simple screen 4 and the Dependencies page.
-- **Owner:** Bekarys's Claude (`hoc/jobs.py`) + Yousuf's Gemini (both pages) · **Status:** backend merged (#172, lead checking); frontend in progress (branch `28-fix-16-18-overlap-monotonic-progress`)
-
-### FIX-6 · high · Pitch deck numbers are wrong
-`PITCH_DECK.md` has these errors:
-- Its "unseen annual reports" test is our development portfolio, and it leaves out the real held-out evaluation.
-- It says about 45% coverage; the verified figure is 40%.
-
-Fix:
-- Lead with the held-out results from `docs/hoc/EVAL.md`: blind precision 88.4% [83.2, 92.5], pooled 96.1%, core recall 57.4%, direction 100%, and 1 of 79 hard negatives wrongly flagged.
-- Add the research agents and beginner mode once FIX-1 lands.
-- **Owner:** Gawyn's Gemini · **Status:** merged (#167), lead checking; the line about the research agents follows FIX-1
+### FIX-19 · low · Progress bar can stick at 100% when a finished scan is re-run
+Found by Yousuf's Claude in review of #174. The backend reuses the job_id when a cached replay is upgraded to a live run, so the "never go down" rule keeps showing 100% until the new run ends.
+- Fix: reset the shown maximum when the job's status goes from done/error back to queued/running (or key it on job_id plus a run counter).
+- **Owner:** Yousuf's Gemini · **Status:** assigned
 
 ### FIX-7 · medium · README and demo docs are out of date
 - Fix: PR #132 needs the current numbers and the v3.1 features (shares default, simple view, "Try a change", research agents).
@@ -94,11 +71,6 @@ Fix:
 - Also test with no AI key or SEC contact: page 4 must say "The AI check couldn't run on this computer" (FIX-4 was checked in code only).
 - **Owner:** Bekarys's Gemini · **Status:** in progress. QA what's already merged now, and re-check each new merge.
 
-### FIX-10 · low · One AI summary title doesn't match its text
-The title says "Heavy reliance on two chip makers", but its text names only TSMC.
-- Fix: the plain title must name only what its text supports.
-- **Owner:** Gawyn's Gemini (orchestrator) · **Status:** merged (#173), lead checking live
-
 ### FIX-11 · low · Research findings appear only when the scan ends
 The plan asked for the research trace to show live during the run.
 - Fix:
@@ -108,6 +80,11 @@ The plan asked for the research trace to show live during the run.
 
 ## Done (checked on `main` by the lead)
 
+- FIX-18 progress bar never goes down: the total is set up front and only lowered (live: 106 → 100 → 65; 0% → 15% → 98% → 100%), and the pages never show a lower % — #172, #174
+- FIX-16 screen 2 names the most overlapping pair (QQQ and XLK, 50.11%) — #174
+- FIX-15 simple screen 1 is shares only, with % as plain text; the full view keeps the switch — #175
+- FIX-10 plain titles match their text (live: "Heavy reliance on Taiwan Semiconductor Manufacturing") — #173
+- FIX-6 pitch deck leads with the held-out eval (88.4% / 96.1% precision, 57.4% recall, 1 of 79), 40% verified coverage — #167
 - FIX-12 all links cite a real 10-K Item (Microsoft, Alphabet sections fixed; 132/132 quotes exact) — #169
 - FIX-13 PR #25 closed by Bekarys (branch kept)
 - FIX-3 short AI cards on simple pages 4–5, "Read more", a splitter that keeps "Co., Ltd." whole; FIX-4 "couldn't run on this computer" (#151, checked in code); FIX-5 page 4 progress bar and "Go deeper" that updates in place — #166
