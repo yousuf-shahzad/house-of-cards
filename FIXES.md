@@ -30,6 +30,10 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
+### FIX-66 · medium · UX: a scan stuck at 0% "Reading reports" looks frozen (Gawyn, 11:50)
+Show what it's doing under the progress bar: "Reading Apple's annual report…" or "Read 3 of 15 companies", from `job.companies[].status`. While at 0%, also show an elapsed timer and an animated bar. Applies to Full Dependencies, guide Step 4 and Simple Dependencies.
+- **Owner:** Yousuf's Gemini (after FIX-63 E+F) · **Status:** assigned
+
 ### FIX-64 · medium · BUG: Simple view tells you to "pin this row" for an unknown ticker (Kendrick's Claude, FIX-62)
 Simple Portfolio and every Simple "Finish your portfolio" card (`simple/index.tsx:142`) show "Price could not be loaded; pin this row to a percentage." Simple view has no pin control, and the real cause is an unknown ticker.
 - Fix: in Simple view, map the valuation issue codes to plain text without "pin" (e.g. "We couldn't find ZZZZ. Check the ticker, or remove it.").
