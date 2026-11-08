@@ -747,3 +747,38 @@ export interface CompareResponse {
   candidate_unanalysed: UnanalysedCompany[];
   notes: string[];
 }
+
+// ---------- FIX-17: deterministic ETF ideas (POST /api/change-ideas) ----------
+
+export interface ChangeIdeasRequest {
+  holdings: PortfolioItem[];
+  top_n?: number;
+}
+
+export interface ChangeIdea {
+  idea_id: string;
+  ticker: string;
+  etf_name: string;
+  add_fraction: 0.1 | 0.2;
+  addresses: "top_sector" | "dependency" | "top10" | "effective_n";
+  /** dep.<key> when addresses is dependency, otherwise null. */
+  metric_id: string | null;
+  /** One to eight words, no digits. */
+  title: string;
+  /** One Python-rendered sentence with the addressed measure's before/after values. */
+  reason: string;
+  /** Complete scenario allocations; whole-share rounding can change the result. */
+  holdings: PortfolioItem[];
+  concentration_deltas: ConcentrationDelta[];
+  biggest_dependency_delta: MetricDelta | null;
+  status: "ok" | "partial";
+  candidate_unanalysed: UnanalysedCompany[];
+  notes: string[];
+}
+
+export interface ChangeIdeasResponse {
+  status: "ok" | "partial";
+  /** At most three distinct ETFs, best tested fraction for each. */
+  ideas: ChangeIdea[];
+  notes: string[];
+}

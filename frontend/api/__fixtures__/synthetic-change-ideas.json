@@ -1,0 +1,151 @@
+{
+  "status": "ok",
+  "ideas": [
+    {
+      "idea_id": "idea_158700a1d8f8e68d",
+      "ticker": "ZZADD",
+      "etf_name": "SYNTHETIC ZZADD Fund",
+      "add_fraction": 0.2,
+      "addresses": "top_sector",
+      "metric_id": null,
+      "title": "Add ZZADD to spread exposure",
+      "reason": "Your largest industry's share would fall from 51.0% to 42.8%.",
+      "holdings": [
+        {
+          "ticker": "ZZBASE",
+          "allocation": 0.8
+        },
+        {
+          "ticker": "ZZADD",
+          "allocation": 0.2
+        }
+      ],
+      "concentration_deltas": [
+        {
+          "name": "top5",
+          "baseline": 1.0,
+          "candidate": 0.806,
+          "delta": -0.19399999999999995
+        },
+        {
+          "name": "top10",
+          "baseline": 1.0,
+          "candidate": 0.8160000000000001,
+          "delta": -0.18399999999999994
+        },
+        {
+          "name": "top20",
+          "baseline": 1.0,
+          "candidate": 0.8360000000000001,
+          "delta": -0.16399999999999992
+        },
+        {
+          "name": "effective_n",
+          "baseline": 1.9992003198720512,
+          "candidate": 3.1198522437977334,
+          "delta": 1.1206519239256822
+        },
+        {
+          "name": "largest_company",
+          "baseline": 0.51,
+          "candidate": 0.40800000000000003,
+          "delta": -0.10199999999999998
+        },
+        {
+          "name": "top_sector",
+          "baseline": 0.51,
+          "candidate": 0.42800000000000005,
+          "delta": -0.08199999999999996
+        }
+      ],
+      "biggest_dependency_delta": {
+        "metric_id": "dep.NAME:zz-external-foundry",
+        "label": "Portfolio exposure that depends on ZZ External Foundry",
+        "unit": "fraction",
+        "baseline": 0.51,
+        "candidate": 0.408,
+        "delta": -0.10200000000000004
+      },
+      "status": "ok",
+      "candidate_unanalysed": [],
+      "notes": [
+        "Uses each portfolio's top companies and the latest cached filing extractions; no new filings or model calls. Concentration uses the full portfolio analysis."
+      ]
+    },
+    {
+      "idea_id": "idea_082da30c86b39ff8",
+      "ticker": "ZZBROAD",
+      "etf_name": "SYNTHETIC ZZBROAD Fund",
+      "add_fraction": 0.2,
+      "addresses": "dependency",
+      "metric_id": "dep.NAME:zz-external-foundry",
+      "title": "Add ZZBROAD to spread exposure",
+      "reason": "Your portfolio exposure that depends on zz external foundry would fall from 51.0% to 40.8%.",
+      "holdings": [
+        {
+          "ticker": "ZZBASE",
+          "allocation": 0.8
+        },
+        {
+          "ticker": "ZZBROAD",
+          "allocation": 0.2
+        }
+      ],
+      "concentration_deltas": [
+        {
+          "name": "top5",
+          "baseline": 1.0,
+          "candidate": 0.806,
+          "delta": -0.19399999999999995
+        },
+        {
+          "name": "top10",
+          "baseline": 1.0,
+          "candidate": 0.8160000000000001,
+          "delta": -0.18399999999999994
+        },
+        {
+          "name": "top20",
+          "baseline": 1.0,
+          "candidate": 0.8360000000000001,
+          "delta": -0.16399999999999992
+        },
+        {
+          "name": "effective_n",
+          "baseline": 1.9992003198720512,
+          "candidate": 3.1198522437977334,
+          "delta": 1.1206519239256822
+        },
+        {
+          "name": "largest_company",
+          "baseline": 0.51,
+          "candidate": 0.40800000000000003,
+          "delta": -0.10199999999999998
+        },
+        {
+          "name": "top_sector",
+          "baseline": 0.51,
+          "candidate": 0.42800000000000005,
+          "delta": -0.08199999999999996
+        }
+      ],
+      "biggest_dependency_delta": {
+        "metric_id": "dep.NAME:zz-external-foundry",
+        "label": "Portfolio exposure that depends on ZZ External Foundry",
+        "unit": "fraction",
+        "baseline": 0.51,
+        "candidate": 0.408,
+        "delta": -0.10200000000000004
+      },
+      "status": "ok",
+      "candidate_unanalysed": [],
+      "notes": [
+        "Uses each portfolio's top companies and the latest cached filing extractions; no new filings or model calls. Concentration uses the full portfolio analysis."
+      ]
+    }
+  ],
+  "notes": [
+    "Tests a fixed ETF shortlist at ten and twenty percent using cached dependencies only; unknown dependencies are not zero. Whole-share rounding can change these results."
+  ],
+  "_comment": "SYNTHETIC invented ZZ funds and companies, not real holdings or recommendations. Two UI card variants share the same invented baseline; production ranks one baseline issue for all ideas."
+}
