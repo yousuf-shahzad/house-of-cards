@@ -61,11 +61,6 @@ The top bar uses an on/off `Switch` (`workspace.tsx:88`, `isSelected={!isBeginne
 - **Simple info banners use Full-view text.** They tell users to click rows, heatmap cells and graph lines that don't exist on Simple pages. Fix: give Simple mode its own info text (in `pages/simple/copy.ts`, passed in from `workspace.tsx`).
 - **Owner:** Yousuf's Codex (`experience.tsx`, `workspace.tsx`, `pages/simple/`); do this **first** · **Status:** assigned
 
-### FIX-47 · high · BUG: guide/Simple auto-scan gets stuck, and guide steps show stale results (bug hunt)
-- **Returning to an earlier portfolio hangs.** Going Portfolio A → B → A leaves Simple Dependencies / guide Step 4 on an endless progress bar and Step 5 on "waiting". `useAutoDependencies` remembers started portfolios in a module-level Set and won't re-run A. Fix: key it on the current portfolio and the current job.
-- **Guide steps 2–3 show stale results.** They show the previous portfolio when the current one is incomplete or has an unknown ticker. Fix: show the stale or error state.
-- **Owner:** Gawyn's Claude (lead, taken at Gawyn's request) · **Status:** in progress
-
 ### FIX-48 · medium · BUG: Dependencies page interaction and progress (bug hunt)
 - **Selection gets stuck on an old node.** `selectEdge()` doesn't clear `selectedNodeId`, so after clicking a node, clicking an edge or citation opens the edge's drawer while the highlight and inline inspector stay on the old node. Hovering nodes also swaps the 6 inline evidence cards on every mouse move, shifting the layout. Fix: clear the node on edge select, and change the inline cards only on click.
 - **Restarting a scan shows 100% first.** "Go deeper" or "Run again" briefly shows 100% with all phases green, then jumps back. Fix: reset the job progress on start (`dependencies-state.tsx`).
@@ -175,6 +170,7 @@ For each **confirmed** bug, add one line under **New** in FIXES.md: `BUG: <what 
 
 ## Done (checked on `main` by the lead)
 
+- FIX-47 the guide's auto-scan re-runs after A → B → A, and steps 2–3 show loading/error/"can't price"/"changed" instead of old numbers (lead's own fix, checked in the browser) — #233
 - FIX-39 new-user UX/jargon review: 9 findings, triaged into FIX-41 to FIX-44 (Yousuf's Gemini)
 - FIX-34 sole-source and qualifiers grounded in the target's own clause, and exact word-boundary name matching. Lead, live: all 3 remaining sole-source links have explicit sole/single/only wording; 1 mismatched link dropped (129 → 128); TSMC 12.39% unchanged — #222
 - FIX-30 simplified walkthrough of the real app: Simple mode uses the same sidebar and pages with plain-English versions and dismissible tips, and the five-step guide stays reachable. The lead checked it in the browser. Yousuf told Codex to merge it, with the default `BEGINNER_START_PAGE = "#/portfolio"` (the walkthrough). Gawyn confirmed at 09:18 to keep the walkthrough as the default — #221 (audit split into FIX-31, FIX-33, FIX-34)
