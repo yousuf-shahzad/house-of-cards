@@ -55,7 +55,7 @@ Show what it's doing under the progress bar: "Reading Apple's annual report…" 
 - **Status:** **live and verified on main** (fbd70f2):
   - #266 panel, #267 supplier list, #270 history pre-warm, #271 Risk links, #272 README, #273 deep-link scroll and 0.05% filter, #275 company-only suppliers and a 20% simulated fall.
   - The lead browser-checked it, and Bekarys's Gemini's E2E passed (32 frontend tests, 623 backend tests, and live tech, TW and TSMC cases).
-  - Left: Yousuf's Gemini's Dependencies and guide links (E+F), and Kendrick's Gemini B's demo table.
+  - Left: Yousuf's Gemini's Dependencies and guide links (E+F, #279, approved), and the demo table (moved from Kendrick's Gemini B to **Bekarys's Gemini**, 12:05: it hadn't started).
 ### FIX-62 · medium · Second check of the guide + second bug hunter on Simple view (Gawyn, 10:40)
 Kendrick's Claude is free again. In order:
 1. **Post-merge review of #251 (FIX-59).** Read the diff. In the guide, check steps 2–5 in each state: loading, backend down (error), edited-but-invalid (changed), empty, and editing the portfolio while Step 4's progress bar runs, then restoring it. Step 4 must restart for the new portfolio and never show the old one's results.
