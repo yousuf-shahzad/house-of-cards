@@ -20,6 +20,10 @@ from hoc.contract import RawHolding, SecurityInfo
 
 ALIASES_PATH = Path(__file__).with_name("aliases.json")
 MAX_ALIASES = 50
+# Known receipts without a local listing in aliases.json. ARM is identified in
+# FIX-67; PDD's Nasdaq ADR is documented in research R1 and its curated alias note.
+# Keep their country unknown even when reference names omit ADR/ADS.
+DEPOSITARY_RECEIPT_SYMBOLS = frozenset({"ARM", "PDD"})
 
 
 @dataclass(frozen=True)

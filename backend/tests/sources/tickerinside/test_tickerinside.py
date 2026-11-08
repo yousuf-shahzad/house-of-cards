@@ -61,7 +61,7 @@ def test_fetch_parses_fund_file():
     assert lines["ZZALP"].name == "ZZ Alpha Corp" and lines["ZZALP"].cik == "9990000001"
     assert lines["ZZXZ6"].asset_class == "derivative"
     assert lines["ZZFND"].asset_class == "fund"
-    assert lines["9999.TW"].country == "TW" and lines["ZZBET.B"].country is None
+    assert lines["9999.TW"].country == "TW" and lines["ZZBET.B"].country == "US"
     assert raw.reported_sector_weights == pytest.approx({"technology": 0.60, "financials": 0.399})
     assert raw.warnings == []
 
