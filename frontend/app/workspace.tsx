@@ -5,11 +5,12 @@ import { MOCK_MODE } from "@/api/client";
 import { Button } from "@/components/base/buttons/button";
 import { Chip } from "@/components/base/badges/chip";
 import { Drawer, DrawerBody, DrawerHeader } from "@/components/base/drawer/drawer";
-import { Switch } from "@/components/base/switch/switch";
+import { SegmentedControl, SegmentedControlItem } from "@/components/base/segmented-control/segmented-control";
 import { useAnalysis } from "./analysis";
 import { useExperience } from "./experience";
 import { pageFromHash, pages } from "./registry";
-import { SIMPLE_COPY } from "./pages/simple/copy";
+import { SIMPLE_COPY, SIMPLE_PAGE_INFO } from "./pages/simple/copy";
+import type { TabInfoGuide } from "./pages/guide/copy";
 
 const SimplePage = lazy(() => import("./pages/simple"));
 const DashboardSidebar = lazy(() =>
@@ -17,8 +18,8 @@ const DashboardSidebar = lazy(() =>
 );
 const PageInfo = lazy(() =>
   Promise.all([import("./pages/guide"), import("./pages/guide/copy")]).then(([guide, copy]) => ({
-    default: function PageInfo({ pageKey }: { pageKey: string }) {
-      const info = copy.PAGE_INFO_COPY[pageKey];
+    default: function PageInfo({ pageKey, simpleInfo }: { pageKey: string; simpleInfo?: TabInfoGuide }) {
+      const info = simpleInfo ?? copy.PAGE_INFO_COPY[pageKey];
       return info ? <guide.TabInfoBanner info={info} /> : null;
     },
   })),
@@ -94,9 +95,13 @@ export function Workspace() {
           </div>
           <div className="ms-auto flex shrink-0 items-center gap-3">
             {simple && <Button variant="ghost" size="small" aria-pressed={tips} onClick={() => setTips((value) => !value)}>{tips ? "Hide tips" : "Show tips"}</Button>}
-            <Switch size="sm" aria-label="Full view" isSelected={!isBeginner} onChange={(full) => setMode(full ? "expert" : "beginner")}>
-              <span className="text-caption-1-medium text-text-primary">{isBeginner ? "Simple view" : "Full view"}</span>
-            </Switch>
+            <SegmentedControl aria-label="View" selectedKeys={[isBeginner ? "beginner" : "expert"]} onSelectionChange={(keys) => {
+              const next = [...keys][0];
+              if (next === "beginner" || next === "expert") setMode(next);
+            }}>
+              <SegmentedControlItem id="beginner">Simple</SegmentedControlItem>
+              <SegmentedControlItem id="expert">Full</SegmentedControlItem>
+            </SegmentedControl>
           </div>
         </header>
         <main id="main" tabIndex={-1} className="dashboard-body">
@@ -106,7 +111,7 @@ export function Workspace() {
                 <h1 className="text-display-4-medium">{simple ? copy?.title : page.title}</h1>
                 <p className="text-body-regular text-text-secondary">{simple ? copy?.description : page.description}</p>
                 {(simple || !PAGES_WITH_OWN_INFO.has(page.key)) && (
-                  <div className="mt-3"><Suspense fallback={null}><PageInfo key={page.key} pageKey={page.key} /></Suspense></div>
+                  <div className="mt-3"><Suspense fallback={null}><PageInfo key={page.key + "-" + simple} pageKey={page.key} simpleInfo={simple ? SIMPLE_PAGE_INFO[page.key] : undefined} /></Suspense></div>
                 )}
               </div>
             </div>
@@ -115,7 +120,7 @@ export function Workspace() {
             <aside aria-label="Page tip" className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-separator-border bg-background-secondary-default p-4">
               <div className="flex max-w-2xl flex-col gap-1">
                 <p className="text-body-medium text-text-primary">{copy.tip}</p>
-                <p className="text-caption-1-regular text-text-secondary">Use any page in the sidebar. Switch to Full view here for more detail.</p>
+                <p className="text-caption-1-regular text-text-secondary">Use any page in the sidebar. Choose Full above for more detail.</p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Button variant="ghost" size="small" onClick={() => openBeginnerGuide()}>Open the five-step guide</Button>

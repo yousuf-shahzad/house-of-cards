@@ -1,4 +1,5 @@
 import type { PageKey } from "@/app/registry";
+import type { TabInfoGuide } from "../guide/copy";
 
 export const SIMPLE_COPY: Partial<Record<PageKey, { title: string; description: string; tip: string }>> = {
   portfolio: {
@@ -32,3 +33,22 @@ export const SIMPLE_COPY: Partial<Record<PageKey, { title: string; description: 
     tip: "Many company names can still hide a big bet on one industry. Look at both company and industry totals.",
   },
 };
+
+const SIMPLE_DETAILS: Partial<Record<PageKey, readonly string[]>> = {
+  portfolio: ["Use a sample portfolio, or enter your ETF tickers and share counts. Results update as you edit."],
+  exposures: ["Open Where this comes from for each ETF's contribution. Show all reveals the rest of the loaded companies."],
+  overlap: ["Open See shared companies for the largest shared names. Show all pairs reveals the rest of the ETF pairs."],
+  dependencies: ["Read filing evidence opens the report quote and source. Show all links reveals the rest of the results."],
+  compare: ["Try an idea or edit your changed portfolio. Reset to my portfolio restores the original mix."],
+  risk: ["Open Holdings dates and gaps to see which fund reports were used and what is missing."],
+};
+
+/** Information for the controls actually present in Simple mode. */
+export const SIMPLE_PAGE_INFO: Partial<Record<PageKey, TabInfoGuide>> = Object.fromEntries(
+  Object.entries(SIMPLE_COPY).map(([key, copy]) => [key, {
+    title: `About ${copy.title} · What's here & why`,
+    whatsHere: copy.description,
+    whyItMatters: copy.tip,
+    keyDetails: SIMPLE_DETAILS[key as PageKey] ?? [],
+  }]),
+);
