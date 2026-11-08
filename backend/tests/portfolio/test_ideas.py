@@ -63,6 +63,7 @@ def test_industry_first_best_fraction_three_distinct_etfs_and_exact_allocations(
         delta = next(d for d in idea.concentration_deltas if d.name == "top_sector")
         assert delta.delta < 0
         assert "51.0%" in idea.reason and f"{delta.candidate:.1%}" in idea.reason
+        assert "Information Technology" in idea.reason
         assert idea.biggest_dependency_delta is None
         assert idea.status == "partial" and idea.candidate_unanalysed
     # Input iteration order cannot change the shortlist or its stable identifiers.
@@ -85,6 +86,7 @@ def test_largest_known_dependency_wins_when_no_industry_is_concentrated():
     assert result.ideas
     for idea in result.ideas:
         assert idea.addresses == "dependency" and idea.metric_id.startswith("dep.")
+        assert "ZZ External Foundry" in idea.reason
         delta = idea.biggest_dependency_delta
         assert (delta.baseline, delta.candidate, delta.delta) == pytest.approx((.3, .24, -.06))
 
@@ -137,3 +139,11 @@ def test_non_improving_identical_exposures_are_not_ideas():
     candidate = base.model_copy(update={"etf_ticker": "ZZADD", "etf_name": "SYNTHETIC same exposures"})
     request, baseline, _, scenarios = setup(base, [candidate])
     assert ranked(request, baseline, scenarios).ideas == []
+
+
+def test_reason_names_both_industries_if_the_largest_changes():
+    candidate = fund("ZZADD", [.2, .4, .4], [Sector.information_technology, Sector.health_care, Sector.financials])
+    request, baseline, _, scenarios = setup(candidates=[candidate])
+    ideas = ranked(request, baseline, scenarios).ideas
+    assert len(ideas) == 1
+    assert "Information Technology at 51.0% to Health Care at 47.2%" in ideas[0].reason

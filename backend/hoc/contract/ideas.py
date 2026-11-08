@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from .api import PortfolioItem
 from .compare import ConcentrationDelta, MetricDelta
 from .dependencies import DEFAULT_TOP_N, UnanalysedCompany
+from .units import ALLOCATION_TOLERANCE, wsum
 
 
 class _Model(BaseModel):
@@ -44,6 +45,19 @@ class ChangeIdea(_Model):
         if not value.strip() or len(value.split()) > 8 or any(c.isdigit() for c in value):
             raise ValueError("title must have one to eight words and no digits")
         return value
+
+    @model_validator(mode="after")
+    def consistent_idea(self) -> ChangeIdea:
+        if self.addresses == "dependency":
+            if not self.metric_id or not self.metric_id.startswith("dep.") or self.metric_id == "dep.":
+                raise ValueError("dependency ideas require a dep.* metric_id")
+            if self.biggest_dependency_delta is None or self.biggest_dependency_delta.metric_id != self.metric_id:
+                raise ValueError("dependency delta must match the addressed metric_id")
+        elif self.metric_id is not None:
+            raise ValueError("metric_id must be null for concentration ideas")
+        if abs(wsum(h.allocation for h in self.holdings) - 1) > ALLOCATION_TOLERANCE:
+            raise ValueError("idea holdings must sum to one")
+        return self
 
 
 class ChangeIdeasResponse(_Model):

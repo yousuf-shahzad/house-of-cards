@@ -84,6 +84,19 @@ def _known_sectors(analysis: AnalysisResponse) -> bool:
     return analysis.coverage.sector_known_weight >= 0.95 * analysis.coverage.covered_weight > 0
 
 
+def _industry_reason(before: AnalysisResponse, after: AnalysisResponse, old: float, new: float) -> str:
+    def largest(analysis):
+        return min((s for s in analysis.sectors if s.sector != Sector.unknown),
+                   key=lambda s: (-s.weight, s.sector))
+
+    old_sector, new_sector = largest(before), largest(after)
+    old_name = old_sector.sector.value.replace("_", " ").title()
+    new_name = new_sector.sector.value.replace("_", " ").title()
+    if old_sector.sector == new_sector.sector:
+        return f"Your largest industry, {old_name}, would fall from {old:.1%} to {new:.1%}."
+    return f"Your largest industry would change from {old_name} at {old:.1%} to {new_name} at {new:.1%}."
+
+
 def rank_change_ideas(
     request: ChangeIdeasRequest,
     baseline: AnalysisResponse,
@@ -152,7 +165,8 @@ def rank_change_ideas(
             addresses="dependency" if issue.startswith("dep.") else issue,
             metric_id=issue if issue.startswith("dep.") else None,
             title=f"Add {scenario.ticker} to spread exposure",
-            reason=f"{label} would {'rise' if issue == 'effective_n' else 'fall'} from {values}.",
+            reason=(_industry_reason(baseline, scenario.analysis, old, new) if issue == "top_sector"
+                    else f"{label} would {'rise' if issue == 'effective_n' else 'fall'} from {values}."),
             holdings=holdings, concentration_deltas=result.concentration_deltas,
             biggest_dependency_delta=dependency[issue] if issue.startswith("dep.") else deps[0] if deps else None,
             status=result.status,

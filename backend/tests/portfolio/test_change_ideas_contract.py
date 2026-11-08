@@ -49,3 +49,14 @@ def test_title_request_and_response_bounds():
         ChangeIdea.model_validate({**data, "add_fraction": .15})
     with pytest.raises(ValidationError):
         ChangeIdeasRequest(holdings=[])
+
+
+def test_addressed_dependency_and_delta_must_agree():
+    data = load_fixture().ideas[1].model_dump()
+    for updates in ({"metric_id": None}, {"metric_id": "top_sector"}, {"metric_id": "dep."},
+                    {"biggest_dependency_delta": None}, {"metric_id": "dep.different"},
+                    {"addresses": "top_sector"}):
+        with pytest.raises(ValidationError):
+            ChangeIdea.model_validate({**data, **updates})
+    with pytest.raises(ValidationError):
+        ChangeIdea.model_validate({**data, "holdings": [{"ticker": "ZZBASE", "allocation": .2}]})

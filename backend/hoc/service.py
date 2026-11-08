@@ -42,6 +42,7 @@ from hoc.contract import (
     UnknownTickerError,
     ValuationRequest,
     ValuationResponse,
+    VerifiedEdge,
 )
 from hoc.examples import EXAMPLES
 from hoc.jobs import (
@@ -145,17 +146,20 @@ class EtfService:
         """Before/after comparison (X-API). Synchronous and cache-only: it runs both analyses, reads the
         verified extractions already cached for either side's top-N companies, and never fetches a filing
         or calls Gemini. Analysis errors (422/503) pass through."""
+        baseline = self.analyse(PortfolioRequest(holdings=request.baseline))
+        candidate = self.analyse(PortfolioRequest(holdings=request.candidate))
+        cached = self._comparison_cache((baseline, candidate), request.top_n)
+        return compare_portfolios(request, baseline, candidate, cached, aliases=self.aliases)
+
+    def _comparison_cache(self, analyses: Sequence[AnalysisResponse], top_n: int) -> dict[str, list[VerifiedEdge]]:
+        """Shared cache-only reader for compare and change ideas; one snapshot per operation."""
         from hoc.ai import PROMPT_VERSION
         from hoc.config import DEFAULT_EXTRACTOR_MODEL, DEFAULT_ORCHESTRATOR_MODEL
 
-        baseline = self.analyse(PortfolioRequest(holdings=request.baseline))
-        candidate = self.analyse(PortfolioRequest(holdings=request.candidate))
-        top = request.top_n
-        keys = {c.company_key for c in baseline.exposures[:top]} | {c.company_key for c in candidate.exposures[:top]}
+        keys = {c.company_key for analysis in analyses for c in analysis.exposures[:top_n]}
         models = tuple(dict.fromkeys((self.settings.gemini_extractor_model, DEFAULT_EXTRACTOR_MODEL,
                                       DEFAULT_ORCHESTRATOR_MODEL)))
-        cached = read_cached_extractions(self.settings.cache_dir, keys, models=models, prompt_version=PROMPT_VERSION)
-        return compare_portfolios(request, baseline, candidate, cached, aliases=self.aliases)
+        return read_cached_extractions(self.settings.cache_dir, keys, models=models, prompt_version=PROMPT_VERSION)
 
     def change_ideas(self, request: ChangeIdeasRequest) -> ChangeIdeasResponse:
         """Bound the HTTP wait, share in-flight work and cache each holdings key for one minute.
@@ -192,9 +196,6 @@ class EtfService:
             raise
 
     def _compute_change_ideas(self, request: ChangeIdeasRequest) -> ChangeIdeasResponse:
-        from hoc.ai import PROMPT_VERSION
-        from hoc.config import DEFAULT_EXTRACTOR_MODEL, DEFAULT_ORCHESTRATOR_MODEL
-
         baseline = self.analyse(PortfolioRequest(holdings=request.holdings))
         current = {h.ticker for h in request.holdings}
         # No candidate fetches when the current portfolio is incomplete or already full.
@@ -212,11 +213,7 @@ class EtfService:
             elif etf.holdings_weight < 0.95:
                 notes.append(f"Skipped {ticker}: less than 95% of the fund has usable company holdings.")
         scenarios = build_idea_scenarios(request, baseline, loaded, candidates)
-        keys = {c.company_key for a in [baseline, *(s.analysis for s in scenarios)]
-                for c in a.exposures[:request.top_n]}
-        models = tuple(dict.fromkeys((self.settings.gemini_extractor_model, DEFAULT_EXTRACTOR_MODEL,
-                                      DEFAULT_ORCHESTRATOR_MODEL)))
-        cached = read_cached_extractions(self.settings.cache_dir, keys, models=models, prompt_version=PROMPT_VERSION)
+        cached = self._comparison_cache([baseline, *(s.analysis for s in scenarios)], request.top_n)
         return rank_change_ideas(request, baseline, scenarios, cached, aliases=self.aliases, notes=notes)
 
     @property

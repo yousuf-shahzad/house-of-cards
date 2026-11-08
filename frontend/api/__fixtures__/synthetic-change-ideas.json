@@ -9,7 +9,7 @@
       "addresses": "top_sector",
       "metric_id": null,
       "title": "Add ZZADD to spread exposure",
-      "reason": "Your largest industry's share would fall from 51.0% to 42.8%.",
+      "reason": "Your largest industry, Information Technology, would fall from 51.0% to 42.8%.",
       "holdings": [
         {
           "ticker": "ZZBASE",
@@ -80,7 +80,7 @@
       "addresses": "dependency",
       "metric_id": "dep.NAME:zz-external-foundry",
       "title": "Add ZZBROAD to spread exposure",
-      "reason": "Your portfolio exposure that depends on zz external foundry would fall from 51.0% to 40.8%.",
+      "reason": "Your portfolio exposure that depends on ZZ External Foundry would fall from 51.0% to 40.8%.",
       "holdings": [
         {
           "ticker": "ZZBASE",
