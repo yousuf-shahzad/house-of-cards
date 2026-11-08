@@ -70,7 +70,11 @@
       "candidate_unanalysed": [],
       "notes": [
         "Uses each portfolio's top companies and the latest cached filing extractions; no new filings or model calls. Concentration uses the full portfolio analysis."
-      ]
+      ],
+      "proposed_by": "ai",
+      "action": "add",
+      "swap_from": null,
+      "rationale": "SYNTHETIC: adding this fund spreads your industry exposure."
     },
     {
       "idea_id": "idea_082da30c86b39ff8",
@@ -141,11 +145,25 @@
       "candidate_unanalysed": [],
       "notes": [
         "Uses each portfolio's top companies and the latest cached filing extractions; no new filings or model calls. Concentration uses the full portfolio analysis."
-      ]
+      ],
+      "proposed_by": "rules",
+      "action": "add",
+      "swap_from": null,
+      "rationale": null
     }
   ],
   "notes": [
     "Tests a fixed ETF shortlist at ten and twenty percent using cached dependencies only; unknown dependencies are not zero. Whole-share rounding can change these results."
   ],
-  "_comment": "SYNTHETIC invented ZZ funds and companies, not real holdings or recommendations. Two UI card variants share the same invented baseline; production ranks one baseline issue for all ideas."
+  "_comment": "SYNTHETIC invented ZZ funds and companies, not real holdings or recommendations. Two UI card variants share the same invented baseline; production ranks one baseline issue for all ideas.",
+  "ai_status": "ok",
+  "model": "SYNTHETIC-model",
+  "prompt_version": "SYNTHETIC-ideas-v1",
+  "rejected_proposals": [
+    {
+      "ticker": "ZZREJECT",
+      "action": "add",
+      "reason": "no_measurable_gain"
+    }
+  ]
 }

@@ -229,17 +229,19 @@ All additive with defaults, so v3 payloads stay valid.
 ## 10. Concrete ETF change ideas (FIX-17)
 
 `POST /api/change-ideas` takes `ChangeIdeasRequest{holdings, top_n=15}` and returns
-`ChangeIdeasResponse{status, ideas, notes}`. Models live in `hoc/contract/ideas.py`, mirrored in
+`ChangeIdeasResponse{status, ideas, notes, ai_status, model, prompt_version, rejected_proposals}`.
+Models live in `hoc/contract/ideas.py`, mirrored in
 `frontend/api/types.ts`; `synthetic-change-ideas.json` is a labelled, invented fixture.
 
 - The fixed shortlist is RSP, IWD, IEFA, IWM, XLV, XLP and XLU. Already-held ETFs are skipped.
   Each available fund is tested at `add_fraction` 0.1 and 0.2. Existing allocations are scaled
   proportionally to the remainder; `holdings` is the complete scenario. Whole-share rounding in
   the UI can change the result and must be compared again.
-- ETF holdings load through existing sources. Dependencies use one shared verified extraction
-  cache snapshot; there are no AI calls, filing fetches or dependency jobs. Absent metrics remain null.
-- Rank improvements to the largest industry when its portfolio share is at least 40% and usable
-  sector data covers at least 95% of company exposure; otherwise the largest cached `dep.*` fraction;
+- ETF holdings load through existing sources. Dependency measurement uses one shared verified extraction
+  cache snapshot and the union of both top-N company sets, with no filing fetches or dependency jobs.
+  Absent metrics remain null. AI proposes changes separately; Python verifies every shown number.
+- Rank improvements to the largest known industry when its portfolio share is at least 40%, matching
+  `diversificationVerdict`; otherwise the largest cached `dep.*` fraction;
   otherwise top-ten concentration, with effective company count as tie-break/fallback.
   Industry ranking requires usable sector data on both sides. Unknown dependencies never imply improvement.
 - Return at most three distinct ETFs, taking the best tested fraction for each. Non-improving,
@@ -259,3 +261,25 @@ All additive with defaults, so v3 payloads stay valid.
 
   When `addresses` is `dependency`, `biggest_dependency_delta` is the addressed baseline dependency
   (`metric_id`), so the card's label and numbers agree; for other issues it is the largest comparable change.
+
+### AI proposals and rules fallback (lead-approved additive extension)
+
+- `proposed_by` defaults to `rules`; `action` defaults to `add`; `swap_from` and `rationale` default
+  to null. Existing clients and rules payloads remain valid. `add_fraction` allows 0.1, 0.2 or 0.3.
+  For `add`, scale existing allocations by `1 - add_fraction`. For `swap`, move `add_fraction` of
+  the whole portfolio from a held `swap_from` into `ticker`; insufficient source allocation is rejected.
+  `holdings` always contains the complete candidate. A swap requires a different, nonempty source;
+  an add cannot name one. The UI rounds shares then compares the actual candidate again.
+- Argon proposes up to five adds/swaps from the pinned ETF universe against Python issue ids.
+  Python rejects invalid tickers/fractions/sources, unsupported rationale text, no measurable gain,
+  or a materially worse largest industry/top dependency. Only verified survivors can be labelled `ai`;
+  `rationale` is checked text whose metric placeholders Python has rendered.
+- `ai_status` defaults to `not_used`; other values are `pending`, `ok`, `missing_api_key`, `failed`,
+  and `timeout`. While `pending`, return rules ideas immediately within the existing HTTP deadline;
+  clients can poll about every three seconds for up to ninety seconds. Once the background proposal
+  finishes, return its verified ideas, or the rules fallback if none survives. An unavailable AI key,
+  failed call or timeout also returns rules ideas. `status` continues to describe data coverage.
+- `model` and `prompt_version` identify the proposal attempt (nullable). `rejected_proposals` defaults
+  to an empty list; each entry has `ticker`, `action`, and a machine-readable `reason`.
+  Proposal caching includes holdings, Python issues, model and prompt version, with disk reuse across
+  restarts. Pending work is shared rather than starting a model call on each poll.

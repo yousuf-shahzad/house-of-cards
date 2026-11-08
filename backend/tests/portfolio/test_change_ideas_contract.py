@@ -60,3 +60,22 @@ def test_addressed_dependency_and_delta_must_agree():
             ChangeIdea.model_validate({**data, **updates})
     with pytest.raises(ValidationError):
         ChangeIdea.model_validate({**data, "holdings": [{"ticker": "ZZBASE", "allocation": .2}]})
+
+
+def test_ai_contract_defaults_pending_metadata_and_swap_consistency():
+    data = load_fixture().ideas[0].model_dump()
+    for field in ("proposed_by", "action", "swap_from", "rationale"):
+        data.pop(field)
+    legacy = ChangeIdea.model_validate(data)
+    assert (legacy.proposed_by, legacy.action, legacy.swap_from, legacy.rationale) == ("rules", "add", None, None)
+    swap = ChangeIdea.model_validate({**data, "proposed_by": "ai", "action": "swap", "swap_from": "ZZBASE",
+                                     "add_fraction": .3, "rationale": "SYNTHETIC verified text"})
+    assert swap.action == "swap" and swap.add_fraction == .3
+    for updates in ({"action": "swap"}, {"action": "swap", "swap_from": data["ticker"]},
+                    {"action": "add", "swap_from": "ZZBASE"}):
+        with pytest.raises(ValidationError):
+            ChangeIdea.model_validate({**data, **updates})
+    response = ChangeIdeasResponse(status="ok", ai_status="pending", model="synthetic-model",
+                                   prompt_version="synthetic-v1", ideas=[legacy], rejected_proposals=[
+                                       {"ticker": "ZZBAD", "action": "invalid", "reason": "invalid_action"}])
+    assert ChangeIdeasResponse.model_validate_json(response.model_dump_json()) == response

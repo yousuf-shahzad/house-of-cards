@@ -71,7 +71,7 @@ from .errors import (
     UnknownTickerError,
 )
 from .holdings import EtfFailure, EtfHoldings, ExcludedLine, NormalisedHolding, Notice, SourceAttempt
-from .ideas import ChangeIdea, ChangeIdeasRequest, ChangeIdeasResponse
+from .ideas import ChangeIdea, ChangeIdeasRequest, ChangeIdeasResponse, RejectedIdeaProposal
 from .raw import PriceQuote, RawEtfHoldings, RawHolding, SecurityInfo
 from .units import (
     ALLOCATION_TOLERANCE,

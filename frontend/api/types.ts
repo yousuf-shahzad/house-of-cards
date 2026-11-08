@@ -748,7 +748,7 @@ export interface CompareResponse {
   notes: string[];
 }
 
-// ---------- FIX-17: deterministic ETF ideas (POST /api/change-ideas) ----------
+// ---------- FIX-17: Python-verified ETF ideas (POST /api/change-ideas) ----------
 
 export interface ChangeIdeasRequest {
   holdings: PortfolioItem[];
@@ -759,7 +759,12 @@ export interface ChangeIdea {
   idea_id: string;
   ticker: string;
   etf_name: string;
-  add_fraction: 0.1 | 0.2;
+  add_fraction: 0.1 | 0.2 | 0.3;
+  proposed_by?: "ai" | "rules";
+  action?: "add" | "swap";
+  swap_from?: string | null;
+  /** Verified rationale; Python fills every numeric placeholder. */
+  rationale?: string | null;
   addresses: "top_sector" | "dependency" | "top10" | "effective_n";
   /** dep.<key> when addresses is dependency, otherwise null. */
   metric_id: string | null;
@@ -781,4 +786,14 @@ export interface ChangeIdeasResponse {
   /** At most three distinct ETFs, best tested fraction for each. */
   ideas: ChangeIdea[];
   notes: string[];
+  ai_status?: "ok" | "pending" | "missing_api_key" | "failed" | "timeout" | "not_used";
+  model?: string | null;
+  prompt_version?: string | null;
+  rejected_proposals?: RejectedIdeaProposal[];
+}
+
+export interface RejectedIdeaProposal {
+  ticker: string;
+  action: string;
+  reason: string;
 }

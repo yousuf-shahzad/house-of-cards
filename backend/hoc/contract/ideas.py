@@ -1,4 +1,4 @@
-"""FIX-17: deterministic ETF change ideas. Additive, lead-approved contract."""
+"""FIX-17: AI/rules ETF ideas verified by Python. Additive, lead-approved contract."""
 
 from __future__ import annotations
 
@@ -25,14 +25,19 @@ class ChangeIdea(_Model):
     idea_id: str
     ticker: str
     etf_name: str
-    add_fraction: Literal[0.1, 0.2]
+    add_fraction: Literal[0.1, 0.2, 0.3]
+    proposed_by: Literal["ai", "rules"] = "rules"
+    action: Literal["add", "swap"] = "add"
+    swap_from: str | None = None
+    rationale: str | None = None
+    """Verified text with every numeric placeholder rendered by Python."""
     addresses: Literal["top_sector", "dependency", "top10", "effective_n"]
     metric_id: str | None = None
     """The dep.<key> when addresses is dependency, otherwise null."""
     title: str
     reason: str
     holdings: Annotated[list[PortfolioItem], Field(min_length=1, max_length=50)]
-    """Complete scenario; existing allocations scaled by 1 - add_fraction."""
+    """Complete scenario; add scales existing holdings, swap moves a portfolio fraction."""
     concentration_deltas: list[ConcentrationDelta]
     biggest_dependency_delta: MetricDelta | None = None
     status: Literal["ok", "partial"]
@@ -48,6 +53,11 @@ class ChangeIdea(_Model):
 
     @model_validator(mode="after")
     def consistent_idea(self) -> ChangeIdea:
+        if self.action == "swap":
+            if not self.swap_from or self.swap_from == self.ticker:
+                raise ValueError("swap requires a different source ETF")
+        elif self.swap_from is not None:
+            raise ValueError("add cannot have a swap source")
         if self.addresses == "dependency":
             if not self.metric_id or not self.metric_id.startswith("dep.") or self.metric_id == "dep.":
                 raise ValueError("dependency ideas require a dep.* metric_id")
@@ -60,7 +70,17 @@ class ChangeIdea(_Model):
         return self
 
 
+class RejectedIdeaProposal(_Model):
+    ticker: str
+    action: str
+    reason: str
+
+
 class ChangeIdeasResponse(_Model):
     status: Literal["ok", "partial"]
     ideas: Annotated[list[ChangeIdea], Field(max_length=3)] = []
     notes: list[str] = []
+    ai_status: Literal["ok", "pending", "missing_api_key", "failed", "timeout", "not_used"] = "not_used"
+    model: str | None = None
+    prompt_version: str | None = None
+    rejected_proposals: list[RejectedIdeaProposal] = []
