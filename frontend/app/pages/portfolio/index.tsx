@@ -321,6 +321,8 @@ function SharesRow({ row, report, flagged }: { row: DraftRow; report?: EtfReport
   const { updateRow, removeRow, effectivePct, priced } = useAnalysis();
   const label = norm(row.ticker) || "this ETF";
   const pct = effectivePct[row.id];
+  // The field shows 2 dp, so give it the 2-dp value: blur then commits exactly what is shown.
+  const shownPct = pct === null || pct === undefined ? null : Math.round(pct * 100) / 100;
   return (
     <li className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 sm:grid-cols-[8rem_9rem_8rem_minmax(0,1fr)_auto]">
       <TickerField row={row} flagged={flagged} />
@@ -349,9 +351,13 @@ function SharesRow({ row, report, flagged }: { row: DraftRow; report?: EtfReport
           minValue={0}
           maxValue={100}
           formatOptions={{ style: "unit", unit: "percent", maximumFractionDigits: 2 }}
-          value={pct ?? Number.NaN}
-          // Typing a % pins the row at it.
-          onChange={(next) => updateRow(row.id, { allocationPct: Number.isNaN(next) ? null : next, pinned: true })}
+          value={shownPct ?? Number.NaN}
+          // Typing a % pins the row at it. Blurring without a change commits the displayed (rounded)
+          // value; that is not an edit, so an unpinned row stays unpinned.
+          onChange={(next) => {
+            if (!row.pinned && next === shownPct) return;
+            updateRow(row.id, { allocationPct: Number.isNaN(next) ? null : next, pinned: true });
+          }}
         />
       </div>
       <div className="col-span-2 flex items-center sm:col-span-1 sm:col-start-4 sm:row-start-1">
