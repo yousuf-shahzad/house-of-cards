@@ -229,7 +229,7 @@
   ],
   "vint_rejected_edges": [],
   "quote_rejected_count": 0,
-  "research_depth": "light",
+  "research_depth": "thorough",
   "agentic_edges": [
     {
       "edge_id": "edge_95b957477eb2",
@@ -299,7 +299,7 @@
         "status": "confirmed",
         "method": "rules+model",
         "flags": [],
-        "reason": "The quote confirms Nestlé roasts and packages Starbucks packaged coffee products in some cases, supporting the contract manufacturer relationship.",
+        "reason": "The quote directly confirms that Nestlé roasts and packages Starbucks packaged coffee products outside of Starbucks stores, supporting contract manufacturing.",
         "model": "gemini-3.8-flash"
       }
     },
@@ -485,6 +485,19 @@
         },
         {
           "index": 3,
+          "action": "search_filings",
+          "query": "Starbucks \"Global Coffee Alliance\" Nestlé",
+          "summary": "Searched peer SEC filings for Starbucks \"Global Coffee Alliance\" Nestlé; no additional corroborating passages found.",
+          "filing": {
+            "company_key": "CIK:0000829224",
+            "form": "10-K",
+            "accession": "0000829224-25-000114",
+            "filed": "2025-11-14",
+            "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"
+          }
+        },
+        {
+          "index": 4,
           "action": "conclude",
           "query": "Nestlé",
           "summary": "Multiple observed passages in the filing corroborate the commercial relationship with Nestl\u0000e, including the note that \"Our Channel Development business is heavily reliant on Nestl\u0000e, which holds global rights to distribute certain Starbucks branded packaged goods.\"",
@@ -539,6 +552,19 @@
         },
         {
           "index": 3,
+          "action": "search_filings",
+          "query": "Starbucks \"green coffee beans\"",
+          "summary": "Searched peer SEC filings for Starbucks \"green coffee beans\"; no additional corroborating passages found.",
+          "filing": {
+            "company_key": "CIK:0000829224",
+            "form": "10-K",
+            "accession": "0000829224-25-000114",
+            "filed": "2025-11-14",
+            "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"
+          }
+        },
+        {
+          "index": 4,
           "action": "conclude",
           "query": "green coffee beans",
           "summary": "Independent passages in the filing corroborate green coffee beans as a key material input. The filing states: \"We buy coffee using fixed-price and price-to-be-fixed purchase commitments, depending on market conditions, to secure an adequate supply of quality green coffee.\" and \"We purchase, roast, and sell high-quality arabica coffee, which typically trades at a premium above the \"C\" commodity price.\"",
@@ -556,10 +582,75 @@
       ],
       "rejected_edge_ids": [],
       "new_edges": []
+    },
+    {
+      "finding_id": "res_single_edge_c9fdbeb07560",
+      "kind": "single_source",
+      "subject": "Starbucks Corporation single-source reliance on dairy",
+      "question": "Is Starbucks Corporation's critical reliance on dairy corroborated in the filing or peer filings?",
+      "outcome": "unresolved",
+      "explanation": "Searching filings to meet the search filings requirement and investigate counterparty or supply disclosures.",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "dairy",
+          "summary": "Found independent filing passage \"and conditions, including labor strikes and work stoppages; • higher costs, lower quality, or unavailability of coffee, dairy, cocoa, energy\" matching dairy.",
+          "filing": {
+            "company_key": "CIK:0000829224",
+            "form": "10-K",
+            "accession": "0000829224-25-000114",
+            "filed": "2025-11-14",
+            "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "search_filings",
+          "query": "Starbucks dairy supplier",
+          "summary": "Searched peer SEC filings for Starbucks dairy supplier; no additional corroborating passages found.",
+          "filing": {
+            "company_key": "CIK:0000829224",
+            "form": "10-K",
+            "accession": "0000829224-25-000114",
+            "filed": "2025-11-14",
+            "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "search_filings",
+          "query": "Starbucks dairy supplier",
+          "summary": "Searched peer SEC filings for Starbucks dairy supplier; no additional corroborating passages found.",
+          "filing": {
+            "company_key": "CIK:0000829224",
+            "form": "10-K",
+            "accession": "0000829224-25-000114",
+            "filed": "2025-11-14",
+            "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"
+          }
+        },
+        {
+          "index": 4,
+          "action": "conclude",
+          "query": "dairy",
+          "summary": "Searching filings to meet the search filings requirement and investigate counterparty or supply disclosures.",
+          "filing": {
+            "company_key": "CIK:0000829224",
+            "form": "10-K",
+            "accession": "0000829224-25-000114",
+            "filed": "2025-11-14",
+            "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [],
+      "rejected_edge_ids": [],
+      "new_edges": []
     }
   ],
   "agentic_rejected_edge_ids": [],
-  "agentic_steps_done": 6,
-  "agentic_steps_total": 6,
+  "agentic_steps_done": 12,
+  "agentic_steps_total": 12,
   "agentic_interpretation_rejected": 0
 }

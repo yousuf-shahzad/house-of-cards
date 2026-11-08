@@ -674,7 +674,7 @@ def _run_agentic_if_available(
                 runner_fn = getattr(loop_inst, "research_company", None) or getattr(
                     loop_inst, "run_company", None
                 )
-            except Exception:
+            except (AttributeError, TypeError, ValueError, RuntimeError):
                 runner_fn = None
 
     if runner_fn is None:
@@ -715,7 +715,7 @@ def _run_agentic_if_available(
         steps_total = int(getattr(res, "steps_total", 0) or 0)
         interp_rej = int(getattr(res, "interpretation_rejected", 0) or 0)
         return final_edges, findings_dicts, rejected_ids, steps_done, steps_total, interp_rej
-    except Exception as exc:
+    except (AttributeError, TypeError, ValueError, RuntimeError, OSError) as exc:
         if not cache_only:
             print(
                 f"[eval warning] agentic research failed for {ticker} ({company_key}): {exc}",
@@ -962,13 +962,23 @@ def run_evaluation(
             )
         )
 
+    effective_depth: Literal["none", "light", "thorough"] = depth
+    if not live and depth != "none" and recorded_by_ticker:
+        rec_depths = {
+            r.research_depth
+            for r in recorded_by_ticker.values()
+            if r.research_depth in {"light", "thorough"}
+        }
+        if rec_depths == {"thorough"}:
+            effective_depth = "thorough"
+
     return aggregate_eval_report(
         bundles,
         mode=run_mode,
         git_commit=detect_git_commit(),
         extractor_prompt_version=detect_extractor_prompt_version(),
         judge_prompt_version=detect_judge_prompt_version(),
-        research_depth=depth,
+        research_depth=effective_depth,
         bootstrap_iterations=bootstrap_iterations,
         bootstrap_seed=bootstrap_seed,
     )

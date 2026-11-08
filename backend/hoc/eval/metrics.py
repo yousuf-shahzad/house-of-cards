@@ -1200,6 +1200,7 @@ def aggregate_eval_report(
         findings=all_findings,
         edges=all_after_edges,
         initial_edges=all_before_edges,
+        light_edges=all_before_edges if research_depth == "thorough" else None,
         depth=research_depth,
     )
 
@@ -1276,8 +1277,8 @@ def _extract_source_parts(
         return [], [], [], set(), "light"
 
     # Unwrap DependencyJob -> .result
-    if hasattr(source, "result") and getattr(source, "result") is not None:
-        source = getattr(source, "result")
+    if hasattr(source, "result") and source.result is not None:
+        source = source.result
     elif isinstance(source, Mapping) and isinstance(source.get("result"), Mapping):
         source = source["result"]
 
@@ -1289,9 +1290,7 @@ def _extract_source_parts(
         rej_ids: set[str] = set()
         depth = "light"
         for item in source:
-            if isinstance(item, RecordedCompanyPrediction):
-                d = item.model_dump(mode="json")
-            elif hasattr(item, "model_dump"):
+            if isinstance(item, RecordedCompanyPrediction) or hasattr(item, "model_dump"):
                 d = item.model_dump(mode="json")
             elif isinstance(item, Mapping):
                 d = dict(item)
@@ -1352,6 +1351,7 @@ def evaluate_agentic_acceptance(
     findings: Sequence[Mapping[str, Any] | Any] | None = None,
     edges: Sequence[Mapping[str, Any] | VerifiedEdge] | None = None,
     initial_edges: Sequence[Mapping[str, Any] | VerifiedEdge] | None = None,
+    light_edges: Sequence[Mapping[str, Any] | VerifiedEdge] | None = None,
     thorough_edges: Sequence[Mapping[str, Any] | VerifiedEdge] | None = None,
     thorough_rejected_edge_ids: Sequence[str] = (),
     depth: str | None = None,
@@ -1463,13 +1463,14 @@ def evaluate_agentic_acceptance(
             )
             explanation = str(f.get("explanation") or "")
             quoted_spans = [normalise(q).casefold() for q in _QUOTED_SPAN_RE.findall(explanation) if q.strip()]
-            if n_tools == 0:
+            if n_tools == 0 or (
+                f_search == 0
+                and own_quote_norm
+                and quoted_spans
+                and all(q in own_quote_norm or own_quote_norm in q for q in quoted_spans)
+                and n_tools <= 1
+            ):
                 circular_confirmations += 1
-            elif f_search == 0 and own_quote_norm:
-                if quoted_spans and all(
-                    q in own_quote_norm or own_quote_norm in q for q in quoted_spans
-                ) and n_tools <= 1:
-                    circular_confirmations += 1
 
     tool_calls_total = sum(tool_counts)
     avg_tools = round(tool_calls_total / findings_total, 2) if findings_total > 0 else 0.0
@@ -1513,26 +1514,47 @@ def evaluate_agentic_acceptance(
             group_unnamed_ids.append(eid)
 
     # FIX-2: Thorough contains Light
-    thorough_eval = thorough_source is not None or thorough_edges is not None
+    if (
+        effective_depth == "thorough"
+        and light_edges is None
+        and thorough_source is None
+        and thorough_edges is None
+        and src_init_edges
+    ):
+        light_edges = src_init_edges
+    thorough_eval = thorough_source is not None or thorough_edges is not None or light_edges is not None
     light_surviving_cnt = len(edges_dicts)
     thorough_cnt = 0
     missing_light_ids: list[str] = []
 
     if thorough_eval:
-        _tf, t_edges_src, _ti, t_rej_src, _td = _extract_source_parts(thorough_source)
-        if thorough_edges is not None:
-            t_edges_dicts = [
+        if light_edges is not None and thorough_source is None and thorough_edges is None:
+            l_edges_dicts = [
                 e.model_dump(mode="json") if hasattr(e, "model_dump") else dict(e)
-                for e in thorough_edges
+                for e in light_edges
             ]
+            t_edges_dicts = edges_dicts
+            t_rej_all = {
+                str(r)
+                for f in findings_dicts
+                for r in (f.get("rejected_edge_ids") or ())
+            } | {str(r) for r in thorough_rejected_edge_ids}
         else:
-            t_edges_dicts = t_edges_src
-        t_rej_all = set(t_rej_src) | {str(r) for r in thorough_rejected_edge_ids}
+            _tf, t_edges_src, _ti, t_rej_src, _td = _extract_source_parts(thorough_source)
+            l_edges_dicts = edges_dicts
+            if thorough_edges is not None:
+                t_edges_dicts = [
+                    e.model_dump(mode="json") if hasattr(e, "model_dump") else dict(e)
+                    for e in thorough_edges
+                ]
+            else:
+                t_edges_dicts = t_edges_src
+            t_rej_all = set(t_rej_src) | {str(r) for r in thorough_rejected_edge_ids}
         t_edge_ids = {str(e.get("edge_id") or "") for e in t_edges_dicts if e.get("edge_id")}
         thorough_cnt = len(t_edge_ids)
         surviving_light = [
             str(e.get("edge_id") or "")
-            for e in edges_dicts
+            for e in l_edges_dicts
             if e.get("edge_id") and str(e.get("edge_id")) not in t_rej_all
         ]
         light_surviving_cnt = len(surviving_light)

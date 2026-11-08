@@ -663,7 +663,7 @@
   ],
   "vint_rejected_edges": [],
   "quote_rejected_count": 0,
-  "research_depth": "light",
+  "research_depth": "thorough",
   "agentic_edges": [
     {
       "edge_id": "edge_fef6717a6179",
@@ -731,10 +731,10 @@
       },
       "interpretation": {
         "status": "confirmed",
-        "method": "rules",
+        "method": "rules+model",
         "flags": [],
-        "reason": null,
-        "model": null
+        "reason": "The quote directly confirms that Ford operates manufacturing facilities/operations in Vietnam via its consolidated joint venture Ford Vietnam Limited.",
+        "model": "gemini-3.8-flash"
       }
     },
     {
@@ -805,7 +805,7 @@
         "status": "confirmed",
         "method": "rules+model",
         "flags": [],
-        "reason": "The quote explicitly confirms that Ford's joint venture owns and operates a manufacturing plant in Rayong, Thailand supporting Ford's business segments.",
+        "reason": "The quote explicitly confirms that Ford's joint venture owns and operates a manufacturing plant in Rayong, Thailand supporting Ford's production.",
         "model": "gemini-3.8-flash"
       }
     },
@@ -1323,7 +1323,7 @@
       "subject": "Ford Motor Company counterparty Ford Otosan",
       "question": "Can counterparty Ford Otosan in Ford Motor Company's filing be verified and resolved?",
       "outcome": "confirmed",
-      "explanation": "Ford Motor Company reports that Ford Otosan is a supplier and manufacturer, stating: \"Ford Otosan also manufactures Ford heavy trucks for global distribution, except for markets in the Americas, China, and Taiwan. The joint venture owns three plants, a parts distribution depot, and a research and development center in Türkiye, and a combined vehicle and engine plant in Romania.\"",
+      "explanation": "Ford Motor Company's filing and external filings confirm that Ford Otosan is a joint venture manufacturing supplier to Ford. In another SEC filing, it is noted that \"When Turkey-based Ford Otosan, a joint venture between Ford Motor Company and Koç Holding, wanted to streamline the manufacturing of its Ford Transit line of passenger vans, the company turned to hybrid quantum computing to devise a solution.\" Furthermore, Ford's filing corroborates that \"Ford Otosan also manufactures Ford heavy trucks for global distribution, except for markets in the Americas, China, and Taiwan.\"",
       "steps": [
         {
           "index": 1,
@@ -1353,9 +1353,22 @@
         },
         {
           "index": 3,
+          "action": "search_filings",
+          "query": "Ford Otosan",
+          "summary": "Cross-filing search for Ford Otosan in CIK:, CIK: found \"Our customers have included Mastercard, Deloitte, BASF, Pfizer, Unisys, Siemens Healthineers, NTT DOCOMO, Ford Otosan, Interpublic Group, Da\".",
+          "filing": {
+            "company_key": "CIK:0000037996",
+            "form": "10-K",
+            "accession": "0000037996-26-000015",
+            "filed": "2026-02-11",
+            "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+          }
+        },
+        {
+          "index": 4,
           "action": "conclude",
           "query": "Ford Otosan",
-          "summary": "Ford Motor Company reports that Ford Otosan is a supplier and manufacturer, stating: \"Ford Otosan also manufactures Ford heavy trucks for global distribution, except for markets in the Americas, China, and Taiwan. The joint venture owns three plants, a parts distribution depot, and a research and development center in Türkiye, and a combined vehicle and engine plant in Romania.\"",
+          "summary": "Ford Motor Company's filing and external filings confirm that Ford Otosan is a joint venture manufacturing supplier to Ford. In another SEC filing, it is noted that \"When Turkey-based Ford Otosan, a joint venture between Ford Motor Company and Koç Holding, wanted to streamline the manufacturing of its Ford Transit line of passenger vans, the company turned to hybrid quantum computing to devise a solution.\" Furthermore, Ford's filing corroborates that \"Ford Otosan also manufactures Ford heavy trucks for global distribution, except for markets in the Americas, China, and Taiwan.\"",
           "filing": {
             "company_key": "CIK:0000037996",
             "form": "10-K",
@@ -1372,12 +1385,79 @@
       "new_edges": []
     },
     {
+      "finding_id": "res_unresolved_edge_e53e432f2a29",
+      "kind": "unresolved_counterparty",
+      "subject": "Ford Motor Company counterparty Koc Group of Türkiye",
+      "question": "Can counterparty Koc Group of Türkiye in Ford Motor Company's filing be verified and resolved?",
+      "outcome": "confirmed",
+      "explanation": "External filing evidence corroborates the joint venture relationship: \"•When Turkey-based Ford Otosan, a joint venture between Ford Motor Company and Koç Holding, wanted to streamline the manufacturing of its Ford Transit line of passenger vans, the company turned to hybrid quantum computing to devise a solution.\"",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "Ford Otosan",
+          "summary": "Found independent filing passage \"Ford Otosan also manufactures Ford heavy trucks for global distribution, except for markets in the Americas, China, and Taiwan. The joint ve\" matching Ford Otosan.",
+          "filing": {
+            "company_key": "CIK:0000037996",
+            "form": "10-K",
+            "accession": "0000037996-26-000015",
+            "filed": "2026-02-11",
+            "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "search_filings",
+          "query": "Ford Otosan Koc Group",
+          "summary": "Cross-filing search for Ford Otosan Koc Group in CIK:, CIK: found \"The company plans to deploy the hybrid-quantum solution in production across its Japanese branch offices. •When Turkey-based Ford Otosan, a \".",
+          "filing": {
+            "company_key": "CIK:0000037996",
+            "form": "10-K",
+            "accession": "0000037996-26-000015",
+            "filed": "2026-02-11",
+            "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "read_section",
+          "query": "Item 1",
+          "summary": "Read section and extracted verified passage \"The Company's Ford+ plan for growth and value creation combines existing strengths, new capabilities, and always-on relationships with custo\".",
+          "filing": {
+            "company_key": "CIK:0000037996",
+            "form": "10-K",
+            "accession": "0000037996-26-000015",
+            "filed": "2026-02-11",
+            "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+          }
+        },
+        {
+          "index": 4,
+          "action": "conclude",
+          "query": "Koc Group of Türkiye",
+          "summary": "External filing evidence corroborates the joint venture relationship: \"•When Turkey-based Ford Otosan, a joint venture between Ford Motor Company and Koç Holding, wanted to streamline the manufacturing of its Ford Transit line of passenger vans, the company turned to hybrid quantum computing to devise a solution.\"",
+          "filing": {
+            "company_key": "CIK:0000037996",
+            "form": "10-K",
+            "accession": "0000037996-26-000015",
+            "filed": "2026-02-11",
+            "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [
+        "edge_e53e432f2a29"
+      ],
+      "rejected_edge_ids": [],
+      "new_edges": []
+    },
+    {
       "finding_id": "res_single_edge_0b25b7ecf734",
       "kind": "single_source",
       "subject": "Ford Motor Company single-source reliance on Vietnam",
       "question": "Is Ford Motor Company's critical reliance on Vietnam corroborated in the filing or peer filings?",
       "outcome": "confirmed",
-      "explanation": "The filing confirms manufacturing operations in Vietnam via \"We have one consolidated joint venture with manufacturing operations, which is in our Ford Blue segment: •Ford Vietnam Limited - a joint venture between Ford (75%) and Diesel Song Cong One Member Limited Liability Company (a subsidiary of the Vietnam Engine and Agricultural Machinery Corporation, wh\".",
+      "explanation": "Ford Motor Company's filing confirms manufacturing operations and facility in Vietnam via Ford Vietnam Limited: \"We have one consolidated joint venture with manufacturing operations, which is in our Ford Blue segment: •Ford Vietnam Limited - a joint venture between Ford (75%) and Diesel Song Cong One Member Limited Liability Company (a subsidiary of the Vietnam Engine and Agricultural Machinery Corporation, wh\".",
       "steps": [
         {
           "index": 1,
@@ -1407,9 +1487,22 @@
         },
         {
           "index": 3,
+          "action": "search_filings",
+          "query": "Ford Vietnam Limited",
+          "summary": "Cross-filing search for Ford Vietnam Limited in CIK:, CIK: found \"The company plans to deploy the hybrid-quantum solution in production across its Japanese branch offices. •When Turkey-based Ford Otosan, a \".",
+          "filing": {
+            "company_key": "CIK:0000037996",
+            "form": "10-K",
+            "accession": "0000037996-26-000015",
+            "filed": "2026-02-11",
+            "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+          }
+        },
+        {
+          "index": 4,
           "action": "conclude",
           "query": "Vietnam",
-          "summary": "The filing confirms manufacturing operations in Vietnam via \"We have one consolidated joint venture with manufacturing operations, which is in our Ford Blue segment: •Ford Vietnam Limited - a joint venture between Ford (75%) and Diesel Song Cong One Member Limited Liability Company (a subsidiary of the Vietnam Engine and Agricultural Machinery Corporation, wh\".",
+          "summary": "Ford Motor Company's filing confirms manufacturing operations and facility in Vietnam via Ford Vietnam Limited: \"We have one consolidated joint venture with manufacturing operations, which is in our Ford Blue segment: •Ford Vietnam Limited - a joint venture between Ford (75%) and Diesel Song Cong One Member Limited Liability Company (a subsidiary of the Vietnam Engine and Agricultural Machinery Corporation, wh\".",
           "filing": {
             "company_key": "CIK:0000037996",
             "form": "10-K",
@@ -1424,10 +1517,77 @@
       ],
       "rejected_edge_ids": [],
       "new_edges": []
+    },
+    {
+      "finding_id": "res_single_edge_103948ced6bf",
+      "kind": "single_source",
+      "subject": "Ford Motor Company single-source reliance on Rayong, Thailand",
+      "question": "Is Ford Motor Company's critical reliance on Rayong, Thailand corroborated in the filing or peer filings?",
+      "outcome": "confirmed",
+      "explanation": "Ford Motor Company confirms in Note that \"AutoAlliance (Thailand) Co., Ltd.\" is one of its unconsolidated joint ventures, corroborating the operation of the joint venture facility.",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "AutoAlliance (Thailand)",
+          "summary": "Found independent filing passage \"The most significant of those unconsolidated joint ventures are as follows: •AutoAlliance (Thailand) Co., Ltd.\" matching AutoAlliance (Thailand).",
+          "filing": {
+            "company_key": "CIK:0000037996",
+            "form": "10-K",
+            "accession": "0000037996-26-000015",
+            "filed": "2026-02-11",
+            "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "search_filings",
+          "query": "AutoAlliance Thailand Rayong",
+          "summary": "Cross-filing search for AutoAlliance Thailand Rayong in CIK:, CIK: found \"The company plans to deploy the hybrid-quantum solution in production across its Japanese branch offices. •When Turkey-based Ford Otosan, a \".",
+          "filing": {
+            "company_key": "CIK:0000037996",
+            "form": "10-K",
+            "accession": "0000037996-26-000015",
+            "filed": "2026-02-11",
+            "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "read_section",
+          "query": "Item 1",
+          "summary": "Read section and extracted verified passage \"The Company's Ford+ plan for growth and value creation combines existing strengths, new capabilities, and always-on relationships with custo\".",
+          "filing": {
+            "company_key": "CIK:0000037996",
+            "form": "10-K",
+            "accession": "0000037996-26-000015",
+            "filed": "2026-02-11",
+            "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+          }
+        },
+        {
+          "index": 4,
+          "action": "conclude",
+          "query": "Rayong, Thailand",
+          "summary": "Ford Motor Company confirms in Note that \"AutoAlliance (Thailand) Co., Ltd.\" is one of its unconsolidated joint ventures, corroborating the operation of the joint venture facility.",
+          "filing": {
+            "company_key": "CIK:0000037996",
+            "form": "10-K",
+            "accession": "0000037996-26-000015",
+            "filed": "2026-02-11",
+            "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [
+        "edge_103948ced6bf"
+      ],
+      "rejected_edge_ids": [],
+      "new_edges": []
     }
   ],
   "agentic_rejected_edge_ids": [],
-  "agentic_steps_done": 6,
-  "agentic_steps_total": 6,
+  "agentic_steps_done": 16,
+  "agentic_steps_total": 16,
   "agentic_interpretation_rejected": 0
 }

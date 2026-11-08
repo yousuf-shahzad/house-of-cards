@@ -1167,7 +1167,7 @@
   ],
   "vint_rejected_edges": [],
   "quote_rejected_count": 0,
-  "research_depth": "light",
+  "research_depth": "thorough",
   "agentic_edges": [
     {
       "edge_id": "edge_e60d52406d66",
@@ -1309,10 +1309,10 @@
       },
       "interpretation": {
         "status": "confirmed",
-        "method": "rules+model",
+        "method": "rules",
         "flags": [],
-        "reason": "The context explicitly confirms that certain Deere products rely on rare earth minerals for manufacturing.",
-        "model": "gemini-3.8-flash"
+        "reason": null,
+        "model": null
       }
     },
     {
@@ -2361,6 +2361,19 @@
         },
         {
           "index": 3,
+          "action": "search_filings",
+          "query": "Deere rare earth minerals",
+          "summary": "Searched peer SEC filings for Deere rare earth minerals; no additional corroborating passages found.",
+          "filing": {
+            "company_key": "CIK:0000315189",
+            "form": "10-K",
+            "accession": "0001104659-25-122321",
+            "filed": "2025-12-18",
+            "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+          }
+        },
+        {
+          "index": 4,
           "action": "conclude",
           "query": "rare earth minerals",
           "summary": "The filing confirms dependency on rare earth minerals as a key input, noting that \"The inability to obtain export permits for rare earth minerals could have a detrimental effect on our business.\"",
@@ -2415,6 +2428,19 @@
         },
         {
           "index": 3,
+          "action": "search_filings",
+          "query": "John Deere Waterloo Works",
+          "summary": "Searched peer SEC filings for John Deere Waterloo Works; no additional corroborating passages found.",
+          "filing": {
+            "company_key": "CIK:0000315189",
+            "form": "10-K",
+            "accession": "0001104659-25-122321",
+            "filed": "2025-12-18",
+            "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+          }
+        },
+        {
+          "index": 4,
           "action": "conclude",
           "query": "John Deere Waterloo Works",
           "summary": "Initial disclosure \"Waterloo, Iowa John Deere Engine Works John Deere Waterloo Foundry John Deere Waterloo Works PPA, CF\" was not corroborated by a second passage or peer filing.",
@@ -2430,10 +2456,140 @@
       "confirmed_edge_ids": [],
       "rejected_edge_ids": [],
       "new_edges": []
+    },
+    {
+      "finding_id": "res_single_edge_1552e231d378",
+      "kind": "single_source",
+      "subject": "Deere & Company single-source reliance on John Deere Des Moines Works Factory",
+      "question": "Is Deere & Company's critical reliance on John Deere Des Moines Works Factory corroborated in the filing or peer filings?",
+      "outcome": "unresolved",
+      "explanation": "Initial disclosure \"Des Moines, Iowa John Deere Des Moines Works Factory PPA\" was not corroborated by a second passage or peer filing.",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "John Deere Des Moines Works Factory",
+          "summary": "Searched filing for John Deere Des Moines Works Factory; only the initial extraction passage matched (no second independent passage).",
+          "filing": {
+            "company_key": "CIK:0000315189",
+            "form": "10-K",
+            "accession": "0001104659-25-122321",
+            "filed": "2025-12-18",
+            "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "search_filings",
+          "query": "John Deere Des Moines Works Factory",
+          "summary": "Searched peer SEC filings for John Deere Des Moines Works Factory; no additional corroborating passages found.",
+          "filing": {
+            "company_key": "CIK:0000315189",
+            "form": "10-K",
+            "accession": "0001104659-25-122321",
+            "filed": "2025-12-18",
+            "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "search_filings",
+          "query": "John Deere Des Moines Works",
+          "summary": "Searched peer SEC filings for John Deere Des Moines Works; no additional corroborating passages found.",
+          "filing": {
+            "company_key": "CIK:0000315189",
+            "form": "10-K",
+            "accession": "0001104659-25-122321",
+            "filed": "2025-12-18",
+            "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+          }
+        },
+        {
+          "index": 4,
+          "action": "conclude",
+          "query": "John Deere Des Moines Works Factory",
+          "summary": "Initial disclosure \"Des Moines, Iowa John Deere Des Moines Works Factory PPA\" was not corroborated by a second passage or peer filing.",
+          "filing": {
+            "company_key": "CIK:0000315189",
+            "form": "10-K",
+            "accession": "0001104659-25-122321",
+            "filed": "2025-12-18",
+            "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [],
+      "rejected_edge_ids": [],
+      "new_edges": []
+    },
+    {
+      "finding_id": "res_single_edge_16d663adc642",
+      "kind": "single_source",
+      "subject": "Deere & Company single-source reliance on John Deere Augusta Works Factory",
+      "question": "Is Deere & Company's critical reliance on John Deere Augusta Works Factory corroborated in the filing or peer filings?",
+      "outcome": "unresolved",
+      "explanation": "Initial disclosure \"Augusta, Georgia John Deere Augusta Works Factory SAT\" was not corroborated by a second passage or peer filing.",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "Augusta Works",
+          "summary": "Searched filing for Augusta Works; only the initial extraction passage matched (no second independent passage).",
+          "filing": {
+            "company_key": "CIK:0000315189",
+            "form": "10-K",
+            "accession": "0001104659-25-122321",
+            "filed": "2025-12-18",
+            "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "search_filings",
+          "query": "John Deere Augusta Works",
+          "summary": "Searched peer SEC filings for John Deere Augusta Works; no additional corroborating passages found.",
+          "filing": {
+            "company_key": "CIK:0000315189",
+            "form": "10-K",
+            "accession": "0001104659-25-122321",
+            "filed": "2025-12-18",
+            "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "search_filings",
+          "query": "John Deere Augusta Works",
+          "summary": "Searched peer SEC filings for John Deere Augusta Works; no additional corroborating passages found.",
+          "filing": {
+            "company_key": "CIK:0000315189",
+            "form": "10-K",
+            "accession": "0001104659-25-122321",
+            "filed": "2025-12-18",
+            "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+          }
+        },
+        {
+          "index": 4,
+          "action": "conclude",
+          "query": "John Deere Augusta Works Factory",
+          "summary": "Initial disclosure \"Augusta, Georgia John Deere Augusta Works Factory SAT\" was not corroborated by a second passage or peer filing.",
+          "filing": {
+            "company_key": "CIK:0000315189",
+            "form": "10-K",
+            "accession": "0001104659-25-122321",
+            "filed": "2025-12-18",
+            "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [],
+      "rejected_edge_ids": [],
+      "new_edges": []
     }
   ],
   "agentic_rejected_edge_ids": [],
-  "agentic_steps_done": 6,
-  "agentic_steps_total": 6,
+  "agentic_steps_done": 16,
+  "agentic_steps_total": 16,
   "agentic_interpretation_rejected": 0
 }
