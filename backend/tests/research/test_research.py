@@ -724,7 +724,7 @@ def test_final_insights_respect_research_deadline() -> None:
     _, merged = runner.run(result, analysis, max_items=1)
     elapsed = time.monotonic() - started
     assert elapsed < 0.3, f"Final insights escaped the budget: {elapsed:.3f}s"
-    assert merged.insights.status == "metrics_only"
+    assert merged.insights == result.insights
 
 
 def test_selection_does_not_floor_small_company_exposures() -> None:
@@ -919,3 +919,93 @@ def test_f3_multiword_phrase_and_miss_behavior() -> None:
         )
         == []
     )
+
+
+def test_q1_final_insights_has_separate_budget_and_keeps_previous_insights_on_failure() -> None:
+    edge = _make_edge(edge_id="q1_flagged", interp_status="flagged")
+    analysis, result = _one_edge(edge)
+
+    class FailingOrchestrator:
+        def insights(self, analysis, edges, **kwargs):
+            raise RuntimeError("synthesis timeout")
+
+    runner = ResearchLoop(
+        client=_VerdictClient("confirmed", edge.edge_id),
+        filings_by_key={edge.source_company_key: _sample_filing()},
+        orchestrator=FailingOrchestrator(),
+    )
+    assert runner.insights_timeout_s == 75.0
+    _, merged = runner.run(result, analysis, max_items=1)
+    assert merged.insights == result.insights
+    assert merged.insights.status == "ok"
+
+
+def test_q2_anonymised_customer_labels_become_unnamed_customer_never_company() -> None:
+    analysis, result = _sample_analysis_and_result()
+    company = result.companies[0].model_copy(update={"verified_edges": 0})
+    result = result.model_copy(update={"edges": [], "companies": [company]})
+    filing_text = (
+        "ITEM 1. BUSINESS\n"
+        "Sales to Customer A accounted for 16% of our total net revenue in 2025.\n"
+        "In addition, one customer in North America represented 11% of consolidated revenue.\n"
+        "Shipments through a distributor accounted for 12% of net sales.\n"
+    )
+    filing = _sample_filing(cik="0009990001", text=filing_text)
+
+    class AnonCustomerClient(FakeGeminiClient):
+        def generate_json(self, prompt, schema, **kwargs):
+            if "verdicts" in schema.get("properties", {}):
+                return super().generate_json(prompt, schema, **kwargs)
+            return {
+                "action": "conclude",
+                "query": "Customer A",
+                "outcome": "new_evidence",
+                "explanation": 'Verified customer concentration "Sales to Customer A accounted for 16% of our total net revenue in 2025."',
+                "candidate_edges": [
+                    {
+                        "target_name": "Customer A",
+                        "target_kind": "company",
+                        "edge_type": "customer",
+                        "sole_source": False,
+                        "qualifier": "16% of net revenue",
+                        "evidence_quote": "Sales to Customer A accounted for 16% of our total net revenue in 2025.",
+                        "section": "Item 1",
+                    },
+                    {
+                        "target_name": "one customer",
+                        "target_kind": "company",
+                        "edge_type": "customer",
+                        "sole_source": False,
+                        "qualifier": "11% of consolidated revenue",
+                        "evidence_quote": "In addition, one customer in North America represented 11% of consolidated revenue.",
+                        "section": "Item 1",
+                    },
+                    {
+                        "target_name": "a distributor",
+                        "target_kind": "company",
+                        "edge_type": "customer",
+                        "sole_source": False,
+                        "qualifier": "12% of net sales",
+                        "evidence_quote": "Shipments through a distributor accounted for 12% of net sales.",
+                        "section": "Item 1",
+                    },
+                ],
+            }, self.extractor_model
+
+    findings, merged = ResearchLoop(
+        client=AnonCustomerClient(),
+        filings_by_key={company.company_key: filing},
+    ).run(result, analysis, max_items=1)
+    assert len(findings) == 1
+    assert len(findings[0].new_edges) == 3
+    by_name = {e.target_name: e for e in merged.edges}
+    assert set(by_name.keys()) == {
+        "Unnamed customer (Customer A)",
+        "Unnamed customer (one customer)",
+        "Unnamed customer (a distributor)",
+    }
+    for e in merged.edges:
+        assert e.target_kind == "unnamed_customer"
+        assert e.edge_type == "customer"
+        assert e.target_key is None
+        assert e.target_in_portfolio is False

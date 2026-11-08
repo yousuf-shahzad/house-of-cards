@@ -83,6 +83,7 @@ MAX_RESEARCH_STEPS = 4
 DEFAULT_CALL_TIMEOUT_SECONDS = 45.0
 DEFAULT_ITEM_TIMEOUT_SECONDS = 25.0
 DEFAULT_TOTAL_TIMEOUT_SECONDS = 90.0
+DEFAULT_INSIGHTS_TIMEOUT_SECONDS = 75.0
 
 _RECENT_VERIFIED_INTERPRETATIONS: dict[str, EdgeInterpretation] = {}
 
@@ -286,6 +287,71 @@ def _has_material_customer_share(edge: VerifiedEdge) -> bool:
         except ValueError:
             continue
     return bool(_WORD_GE_10_PERCENT_RE.search(combined))
+
+
+_ALREADY_UNNAMED_RE = re.compile(r"^unnamed\s+customer(?:\s*\((.+)\))?$", re.IGNORECASE)
+_ANONYMISED_CUSTOMER_LABEL_RE = re.compile(
+    r"^(?:"
+    r"(?:end\s+|direct\s+|major\s+|top\s+)?(?:customer|client|distributor|reseller)\s*(?:[a-z0-9#]+|one|two|three|alpha|beta|gamma)"
+    r"|"
+    r"(?:a|an|one|two|three|single|the)?\s*"
+    r"(?:single\s+|sole\s+|major\s+|largest\s+|significant\s+|primary\s+|principal\s+|individual\s+|unnamed\s+|undisclosed\s+|certain\s+|top\s+)*"
+    r"(?:customer|client|distributor|reseller)s?"
+    r")$",
+    re.IGNORECASE,
+)
+
+
+def _format_anonymised_customer_target(target_name: str) -> str | None:
+    """If `target_name` is an anonymised customer/distributor label (Q2), return
+    `'Unnamed customer (<label>)'` (or `'Unnamed customer'`), else `None`.
+    """
+    cleaned = normalise_for_verify(target_name).strip()
+    if not cleaned:
+        return None
+    already = _ALREADY_UNNAMED_RE.match(cleaned)
+    if already:
+        inner = (already.group(1) or "").strip()
+        return f"Unnamed customer ({inner})" if inner else "Unnamed customer"
+    if _ANONYMISED_CUSTOMER_LABEL_RE.match(cleaned):
+        if cleaned.casefold() in ("unnamed customer", "undisclosed customer"):
+            return "Unnamed customer"
+        return f"Unnamed customer ({cleaned})"
+    return None
+
+
+def _normalise_candidate_dict_for_q2(cand: Mapping[str, Any]) -> dict[str, Any]:
+    """Rewrite anonymised customer labels in raw candidate dicts to `unnamed_customer` (Q2)."""
+    out = dict(cand)
+    raw_target = str(out.get("target_name") or out.get("object_name_as_written") or "").strip()
+    anon_name = _format_anonymised_customer_target(raw_target)
+    if anon_name is not None:
+        out["target_name"] = anon_name
+        out["target_kind"] = "unnamed_customer"
+        out["edge_type"] = "customer"
+        raw_qual = str(out.get("qualifier") or "").strip()
+        if not raw_qual:
+            out["qualifier"] = raw_target
+    return out
+
+
+def _normalise_anonymised_customer_edge(edge: VerifiedEdge) -> VerifiedEdge:
+    """Ensure any edge with an anonymised customer target has `target_kind='unnamed_customer'`,
+    `target_name='Unnamed customer (<label>)'`, and `target_key=None` (Q2).
+    """
+    anon_name = _format_anonymised_customer_target(edge.target_name)
+    if anon_name is None and edge.target_kind != "unnamed_customer":
+        return edge
+    final_name = anon_name or edge.target_name
+    return edge.model_copy(
+        update={
+            "target_name": final_name,
+            "target_kind": "unnamed_customer",
+            "edge_type": "customer",
+            "target_key": None,
+            "target_in_portfolio": False,
+        }
+    )
 
 
 def _is_unnamed_customer_edge(edge: VerifiedEdge) -> bool:
@@ -621,14 +687,15 @@ def merge_research_findings(
         updated = updated.model_copy(update={"importance": score_edge_importance(updated)})
         merged_by_id[updated.edge_id] = updated
 
-    for new_edge in added_edges:
+    for raw_new_edge in added_edges:
+        new_edge = _normalise_anonymised_customer_edge(raw_new_edge)
         # B2: Missing interpretation is never defaulted to confirmed (treat as unverified -> don't merge)
         if new_edge.interpretation is None or new_edge.interpretation.status == "rejected":
             continue
         rule_flags, _, _ = check_interpretation_rules(new_edge, new_edge.evidence_quote)
         if rule_flags and new_edge.interpretation.method == "rules":
             continue
-        target_key = new_edge.target_key
+        target_key = None if new_edge.target_kind == "unnamed_customer" else new_edge.target_key
         if target_key is None and resolver is not None and new_edge.target_kind == "company":
             target_key = resolver(new_edge.target_name)
         prepared = new_edge.model_copy(
@@ -663,15 +730,21 @@ def merge_research_findings(
     if orchestrator is not None and hasattr(orchestrator, "insights"):
         try:
             if timeout_s is not None:
-                metrics, insights = _call_with_timeout(
+                cand_metrics, cand_insights = _call_with_timeout(
                     lambda: orchestrator.insights(analysis, merged_edges, cache_only=cache_only),
                     timeout_s,
                 )
             else:
-                metrics, insights = orchestrator.insights(analysis, merged_edges, cache_only=cache_only)
+                cand_metrics, cand_insights = orchestrator.insights(analysis, merged_edges, cache_only=cache_only)
+            metrics = cand_metrics
+            # Q1: Keep previous result.insights unchanged if synthesis timed out or degraded
+            if cand_insights.status == "ok" or result.insights.status != "ok":
+                insights = cand_insights
+            else:
+                insights = result.insights
         except Exception:  # noqa: BLE001
-            log.info("orchestrator.insights timed out or failed during research merge; using deterministic metrics")
-            insights = Insights(status="metrics_only")
+            log.info("orchestrator.insights timed out or failed during research merge; keeping previous insights")
+            insights = result.insights
             try:
                 metrics = compute_dependency_metrics(top_exposures, merged_edges)
             except Exception:
@@ -752,6 +825,7 @@ class ResearchLoop:
         call_timeout_s: float = DEFAULT_CALL_TIMEOUT_SECONDS,
         item_timeout_s: float = DEFAULT_ITEM_TIMEOUT_SECONDS,
         total_timeout_s: float = DEFAULT_TOTAL_TIMEOUT_SECONDS,
+        insights_timeout_s: float = DEFAULT_INSIGHTS_TIMEOUT_SECONDS,
     ) -> None:
         self.client = client
         self.fetcher = fetcher
@@ -775,6 +849,7 @@ class ResearchLoop:
         self.call_timeout_s = max(0.001, float(call_timeout_s))
         self.item_timeout_s = max(0.001, float(item_timeout_s))
         self.total_timeout_s = max(0.001, float(total_timeout_s))
+        self.insights_timeout_s = max(0.001, float(insights_timeout_s))
 
     @classmethod
     def from_settings(cls, http: HttpClient, settings: Any) -> ResearchLoop:
@@ -782,12 +857,13 @@ class ResearchLoop:
         from hoc.graph import DependencyOrchestrator
 
         bounded_http = _BoundedResearchHttpClient(http, timeout_s=DEFAULT_CALL_TIMEOUT_SECONDS)
+        insights_http = _BoundedResearchHttpClient(http, timeout_s=DEFAULT_INSIGHTS_TIMEOUT_SECONDS)
         disk_cache = DiskCache(settings.cache_dir)
         client = GeminiClient(bounded_http, settings)
         cache = ExtractionCache(disk_cache)
         fetcher = FilingFetcher(bounded_http, settings)
         aliases = load_aliases()
-        orchestrator = DependencyOrchestrator(http=bounded_http, settings=settings)
+        orchestrator = DependencyOrchestrator(http=insights_http, settings=settings)
         return cls(
             client=client,
             fetcher=fetcher,
@@ -954,7 +1030,13 @@ class ResearchLoop:
             if progress is not None:
                 progress(idx, total, list(findings))
 
-        rem_total = max(0.0, self.total_timeout_s - (time.monotonic() - started))
+        # Q1: Give the final synthesis its own budget (~75s, separate from the item budget),
+        # while still respecting explicitly shortened test budgets when total_timeout_s < DEFAULT_TOTAL_TIMEOUT_SECONDS.
+        insights_budget = (
+            self.insights_timeout_s
+            if self.total_timeout_s >= DEFAULT_TOTAL_TIMEOUT_SECONDS
+            else min(self.insights_timeout_s, max(0.001, self.total_timeout_s - (time.monotonic() - started)))
+        )
         merged = merge_research_findings(
             result,
             analysis,
@@ -963,7 +1045,7 @@ class ResearchLoop:
             resolver=resolver,
             cache_only=cache_only,
             verified_interpretations=verified_interps,
-            timeout_s=min(self.call_timeout_s, rem_total),
+            timeout_s=insights_budget,
         )
         self._put_cached_run(cache_key, findings, merged)
         return findings, merged
@@ -1308,7 +1390,7 @@ class ResearchLoop:
         raw_explanation = str(concluded_payload.get("explanation") or "").strip()
         raw_candidates = concluded_payload.get("candidate_edges")
         candidate_dicts = (
-            [c for c in raw_candidates if isinstance(c, Mapping)]
+            [_normalise_candidate_dict_for_q2(c) for c in raw_candidates if isinstance(c, Mapping)]
             if isinstance(raw_candidates, list)
             else []
         )
@@ -1348,7 +1430,10 @@ class ResearchLoop:
                             for e in interp_res.edges
                             if e.interpretation is not None and e.interpretation.status == "confirmed"
                         ]
-                        verified_new_edges = attach_edge_importance(confirmed_built)
+                        verified_new_edges = [
+                            _normalise_anonymised_customer_edge(e)
+                            for e in attach_edge_importance(confirmed_built)
+                        ]
                         for ve in verified_new_edges:
                             if ve.evidence_quote not in verified_quotes:
                                 verified_quotes.append(ve.evidence_quote)
