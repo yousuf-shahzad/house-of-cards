@@ -1,29 +1,29 @@
 {
   "schema_version": "hoc-eval-v3.2",
   "mode": "replay",
-  "git_commit": "4fea05a",
+  "git_commit": "cc1d0bb",
   "extractor_prompt_version": "hoc-v2-extract-1",
   "judge_prompt_version": "hoc-v3-judge-1",
   "bootstrap_iterations": 2000,
   "bootstrap_seed": 20261108,
   "companies_evaluated": 10,
-  "gold_relationships_total": 212,
+  "gold_relationships_total": 222,
   "gold_core_total": 115,
-  "gold_extended_total": 97,
+  "gold_extended_total": 107,
   "gold_core_by_source": {
     "both": 81,
     "a": 26,
     "b": 8
   },
   "gold_blind_total": 212,
-  "gold_pooled_total": 0,
+  "gold_pooled_total": 10,
   "gold_negatives_total": 79,
   "overall_after_vint": {
     "precision": {
-      "value": 0.8837,
-      "ci_low": 0.8302,
-      "ci_high": 0.9286,
-      "numerator": 114,
+      "value": 0.9612,
+      "ci_low": 0.8958,
+      "ci_high": 1.0,
+      "numerator": 124,
       "denominator": 129
     },
     "recall": {
@@ -34,28 +34,28 @@
       "denominator": 115
     },
     "f1": {
-      "value": 0.6959,
-      "ci_low": 0.5211,
-      "ci_high": 0.8211,
+      "value": 0.7187,
+      "ci_low": 0.5333,
+      "ci_high": 0.8507,
       "numerator": null,
       "denominator": null
     },
-    "tp": 114,
+    "tp": 124,
     "tp_core": 66,
-    "tp_extended": 13,
-    "fp": 15,
+    "tp_extended": 23,
+    "fp": 5,
     "fn": 49,
     "gold_core_count": 115,
-    "gold_extended_count": 97,
-    "gold_count": 212,
+    "gold_extended_count": 107,
+    "gold_count": 222,
     "predicted_count": 129
   },
   "overall_before_vint": {
     "precision": {
-      "value": 0.8837,
-      "ci_low": 0.8261,
-      "ci_high": 0.9273,
-      "numerator": 114,
+      "value": 0.9612,
+      "ci_low": 0.8947,
+      "ci_high": 1.0,
+      "numerator": 124,
       "denominator": 129
     },
     "recall": {
@@ -66,27 +66,27 @@
       "denominator": 115
     },
     "f1": {
-      "value": 0.6959,
-      "ci_low": 0.5196,
-      "ci_high": 0.8246,
+      "value": 0.7187,
+      "ci_low": 0.5323,
+      "ci_high": 0.8506,
       "numerator": null,
       "denominator": null
     },
-    "tp": 114,
+    "tp": 124,
     "tp_core": 66,
-    "tp_extended": 13,
-    "fp": 15,
+    "tp_extended": 23,
+    "fp": 5,
     "fn": 49,
     "gold_core_count": 115,
-    "gold_extended_count": 97,
-    "gold_count": 212,
+    "gold_extended_count": 107,
+    "gold_count": 222,
     "predicted_count": 129
   },
   "macro_after_vint": {
     "precision": {
-      "value": 0.8934,
-      "ci_low": 0.8273,
-      "ci_high": 0.9492,
+      "value": 0.9549,
+      "ci_low": 0.8875,
+      "ci_high": 1.0,
       "numerator": null,
       "denominator": null
     },
@@ -98,27 +98,27 @@
       "denominator": null
     },
     "f1": {
-      "value": 0.6822,
-      "ci_low": 0.5165,
-      "ci_high": 0.8187,
+      "value": 0.7004,
+      "ci_low": 0.5336,
+      "ci_high": 0.8406,
       "numerator": null,
       "denominator": null
     },
-    "tp": 114,
+    "tp": 124,
     "tp_core": 66,
-    "tp_extended": 13,
-    "fp": 15,
+    "tp_extended": 23,
+    "fp": 5,
     "fn": 49,
     "gold_core_count": 115,
-    "gold_extended_count": 97,
-    "gold_count": 212,
+    "gold_extended_count": 107,
+    "gold_count": 222,
     "predicted_count": 129
   },
   "macro_before_vint": {
     "precision": {
-      "value": 0.8934,
-      "ci_low": 0.824,
-      "ci_high": 0.9483,
+      "value": 0.9549,
+      "ci_low": 0.8875,
+      "ci_high": 1.0,
       "numerator": null,
       "denominator": null
     },
@@ -130,15 +130,79 @@
       "denominator": null
     },
     "f1": {
-      "value": 0.6822,
+      "value": 0.7004,
+      "ci_low": 0.5305,
+      "ci_high": 0.8409,
+      "numerator": null,
+      "denominator": null
+    },
+    "tp": 124,
+    "tp_core": 66,
+    "tp_extended": 23,
+    "fp": 5,
+    "fn": 49,
+    "gold_core_count": 115,
+    "gold_extended_count": 107,
+    "gold_count": 222,
+    "predicted_count": 129
+  },
+  "blind_overall_after_vint": {
+    "precision": {
+      "value": 0.8837,
+      "ci_low": 0.8318,
+      "ci_high": 0.9245,
+      "numerator": 114,
+      "denominator": 129
+    },
+    "recall": {
+      "value": 0.5739,
+      "ci_low": 0.3681,
+      "ci_high": 0.7658,
+      "numerator": 66,
+      "denominator": 115
+    },
+    "f1": {
+      "value": 0.6959,
       "ci_low": 0.5186,
-      "ci_high": 0.8186,
+      "ci_high": 0.8269,
       "numerator": null,
       "denominator": null
     },
     "tp": 114,
     "tp_core": 66,
-    "tp_extended": 13,
+    "tp_extended": 48,
+    "fp": 15,
+    "fn": 49,
+    "gold_core_count": 115,
+    "gold_extended_count": 97,
+    "gold_count": 212,
+    "predicted_count": 129
+  },
+  "blind_macro_after_vint": {
+    "precision": {
+      "value": 0.8934,
+      "ci_low": 0.8263,
+      "ci_high": 0.951,
+      "numerator": null,
+      "denominator": null
+    },
+    "recall": {
+      "value": 0.6092,
+      "ci_low": 0.4399,
+      "ci_high": 0.7638,
+      "numerator": null,
+      "denominator": null
+    },
+    "f1": {
+      "value": 0.6822,
+      "ci_low": 0.5108,
+      "ci_high": 0.8213,
+      "numerator": null,
+      "denominator": null
+    },
+    "tp": 114,
+    "tp_core": 66,
+    "tp_extended": 48,
     "fp": 15,
     "fn": 49,
     "gold_core_count": 115,
@@ -149,10 +213,10 @@
   "per_edge_type": {
     "supplier": {
       "precision": {
-        "value": 0.1667,
+        "value": 0.5,
         "ci_low": 0.0,
-        "ci_high": 0.25,
-        "numerator": 1,
+        "ci_high": 0.75,
+        "numerator": 3,
         "denominator": 6
       },
       "recall": {
@@ -169,22 +233,22 @@
         "numerator": null,
         "denominator": null
       },
-      "tp": 1,
+      "tp": 3,
       "tp_core": 0,
-      "tp_extended": 0,
-      "fp": 5,
+      "tp_extended": 2,
+      "fp": 3,
       "fn": 3,
       "gold_core_count": 3,
-      "gold_extended_count": 1,
-      "gold_count": 4,
+      "gold_extended_count": 3,
+      "gold_count": 6,
       "predicted_count": 6
     },
     "customer": {
       "precision": {
-        "value": 0.6111,
-        "ci_low": 0.1667,
-        "ci_high": 0.8333,
-        "numerator": 11,
+        "value": 0.8889,
+        "ci_low": 0.5714,
+        "ci_high": 1.0,
+        "numerator": 16,
         "denominator": 18
       },
       "recall": {
@@ -195,20 +259,20 @@
         "denominator": 8
       },
       "f1": {
-        "value": 0.618,
-        "ci_low": 0.2,
-        "ci_high": 0.8696,
+        "value": 0.7339,
+        "ci_low": 0.303,
+        "ci_high": 0.9863,
         "numerator": null,
         "denominator": null
       },
-      "tp": 11,
+      "tp": 16,
       "tp_core": 5,
-      "tp_extended": 6,
-      "fp": 7,
+      "tp_extended": 11,
+      "fp": 2,
       "fn": 3,
       "gold_core_count": 8,
-      "gold_extended_count": 35,
-      "gold_count": 43,
+      "gold_extended_count": 40,
+      "gold_count": 48,
       "predicted_count": 18
     },
     "contract_manufacturer": {
@@ -277,10 +341,10 @@
     },
     "key_input": {
       "precision": {
-        "value": 0.9444,
-        "ci_low": 0.7273,
+        "value": 1.0,
+        "ci_low": 1.0,
         "ci_high": 1.0,
-        "numerator": 17,
+        "numerator": 18,
         "denominator": 18
       },
       "recall": {
@@ -291,20 +355,20 @@
         "denominator": 20
       },
       "f1": {
-        "value": 0.6096,
-        "ci_low": 0.2667,
-        "ci_high": 0.8889,
+        "value": 0.6207,
+        "ci_low": 0.2759,
+        "ci_high": 0.8947,
         "numerator": null,
         "denominator": null
       },
-      "tp": 17,
+      "tp": 18,
       "tp_core": 9,
-      "tp_extended": 7,
-      "fp": 1,
+      "tp_extended": 8,
+      "fp": 0,
       "fn": 11,
       "gold_core_count": 20,
-      "gold_extended_count": 56,
-      "gold_count": 76,
+      "gold_extended_count": 57,
+      "gold_count": 77,
       "predicted_count": 18
     },
     "facility": {
@@ -341,10 +405,10 @@
     },
     "jv_partner": {
       "precision": {
-        "value": 0.8571,
-        "ci_low": 0.4667,
+        "value": 1.0,
+        "ci_low": 1.0,
         "ci_high": 1.0,
-        "numerator": 12,
+        "numerator": 14,
         "denominator": 14
       },
       "recall": {
@@ -355,20 +419,20 @@
         "denominator": 18
       },
       "f1": {
-        "value": 0.7135,
-        "ci_low": 0.3529,
+        "value": 0.7586,
+        "ci_low": 0.4,
         "ci_high": 1.0,
         "numerator": null,
         "denominator": null
       },
-      "tp": 12,
+      "tp": 14,
       "tp_core": 11,
-      "tp_extended": 0,
-      "fp": 2,
+      "tp_extended": 2,
+      "fp": 0,
       "fn": 7,
       "gold_core_count": 18,
-      "gold_extended_count": 0,
-      "gold_count": 18,
+      "gold_extended_count": 2,
+      "gold_count": 20,
       "predicted_count": 14
     }
   },
@@ -376,8 +440,8 @@
     "value": 1.0,
     "ci_low": 1.0,
     "ci_high": 1.0,
-    "numerator": 114,
-    "denominator": 114
+    "numerator": 124,
+    "denominator": 124
   },
   "hard_negative_fp_rate_before_vint": {
     "value": 0.0127,
@@ -495,6 +559,10 @@
       "precision_after_vint": 0.6667,
       "recall_after_vint": 0.5556,
       "f1_after_vint": 0.6061,
+      "tp_blind_after_vint": 6,
+      "fp_blind_after_vint": 3,
+      "precision_blind_after_vint": 0.6667,
+      "f1_blind_after_vint": 0.6061,
       "direction_correct": 6,
       "direction_total": 6,
       "hard_neg_fp_before_vint": 0,
@@ -668,7 +736,7 @@
           "target_name": "Unnamed Customer",
           "target_kind": "unnamed_customer",
           "quote": "During fiscal 2026, NIKE's three largest customers outside of the United States accounted for approximately 16% of total non-U.S. sales.",
-          "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
+          "reason": "Pooled review: reject — customer group ('three largest customers outside the US'), not one counterparty (policy 3)"
         },
         {
           "kind": "false_positive",
@@ -678,7 +746,7 @@
           "target_name": "Air Manufacturing Innovation",
           "target_kind": "company",
           "quote": "During fiscal 2026, Air Manufacturing Innovation, a wholly-owned subsidiary, with facilities near Beaverton, Oregon, in Dong Nai City, Vietnam, and St. Charles, Missouri, as well as contract manufacturers in China and Vietnam, were our suppliers of NIKE Air-Sole and other cushioning components used in footwear.",
-          "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
+          "reason": "Pooled review: reject — Air Manufacturing Innovation is a wholly-owned Nike subsidiary, not an external supplier"
         },
         {
           "kind": "false_positive",
@@ -688,7 +756,7 @@
           "target_name": "Sojitz Corporation of America",
           "target_kind": "company",
           "quote": "Since 1972, Sojitz Corporation of America (\"Sojitz America\"), a large Japanese trading company and the sole owner of our redeemable preferred stock, has performed import-export financing services for us.",
-          "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
+          "reason": "Pooled review: reject — Sojitz America provides import-export financing and holds preferred stock; not a supply dependency"
         }
       ],
       "false_negatives": [
@@ -735,44 +803,7 @@
       ],
       "hard_negative_leaks": [],
       "vint_filtered": [],
-      "pooled_candidates": [
-        {
-          "ticker": "NKE",
-          "edge_id": "edge_d3ccd3a1052a",
-          "edge_type": "customer",
-          "target_name": "Unnamed Customer",
-          "target_kind": "unnamed_customer",
-          "direction": "target_depends_on_company",
-          "quote": "During fiscal 2026, NIKE's three largest customers outside of the United States accounted for approximately 16% of total non-U.S. sales.",
-          "section": "2",
-          "importance": "high",
-          "vint_status": "confirmed"
-        },
-        {
-          "ticker": "NKE",
-          "edge_id": "edge_db8132253be5",
-          "edge_type": "supplier",
-          "target_name": "Air Manufacturing Innovation",
-          "target_kind": "company",
-          "direction": "depends_on_target",
-          "quote": "During fiscal 2026, Air Manufacturing Innovation, a wholly-owned subsidiary, with facilities near Beaverton, Oregon, in Dong Nai City, Vietnam, and St. Charles, Missouri, as well as contract manufacturers in China and Vietnam, were our suppliers of NIKE Air-Sole and other cushioning components used in footwear.",
-          "section": "2",
-          "importance": "critical",
-          "vint_status": "confirmed"
-        },
-        {
-          "ticker": "NKE",
-          "edge_id": "edge_55810b619d12",
-          "edge_type": "supplier",
-          "target_name": "Sojitz Corporation of America",
-          "target_kind": "company",
-          "direction": "depends_on_target",
-          "quote": "Since 1972, Sojitz Corporation of America (\"Sojitz America\"), a large Japanese trading company and the sole owner of our redeemable preferred stock, has performed import-export financing services for us.",
-          "section": "1A",
-          "importance": "critical",
-          "vint_status": "confirmed"
-        }
-      ]
+      "pooled_candidates": []
     },
     {
       "ticker": "F",
@@ -780,38 +811,42 @@
       "cik": "0000037996",
       "accession": "0000037996-26-000015",
       "annotator": "Yousuf's Codex, Bekarys's Claude",
-      "gold_total": 28,
+      "gold_total": 30,
       "gold_core_total": 17,
-      "gold_extended_total": 11,
+      "gold_extended_total": 13,
       "gold_core_by_source": {
         "both": 11,
         "b": 4,
         "a": 2
       },
       "gold_blind_count": 28,
-      "gold_pooled_count": 0,
+      "gold_pooled_count": 2,
       "negatives_total": 9,
       "predicted_before_vint": 18,
       "predicted_after_vint": 18,
       "vint_rejected_count": 0,
-      "tp_before_vint": 15,
+      "tp_before_vint": 17,
       "tp_core_before_vint": 14,
-      "tp_extended_before_vint": 0,
-      "fp_before_vint": 3,
+      "tp_extended_before_vint": 2,
+      "fp_before_vint": 1,
       "fn_before_vint": 3,
-      "tp_after_vint": 15,
+      "tp_after_vint": 17,
       "tp_core_after_vint": 14,
-      "tp_extended_after_vint": 0,
-      "fp_after_vint": 3,
+      "tp_extended_after_vint": 2,
+      "fp_after_vint": 1,
       "fn_after_vint": 3,
-      "precision_before_vint": 0.8333,
+      "precision_before_vint": 0.9444,
       "recall_before_vint": 0.8235,
-      "f1_before_vint": 0.8284,
-      "precision_after_vint": 0.8333,
+      "f1_before_vint": 0.8799,
+      "precision_after_vint": 0.9444,
       "recall_after_vint": 0.8235,
-      "f1_after_vint": 0.8284,
-      "direction_correct": 15,
-      "direction_total": 15,
+      "f1_after_vint": 0.8799,
+      "tp_blind_after_vint": 15,
+      "fp_blind_after_vint": 3,
+      "precision_blind_after_vint": 0.8333,
+      "f1_blind_after_vint": 0.8284,
+      "direction_correct": 17,
+      "direction_total": 17,
       "hard_neg_fp_before_vint": 0,
       "hard_neg_fp_after_vint": 0,
       "facility_country_correct": 6,
@@ -1166,6 +1201,50 @@
           "is_primary_gold_match": true
         },
         {
+          "gold_id": "F-P1",
+          "edge_id": "edge_cf85a07ce5ef",
+          "ticker": "F",
+          "gold_tier": "extended",
+          "gold_edge_type": "supplier",
+          "pred_edge_type": "supplier",
+          "exact_type_match": true,
+          "gold_target_name": "ARC Automotive",
+          "pred_target_name": "ARC Automotive",
+          "gold_direction": "depends_on_target",
+          "pred_direction": "depends_on_target",
+          "direction_correct": true,
+          "gold_importance": "medium",
+          "pred_importance": "medium",
+          "gold_country": null,
+          "pred_country": null,
+          "country_correct": null,
+          "gold_source": "pooled",
+          "annotator_ids": [],
+          "is_primary_gold_match": true
+        },
+        {
+          "gold_id": "F-P2",
+          "edge_id": "edge_a7c38c5f5085",
+          "ticker": "F",
+          "gold_tier": "extended",
+          "gold_edge_type": "supplier",
+          "pred_edge_type": "supplier",
+          "exact_type_match": true,
+          "gold_target_name": "Delphi Automotive",
+          "pred_target_name": "Delphi Automotive",
+          "gold_direction": "depends_on_target",
+          "pred_direction": "depends_on_target",
+          "direction_correct": true,
+          "gold_importance": "medium",
+          "pred_importance": "medium",
+          "gold_country": null,
+          "pred_country": null,
+          "country_correct": null,
+          "gold_source": "pooled",
+          "annotator_ids": [],
+          "is_primary_gold_match": true
+        },
+        {
           "gold_id": "F-5",
           "edge_id": "edge_6120a7e70e4d",
           "ticker": "F",
@@ -1200,27 +1279,7 @@
           "target_name": "Takata",
           "target_kind": "company",
           "quote": "For example, NHTSA and the automotive industry are currently engaged in a study of the safety of approximately 56 million Takata desiccated airbag inflators in the United States. Of these, approximately 3.5 million of the inflators are in our vehicles.",
-          "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
-        },
-        {
-          "kind": "false_positive",
-          "ticker": "F",
-          "item_id": "edge_cf85a07ce5ef",
-          "edge_type": "supplier",
-          "target_name": "ARC Automotive",
-          "target_kind": "company",
-          "quote": "In addition, NHTSA is considering action related to 52 million vehicles containing inflators from ARC Automotive and Delphi Automotive in the United States. Ford has 2.5 million vehicles within this population.",
-          "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
-        },
-        {
-          "kind": "false_positive",
-          "ticker": "F",
-          "item_id": "edge_a7c38c5f5085",
-          "edge_type": "supplier",
-          "target_name": "Delphi Automotive",
-          "target_kind": "company",
-          "quote": "In addition, NHTSA is considering action related to 52 million vehicles containing inflators from ARC Automotive and Delphi Automotive in the United States. Ford has 2.5 million vehicles within this population.",
-          "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
+          "reason": "Pooled review: reject — Takata appears only in an industry-wide NHTSA study; filing does not state Takata supplies Ford"
         }
       ],
       "false_negatives": [
@@ -1257,44 +1316,7 @@
       ],
       "hard_negative_leaks": [],
       "vint_filtered": [],
-      "pooled_candidates": [
-        {
-          "ticker": "F",
-          "edge_id": "edge_83e00ad1aec8",
-          "edge_type": "supplier",
-          "target_name": "Takata",
-          "target_kind": "company",
-          "direction": "depends_on_target",
-          "quote": "For example, NHTSA and the automotive industry are currently engaged in a study of the safety of approximately 56 million Takata desiccated airbag inflators in the United States. Of these, approximately 3.5 million of the inflators are in our vehicles.",
-          "section": "1A",
-          "importance": "medium",
-          "vint_status": "confirmed"
-        },
-        {
-          "ticker": "F",
-          "edge_id": "edge_cf85a07ce5ef",
-          "edge_type": "supplier",
-          "target_name": "ARC Automotive",
-          "target_kind": "company",
-          "direction": "depends_on_target",
-          "quote": "In addition, NHTSA is considering action related to 52 million vehicles containing inflators from ARC Automotive and Delphi Automotive in the United States. Ford has 2.5 million vehicles within this population.",
-          "section": "1A",
-          "importance": "medium",
-          "vint_status": "confirmed"
-        },
-        {
-          "ticker": "F",
-          "edge_id": "edge_a7c38c5f5085",
-          "edge_type": "supplier",
-          "target_name": "Delphi Automotive",
-          "target_kind": "company",
-          "direction": "depends_on_target",
-          "quote": "In addition, NHTSA is considering action related to 52 million vehicles containing inflators from ARC Automotive and Delphi Automotive in the United States. Ford has 2.5 million vehicles within this population.",
-          "section": "1A",
-          "importance": "medium",
-          "vint_status": "confirmed"
-        }
-      ]
+      "pooled_candidates": []
     },
     {
       "ticker": "GM",
@@ -1302,37 +1324,41 @@
       "cik": "0001467858",
       "accession": "0001467858-26-000013",
       "annotator": "Yousuf's Codex, Bekarys's Claude",
-      "gold_total": 24,
+      "gold_total": 26,
       "gold_core_total": 9,
-      "gold_extended_total": 15,
+      "gold_extended_total": 17,
       "gold_core_by_source": {
         "both": 8,
         "b": 1
       },
       "gold_blind_count": 24,
-      "gold_pooled_count": 0,
+      "gold_pooled_count": 2,
       "negatives_total": 8,
       "predicted_before_vint": 14,
       "predicted_after_vint": 14,
       "vint_rejected_count": 0,
-      "tp_before_vint": 12,
+      "tp_before_vint": 14,
       "tp_core_before_vint": 3,
-      "tp_extended_before_vint": 7,
-      "fp_before_vint": 2,
+      "tp_extended_before_vint": 9,
+      "fp_before_vint": 0,
       "fn_before_vint": 6,
-      "tp_after_vint": 12,
+      "tp_after_vint": 14,
       "tp_core_after_vint": 3,
-      "tp_extended_after_vint": 7,
-      "fp_after_vint": 2,
+      "tp_extended_after_vint": 9,
+      "fp_after_vint": 0,
       "fn_after_vint": 6,
-      "precision_before_vint": 0.8571,
+      "precision_before_vint": 1.0,
       "recall_before_vint": 0.3333,
-      "f1_before_vint": 0.48,
-      "precision_after_vint": 0.8571,
+      "f1_before_vint": 0.5,
+      "precision_after_vint": 1.0,
       "recall_after_vint": 0.3333,
-      "f1_after_vint": 0.48,
-      "direction_correct": 12,
-      "direction_total": 12,
+      "f1_after_vint": 0.5,
+      "tp_blind_after_vint": 12,
+      "fp_blind_after_vint": 2,
+      "precision_blind_after_vint": 0.8571,
+      "f1_blind_after_vint": 0.48,
+      "direction_correct": 14,
+      "direction_total": 14,
       "hard_neg_fp_before_vint": 0,
       "hard_neg_fp_after_vint": 0,
       "facility_country_correct": 2,
@@ -1582,6 +1608,50 @@
           "is_primary_gold_match": true
         },
         {
+          "gold_id": "GM-P1",
+          "edge_id": "edge_d3d268649da2",
+          "ticker": "GM",
+          "gold_tier": "extended",
+          "gold_edge_type": "jv_partner",
+          "pred_edge_type": "jv_partner",
+          "exact_type_match": true,
+          "gold_target_name": "SAIC General Motors Sales Co., Ltd.",
+          "pred_target_name": "SAIC General Motors Sales Co., Ltd.",
+          "gold_direction": "depends_on_target",
+          "pred_direction": "depends_on_target",
+          "direction_correct": true,
+          "gold_importance": "medium",
+          "pred_importance": "medium",
+          "gold_country": null,
+          "pred_country": null,
+          "country_correct": null,
+          "gold_source": "pooled",
+          "annotator_ids": [],
+          "is_primary_gold_match": true
+        },
+        {
+          "gold_id": "GM-P2",
+          "edge_id": "edge_85f1bd72c86f",
+          "ticker": "GM",
+          "gold_tier": "extended",
+          "gold_edge_type": "jv_partner",
+          "pred_edge_type": "jv_partner",
+          "exact_type_match": true,
+          "gold_target_name": "SAIC GM Wuling Automobile Co., Ltd.",
+          "pred_target_name": "SAIC GM Wuling Automobile Co., Ltd.",
+          "gold_direction": "depends_on_target",
+          "pred_direction": "depends_on_target",
+          "direction_correct": true,
+          "gold_importance": "medium",
+          "pred_importance": "medium",
+          "gold_country": null,
+          "pred_country": null,
+          "country_correct": null,
+          "gold_source": "pooled",
+          "annotator_ids": [],
+          "is_primary_gold_match": true
+        },
+        {
           "gold_id": "GM-6",
           "edge_id": "edge_daf31cec8bb0",
           "ticker": "GM",
@@ -1632,28 +1702,7 @@
           "is_primary_gold_match": false
         }
       ],
-      "false_positives": [
-        {
-          "kind": "false_positive",
-          "ticker": "GM",
-          "item_id": "edge_d3d268649da2",
-          "edge_type": "jv_partner",
-          "target_name": "SAIC General Motors Sales Co., Ltd.",
-          "target_kind": "company",
-          "quote": "Includes sales by the Automotive China Joint Ventures (Automotive China JVs): SAIC General Motors Sales Co., Ltd. (SGMS) and SAIC GM Wuling Automobile Co., Ltd. (SGMW).",
-          "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
-        },
-        {
-          "kind": "false_positive",
-          "ticker": "GM",
-          "item_id": "edge_85f1bd72c86f",
-          "edge_type": "jv_partner",
-          "target_name": "SAIC GM Wuling Automobile Co., Ltd.",
-          "target_kind": "company",
-          "quote": "Includes sales by the Automotive China Joint Ventures (Automotive China JVs): SAIC General Motors Sales Co., Ltd. (SGMS) and SAIC GM Wuling Automobile Co., Ltd. (SGMW).",
-          "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
-        }
-      ],
+      "false_positives": [],
       "false_negatives": [
         {
           "kind": "false_negative",
@@ -1718,32 +1767,7 @@
       ],
       "hard_negative_leaks": [],
       "vint_filtered": [],
-      "pooled_candidates": [
-        {
-          "ticker": "GM",
-          "edge_id": "edge_d3d268649da2",
-          "edge_type": "jv_partner",
-          "target_name": "SAIC General Motors Sales Co., Ltd.",
-          "target_kind": "company",
-          "direction": "depends_on_target",
-          "quote": "Includes sales by the Automotive China Joint Ventures (Automotive China JVs): SAIC General Motors Sales Co., Ltd. (SGMS) and SAIC GM Wuling Automobile Co., Ltd. (SGMW).",
-          "section": "1A",
-          "importance": "medium",
-          "vint_status": "confirmed"
-        },
-        {
-          "ticker": "GM",
-          "edge_id": "edge_85f1bd72c86f",
-          "edge_type": "jv_partner",
-          "target_name": "SAIC GM Wuling Automobile Co., Ltd.",
-          "target_kind": "company",
-          "direction": "depends_on_target",
-          "quote": "Includes sales by the Automotive China Joint Ventures (Automotive China JVs): SAIC General Motors Sales Co., Ltd. (SGMS) and SAIC GM Wuling Automobile Co., Ltd. (SGMW).",
-          "section": "1A",
-          "importance": "medium",
-          "vint_status": "confirmed"
-        }
-      ]
+      "pooled_candidates": []
     },
     {
       "ticker": "BA",
@@ -1751,37 +1775,41 @@
       "cik": "0000012927",
       "accession": "0001628280-26-004357",
       "annotator": "Yousuf's Codex, Bekarys's Claude",
-      "gold_total": 14,
+      "gold_total": 16,
       "gold_core_total": 12,
-      "gold_extended_total": 2,
+      "gold_extended_total": 4,
       "gold_core_by_source": {
         "both": 10,
         "a": 2
       },
       "gold_blind_count": 14,
-      "gold_pooled_count": 0,
+      "gold_pooled_count": 2,
       "negatives_total": 7,
       "predicted_before_vint": 10,
       "predicted_after_vint": 10,
       "vint_rejected_count": 0,
-      "tp_before_vint": 8,
+      "tp_before_vint": 10,
       "tp_core_before_vint": 5,
-      "tp_extended_before_vint": 0,
-      "fp_before_vint": 2,
+      "tp_extended_before_vint": 2,
+      "fp_before_vint": 0,
       "fn_before_vint": 7,
-      "tp_after_vint": 8,
+      "tp_after_vint": 10,
       "tp_core_after_vint": 5,
-      "tp_extended_after_vint": 0,
-      "fp_after_vint": 2,
+      "tp_extended_after_vint": 2,
+      "fp_after_vint": 0,
       "fn_after_vint": 7,
-      "precision_before_vint": 0.8,
+      "precision_before_vint": 1.0,
       "recall_before_vint": 0.4167,
-      "f1_before_vint": 0.5479,
-      "precision_after_vint": 0.8,
+      "f1_before_vint": 0.5882,
+      "precision_after_vint": 1.0,
       "recall_after_vint": 0.4167,
-      "f1_after_vint": 0.5479,
-      "direction_correct": 8,
-      "direction_total": 8,
+      "f1_after_vint": 0.5882,
+      "tp_blind_after_vint": 8,
+      "fp_blind_after_vint": 2,
+      "precision_blind_after_vint": 0.8,
+      "f1_blind_after_vint": 0.5479,
+      "direction_correct": 10,
+      "direction_total": 10,
       "hard_neg_fp_before_vint": 0,
       "hard_neg_fp_after_vint": 0,
       "facility_country_correct": 1,
@@ -1913,6 +1941,50 @@
           "is_primary_gold_match": true
         },
         {
+          "gold_id": "BA-P1",
+          "edge_id": "edge_8058aeca27ad",
+          "ticker": "BA",
+          "gold_tier": "extended",
+          "gold_edge_type": "customer",
+          "pred_edge_type": "customer",
+          "exact_type_match": true,
+          "gold_target_name": "United States Department of War",
+          "pred_target_name": "United States Department of War",
+          "gold_direction": "target_depends_on_company",
+          "pred_direction": "target_depends_on_company",
+          "direction_correct": true,
+          "gold_importance": "high",
+          "pred_importance": "medium",
+          "gold_country": null,
+          "pred_country": null,
+          "country_correct": null,
+          "gold_source": "pooled",
+          "annotator_ids": [],
+          "is_primary_gold_match": true
+        },
+        {
+          "gold_id": "BA-P2",
+          "edge_id": "edge_dea2976ebbd3",
+          "ticker": "BA",
+          "gold_tier": "extended",
+          "gold_edge_type": "customer",
+          "pred_edge_type": "customer",
+          "exact_type_match": true,
+          "gold_target_name": "NASA",
+          "pred_target_name": "NASA",
+          "gold_direction": "target_depends_on_company",
+          "pred_direction": "target_depends_on_company",
+          "direction_correct": true,
+          "gold_importance": "medium",
+          "pred_importance": "medium",
+          "gold_country": null,
+          "pred_country": null,
+          "country_correct": null,
+          "gold_source": "pooled",
+          "annotator_ids": [],
+          "is_primary_gold_match": true
+        },
+        {
           "gold_id": "BA-9",
           "edge_id": "edge_5eefe7c6c83a",
           "ticker": "BA",
@@ -1988,28 +2060,7 @@
           "is_primary_gold_match": false
         }
       ],
-      "false_positives": [
-        {
-          "kind": "false_positive",
-          "ticker": "BA",
-          "item_id": "edge_8058aeca27ad",
-          "edge_type": "customer",
-          "target_name": "United States Department of War",
-          "target_kind": "company",
-          "quote": "We derive a substantial portion of our revenue from the U.S. government, primarily from defense related programs with the United States Department of War (DoW) and contracts with other government agencies, including NASA.",
-          "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
-        },
-        {
-          "kind": "false_positive",
-          "ticker": "BA",
-          "item_id": "edge_dea2976ebbd3",
-          "edge_type": "customer",
-          "target_name": "NASA",
-          "target_kind": "company",
-          "quote": "We derive a substantial portion of our revenue from the U.S. government, primarily from defense related programs with the United States Department of War (DoW) and contracts with other government agencies, including NASA.",
-          "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
-        }
-      ],
+      "false_positives": [],
       "false_negatives": [
         {
           "kind": "false_negative",
@@ -2084,32 +2135,7 @@
       ],
       "hard_negative_leaks": [],
       "vint_filtered": [],
-      "pooled_candidates": [
-        {
-          "ticker": "BA",
-          "edge_id": "edge_8058aeca27ad",
-          "edge_type": "customer",
-          "target_name": "United States Department of War",
-          "target_kind": "company",
-          "direction": "target_depends_on_company",
-          "quote": "We derive a substantial portion of our revenue from the U.S. government, primarily from defense related programs with the United States Department of War (DoW) and contracts with other government agencies, including NASA.",
-          "section": "1A",
-          "importance": "medium",
-          "vint_status": "confirmed"
-        },
-        {
-          "ticker": "BA",
-          "edge_id": "edge_dea2976ebbd3",
-          "edge_type": "customer",
-          "target_name": "NASA",
-          "target_kind": "company",
-          "direction": "target_depends_on_company",
-          "quote": "We derive a substantial portion of our revenue from the U.S. government, primarily from defense related programs with the United States Department of War (DoW) and contracts with other government agencies, including NASA.",
-          "section": "1A",
-          "importance": "medium",
-          "vint_status": "confirmed"
-        }
-      ]
+      "pooled_candidates": []
     },
     {
       "ticker": "SWKS",
@@ -2117,37 +2143,41 @@
       "cik": "0000004127",
       "accession": "0000004127-25-000085",
       "annotator": "Yousuf's Codex, Bekarys's Claude",
-      "gold_total": 43,
+      "gold_total": 44,
       "gold_core_total": 7,
-      "gold_extended_total": 36,
+      "gold_extended_total": 37,
       "gold_core_by_source": {
         "both": 5,
         "a": 2
       },
       "gold_blind_count": 43,
-      "gold_pooled_count": 0,
+      "gold_pooled_count": 1,
       "negatives_total": 7,
       "predicted_before_vint": 15,
       "predicted_after_vint": 15,
       "vint_rejected_count": 0,
-      "tp_before_vint": 14,
+      "tp_before_vint": 15,
       "tp_core_before_vint": 7,
-      "tp_extended_before_vint": 6,
-      "fp_before_vint": 1,
+      "tp_extended_before_vint": 7,
+      "fp_before_vint": 0,
       "fn_before_vint": 0,
-      "tp_after_vint": 14,
+      "tp_after_vint": 15,
       "tp_core_after_vint": 7,
-      "tp_extended_after_vint": 6,
-      "fp_after_vint": 1,
+      "tp_extended_after_vint": 7,
+      "fp_after_vint": 0,
       "fn_after_vint": 0,
-      "precision_before_vint": 0.9333,
+      "precision_before_vint": 1.0,
       "recall_before_vint": 1.0,
-      "f1_before_vint": 0.9655,
-      "precision_after_vint": 0.9333,
+      "f1_before_vint": 1.0,
+      "precision_after_vint": 1.0,
       "recall_after_vint": 1.0,
-      "f1_after_vint": 0.9655,
-      "direction_correct": 14,
-      "direction_total": 14,
+      "f1_after_vint": 1.0,
+      "tp_blind_after_vint": 14,
+      "fp_blind_after_vint": 1,
+      "precision_blind_after_vint": 0.9333,
+      "f1_blind_after_vint": 0.9655,
+      "direction_correct": 15,
+      "direction_total": 15,
       "hard_neg_fp_before_vint": 0,
       "hard_neg_fp_after_vint": 0,
       "facility_country_correct": 4,
@@ -2471,6 +2501,28 @@
           "is_primary_gold_match": true
         },
         {
+          "gold_id": "SWKS-P1",
+          "edge_id": "edge_bc723b6898e2",
+          "ticker": "SWKS",
+          "gold_tier": "extended",
+          "gold_edge_type": "customer",
+          "pred_edge_type": "customer",
+          "exact_type_match": true,
+          "gold_target_name": "Unnamed Customer",
+          "pred_target_name": "Unnamed Customer",
+          "gold_direction": "target_depends_on_company",
+          "pred_direction": "target_depends_on_company",
+          "direction_correct": true,
+          "gold_importance": "high",
+          "pred_importance": "medium",
+          "gold_country": null,
+          "pred_country": null,
+          "country_correct": null,
+          "gold_source": "pooled",
+          "annotator_ids": [],
+          "is_primary_gold_match": true
+        },
+        {
           "gold_id": "SWKS-41",
           "edge_id": "edge_7a710cbeb27f",
           "ticker": "SWKS",
@@ -2496,35 +2548,11 @@
           "is_primary_gold_match": false
         }
       ],
-      "false_positives": [
-        {
-          "kind": "false_positive",
-          "ticker": "SWKS",
-          "item_id": "edge_bc723b6898e2",
-          "edge_type": "customer",
-          "target_name": "Unnamed Customer",
-          "target_kind": "unnamed_customer",
-          "quote": "In each of fiscal 2025, fiscal 2024, and fiscal 2023, one customer accounted for greater than ten percent of our net revenue.",
-          "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
-        }
-      ],
+      "false_positives": [],
       "false_negatives": [],
       "hard_negative_leaks": [],
       "vint_filtered": [],
-      "pooled_candidates": [
-        {
-          "ticker": "SWKS",
-          "edge_id": "edge_bc723b6898e2",
-          "edge_type": "customer",
-          "target_name": "Unnamed Customer",
-          "target_kind": "unnamed_customer",
-          "direction": "target_depends_on_company",
-          "quote": "In each of fiscal 2025, fiscal 2024, and fiscal 2023, one customer accounted for greater than ten percent of our net revenue.",
-          "section": "1A",
-          "importance": "medium",
-          "vint_status": "confirmed"
-        }
-      ]
+      "pooled_candidates": []
     },
     {
       "ticker": "QRVO",
@@ -2561,6 +2589,10 @@
       "precision_after_vint": 1.0,
       "recall_after_vint": 0.6,
       "f1_after_vint": 0.75,
+      "tp_blind_after_vint": 8,
+      "fp_blind_after_vint": 0,
+      "precision_blind_after_vint": 1.0,
+      "f1_blind_after_vint": 0.75,
       "direction_correct": 8,
       "direction_total": 8,
       "hard_neg_fp_before_vint": 0,
@@ -2852,6 +2884,10 @@
       "precision_after_vint": 0.9375,
       "recall_after_vint": 0.8462,
       "f1_after_vint": 0.8895,
+      "tp_blind_after_vint": 15,
+      "fp_blind_after_vint": 1,
+      "precision_blind_after_vint": 0.9375,
+      "f1_blind_after_vint": 0.8895,
       "direction_correct": 15,
       "direction_total": 15,
       "hard_neg_fp_before_vint": 1,
@@ -3312,6 +3348,10 @@
       "precision_after_vint": 1.0,
       "recall_after_vint": 0.0526,
       "f1_after_vint": 0.1,
+      "tp_blind_after_vint": 1,
+      "fp_blind_after_vint": 0,
+      "precision_blind_after_vint": 1.0,
+      "f1_blind_after_vint": 0.1,
       "direction_correct": 1,
       "direction_total": 1,
       "hard_neg_fp_before_vint": 0,
@@ -3538,37 +3578,41 @@
       "cik": "0000315189",
       "accession": "0001104659-25-122321",
       "annotator": "Yousuf's Codex, Bekarys's Claude",
-      "gold_total": 17,
+      "gold_total": 20,
       "gold_core_total": 12,
-      "gold_extended_total": 5,
+      "gold_extended_total": 8,
       "gold_core_by_source": {
         "both": 11,
         "a": 1
       },
       "gold_blind_count": 17,
-      "gold_pooled_count": 0,
+      "gold_pooled_count": 3,
       "negatives_total": 6,
       "predicted_before_vint": 32,
       "predicted_after_vint": 32,
       "vint_rejected_count": 0,
-      "tp_before_vint": 29,
+      "tp_before_vint": 32,
       "tp_core_before_vint": 9,
-      "tp_extended_before_vint": 0,
-      "fp_before_vint": 3,
+      "tp_extended_before_vint": 3,
+      "fp_before_vint": 0,
       "fn_before_vint": 3,
-      "tp_after_vint": 29,
+      "tp_after_vint": 32,
       "tp_core_after_vint": 9,
-      "tp_extended_after_vint": 0,
-      "fp_after_vint": 3,
+      "tp_extended_after_vint": 3,
+      "fp_after_vint": 0,
       "fn_after_vint": 3,
-      "precision_before_vint": 0.9062,
+      "precision_before_vint": 1.0,
       "recall_before_vint": 0.75,
-      "f1_before_vint": 0.8208,
-      "precision_after_vint": 0.9062,
+      "f1_before_vint": 0.8571,
+      "precision_after_vint": 1.0,
       "recall_after_vint": 0.75,
-      "f1_after_vint": 0.8208,
-      "direction_correct": 29,
-      "direction_total": 29,
+      "f1_after_vint": 0.8571,
+      "tp_blind_after_vint": 29,
+      "fp_blind_after_vint": 3,
+      "precision_blind_after_vint": 0.9062,
+      "f1_blind_after_vint": 0.8208,
+      "direction_correct": 32,
+      "direction_total": 32,
       "hard_neg_fp_before_vint": 0,
       "hard_neg_fp_after_vint": 0,
       "facility_country_correct": 8,
@@ -3797,6 +3841,72 @@
             "DE-9",
             "DE-B4"
           ],
+          "is_primary_gold_match": true
+        },
+        {
+          "gold_id": "DE-P1",
+          "edge_id": "edge_e60d52406d66",
+          "ticker": "DE",
+          "gold_tier": "extended",
+          "gold_edge_type": "customer",
+          "pred_edge_type": "customer",
+          "exact_type_match": true,
+          "gold_target_name": "The Home Depot",
+          "pred_target_name": "The Home Depot",
+          "gold_direction": "target_depends_on_company",
+          "pred_direction": "target_depends_on_company",
+          "direction_correct": true,
+          "gold_importance": "medium",
+          "pred_importance": "medium",
+          "gold_country": null,
+          "pred_country": null,
+          "country_correct": null,
+          "gold_source": "pooled",
+          "annotator_ids": [],
+          "is_primary_gold_match": true
+        },
+        {
+          "gold_id": "DE-P2",
+          "edge_id": "edge_a31a7be471da",
+          "ticker": "DE",
+          "gold_tier": "extended",
+          "gold_edge_type": "customer",
+          "pred_edge_type": "customer",
+          "exact_type_match": true,
+          "gold_target_name": "Lowe's",
+          "pred_target_name": "Lowe's",
+          "gold_direction": "target_depends_on_company",
+          "pred_direction": "target_depends_on_company",
+          "direction_correct": true,
+          "gold_importance": "medium",
+          "pred_importance": "medium",
+          "gold_country": null,
+          "pred_country": null,
+          "country_correct": null,
+          "gold_source": "pooled",
+          "annotator_ids": [],
+          "is_primary_gold_match": true
+        },
+        {
+          "gold_id": "DE-P3",
+          "edge_id": "edge_448da3c0e5ef",
+          "ticker": "DE",
+          "gold_tier": "extended",
+          "gold_edge_type": "key_input",
+          "pred_edge_type": "key_input",
+          "exact_type_match": true,
+          "gold_target_name": "rare earth minerals",
+          "pred_target_name": "rare earth minerals",
+          "gold_direction": "depends_on_target",
+          "pred_direction": "depends_on_target",
+          "direction_correct": true,
+          "gold_importance": "high",
+          "pred_importance": "high",
+          "gold_country": null,
+          "pred_country": null,
+          "country_correct": null,
+          "gold_source": "pooled",
+          "annotator_ids": [],
           "is_primary_gold_match": true
         },
         {
@@ -4300,38 +4410,7 @@
           "is_primary_gold_match": false
         }
       ],
-      "false_positives": [
-        {
-          "kind": "false_positive",
-          "ticker": "DE",
-          "item_id": "edge_e60d52406d66",
-          "edge_type": "customer",
-          "target_name": "The Home Depot",
-          "target_kind": "company",
-          "quote": "although the segment also builds turf products for sale by mass retailers, including The Home Depot and Lowe's.",
-          "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
-        },
-        {
-          "kind": "false_positive",
-          "ticker": "DE",
-          "item_id": "edge_a31a7be471da",
-          "edge_type": "customer",
-          "target_name": "Lowe's",
-          "target_kind": "company",
-          "quote": "although the segment also builds turf products for sale by mass retailers, including The Home Depot and Lowe's.",
-          "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
-        },
-        {
-          "kind": "false_positive",
-          "ticker": "DE",
-          "item_id": "edge_448da3c0e5ef",
-          "edge_type": "key_input",
-          "target_name": "rare earth minerals",
-          "target_kind": "material",
-          "quote": "certain of our products, including motors, batteries, and other components, rely on rare earth minerals for their manufacturing, of which a significant majority are sourced from China.",
-          "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
-        }
-      ],
+      "false_positives": [],
       "false_negatives": [
         {
           "kind": "false_negative",
@@ -4366,44 +4445,7 @@
       ],
       "hard_negative_leaks": [],
       "vint_filtered": [],
-      "pooled_candidates": [
-        {
-          "ticker": "DE",
-          "edge_id": "edge_e60d52406d66",
-          "edge_type": "customer",
-          "target_name": "The Home Depot",
-          "target_kind": "company",
-          "direction": "target_depends_on_company",
-          "quote": "although the segment also builds turf products for sale by mass retailers, including The Home Depot and Lowe's.",
-          "section": "1",
-          "importance": "medium",
-          "vint_status": "confirmed"
-        },
-        {
-          "ticker": "DE",
-          "edge_id": "edge_a31a7be471da",
-          "edge_type": "customer",
-          "target_name": "Lowe's",
-          "target_kind": "company",
-          "direction": "target_depends_on_company",
-          "quote": "although the segment also builds turf products for sale by mass retailers, including The Home Depot and Lowe's.",
-          "section": "1",
-          "importance": "medium",
-          "vint_status": "confirmed"
-        },
-        {
-          "ticker": "DE",
-          "edge_id": "edge_448da3c0e5ef",
-          "edge_type": "key_input",
-          "target_name": "rare earth minerals",
-          "target_kind": "material",
-          "direction": "depends_on_target",
-          "quote": "certain of our products, including motors, batteries, and other components, rely on rare earth minerals for their manufacturing, of which a significant majority are sourced from China.",
-          "section": "1A",
-          "importance": "high",
-          "vint_status": "confirmed"
-        }
-      ]
+      "pooled_candidates": []
     },
     {
       "ticker": "SBUX",
@@ -4440,6 +4482,10 @@
       "precision_after_vint": 1.0,
       "recall_after_vint": 0.7143,
       "f1_after_vint": 0.8333,
+      "tp_blind_after_vint": 6,
+      "fp_blind_after_vint": 0,
+      "precision_blind_after_vint": 1.0,
+      "f1_blind_after_vint": 0.8333,
       "direction_correct": 6,
       "direction_total": 6,
       "hard_neg_fp_before_vint": 0,
@@ -4635,7 +4681,7 @@
       "target_name": "Unnamed Customer",
       "target_kind": "unnamed_customer",
       "quote": "During fiscal 2026, NIKE's three largest customers outside of the United States accounted for approximately 16% of total non-U.S. sales.",
-      "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
+      "reason": "Pooled review: reject — customer group ('three largest customers outside the US'), not one counterparty (policy 3)"
     },
     {
       "kind": "false_positive",
@@ -4645,7 +4691,7 @@
       "target_name": "Air Manufacturing Innovation",
       "target_kind": "company",
       "quote": "During fiscal 2026, Air Manufacturing Innovation, a wholly-owned subsidiary, with facilities near Beaverton, Oregon, in Dong Nai City, Vietnam, and St. Charles, Missouri, as well as contract manufacturers in China and Vietnam, were our suppliers of NIKE Air-Sole and other cushioning components used in footwear.",
-      "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
+      "reason": "Pooled review: reject — Air Manufacturing Innovation is a wholly-owned Nike subsidiary, not an external supplier"
     },
     {
       "kind": "false_positive",
@@ -4655,7 +4701,7 @@
       "target_name": "Sojitz Corporation of America",
       "target_kind": "company",
       "quote": "Since 1972, Sojitz Corporation of America (\"Sojitz America\"), a large Japanese trading company and the sole owner of our redeemable preferred stock, has performed import-export financing services for us.",
-      "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
+      "reason": "Pooled review: reject — Sojitz America provides import-export financing and holds preferred stock; not a supply dependency"
     },
     {
       "kind": "false_positive",
@@ -4665,77 +4711,7 @@
       "target_name": "Takata",
       "target_kind": "company",
       "quote": "For example, NHTSA and the automotive industry are currently engaged in a study of the safety of approximately 56 million Takata desiccated airbag inflators in the United States. Of these, approximately 3.5 million of the inflators are in our vehicles.",
-      "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
-    },
-    {
-      "kind": "false_positive",
-      "ticker": "F",
-      "item_id": "edge_cf85a07ce5ef",
-      "edge_type": "supplier",
-      "target_name": "ARC Automotive",
-      "target_kind": "company",
-      "quote": "In addition, NHTSA is considering action related to 52 million vehicles containing inflators from ARC Automotive and Delphi Automotive in the United States. Ford has 2.5 million vehicles within this population.",
-      "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
-    },
-    {
-      "kind": "false_positive",
-      "ticker": "F",
-      "item_id": "edge_a7c38c5f5085",
-      "edge_type": "supplier",
-      "target_name": "Delphi Automotive",
-      "target_kind": "company",
-      "quote": "In addition, NHTSA is considering action related to 52 million vehicles containing inflators from ARC Automotive and Delphi Automotive in the United States. Ford has 2.5 million vehicles within this population.",
-      "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
-    },
-    {
-      "kind": "false_positive",
-      "ticker": "GM",
-      "item_id": "edge_d3d268649da2",
-      "edge_type": "jv_partner",
-      "target_name": "SAIC General Motors Sales Co., Ltd.",
-      "target_kind": "company",
-      "quote": "Includes sales by the Automotive China Joint Ventures (Automotive China JVs): SAIC General Motors Sales Co., Ltd. (SGMS) and SAIC GM Wuling Automobile Co., Ltd. (SGMW).",
-      "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
-    },
-    {
-      "kind": "false_positive",
-      "ticker": "GM",
-      "item_id": "edge_85f1bd72c86f",
-      "edge_type": "jv_partner",
-      "target_name": "SAIC GM Wuling Automobile Co., Ltd.",
-      "target_kind": "company",
-      "quote": "Includes sales by the Automotive China Joint Ventures (Automotive China JVs): SAIC General Motors Sales Co., Ltd. (SGMS) and SAIC GM Wuling Automobile Co., Ltd. (SGMW).",
-      "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
-    },
-    {
-      "kind": "false_positive",
-      "ticker": "BA",
-      "item_id": "edge_8058aeca27ad",
-      "edge_type": "customer",
-      "target_name": "United States Department of War",
-      "target_kind": "company",
-      "quote": "We derive a substantial portion of our revenue from the U.S. government, primarily from defense related programs with the United States Department of War (DoW) and contracts with other government agencies, including NASA.",
-      "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
-    },
-    {
-      "kind": "false_positive",
-      "ticker": "BA",
-      "item_id": "edge_dea2976ebbd3",
-      "edge_type": "customer",
-      "target_name": "NASA",
-      "target_kind": "company",
-      "quote": "We derive a substantial portion of our revenue from the U.S. government, primarily from defense related programs with the United States Department of War (DoW) and contracts with other government agencies, including NASA.",
-      "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
-    },
-    {
-      "kind": "false_positive",
-      "ticker": "SWKS",
-      "item_id": "edge_bc723b6898e2",
-      "edge_type": "customer",
-      "target_name": "Unnamed Customer",
-      "target_kind": "unnamed_customer",
-      "quote": "In each of fiscal 2025, fiscal 2024, and fiscal 2023, one customer accounted for greater than ten percent of our net revenue.",
-      "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
+      "reason": "Pooled review: reject — Takata appears only in an industry-wide NHTSA study; filing does not state Takata supplies Ford"
     },
     {
       "kind": "false_positive",
@@ -4746,36 +4722,6 @@
       "target_kind": "unnamed_customer",
       "quote": "The following table details the number of combined customers of our reportable segments that accounted for a large percentage of segment net sales, not adjusted for constant-currency: Number of combined end customers % of total segment net sales in 2025 Optical Communications 2 28 %",
       "reason": "Hard negative leak (generic: GLW-NADJ1)"
-    },
-    {
-      "kind": "false_positive",
-      "ticker": "DE",
-      "item_id": "edge_e60d52406d66",
-      "edge_type": "customer",
-      "target_name": "The Home Depot",
-      "target_kind": "company",
-      "quote": "although the segment also builds turf products for sale by mass retailers, including The Home Depot and Lowe's.",
-      "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
-    },
-    {
-      "kind": "false_positive",
-      "ticker": "DE",
-      "item_id": "edge_a31a7be471da",
-      "edge_type": "customer",
-      "target_name": "Lowe's",
-      "target_kind": "company",
-      "quote": "although the segment also builds turf products for sale by mass retailers, including The Home Depot and Lowe's.",
-      "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
-    },
-    {
-      "kind": "false_positive",
-      "ticker": "DE",
-      "item_id": "edge_448da3c0e5ef",
-      "edge_type": "key_input",
-      "target_name": "rare earth minerals",
-      "target_kind": "material",
-      "quote": "certain of our products, including motors, batteries, and other components, rely on rare earth minerals for their manufacturing, of which a significant majority are sourced from China.",
-      "reason": "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
     }
   ],
   "false_negatives": [
@@ -5283,174 +5229,5 @@
     }
   ],
   "vint_filtered": [],
-  "pooled_candidates": [
-    {
-      "ticker": "NKE",
-      "edge_id": "edge_d3ccd3a1052a",
-      "edge_type": "customer",
-      "target_name": "Unnamed Customer",
-      "target_kind": "unnamed_customer",
-      "direction": "target_depends_on_company",
-      "quote": "During fiscal 2026, NIKE's three largest customers outside of the United States accounted for approximately 16% of total non-U.S. sales.",
-      "section": "2",
-      "importance": "high",
-      "vint_status": "confirmed"
-    },
-    {
-      "ticker": "NKE",
-      "edge_id": "edge_db8132253be5",
-      "edge_type": "supplier",
-      "target_name": "Air Manufacturing Innovation",
-      "target_kind": "company",
-      "direction": "depends_on_target",
-      "quote": "During fiscal 2026, Air Manufacturing Innovation, a wholly-owned subsidiary, with facilities near Beaverton, Oregon, in Dong Nai City, Vietnam, and St. Charles, Missouri, as well as contract manufacturers in China and Vietnam, were our suppliers of NIKE Air-Sole and other cushioning components used in footwear.",
-      "section": "2",
-      "importance": "critical",
-      "vint_status": "confirmed"
-    },
-    {
-      "ticker": "NKE",
-      "edge_id": "edge_55810b619d12",
-      "edge_type": "supplier",
-      "target_name": "Sojitz Corporation of America",
-      "target_kind": "company",
-      "direction": "depends_on_target",
-      "quote": "Since 1972, Sojitz Corporation of America (\"Sojitz America\"), a large Japanese trading company and the sole owner of our redeemable preferred stock, has performed import-export financing services for us.",
-      "section": "1A",
-      "importance": "critical",
-      "vint_status": "confirmed"
-    },
-    {
-      "ticker": "F",
-      "edge_id": "edge_83e00ad1aec8",
-      "edge_type": "supplier",
-      "target_name": "Takata",
-      "target_kind": "company",
-      "direction": "depends_on_target",
-      "quote": "For example, NHTSA and the automotive industry are currently engaged in a study of the safety of approximately 56 million Takata desiccated airbag inflators in the United States. Of these, approximately 3.5 million of the inflators are in our vehicles.",
-      "section": "1A",
-      "importance": "medium",
-      "vint_status": "confirmed"
-    },
-    {
-      "ticker": "F",
-      "edge_id": "edge_cf85a07ce5ef",
-      "edge_type": "supplier",
-      "target_name": "ARC Automotive",
-      "target_kind": "company",
-      "direction": "depends_on_target",
-      "quote": "In addition, NHTSA is considering action related to 52 million vehicles containing inflators from ARC Automotive and Delphi Automotive in the United States. Ford has 2.5 million vehicles within this population.",
-      "section": "1A",
-      "importance": "medium",
-      "vint_status": "confirmed"
-    },
-    {
-      "ticker": "F",
-      "edge_id": "edge_a7c38c5f5085",
-      "edge_type": "supplier",
-      "target_name": "Delphi Automotive",
-      "target_kind": "company",
-      "direction": "depends_on_target",
-      "quote": "In addition, NHTSA is considering action related to 52 million vehicles containing inflators from ARC Automotive and Delphi Automotive in the United States. Ford has 2.5 million vehicles within this population.",
-      "section": "1A",
-      "importance": "medium",
-      "vint_status": "confirmed"
-    },
-    {
-      "ticker": "GM",
-      "edge_id": "edge_d3d268649da2",
-      "edge_type": "jv_partner",
-      "target_name": "SAIC General Motors Sales Co., Ltd.",
-      "target_kind": "company",
-      "direction": "depends_on_target",
-      "quote": "Includes sales by the Automotive China Joint Ventures (Automotive China JVs): SAIC General Motors Sales Co., Ltd. (SGMS) and SAIC GM Wuling Automobile Co., Ltd. (SGMW).",
-      "section": "1A",
-      "importance": "medium",
-      "vint_status": "confirmed"
-    },
-    {
-      "ticker": "GM",
-      "edge_id": "edge_85f1bd72c86f",
-      "edge_type": "jv_partner",
-      "target_name": "SAIC GM Wuling Automobile Co., Ltd.",
-      "target_kind": "company",
-      "direction": "depends_on_target",
-      "quote": "Includes sales by the Automotive China Joint Ventures (Automotive China JVs): SAIC General Motors Sales Co., Ltd. (SGMS) and SAIC GM Wuling Automobile Co., Ltd. (SGMW).",
-      "section": "1A",
-      "importance": "medium",
-      "vint_status": "confirmed"
-    },
-    {
-      "ticker": "BA",
-      "edge_id": "edge_8058aeca27ad",
-      "edge_type": "customer",
-      "target_name": "United States Department of War",
-      "target_kind": "company",
-      "direction": "target_depends_on_company",
-      "quote": "We derive a substantial portion of our revenue from the U.S. government, primarily from defense related programs with the United States Department of War (DoW) and contracts with other government agencies, including NASA.",
-      "section": "1A",
-      "importance": "medium",
-      "vint_status": "confirmed"
-    },
-    {
-      "ticker": "BA",
-      "edge_id": "edge_dea2976ebbd3",
-      "edge_type": "customer",
-      "target_name": "NASA",
-      "target_kind": "company",
-      "direction": "target_depends_on_company",
-      "quote": "We derive a substantial portion of our revenue from the U.S. government, primarily from defense related programs with the United States Department of War (DoW) and contracts with other government agencies, including NASA.",
-      "section": "1A",
-      "importance": "medium",
-      "vint_status": "confirmed"
-    },
-    {
-      "ticker": "SWKS",
-      "edge_id": "edge_bc723b6898e2",
-      "edge_type": "customer",
-      "target_name": "Unnamed Customer",
-      "target_kind": "unnamed_customer",
-      "direction": "target_depends_on_company",
-      "quote": "In each of fiscal 2025, fiscal 2024, and fiscal 2023, one customer accounted for greater than ten percent of our net revenue.",
-      "section": "1A",
-      "importance": "medium",
-      "vint_status": "confirmed"
-    },
-    {
-      "ticker": "DE",
-      "edge_id": "edge_e60d52406d66",
-      "edge_type": "customer",
-      "target_name": "The Home Depot",
-      "target_kind": "company",
-      "direction": "target_depends_on_company",
-      "quote": "although the segment also builds turf products for sale by mass retailers, including The Home Depot and Lowe's.",
-      "section": "1",
-      "importance": "medium",
-      "vint_status": "confirmed"
-    },
-    {
-      "ticker": "DE",
-      "edge_id": "edge_a31a7be471da",
-      "edge_type": "customer",
-      "target_name": "Lowe's",
-      "target_kind": "company",
-      "direction": "target_depends_on_company",
-      "quote": "although the segment also builds turf products for sale by mass retailers, including The Home Depot and Lowe's.",
-      "section": "1",
-      "importance": "medium",
-      "vint_status": "confirmed"
-    },
-    {
-      "ticker": "DE",
-      "edge_id": "edge_448da3c0e5ef",
-      "edge_type": "key_input",
-      "target_name": "rare earth minerals",
-      "target_kind": "material",
-      "direction": "depends_on_target",
-      "quote": "certain of our products, including motors, batteries, and other components, rely on rare earth minerals for their manufacturing, of which a significant majority are sourced from China.",
-      "section": "1A",
-      "importance": "high",
-      "vint_status": "confirmed"
-    }
-  ]
+  "pooled_candidates": []
 }

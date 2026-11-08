@@ -331,6 +331,10 @@ class CompanyEvalSummary(_EvalModel):
     precision_after_vint: float
     recall_after_vint: float
     f1_after_vint: float
+    tp_blind_after_vint: int = 0
+    fp_blind_after_vint: int = 0
+    precision_blind_after_vint: float = 0.0
+    f1_blind_after_vint: float = 0.0
     direction_correct: int
     direction_total: int
     hard_neg_fp_before_vint: int
@@ -365,6 +369,8 @@ class EvalRunReport(_EvalModel):
     overall_before_vint: PRFMetrics
     macro_after_vint: PRFMetrics
     macro_before_vint: PRFMetrics
+    blind_overall_after_vint: PRFMetrics | None = None
+    blind_macro_after_vint: PRFMetrics | None = None
     per_edge_type: dict[str, PRFMetrics]
     direction_accuracy: MetricWithCI
     hard_negative_fp_rate_before_vint: MetricWithCI

@@ -214,6 +214,10 @@ def evaluate_company(
     match_before = match_predictions_to_gold(edges_before, gold_doc)
     match_after = match_predictions_to_gold(edges_after, gold_doc)
 
+    blind_rels = [r for r in gold_doc.relationships if r.source.strip().lower() != "pooled"]
+    gold_doc_blind = gold_doc.model_copy(update={"relationships": blind_rels})
+    match_blind_after = match_predictions_to_gold(edges_after, gold_doc_blind)
+
     gold_total = len(gold_doc.relationships)
     gold_core_total = sum(1 for r in gold_doc.relationships if r.tier == "core")
     gold_extended_total = sum(1 for r in gold_doc.relationships if r.tier == "extended")
@@ -245,6 +249,15 @@ def evaluate_company(
         tp_after, fp_after, fn_after, tp_core=tp_core_after
     )
 
+    tp_blind_after = match_blind_after.tp_total
+    fp_blind_after = len(match_blind_after.unmatched_edges)
+    p_blind_after, _r_blind_after, f1_blind_after = safe_prf(
+        tp_blind_after,
+        fp_blind_after,
+         len(match_blind_after.unmatched_core_gold),
+        tp_core=match_blind_after.tp_core,
+    )
+
     dir_correct = sum(1 for m in match_after.matches if m.direction_correct)
     dir_total = len(match_after.matches)
 
@@ -263,6 +276,7 @@ def evaluate_company(
         ticker=ticker,
         evaluated_company_key=company_key,
         hard_negative_edge_ids=hard_neg_edge_ids,
+        exclude_adjudicated_rejections=True,
     )
 
     neg_total_by_kind: dict[str, int] = {}
@@ -314,6 +328,10 @@ def evaluate_company(
         precision_after_vint=round(p_after, 4),
         recall_after_vint=round(r_after, 4),
         f1_after_vint=round(f1_after, 4),
+        tp_blind_after_vint=tp_blind_after,
+        fp_blind_after_vint=fp_blind_after,
+        precision_blind_after_vint=round(p_blind_after, 4),
+        f1_blind_after_vint=round(f1_blind_after, 4),
         direction_correct=dir_correct,
         direction_total=dir_total,
         hard_neg_fp_before_vint=len(match_before.triggered_negatives),
@@ -476,6 +494,116 @@ def _build_macro_prf_metrics(
     )
 
 
+def _build_blind_micro_prf_metrics(
+    bundles: Sequence[CompanyEvalBundle],
+    *,
+    iterations: int,
+    seed: int,
+) -> PRFMetrics:
+    def _counts(
+        seq: Sequence[CompanyEvalBundle],
+    ) -> tuple[int, int, int, int, int, int, int, int]:
+        tp = sum(b.summary.tp_blind_after_vint for b in seq)
+        tp_core = sum(b.summary.tp_core_after_vint for b in seq)
+        tp_ext = max(0, tp - tp_core)
+        fp = sum(b.summary.fp_blind_after_vint for b in seq)
+        fn = sum(b.summary.fn_after_vint for b in seq)
+        pred = sum(b.summary.predicted_after_vint for b in seq)
+        gold_core = sum(b.summary.gold_core_total for b in seq)
+        gold_ext = sum(b.summary.gold_blind_count - b.summary.gold_core_total for b in seq)
+        return tp, tp_core, tp_ext, fp, fn, gold_core, gold_ext, pred
+
+    tp, tp_core, tp_ext, fp, fn, gold_core, gold_ext, pred_cnt = _counts(bundles)
+    p_ci = bootstrap_ci(
+        bundles,
+        lambda seq: safe_prf(_counts(seq)[0], _counts(seq)[3], _counts(seq)[4], tp_core=_counts(seq)[1])[0],
+        iterations=iterations,
+        seed=seed,
+        numerator=tp,
+        denominator=tp + fp,
+    )
+    r_ci = bootstrap_ci(
+        bundles,
+        lambda seq: safe_prf(_counts(seq)[0], _counts(seq)[3], _counts(seq)[4], tp_core=_counts(seq)[1])[1],
+        iterations=iterations,
+        seed=seed + 1,
+        numerator=tp_core,
+        denominator=tp_core + fn,
+    )
+    f1_ci = bootstrap_ci(
+        bundles,
+        lambda seq: safe_prf(_counts(seq)[0], _counts(seq)[3], _counts(seq)[4], tp_core=_counts(seq)[1])[2],
+        iterations=iterations,
+        seed=seed + 2,
+    )
+    return PRFMetrics(
+        precision=p_ci,
+        recall=r_ci,
+        f1=f1_ci,
+        tp=tp,
+        tp_core=tp_core,
+        tp_extended=tp_ext,
+        fp=fp,
+        fn=fn,
+        gold_core_count=gold_core,
+        gold_extended_count=gold_ext,
+        gold_count=gold_core + gold_ext,
+        predicted_count=pred_cnt,
+    )
+
+
+def _build_blind_macro_prf_metrics(
+    bundles: Sequence[CompanyEvalBundle],
+    *,
+    iterations: int,
+    seed: int,
+) -> PRFMetrics:
+    def _macro_p(seq: Sequence[CompanyEvalBundle]) -> float:
+        return (
+            sum(b.summary.precision_blind_after_vint for b in seq) / len(seq)
+            if seq
+            else 0.0
+        )
+
+    def _macro_r(seq: Sequence[CompanyEvalBundle]) -> float:
+        return (
+            sum(b.summary.recall_after_vint for b in seq) / len(seq)
+            if seq
+            else 0.0
+        )
+
+    def _macro_f1(seq: Sequence[CompanyEvalBundle]) -> float:
+        return (
+            sum(b.summary.f1_blind_after_vint for b in seq) / len(seq)
+            if seq
+            else 0.0
+        )
+
+    tp = sum(b.summary.tp_blind_after_vint for b in bundles)
+    tp_core = sum(b.summary.tp_core_after_vint for b in bundles)
+    tp_ext = max(0, tp - tp_core)
+    fp = sum(b.summary.fp_blind_after_vint for b in bundles)
+    fn = sum(b.summary.fn_after_vint for b in bundles)
+    pred_cnt = sum(b.summary.predicted_after_vint for b in bundles)
+    gold_core = sum(b.summary.gold_core_total for b in bundles)
+    gold_ext = sum(b.summary.gold_blind_count - b.summary.gold_core_total for b in bundles)
+
+    return PRFMetrics(
+        precision=bootstrap_ci(bundles, _macro_p, iterations=iterations, seed=seed + 10),
+        recall=bootstrap_ci(bundles, _macro_r, iterations=iterations, seed=seed + 11),
+        f1=bootstrap_ci(bundles, _macro_f1, iterations=iterations, seed=seed + 12),
+        tp=tp,
+        tp_core=tp_core,
+        tp_extended=tp_ext,
+        fp=fp,
+        fn=fn,
+        gold_core_count=gold_core,
+        gold_extended_count=gold_ext,
+        gold_count=gold_core + gold_ext,
+        predicted_count=pred_cnt,
+    )
+
+
 def _type_counts_for_bundles(
     seq: Sequence[CompanyEvalBundle],
     edge_type: EdgeType,
@@ -582,6 +710,16 @@ def aggregate_eval_report(
         after_vint=False,
         iterations=bootstrap_iterations,
         seed=bootstrap_seed + 300,
+    )
+    blind_overall_after = _build_blind_micro_prf_metrics(
+        bundles,
+        iterations=bootstrap_iterations,
+        seed=bootstrap_seed + 50,
+    )
+    blind_macro_after = _build_blind_macro_prf_metrics(
+        bundles,
+        iterations=bootstrap_iterations,
+        seed=bootstrap_seed + 250,
     )
 
     per_edge_type: dict[str, PRFMetrics] = {}
@@ -716,13 +854,13 @@ def aggregate_eval_report(
         denominator=fac_den,
     )
 
-    # Importance-tier agreement (quadratic weighted kappa, linear weighted kappa, exact agreement)
+    # Importance-tier agreement (quadratic weighted kappa, linear weighted kappa, exact agreement) on blind gold matches
     def _imp_pairs(seq: Sequence[CompanyEvalBundle]) -> list[tuple[str, str]]:
         return [
             (m.gold_importance, m.pred_importance)
             for b in seq
             for m in b.match_after.matches
-            if m.is_primary_gold_match
+            if m.is_primary_gold_match and m.gold_source != "pooled"
         ]
 
     all_imp_pairs = _imp_pairs(bundles)
@@ -789,6 +927,8 @@ def aggregate_eval_report(
         overall_before_vint=overall_before,
         macro_after_vint=macro_after,
         macro_before_vint=macro_before,
+        blind_overall_after_vint=blind_overall_after,
+        blind_macro_after_vint=blind_macro_after,
         per_edge_type=per_edge_type,
         direction_accuracy=direction_accuracy,
         hard_negative_fp_rate_before_vint=hard_neg_before,
