@@ -772,7 +772,7 @@ export default function ExposuresPage() {
       <TabInfoBanner info={PAGE_INFO_COPY.exposures} />
 
       {/* Stale / background refresh banner while keeping previous analysis visible */}
-      {(stale || status === "loading") && (
+      {status === "loading" && (
         <div
           role="status"
           aria-live="polite"
@@ -782,6 +782,13 @@ export default function ExposuresPage() {
             <Spinner size="sm" />
             <span>Updating exposures for your latest portfolio allocation…</span>
           </div>
+        </div>
+      )}
+
+      {stale && status !== "loading" && status !== "error" && (
+        <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border-button-default bg-background-secondary-default px-4 py-3">
+          <p className="text-body-2-medium text-text-secondary">Finish your portfolio to update these results. This is the last valid analysis.</p>
+          <ButtonLink variant="secondary" size="small" href="#/portfolio">Edit portfolio</ButtonLink>
         </div>
       )}
 
