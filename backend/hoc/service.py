@@ -105,6 +105,7 @@ class EtfService:
         service.quotes = TickerInsideAdapter(http, settings)
         service.dependency_pipeline = LivePipeline.from_settings(http, settings)
         service.research_runner = AgenticResearchRunner.from_settings(http, settings)
+        service.dependency_pipeline.researcher = service.research_runner  # v3.1: per-company agents in the job
         return service
 
     def valuation(self, request: ValuationRequest) -> ValuationResponse:

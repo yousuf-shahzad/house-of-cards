@@ -52,6 +52,9 @@ WORKERS = 4
 JOB_RETENTION_SECONDS = 3600
 """Finished jobs are forgotten after an hour; their per-company results stay in the disk caches."""
 SUBMIT_WAIT_SECONDS = 1.5
+RESEARCH_BUDGET_SECONDS = {"light": 60.0, "thorough": 180.0}
+"""v3.1 A2: a company's research agent not started this long after reading ended is skipped (it says so).
+Reading (fetch + extract + reverse links) is never cut; an agent that has started finishes its own steps."""
 REVERSE_BUDGET_SECONDS = 100.0
 """Reverse-link steps not started this long after the job began are skipped (the company says so), so a
 cold click still finishes in about 2 minutes. Forward extraction always runs first and is never cut."""
@@ -92,6 +95,9 @@ class DependencyPipeline(Protocol):
 
     # Optional: resolver_for(portfolio: Sequence[CompanyExposure]) -> Callable[[str], str | None], the
     # deterministic name -> company_key resolver for one job's portfolio (G-DOC). Without it keys stay None.
+    # Optional (v3.1 A2): research_company(company, filing: FilingRef, edges, *, depth, cache_only, progress, analysis)
+    # -> object with .findings (ResearchFinding), .edges (the company's final set: kept + revised + new, all verified),
+    # .rejected_edge_ids, .cached. Raises CompanyUnavailable('missing_api_key') when it would need Gemini.
     # Optional: reverse(company, *, cache_only) -> Extraction, verified edges from OTHER filers' documents
     # whose target resolves to this company (EDGAR full-text search + G-AI extract_reverse).
 
@@ -126,6 +132,8 @@ class LivePipeline:
         self.resolve_target_key = resolve_target_key
         self.reverse_limit = reverse_limit
         self._titles_by_cik: dict[str, str] | None = None
+        self.researcher = None
+        """v3.1 A2: the research runner (hoc.research.ResearchLoop); its research_company is A1's per-company agent."""
         """Other filers' documents searched per company (HOC_DEPS_REVERSE_LIMIT; 0 = reverse links off)."""
         self.prompt_version = f"{extractor.prompt_version}+{orchestrator.prompt_version}"
         self._filings: dict[str, object] = {}
@@ -194,6 +202,20 @@ class LivePipeline:
                     self._titles_by_cik.setdefault(cik, title)
             return self._titles_by_cik
 
+    @property
+    def research_company(self):
+        """A1's per-company agent wired to this job's resolver, or None while the runner has no such entry point
+        (the job then skips the research phase exactly as in v3)."""
+        agent = getattr(self.researcher, "research_company", None)
+        if agent is None:
+            return None
+
+        def run(company, filing, edges, *, depth, cache_only, progress, analysis):
+            return agent(company, filing, edges, depth=depth, cache_only=cache_only, progress=progress,
+                         analysis=analysis, resolve_target_key=self.resolver_for(analysis.exposures))
+
+        return run
+
     def resolver_for(self, portfolio: Sequence[CompanyExposure]) -> Callable[[str], str | None]:
         """G-DOC's deterministic name -> company_key resolver for one job's portfolio (exact match only)."""
         from hoc.filings.names import NameResolver
@@ -215,7 +237,7 @@ class InlineExecutor(Executor):
 
 
 def job_id_for(request: DependencyRequest, companies: Sequence[CompanyExposure], prompt_version: str) -> str:
-    """sha256 of the top-N company keys, allocations, prompt version and top_n: the same click twice is
+    """sha256 of the top-N company keys, allocations, prompt version, top_n and depth: the same click twice is
     the same job (no double spend). Filing accessions are resolved inside the job; the per-company
     extraction caches key on them, so a new filing still re-extracts."""
     payload = {
@@ -223,6 +245,7 @@ def job_id_for(request: DependencyRequest, companies: Sequence[CompanyExposure],
         "allocations": sorted((h.ticker, round(h.allocation, 10)) for h in request.holdings),
         "prompt_version": prompt_version,
         "top_n": request.top_n,
+        "depth": request.depth,
     }
     return hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
 
@@ -293,6 +316,9 @@ class _Job:
     companies: list[CompanyRunStatus]
     cache_only: bool
     status: JobStatus = "queued"
+    phase: str = "queued"
+    steps: dict[str, tuple[int, int]] = field(default_factory=dict)
+    """v3.1 progress parts: 'read' (companies read, of N), 'research:<key>' (agent steps), 'synth' (0/1 or 1/1)."""
     result: DependencyResult | None = None
     error: ErrorBody | None = None
     finished_at: float | None = None
@@ -349,6 +375,8 @@ class DependencyJobs:
                 job_id=job.job_id, status=job.status, companies=list(job.companies),
                 progress_done=sum(c.status in FINISHED for c in job.companies),
                 progress_total=len(job.companies), result=job.result, error=job.error,
+                phase=job.phase, steps_done=sum(d for d, _ in job.steps.values()),
+                steps_total=sum(n for _, n in job.steps.values()),
             )
 
     # ---------- internals ----------
@@ -394,12 +422,18 @@ class DependencyJobs:
             if job.status in ("done", "error"):
                 job.finished_at = time.monotonic()
 
+    def _step(self, job: _Job, part: str, done: int, total: int) -> None:
+        with self._lock:
+            job.steps[part] = (done, max(total, done))
+
     def _set_company(self, job: _Job, index: int, **changes) -> None:
         with self._lock:
             job.companies[index] = job.companies[index].model_copy(update=changes)
 
     def _run(self, job: _Job) -> None:
-        self._set(job, status="running")
+        self._set(job, status="running", phase="reading")
+        self._step(job, "read", 0, len(job.top))
+        self._step(job, "synth", 0, 1)
         try:
             started = time.monotonic()
             forwards = [f.result() for f in [self._workers.submit(self._forward, job, i, c)
@@ -408,6 +442,9 @@ class DependencyJobs:
                                              for i, c in enumerate(job.top)]]
             extractions = [self._finish(job, i, fwd, rev)
                            for i, (fwd, rev) in enumerate(zip(forwards, reverses, strict=True))]
+            self._step(job, "read", len(job.top), len(job.top))
+            extractions, findings, researched = self._research_phase(job, forwards, extractions)
+            self._set(job, phase="synthesising")
             resolver_for = getattr(self.pipeline, "resolver_for", None)
             edges = _resolve_and_flag(job.analysis,
                                       list({e.edge_id: e for x in extractions if x for e in x.edges}.values()),
@@ -429,12 +466,84 @@ class DependencyJobs:
                                                    if e.target_key is None and e.target_kind == "company"}),
                 ),
                 coverage=coverage,
+                research=findings,
+                research_depth=job.request.depth if researched else "none",
             )
-            self._set(job, status="done", result=result)
+            self._step(job, "synth", 1, 1)
+            self._set(job, status="done", phase="done", result=result)
         except Exception as exc:  # the job fails visibly (status error), never the server
             log.exception("dependency job %s failed", job.job_id)
             self._set(job, status="error", error=ErrorBody(
                 code="INTERNAL_ERROR", message="Dependency analysis failed", details={"type": type(exc).__name__}))
+
+    def _research_phase(self, job: _Job, forwards, extractions):
+        """v3.1 A2: each company read from its own filing gets its agent (pipeline.research_company), in parallel on
+        the bounded workers, within the depth's budget. Returns (extractions with each company's final edges,
+        findings, whether any agent actually ran). Without the optional hook it is a no-op."""
+        research = getattr(self.pipeline, "research_company", None)
+        targets = [i for i, (fwd, _, _) in enumerate(forwards) if research and fwd is not None and extractions[i]]
+        if not targets:
+            return extractions, [], False
+        self._set(job, phase="researching")
+        for i in targets:  # one placeholder step per agent until it reports its own total
+            self._step(job, f"research:{job.top[i].company_key}", 0, 1)
+        deadline = time.monotonic() + RESEARCH_BUDGET_SECONDS[job.request.depth]
+        futures = {i: self._workers.submit(self._research, job, i, job.top[i], extractions[i], deadline)
+                   for i in targets}
+        findings, ran = [], False
+        extractions = list(extractions)
+        for i, future in futures.items():
+            outcome = future.result()
+            if outcome is None:
+                continue
+            ran = True
+            company_findings, edges, rejected, misread = outcome
+            findings.extend(company_findings)
+            before = extractions[i]
+            extractions[i] = Extraction(edges=edges, rejected=before.rejected + rejected, quality=before.quality,
+                                        cached=before.cached,
+                                        interpretation_rejected=before.interpretation_rejected + misread)
+            with self._lock:
+                current = job.companies[i]
+            self._set_company(job, i, verified_edges=len(edges), rejected_edges=current.rejected_edges + rejected)
+        return extractions, findings, ran
+
+    def _research(self, job: _Job, index: int, company: CompanyExposure, extraction: Extraction, deadline: float):
+        """One company's agent. Returns (findings, final edges, rejected, interpretation-rejected) or None when it
+        was skipped. Never raises, and never downgrades the company: its status (done/cached) and edges stay as
+        read; a skip only adds a plain note to its message and completes its share of the progress bar."""
+        with self._lock:
+            current = job.companies[index]
+        part = f"research:{company.company_key}"
+        note, found = None, None
+        if time.monotonic() > deadline and not job.cache_only:
+            note = "Double-check skipped: the run's time budget was used up."
+        else:
+            self._set_company(job, index, status="researching")
+            try:
+                found = self.pipeline.research_company(
+                    company, current.filing, list(extraction.edges), depth=job.request.depth,
+                    cache_only=job.cache_only, progress=lambda done, total: self._step(job, part, done, total),
+                    analysis=job.analysis)
+            except CompanyUnavailable as exc:
+                log.info("research skipped for %s: %s", company.company_key, exc.message)
+                note = ("Double-check skipped: no AI key." if not job.cache_only and exc.status == "missing_api_key"
+                        else "Double-check skipped: not run yet for this portfolio.")
+            except Exception:
+                log.exception("research failed for %s", company.company_key)
+                note = "Double-check skipped: it failed for this company."
+        with self._lock:
+            _, total = job.steps.get(part, (0, 1))
+            job.steps[part] = (max(total, 1), max(total, 1))  # finished or skipped: never leaves the bar short
+        changes = {"status": current.status}
+        if note:
+            changes["message"] = f"{current.message or ''} {note}".strip()
+        self._set_company(job, index, **changes)
+        if found is None:
+            return None
+        rejected = set(found.rejected_edge_ids)
+        edges = [e for e in found.edges if e.edge_id not in rejected]
+        return list(found.findings), edges, len(rejected), getattr(found, "interpretation_rejected", 0)
 
     def _forward(self, job: _Job, index: int, company: CompanyExposure):
         """The company's own filing. Returns (Extraction | None, status, message); never raises."""
