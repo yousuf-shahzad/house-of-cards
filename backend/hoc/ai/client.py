@@ -435,12 +435,20 @@ class FakeGeminiClient:
         for target, edge_type, kind, sole, section in known_candidates:
             for sent in sentences:
                 if target.lower() in sent.lower() and len(sent) <= 320:
+                    sole_in_sent = bool(
+                        sole
+                        and re.search(
+                            r"\b(sole|single|only|exclusive|exclusively)\b",
+                            sent,
+                            re.IGNORECASE,
+                        )
+                    )
                     edges.append({
                         "edge_type": edge_type,
                         "target_name": target,
                         "target_kind": kind,
-                        "sole_source": sole,
-                        "qualifier": "primary wafer foundry" if sole else "",
+                        "sole_source": sole_in_sent,
+                        "qualifier": "sole wafer foundry" if sole_in_sent else ("primary wafer foundry" if sole else ""),
                         "section": section,
                         "evidence_quote": sent[:300],
                     })

@@ -43,7 +43,9 @@ from hoc.ai.interpretation import verify_company_interpretations
 from hoc.ai.verifier import (
     PROMPT_VERSION,
     find_quote_span,
+    ground_qualifier_in_quote,
     is_generic_company_target,
+    is_sole_source_grounded_in_quote,
     normalise_for_verify,
     resolve_quote_section,
     verify_quote,
@@ -413,7 +415,7 @@ def verify_and_build_edges(
             rejected_count += 1
             continue
 
-        edge_type, sole_source = _normalise_edge_type(raw_type, raw_sole)
+        edge_type, raw_sole_flag = _normalise_edge_type(raw_type, raw_sole)
         target_kind = _normalise_target_kind(raw_kind, edge_type)
 
         if target_kind == "company" and is_generic_company_target(raw_target, raw_quote):
@@ -455,6 +457,22 @@ def verify_and_build_edges(
             target_key is not None and portfolio_set is not None and target_key in portfolio_set
         )
         norm_quote_clean = normalise_for_verify(raw_quote)
+        sole_grounded = is_sole_source_grounded_in_quote(
+            norm_quote_clean,
+            raw_target,
+            target_kind=target_kind,
+        )
+        ungrounded_sole_dropped = bool(raw_sole_flag and not sole_grounded)
+        sole_source = bool(raw_sole_flag and sole_grounded)
+        grounded_qualifier = ground_qualifier_in_quote(
+            raw_qualifier,
+            norm_quote_clean,
+            raw_target,
+            target_kind=target_kind,
+            sole_source=sole_source,
+        )
+        ungrounded_qual_dropped = bool(raw_qualifier and grounded_qualifier is None)
+
         edge_id = make_edge_id(filing_ref.accession, norm_quote_clean, edge_type, raw_target)
         record = VerifiedEdge(
             edge_id=edge_id,
@@ -467,11 +485,15 @@ def verify_and_build_edges(
             target_key=target_key,
             target_in_portfolio=target_in_portfolio,
             sole_source=sole_source,
-            qualifier=raw_qualifier or None,
+            qualifier=grounded_qualifier,
             evidence_quote=norm_quote_clean,
             section=resolved_section,
             filing=filing_ref,
         )
+        if ungrounded_sole_dropped:
+            record.__dict__["_ungrounded_sole_source"] = True
+        if ungrounded_qual_dropped:
+            record.__dict__["_ungrounded_qualifier"] = raw_qualifier
 
         dedup_key = (
             source_company_key,

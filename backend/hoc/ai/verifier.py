@@ -29,8 +29,71 @@ _CORP_STOPWORDS = frozenset({
     "ltd", "limited", "llc", "llp", "lp", "plc", "nv", "bv", "se",
     "ag", "sa", "spa", "kk", "ab", "oyj", "asa", "holdings", "holding",
     "group", "international", "technologies", "technology", "systems",
-    "the", "and", "of",
+    "the", "and", "of", "in", "to", "for", "on", "at", "by", "or", "as",
+    "is", "be", "an", "no", "so", "up", "it", "we", "us", "do", "if",
 })
+
+_NON_DISTINCTIVE_NAME_TOKENS = frozenset({
+    "advanced", "micro", "devices", "device", "applied", "materials", "material",
+    "general", "motors", "motor", "western", "digital", "united", "american",
+    "national", "global", "pacific", "standard", "first", "analog", "instruments",
+    "instrument", "semiconductor", "semiconductors", "electronic", "electronics",
+    "electric", "electrical", "power", "energy", "health", "healthcare", "medical",
+    "financial", "capital", "partners", "partner", "solutions", "solution",
+    "services", "service", "network", "networks", "communications", "communication",
+    "industries", "industrial", "manufacturing", "chemical", "chemicals", "air",
+    "lines", "line", "airlines", "airline", "parcel", "realty", "arts", "dynamics",
+    "scientific", "precision", "optical", "photon", "photonics", "robotics",
+    "data", "cloud", "software", "hardware", "computing", "computer", "computers",
+    "storage", "memory", "wafer", "wafers", "silicon", "chip", "chips", "foundry",
+    "foundries", "packaging", "assembly", "testing", "test", "supply", "supplies",
+    "supplier", "suppliers", "vendor", "vendors", "customer", "customers",
+    "counterparty", "counterparties", "company", "companies", "enterprise",
+    "enterprises", "commercial", "central", "northern", "southern", "eastern",
+    "north", "south", "east", "west", "new", "world",
+})
+
+_KNOWN_TARGET_ACRONYMS: dict[str, tuple[str, ...]] = {
+    "advanced micro devices": ("amd",),
+    "taiwan semiconductor manufacturing": ("tsmc",),
+    "international business machines": ("ibm",),
+    "applied materials": ("amat",),
+    "texas instruments": ("ti",),
+    "general electric": ("ge",),
+    "general motors": ("gm",),
+    "united parcel service": ("ups",),
+}
+
+_CLAUSE_SPLIT_RE = re.compile(
+    r"[.;]"
+    r"|\b(?:whereas|while|although|however|but)\b"
+    r"|,\s+(?:and|but|while|whereas)\s+"
+    r"|\s+and\s+(?=(?:our|we|the\s+company)\s+|\w+\s+(?:is|are|was|were|serves|served|acts|acted|supplies|supplied|manufactures|manufactured|provides|provided|accounted|represented)\b)",
+    re.IGNORECASE,
+)
+
+_SOLE_SOURCE_GROUNDING_RE = re.compile(
+    r"\b("
+    r"sole(?:ly)?|"
+    r"single[\-\s]source(?:d)?|"
+    r"single\s+(?:supplier|vendor|foundry|manufacturer|provider|subcontractor|packager)|"
+    r"only\s+(?:supplier|vendor|foundry|manufacturer|provider|source|subcontractor|packager|qualified)|"
+    r"exclusive(?:ly)?|"
+    r"100%\s+of\s+(?:our\s+)?(?:wafer|chip|component|product|supply|manufacturing|packaging|production)"
+    r")\b",
+    re.IGNORECASE,
+)
+
+_MULTI_SOURCE_CONTRADICTION_RE = re.compile(
+    r"\b("
+    r"alongside\s+(?:several|multiple|many|various|other|numerous)\b|"
+    r"among\s+(?:several|multiple|many|various|our)\s+(?:other\s+)?(?:suppliers|vendors|manufacturers|foundries|providers|sources)|"
+    r"one\s+of\s+(?:several|multiple|many|various|our)\s+(?:suppliers|vendors|manufacturers|foundries|providers|sources)|"
+    r"(?:several|multiple|many|various|other)\s+(?:other\s+)?(?:suppliers|vendors|manufacturers|foundries|providers|sources)|"
+    r"non[\-\s]exclusive"
+    r")\b",
+    re.IGNORECASE,
+)
 
 _LEGAL_CORPORATE_SUFFIXES = frozenset({
     "inc", "incorporated", "corp", "corporation", "ltd", "limited",
@@ -152,19 +215,136 @@ def _target_mentioned_in_quote(
                 return True
         return False
 
-    norm_target = normalise(target_name).casefold()
+    norm_target = normalise(target_name).casefold().strip()
     if not norm_target:
         return False
-    if norm_target in norm_quote_cf:
+    if re.search(rf"(?<![a-z0-9]){re.escape(norm_target)}(?![a-z0-9])", norm_quote_cf):
         return True
 
     tokens = [
         tok for tok in re.split(r"[^a-z0-9]+", norm_target)
-        if len(tok) >= 3 and tok not in _CORP_STOPWORDS
+        if len(tok) >= 2 and tok not in _CORP_STOPWORDS
     ]
     if not tokens:
         tokens = [tok for tok in re.split(r"[^a-z0-9]+", norm_target) if len(tok) >= 2]
-    return any(tok in norm_quote_cf for tok in tokens)
+    if not tokens:
+        return False
+
+    joined_tokens = " ".join(tokens)
+    for key_phrase, aliases in _KNOWN_TARGET_ACRONYMS.items():
+        if (key_phrase in norm_target or key_phrase == joined_tokens) and any(
+            re.search(rf"\b{re.escape(alias)}\b", norm_quote_cf) for alias in aliases
+        ):
+            return True
+
+    if len(tokens) == 1:
+        return bool(re.search(rf"\b{re.escape(tokens[0])}\b", norm_quote_cf))
+
+    distinctive_tokens = [tok for tok in tokens if tok not in _NON_DISTINCTIVE_NAME_TOKENS]
+    if any(re.search(rf"\b{re.escape(tok)}\b", norm_quote_cf) for tok in distinctive_tokens):
+        return True
+
+    # For multi-word names made only of common corporate words (e.g. "Advanced Micro Devices",
+    # "Applied Materials", "Western Digital"), require at least two consecutive tokens as whole words.
+    return any(
+        re.search(rf"\b{re.escape(tokens[i])}\s+{re.escape(tokens[i + 1])}\b", norm_quote_cf)
+        for i in range(len(tokens) - 1)
+    )
+
+
+def _extract_target_clauses_from_quote(
+    evidence_quote: str,
+    target_name: str,
+    *,
+    target_kind: str = "company",
+) -> list[str]:
+    """Return the clause(s) within `evidence_quote` that mention `target_name`."""
+    norm_q = normalise(evidence_quote)
+    clauses = [c.strip() for c in _CLAUSE_SPLIT_RE.split(norm_q) if c.strip()]
+    if not clauses:
+        return [norm_q]
+
+    if target_kind == "unnamed_customer" or target_name.strip().casefold().startswith("unnamed"):
+        pct_clauses = [
+            c for c in clauses
+            if re.search(r"\b\d{1,2}(?:\.\d+)?\s*%", c) and "no other" not in c.casefold()
+        ]
+        if pct_clauses:
+            return pct_clauses
+
+    matching = [
+        c for c in clauses
+        if _target_mentioned_in_quote(c.casefold(), target_name, target_kind, "")
+    ]
+    return matching if matching else [norm_q]
+
+
+def is_sole_source_grounded_in_quote(
+    evidence_quote: str,
+    target_name: str,
+    *,
+    target_kind: str = "company",
+) -> bool:
+    """Return True iff the clause(s) mentioning `target_name` in `evidence_quote` contain explicit
+    sole/single/only/exclusive-source language and do not state that multiple/other vendors are used.
+    """
+    if not evidence_quote or not target_name:
+        return False
+    target_clauses = _extract_target_clauses_from_quote(
+        evidence_quote,
+        target_name,
+        target_kind=target_kind,
+    )
+    clause_text = " ".join(target_clauses)
+    if _MULTI_SOURCE_CONTRADICTION_RE.search(clause_text):
+        return False
+    return bool(_SOLE_SOURCE_GROUNDING_RE.search(clause_text))
+
+
+def ground_qualifier_in_quote(
+    qualifier: str | None,
+    evidence_quote: str,
+    target_name: str,
+    *,
+    target_kind: str = "company",
+    sole_source: bool = False,
+) -> str | None:
+    """Validate that any percentage/revenue share or sole-source wording in `qualifier` is grounded
+    in the target-specific clause of `evidence_quote`; otherwise drop the ungrounded qualifier (`None`).
+    """
+    if not qualifier or not qualifier.strip():
+        return None
+    cleaned = normalise(qualifier).strip()
+    if not cleaned:
+        return None
+
+    target_clauses = _extract_target_clauses_from_quote(
+        evidence_quote,
+        target_name,
+        target_kind=target_kind,
+    )
+    clause_text = " ".join(target_clauses)
+    clause_compact = re.sub(r"\s+", "", clause_text.casefold())
+
+    # 1. Any percentage in `qualifier` must appear in the target's clause of `evidence_quote`
+    pct_matches = re.findall(
+        r"(\d+(?:\.\d+)?)\s*(%|(?:percent|per\s+cent)\b)",
+        cleaned,
+        flags=re.IGNORECASE,
+    )
+    for num_str, _ in pct_matches:
+        has_pct_symbol = f"{num_str}%" in clause_compact
+        has_pct_word = bool(
+            re.search(rf"\b{re.escape(num_str)}\s*(?:%|percent|per\s+cent)\b", clause_text, re.IGNORECASE)
+        )
+        if not (has_pct_symbol or has_pct_word):
+            return None
+
+    # 2. If `sole_source` is not grounded for this target, `qualifier` must not smuggle sole-source wording
+    if not sole_source and _SOLE_SOURCE_GROUNDING_RE.search(cleaned):
+        return None
+
+    return cleaned
 
 
 def find_quote_span(
