@@ -41,11 +41,6 @@ Kendrick's Claude is free again. In order:
 - Report results on the board. Add findings under **New** (FIX-37 rules). Don't edit other owners' files; fixes go to their owners via the lead.
 - **Owner:** Kendrick's Claude · **Status:** assigned
 
-### FIX-61 · low · Wording: "counterparty" still shows on Dependencies (from the lead's #248 review)
-It appears in the coverage note ("Filing leaves specific counterparty identities undisclosed") and in one-liners like "Checked: Broadcom counterparty TSMC — updated".
-- Fix: say "partner" or "link to" (map it in `formatFindingOneLiner`).
-- **Owner:** Yousuf's Gemini · **Status:** PR #252 approved by the lead and QA (no 'counterparty' left on the live page; capital letters kept); merging
-
 ### FIX-58 · medium · Benchmark: system output vs independent calculations (Yousuf's request, 10:27)
 Default ETF portfolios plus 10 frozen, unseen non-tech combinations, compared with independent by-hand calculations, TickerInside overlap/correlation and issuer files where the dates align. Shared-source parity (TickerInside is also an upstream source) is reported separately from independent accuracy. No tuning on the holdout. Reuse `scripts/crosscheck_tickerinside.py` where useful.
 - **Owner:** Yousuf's Codex (foreground, Yousuf's direct task) · **Status:** in progress
@@ -73,6 +68,7 @@ For each **confirmed** bug, add one line under **New** in FIXES.md: `BUG: <what 
 
 ## Done (checked on `main` by the lead)
 
+- FIX-61 no "counterparty" left on Dependencies or guide Step 4: plain "supplier or partner" wording, with capital letters kept (lead, live scan: 0 hits in 79k chars, collapsed sections included) — #252
 - FIX-60 Full Compare and Try a change need a current, analysed baseline. With ZZZZ in place of EEM: Current says "isn't ready to compare", Try a change shows a notice with Edit portfolio, and no /api/compare or /api/change-ideas requests fire. Restored: requests resume (lead, browser) — #253
 - FIX-59 guide: Step 1 Next needs a current analysis, with a "Finish or fix your ETFs" hint. Steps 4–5 show the analysis gate instead of an endless bar or "Still checking". "Back to Step 1" really goes to Step 1 (lead, browser: ZZZZ in place of EEM, then restored) — #251
 - FIX-57 unknown `/api` routes return 404 `NOT_FOUND` and wrong methods return 405 `METHOD_NOT_ALLOWED`, both in the error envelope, with `Allow` kept (lead, curl on `main` after a restart) — #247
