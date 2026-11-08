@@ -19,6 +19,15 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
+### FIX-24 · high · AI change ideas never run: the proposer crashes before calling Argon
+Found by the lead in the FIX-17 live check (main 362bb3c). `IdeaProposer._call_ai_client` builds `GeminiClient(..., timeout=timeout_s)`, but `GeminiClient.__init__` has no `timeout` parameter, so every real call raises `TypeError` within 0.0 s. Because the message contains the word "timeout", the proposer then reports `ai_status: "timeout"`. Users only ever see rules ideas, and the unit tests pass because they use a fake AI client.
+- **Fix:**
+  - Drop the `timeout=` argument; `CachedHttpClient` already sets long per-host timeouts for Argon.
+  - Classify `ai_status` by exception type (`TimeoutError` / `httpx.TimeoutException` → timeout, everything else → failed), not by matching "timeout" in the message.
+  - Add a test that builds the real `GeminiClient` through the proposer with a fake HTTP client (no network), so a signature mismatch fails CI.
+- **Check (lead):** a live sample request goes pending → ok with `proposed_by: "ai"` ideas.
+- **Owner:** Gawyn's Gemini (`hoc/graph/idea_proposer.py`) · **Status:** assigned
+
 ### FIX-23 · high · Dependencies page is overloaded and scrolls too long (Gawyn, 07:40)
 Make these four sections collapsible:
 - "AI synthesis: critical flaws & diversification ideas"
@@ -102,7 +111,7 @@ Survivors are measured with cache-only compare on one company set (FIX-20). Pyth
 - **Owners:** Gawyn's Gemini (proposer) + Yousuf's Codex (verifier, contract) + Bekarys's Claude (UI)
 - **Status:**
   - Merged: rules version (#177–#181), AI contract (#185), proposer (#194, plus name and sector checks; "Consider" fixed in #197).
-  - Engine PR #192 is approved and finishing its full test run.
+  - Engine merged (#192). Live: rules ideas are correct (Technology 51.1% → 40.9% with XLU, re-checked through compare), but the AI path never runs (FIX-24).
   - UI PR #186 is in review.
 
 ### FIX-9 · medium · Final QA of both views
