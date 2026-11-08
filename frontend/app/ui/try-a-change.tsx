@@ -22,7 +22,7 @@ import { useScenario } from "@/app/scenario";
 import { DraftEditor, normTicker, ServerError } from "@/app/ui/draft-editor";
 import { formatPct } from "@/app/ui/pct";
 import { Chip } from "@/components/base/badges/chip";
-import { Button } from "@/components/base/buttons/button";
+import { Button, ButtonLink } from "@/components/base/buttons/button";
 import { Spinner } from "@/components/base/spinner/spinner";
 
 const tabular = { fontVariantNumeric: "tabular-nums" } as const;
@@ -285,12 +285,13 @@ const ideasCache = new Map<string, ChangeIdeasResponse>();
 type IdeasState = { key: string; status: "loading" | "ready" | "error"; response: ChangeIdeasResponse | null };
 
 function useChangeIdeas(): { ideas: IdeasState | null; retry: () => void } {
-  const { draft: current } = useAnalysis();
+  const { draft: current, analysis, status, stale, error } = useAnalysis();
   const { inputs, key } = current;
+  const ready = status === "ready" && analysis !== null && !stale && !error && inputs !== null;
   const [state, setState] = useState<IdeasState | null>(null);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
-    if (!inputs) return;
+    if (!ready || !inputs) return;
     const done = ideasCache.get(key);
     if (done) {
       setState({ key, status: "ready", response: done });
@@ -306,6 +307,7 @@ function useChangeIdeas(): { ideas: IdeasState | null; retry: () => void } {
       api
         .changeIdeas(inputs, undefined, controller.signal)
         .then((response) => {
+          if (controller.signal.aborted) return;
           // A cold backend answers "partial" with no ideas while the candidate ETFs load: ask once more.
           if (response.status === "partial" && response.ideas.length === 0 && !retried && !shown) {
             retried = true;
@@ -321,6 +323,7 @@ function useChangeIdeas(): { ideas: IdeasState | null; retry: () => void } {
           if (pending) timer = window.setTimeout(load, AI_POLL_MS);
         })
         .catch((cause: unknown) => {
+          if (controller.signal.aborted) return;
           if (cause instanceof DOMException && cause.name === "AbortError") return;
           // A failed poll while the AI was still checking keeps the cards already on screen.
           setState((prev) =>
@@ -335,9 +338,9 @@ function useChangeIdeas(): { ideas: IdeasState | null; retry: () => void } {
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [key, inputs, attempt]);
+  }, [ready, key, inputs, attempt]);
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
-  return { ideas: inputs && state?.key === key ? state : null, retry };
+  return { ideas: ready && state?.key === key ? state : null, retry };
 }
 
 /** Percent mode keeps the idea's exact allocations. Shares mode uses whole shares;
@@ -517,10 +520,11 @@ export function ChangeIdeas({ heading = "Ideas to try", onTried }: { heading?: s
 
 /** The editable copy of the portfolio, the four headline rows and "More details". */
 export function TryAChange({ editorTitle = "Your new mix" }: { editorTitle?: string }) {
-  const { draft: current } = useAnalysis();
+  const { draft: current, analysis, status: analysisStatus, stale: analysisStale, error: analysisError } = useAnalysis();
   const { isBeginner } = useExperience();
   const { scenario, resetToCurrent, compare, compareStatus, result, error, stale } = useScenario();
-  const ready = current.inputs !== null && scenario.inputs !== null;
+  const baselineReady = analysisStatus === "ready" && analysis !== null && !analysisStale && !analysisError && current.inputs !== null;
+  const ready = baselineReady && scenario.inputs !== null;
   const [applying, setApplying] = useState(false);
   const [applyError, setApplyError] = useState<ApiError | null>(null);
   const adoptionController = useRef<AbortController | null>(null);
@@ -546,7 +550,7 @@ export function TryAChange({ editorTitle = "Your new mix" }: { editorTitle?: str
   }, [ready, result, stale, compare]);
 
   const makeScenarioCurrent = async () => {
-    if (!scenario.inputs || applying) return;
+    if (!ready || !scenario.inputs || applying) return;
     const controller = new AbortController();
     adoptionController.current?.abort();
     adoptionController.current = controller;
@@ -576,7 +580,7 @@ export function TryAChange({ editorTitle = "Your new mix" }: { editorTitle?: str
   const increases = shares.filter((delta) => signedChange(delta) > 0).sort((a, b) => signedChange(b) - signedChange(a));
   const unanalysed = result?.candidate_unanalysed ?? [];
   const unanalysedWeight = unanalysed.reduce((sum, company) => sum + company.exposure, 0);
-  const busy = compareStatus === "loading" || (ready && (result === null || stale) && compareStatus !== "error");
+  const busy = ready && (compareStatus === "loading" || ((result === null || stale) && compareStatus !== "error"));
 
   return (
     <div className="flex flex-col gap-6">
@@ -615,29 +619,38 @@ export function TryAChange({ editorTitle = "Your new mix" }: { editorTitle?: str
             </span>
           )}
         </div>
-        {!ready && (
+        {!baselineReady ? (
+          <div role="status" className="flex flex-col items-start gap-2">
+            <p className="text-body-2-regular text-text-secondary">
+              {analysisError || current.valuation.error
+                ? "We couldn't check your current portfolio. Fix it on Portfolio before comparing."
+                : analysisStatus === "loading"
+                  ? "Checking your current portfolio before comparing…"
+                  : "Your current portfolio isn't ready to compare. Finish it on Portfolio first."}
+            </p>
+            <ButtonLink href="#/portfolio" variant="ghost" size="small">Edit portfolio</ButtonLink>
+          </div>
+        ) : !ready && (
           <p className="text-body-2-regular text-text-tertiary">
-            {current.inputs === null
-              ? "Your portfolio isn't complete yet. Finish it first."
-              : "Finish the changed portfolio above and the comparison updates by itself."}
+            Finish the changed portfolio above and the comparison updates by itself.
           </p>
         )}
-        {compareStatus === "error" && error && error.status === 404 && (error.code === "HTTP_ERROR" || error.code === "NOT_FOUND") ? (
+        {baselineReady && compareStatus === "error" && error && error.status === 404 && (error.code === "HTTP_ERROR" || error.code === "NOT_FOUND") ? (
           // FastAPI's own 404 (no error body): the running backend predates POST /api/compare.
           <p role="alert" className="text-body-regular text-text-error-primary">
             This backend doesn't have comparisons yet. Update and restart it, then try again.
           </p>
         ) : (
-          compareStatus === "error" && error && <ServerError error={error} retry={compare} />
+          baselineReady && compareStatus === "error" && error && <ServerError error={error} retry={compare} />
         )}
-        {result && (
+        {baselineReady && result && (
           <ul className={`flex flex-col ${stale ? "opacity-60" : ""}`} style={tabular}>
             {headlines(result).map((row) => (
               <HeadlineRow key={row.label} row={row} />
             ))}
           </ul>
         )}
-        {result && unanalysed.length > 0 && (
+        {baselineReady && result && unanalysed.length > 0 && (
           <p className="text-body-2-regular text-text-secondary">
             Not checked yet: {unanalysed.length} {unanalysed.length === 1 ? "company" : "companies"} in the new mix (
             {formatPct(unanalysedWeight, 1)} of it) {unanalysed.length === 1 ? "has" : "have"} no analysed filing, so{" "}
@@ -646,7 +659,7 @@ export function TryAChange({ editorTitle = "Your new mix" }: { editorTitle?: str
         )}
       </section>
 
-      {result && (
+      {baselineReady && result && (
         <details className="rounded-2xl border border-separator-border bg-background-primary-default px-4 py-3">
           <summary className="cursor-pointer text-body-medium text-text-primary">More details</summary>
           <div className="flex flex-col gap-6 pt-4">
