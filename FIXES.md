@@ -19,23 +19,17 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
-### FIX-26 · medium · AI idea text can show a number without saying what it is (reopened: the #202 rewrite garbles text)
-Live: the VTV idea's rationale reads "...reduces reliance on 12.41%". The placeholder rendered TSMC's dependency value without its name.
-- Fix: the rationale checker rejects (or the renderer rewrites) a dependency placeholder that isn't next to the company it describes, e.g. "12.41% reliance on Taiwan Semiconductor". Add a test.
-- **Live after #202 (lead):** the rewrite inserts the metric's label, not the company name, and does it even when the sentence already names the subject:
-  - VTV: "reduces 12.41% reliance on Portfolio exposure that depends on OpenAI"
-  - SCHD: "dilutes the 8.13% Portfolio exposure that depends on graphics processing units reliance on chip hardware"
-- **New fix:** don't rewrite. If a `dep.*` placeholder isn't next to its subject's display name (the company or input name, e.g. "OpenAI", never the label), drop the rationale (`None`). The card then shows Python's reason, which is always correct. Add tests with both live sentences.
-- **After #204 (lead, live):** still inserts the label: VTV "...reduces reliance on Portfolio exposure that depends on OpenAI (12.41% today)"; SCHD unchanged and garbled.
-- **Status:** the no-rewrite rule is merged (#207, Gawyn's Gemini). Codex is now changing `ideas.py:330` so an idea whose AI sentence was dropped is kept with Python's reason.
-- **Owner:** Gawyn's Gemini + Yousuf's Codex · **Status:** in progress
-
 ### FIX-28 · medium · "What's here & why" info button on every page (Yousuf, 08:31)
 Yousuf asked for an info button on every page that explains what's there, why it matters, and how to read it.
 - Done by Yousuf's Gemini: `TabInfoBanner` on the 5 guide steps, Try a change, Exposures and Dependencies, with `PAGE_INFO_COPY` for all 7 Full-view pages.
 - Left: wire it into `frontend/app/workspace.tsx` for Portfolio, Overlap, Network, Compare and Risk.
 - The info text must not hard-code live numbers (e.g. "40% verified"); describe them, or read them from the data, so they never go stale.
-- **Owner:** Yousuf's Gemini (done for its pages) + Yousuf's Claude (`workspace.tsx` wiring) · **Status:** in progress
+- **Lead check:** all 7 Full-view pages show a working "What's here & why" button (#212).
+- **Copy fixes left (Yousuf's Gemini, `guide/copy.ts`):**
+  - Risk says "more than 120 days old", but the backend warns at 100 (`STALE_WARNING_DAYS`).
+  - Dependencies says only "Go deeper" runs cross-company searches; since FIX-1, light does too, and Go deeper investigates more items for longer.
+  - Optional: replace "e.g. 50% between QQQ and XLK" with wording that won't go stale.
+- **Owner:** Yousuf's Gemini (copy) + Yousuf's Claude (wiring done) · **Status:** copy fixes in progress
 
 ### FIX-22 · medium · Research time budgets are too tight
 In the FIX-1 live check, 4 of 23 light findings stopped after one tool call ("step budget expired"), and 15 of 45 thorough findings were skipped ("time budget reached").
@@ -112,6 +106,7 @@ The plan asked for the research trace to show live during the run.
 
 ## Done (checked on `main` by the lead)
 
+- FIX-26 AI idea text: no rewriting. Unclear AI sentences are dropped and the card shows Python's reason. Live: VTV and SCHD ideas kept with rationale None and correct reasons; XLV keeps its clean sentence — #207, #210
 - FIX-27 clicking a graph edge opens the section and its evidence drawer; Show less then folds it and it stays folded with the edge still selected (lead, browser) — #205
 - FIX-23 the four Dependencies sections fold to a 280 px faded preview with Show all / Show less, and Countries is stacked. Lead check: each section 280 px when folded, 1.6k–12k px open; the page is 19,196 → 4,690 px at 1280×800 (PR) — #203
 - FIX-25 AI swaps into XLV and VTV accepted under a worst-case industry check (live: XLK→XLV Technology 51.1% → 41.2%; QQQ→VTV → 41.8%; all 3 AI ideas match compare) — #201
