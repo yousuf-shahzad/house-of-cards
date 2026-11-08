@@ -67,21 +67,32 @@ test("pickMostOverlappingPair picks the highest weighted_overlap instead of pair
   assert.equal(pickMostOverlappingPair([]), null);
 });
 
-test("monotonicProgressPct never decreases for the same job_id and resets on a new job_id (FIX-18)", () => {
-  let state = monotonicProgressPct(null, 0, "job_1", (15 / 16) * 100);
+test("monotonicProgressPct never decreases for the same running job_id and resets on a new or restarted job_id (FIX-18 + FIX-19)", () => {
+  let state = monotonicProgressPct(null, 0, "job_1", (15 / 16) * 100, null, "running");
   assert.equal(state.jobId, "job_1");
   assert.equal(state.pct, 94);
 
   // When steps_total grows (e.g. 16 -> 50), percentage must not drop for job_1
-  state = monotonicProgressPct(state.jobId, state.pct, "job_1", (15 / 50) * 100);
+  state = monotonicProgressPct(state.jobId, state.pct, "job_1", (15 / 50) * 100, state.status, "running");
   assert.equal(state.pct, 94);
 
   // Rises normally when raw percentage exceeds previous max
-  state = monotonicProgressPct(state.jobId, state.pct, "job_1", (49 / 50) * 100);
+  state = monotonicProgressPct(state.jobId, state.pct, "job_1", (49 / 50) * 100, state.status, "running");
   assert.equal(state.pct, 98);
 
+  // Finishes at 100% when status is done
+  state = monotonicProgressPct(state.jobId, state.pct, "job_1", 100, state.status, "done");
+  assert.equal(state.pct, 100);
+  assert.equal(state.status, "done");
+
+  // FIX-19: Reused job_id transitioning from done -> running resets to the new run's percentage
+  state = monotonicProgressPct(state.jobId, state.pct, "job_1", 0, state.status, "running");
+  assert.equal(state.jobId, "job_1");
+  assert.equal(state.pct, 0);
+  assert.equal(state.status, "running");
+
   // Resets when a new job_id starts
-  state = monotonicProgressPct(state.jobId, state.pct, "job_2", 10);
+  state = monotonicProgressPct(state.jobId, state.pct, "job_2", 10, state.status, "running");
   assert.equal(state.jobId, "job_2");
   assert.equal(state.pct, 10);
 });

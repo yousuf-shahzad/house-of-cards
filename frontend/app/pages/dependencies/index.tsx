@@ -1545,7 +1545,22 @@ function DependenciesPageContent() {
   const showMissingKeyBanner =
     missingKeyCompanies.length > 0 || result?.insights.status === "missing_api_key";
   const showMissingSecBanner = missingSecContactCompanies.length > 0;
-  const progressRef = useRef<{ jobId: string | null; pct: number }>({ jobId: null, pct: 0 });
+  const progressRef = useRef<{ jobId: string | null; pct: number; status: string | null }>({
+    jobId: null,
+    pct: 0,
+    status: null,
+  });
+  const topStepsDone = job?.steps_done || job?.progress_done || 0;
+  const topStepsTotal = job?.steps_total || job?.progress_total || topExposures.length || 15;
+  const topRawPct = job?.status === "done" ? 100 : topStepsTotal > 0 ? (topStepsDone / topStepsTotal) * 100 : 0;
+  progressRef.current = monotonicProgressPct(
+    progressRef.current.jobId,
+    progressRef.current.pct,
+    job?.job_id,
+    topRawPct,
+    progressRef.current.status,
+    job?.status ?? depStatus,
+  );
 
   // ---------- 1. Empty / Loading / Error states when no portfolio analysis exists ----------
   if (!analysis) {
@@ -1793,13 +1808,6 @@ function DependenciesPageContent() {
           const activePhase = job?.phase ?? "reading";
           const stepsDone = job?.steps_done || job?.progress_done || 0;
           const stepsTotal = job?.steps_total || job?.progress_total || topExposures.length || 15;
-          const rawPct = stepsTotal > 0 ? (stepsDone / stepsTotal) * 100 : 0;
-          progressRef.current = monotonicProgressPct(
-            progressRef.current.jobId,
-            progressRef.current.pct,
-            job?.job_id,
-            rawPct,
-          );
           const progressPct = progressRef.current.pct;
           const liveResearch = (job as { research?: readonly ResearchFinding[] } | null)?.research ?? [];
           const phases: Array<{ id: "reading" | "researching" | "synthesising"; label: string }> = [
