@@ -1,7 +1,7 @@
 """Per-company Gemini dependency extractor, reverse-link extractor, section packer, and I-API seam.
 
-Owner: package G-AI (Kendrick's Gemini).
-Rules (docs/hoc/PLAN-v2.md & docs/hoc/CONTRACT.md section 7):
+Owner: package G-AI / V-INT (Kendrick's Gemini).
+Rules (docs/hoc/PLAN-v2.md, docs/hoc/PLAN-v3.md §5 & docs/hoc/CONTRACT.md §§7-8):
 - One extraction call per company with sections packed up to 160,000 chars (`MAX_PACKED_CHARS`).
 - Flat JSON schema (`EXTRACTION_SCHEMA`) with no `$ref` or `anyOf`.
 - Every extracted edge is verified against the whole canonical filing text via `verify_quote`
@@ -9,7 +9,11 @@ Rules (docs/hoc/PLAN-v2.md & docs/hoc/CONTRACT.md section 7):
 - Generic common nouns (e.g. 'contract manufacturers') are rejected as `target_kind == 'company'`.
 - `edge.section` is set deterministically in Python from the `Filing.sections` span that contains
   the verified quote match (`'document'` when none), never from the model.
-- Produces frozen `hoc.contract.VerifiedEdge` models with `FilingRef`.
+- Runs V-INT (`verify_company_interpretations`: 6 deterministic rules on quote ±300 chars + one
+  independent Flash judge call `hoc-v3-judge-1` per company on flagged + 20% sampled unflagged edges)
+  to set `VerifiedEdge.interpretation`, removing `rejected` interpretations and counting them in
+  `Extraction.interpretation_rejected`.
+- Produces frozen `hoc.contract.VerifiedEdge` models with `FilingRef` and `EdgeInterpretation`.
 - Exposes `DependencyExtractor.extract(company, filing, *, cache_only: bool = False) -> Extraction`
   and `DependencyExtractor.extract_reverse(company, filings, *, cache_only: bool = False) -> Extraction`
   (capped at `MAX_REVERSE_HITS = 10` filings per company, keeping only edges whose target resolves
@@ -35,6 +39,7 @@ from hoc.ai.client import (
     GeminiError,
     GeminiMissingKeyError,
 )
+from hoc.ai.interpretation import verify_company_interpretations
 from hoc.ai.verifier import (
     PROMPT_VERSION,
     find_quote_span,
@@ -168,6 +173,7 @@ class Extraction:
 
     edges: list[VerifiedEdge]
     rejected: int = 0
+    interpretation_rejected: int = 0
     quality: Literal["sections", "fallback"] | None = "sections"
     cached: bool = False
     model: str | None = None
@@ -183,6 +189,7 @@ class CompanyExtractionOutcome:
     edges: list[VerifiedEdge] = field(default_factory=list)
     verified_count: int = 0
     rejected_count: int = 0
+    interpretation_rejected_count: int = 0
     model: str | None = None
     from_cache: bool = False
     filing: FilingRef | None = None
@@ -569,7 +576,7 @@ class DependencyExtractor:
     ) -> Extraction:
         """I-API pipeline seam: extract verified edges for `(company, filing)`.
 
-        Returns `Extraction(edges, rejected, quality, cached, model)`.
+        Returns `Extraction(edges, rejected, interpretation_rejected, quality, cached, model)`.
         Raises `hoc.contract.CompanyUnavailable(status, message)` when:
         - `filing` indicates an unavailable status (`no_sec_filing`, `unsupported_form`, `sec_contact_missing`)
         - `cache_only=True` and the filing is not cached (`missing_api_key`)
@@ -598,6 +605,7 @@ class DependencyExtractor:
         return Extraction(
             edges=outcome.edges,
             rejected=outcome.rejected_count,
+            interpretation_rejected=outcome.interpretation_rejected_count,
             quality=quality,
             cached=outcome.from_cache,
             model=outcome.model,
@@ -615,9 +623,9 @@ class DependencyExtractor:
         """Extract reverse-link edges from other filers' sections (`names_in_other_filings` hits).
 
         - Caps hits per company at `MAX_REVERSE_HITS` (10).
-        - Runs the same extractor + quote verifier over each other filer's sections (reusing
-          `ExtractionCache` keyed by `(other_company_key, accession, model, prompt_version)` so
-          filers already extracted in the forward pass cost 0 extra Gemini calls).
+        - Runs the same extractor + quote verifier + V-INT interpretation verifier over each other
+          filer's sections (reusing `ExtractionCache` keyed by `(other_company_key, accession, model, prompt_version)`
+          so filers already extracted in the forward pass cost 0 extra Gemini calls).
         - Keeps ONLY verified edges whose `target_key` resolves deterministically to a top-N
           portfolio company (`top_n_company_keys` / `portfolio_company_keys` / `company.company_key`).
         - Deduplicates `edge_id` across all hits.
@@ -653,10 +661,11 @@ class DependencyExtractor:
 
         hits = list(filings)[:MAX_REVERSE_HITS]
         if not hits:
-            return Extraction(edges=[], rejected=0, quality="sections", cached=True)
+            return Extraction(edges=[], rejected=0, interpretation_rejected=0, quality="sections", cached=True)
 
         kept_by_id: dict[str, VerifiedEdge] = {}
         total_rejected = 0
+        total_interp_rejected = 0
         all_cached = True
         any_fallback = False
         any_processed = False
@@ -693,6 +702,7 @@ class DependencyExtractor:
             if outcome.model:
                 last_model = outcome.model
             total_rejected += outcome.rejected_count
+            total_interp_rejected += outcome.interpretation_rejected_count
 
             for edge in outcome.edges:
                 if edge.target_key is not None and edge.target_key in allowed_targets:
@@ -715,6 +725,7 @@ class DependencyExtractor:
         return Extraction(
             edges=list(kept_by_id.values()),
             rejected=total_rejected,
+            interpretation_rejected=total_interp_rejected,
             quality=quality,
             cached=all_cached if any_processed else True,
             model=last_model,
@@ -849,7 +860,7 @@ class DependencyExtractor:
                 if not isinstance(raw_edges, list):
                     raw_edges = cached.get("edges")
                 if isinstance(raw_edges, list) and text:
-                    verified, rejected = verify_and_build_edges(
+                    quote_verified, rejected = verify_and_build_edges(
                         raw_edges,
                         source_company_key=company_key,
                         source_company_name=company_name,
@@ -860,13 +871,37 @@ class DependencyExtractor:
                         portfolio_company_keys=portfolio_keys,
                         resolve_target_key=resolver,
                     )
+                    interp_res = verify_company_interpretations(
+                        quote_verified,
+                        text,
+                        client=self.client,
+                        cache=self.cache,
+                        cache_only=cache_only,
+                        is_reverse=not source_in_portfolio,
+                    )
+                    verified = interp_res.edges
+                    interp_rejected = interp_res.interpretation_rejected
                 else:
-                    verified = [
+                    loaded_edges = [
                         VerifiedEdge.model_validate(edge_dict)
                         for edge_dict in cached.get("edges", [])
                         if isinstance(edge_dict, Mapping)
                     ]
                     rejected = int(cached.get("rejected_count", 0))
+                    if loaded_edges and all(e.interpretation is not None for e in loaded_edges):
+                        verified = loaded_edges
+                        interp_rejected = int(cached.get("interpretation_rejected_count", 0))
+                    else:
+                        interp_res = verify_company_interpretations(
+                            loaded_edges,
+                            text,
+                            client=self.client,
+                            cache=self.cache,
+                            cache_only=cache_only,
+                            is_reverse=not source_in_portfolio,
+                        )
+                        verified = interp_res.edges
+                        interp_rejected = interp_res.interpretation_rejected
                 return CompanyExtractionOutcome(
                     company_key=company_key,
                     company_name=company_name,
@@ -874,6 +909,7 @@ class DependencyExtractor:
                     edges=verified,
                     verified_count=len(verified),
                     rejected_count=rejected,
+                    interpretation_rejected_count=interp_rejected,
                     model=str(cached.get("model") or model_name),
                     from_cache=True,
                     filing=filing_ref,
@@ -947,7 +983,7 @@ class DependencyExtractor:
         if not isinstance(raw_edges_list, list):
             raw_edges_list = []
 
-        verified, rejected = verify_and_build_edges(
+        quote_verified, rejected = verify_and_build_edges(
             raw_edges_list,
             source_company_key=company_key,
             source_company_name=company_name,
@@ -958,6 +994,17 @@ class DependencyExtractor:
             portfolio_company_keys=portfolio_keys,
             resolve_target_key=resolver,
         )
+
+        interp_res = verify_company_interpretations(
+            quote_verified,
+            text,
+            client=self.client,
+            cache=self.cache,
+            cache_only=cache_only,
+            is_reverse=not source_in_portfolio,
+        )
+        verified = interp_res.edges
+        interp_rejected = interp_res.interpretation_rejected
 
         if self.cache is not None:
             self.cache.put(
@@ -978,6 +1025,7 @@ class DependencyExtractor:
                     "edges": [e.model_dump(mode="json") for e in verified],
                     "verified_count": len(verified),
                     "rejected_count": rejected,
+                    "interpretation_rejected_count": interp_rejected,
                 },
             )
 
@@ -988,6 +1036,7 @@ class DependencyExtractor:
             edges=verified,
             verified_count=len(verified),
             rejected_count=rejected,
+            interpretation_rejected_count=interp_rejected,
             model=used_model,
             from_cache=False,
             filing=filing_ref,

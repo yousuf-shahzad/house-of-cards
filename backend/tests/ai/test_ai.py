@@ -1,4 +1,4 @@
-"""Offline unit tests for package G-AI (`hoc.ai`: client, verifier, cache, extractor).
+"""Offline unit tests for package G-AI & V-INT (`hoc.ai`: client, verifier, interpretation, cache, extractor).
 
 All tests use synthetic `ZZ` fixtures and `FakeHttpClient` / `FakeGeminiClient` (no network).
 """
@@ -20,20 +20,30 @@ from hoc.ai import (
     DEFAULT_ORCHESTRATOR_MODEL,
     EXTRACTION_SCHEMA,
     GEMINI_INTERACTIONS_URL,
+    JUDGE_PROMPT_VERSION,
+    JUDGE_SCHEMA,
     MAX_PACKED_CHARS,
     MAX_REVERSE_HITS,
     PROMPT_VERSION,
     CompanyUnavailable,
     DependencyExtractor,
+    EdgeInterpretation,
     ExtractionCache,
     FakeGeminiClient,
     GeminiClient,
     GeminiMissingKeyError,
+    check_interpretation_rules,
+    decide_interpretation_from_judge,
     dedupe_edges,
+    extract_quote_context,
     is_generic_company_target,
+    make_edge_id,
     pack_filing_sections,
     resolve_quote_section,
+    should_sample_unflagged_edge,
     verify_and_build_edges,
+    verify_company_interpretations,
+    verify_edge_interpretation,
     verify_quote,
 )
 from hoc.config import Settings
@@ -79,6 +89,16 @@ def _make_filing(text: str = SYNTHETIC_FILING_TEXT) -> SyntheticFiling:
         url="https://www.sec.gov/Archives/edgar/data/9990001/000999000126000001/zzalpha-10k.htm",
         canonical_text=text,
         sections=sections,
+    )
+
+
+def _make_filing_ref(company_key: str = "CIK:0009990001", accession: str = "0009990001-26-000001") -> FilingRef:
+    return FilingRef(
+        company_key=company_key,
+        form="10-K",
+        accession=accession,
+        filed=date(2026, 10, 15),
+        url=f"https://www.sec.gov/Archives/edgar/data/{accession}.htm",
     )
 
 
@@ -225,13 +245,7 @@ def test_section_set_in_python_from_section_spans_never_model_free_text():
     # Outside all section spans -> must be 'document', even if model claimed 'concentration_11'
     assert resolve_quote_section(q_outside, text, sections) == "document"
 
-    filing_ref = FilingRef(
-        company_key="CIK:0009990001",
-        form="10-K",
-        accession="0009990001-26-000001",
-        filed=date(2026, 10, 15),
-        url="https://www.sec.gov/Archives/edgar/data/9990001/filing.htm",
-    )
+    filing_ref = _make_filing_ref()
     raw_edges = [
         {
             "edge_type": "foundry",
@@ -477,7 +491,13 @@ def test_extractor_verifies_valid_quotes_rejects_mutated_and_replays_cache(tmp_p
     assert len(result.edges) >= 3
     # FakeGeminiClient emits 2 mutated quotes by default; both must be rejected!
     assert result.rejected == 2
+    assert result.interpretation_rejected == 0
     assert all(isinstance(e, VerifiedEdge) for e in result.edges)
+    # V-INT sets edge.interpretation on every returned VerifiedEdge
+    assert all(
+        e.interpretation is not None and e.interpretation.status == "confirmed"
+        for e in result.edges
+    )
     # All sections come from Filing.sections keys ('1', '2'), never 'Item 1' or 'Item 2' from FakeGeminiClient
     assert {e.section for e in result.edges} <= {"1", "2"}
     tsmc_edges = [e for e in result.edges if e.target_key == "ALIAS:TSMC"]
@@ -496,8 +516,10 @@ def test_extractor_verifies_valid_quotes_rejects_mutated_and_replays_cache(tmp_p
     cached_result = keyless_extractor.extract(company, filing, cache_only=True)
     assert cached_result.cached is True
     assert cached_result.rejected == result.rejected
+    assert cached_result.interpretation_rejected == result.interpretation_rejected
     assert [e.edge_id for e in cached_result.edges] == [e.edge_id for e in result.edges]
     assert {e.section for e in cached_result.edges} <= {"1", "2"}
+    assert all(e.interpretation is not None for e in cached_result.edges)
 
 
 def test_extractor_raises_company_unavailable_when_uncached_and_keyless(tmp_path: Path):
@@ -599,11 +621,14 @@ def test_extract_reverse_filters_to_top_n_caps_at_10_and_dedupes_forward(tmp_pat
         portfolio_company_keys=top_n_keys,
     )
 
+    def _extraction_call_count() -> int:
+        return sum(1 for c in fake_ai.calls if "edges" in c["schema"].get("properties", {}))
+
     # 1) Forward pass on filer CIK:0009990001 (which is also in top-N)
     filer_1 = _make_filing()
     forward_res = extractor.extract(("CIK:0009990001", "ZZAlpha Corp"), filer_1)
-    calls_after_forward = len(fake_ai.calls)
-    assert calls_after_forward == 1
+    ext_calls_after_forward = _extraction_call_count()
+    assert ext_calls_after_forward == 1
 
     # 2) Build 12 reverse candidate filings (including filer_1 + 11 other filers).
     # extract_reverse must cap at MAX_REVERSE_HITS = 10.
@@ -626,16 +651,370 @@ def test_extract_reverse_filters_to_top_n_caps_at_10_and_dedupes_forward(tmp_pat
 
     reverse_res = extractor.extract_reverse(("ALIAS:TSMC", "TSMC"), reverse_filings)
     # Only 10 reverse filings processed; filer_1 hit the disk cache from the forward pass,
-    # so only 9 new LLM calls were made.
-    assert len(fake_ai.calls) - calls_after_forward == 9
+    # so only 9 new extraction LLM calls were made.
+    assert _extraction_call_count() - ext_calls_after_forward == 9
     assert len(reverse_res.edges) == 10
     # Every kept reverse edge must resolve deterministically to a top-N portfolio company ("ALIAS:TSMC"),
     # never to non-top-N "CIK:0009990002" or unresolved "SK Hynix" / geographic targets.
     assert all(e.target_key == "ALIAS:TSMC" for e in reverse_res.edges)
     assert all(e.target_in_portfolio is True for e in reverse_res.edges)
+    assert all(e.interpretation is not None for e in reverse_res.edges)
     # And the edge connecting CIK:0009990001 -> ALIAS:TSMC in forward_res and reverse_res shares edge_id,
     # so dedupe_edges removes the duplicate.
     combined = dedupe_edges(forward_res.edges, reverse_res.edges)
     edge_ids = [e.edge_id for e in combined]
     assert len(edge_ids) == len(set(edge_ids))
     assert len(combined) == len(forward_res.edges) + len(reverse_res.edges) - 1
+
+
+# ---------- 4. V-INT: Interpretation Verification (Rules + Independent Judge + Cache) ----------
+
+
+def _make_edge(
+    *,
+    quote: str,
+    target_name: str,
+    edge_type: str = "supplier",
+    target_kind: str = "company",
+    sole_source: bool = False,
+    source_company_key: str = "CIK:0009990001",
+    source_company_name: str = "ZZAlpha Corp",
+    source_in_portfolio: bool = True,
+) -> VerifiedEdge:
+    f_ref = _make_filing_ref(company_key=source_company_key)
+    eid = make_edge_id(f_ref.accession, quote, edge_type, target_name)
+    return VerifiedEdge(
+        edge_id=eid,
+        source_company_key=source_company_key,
+        source_company_name=source_company_name,
+        source_in_portfolio=source_in_portfolio,
+        edge_type=edge_type,  # type: ignore[arg-type]
+        target_name=target_name,
+        target_kind=target_kind,  # type: ignore[arg-type]
+        target_key=None,
+        target_in_portfolio=False,
+        sole_source=sole_source,
+        qualifier=None,
+        evidence_quote=quote,
+        section="1",
+        filing=f_ref,
+    )
+
+
+def test_v_int_rules_detect_all_six_flags_with_300_char_context():
+    doc = (
+        "Item 1. Business. ZZAlpha Corp designs data center accelerators.\n"
+        "Competition: Our primary competitors in data center processors include ZZCompete Corp and ZZRival Ltd.\n"
+        "Supply Chain: We rely on ZZFAB Corp as our sole wafer foundry for 3nm chips.\n"
+        "We do not rely on ZZNegated Vendor Inc. for any critical components in our current generation.\n"
+        "If we were to engage ZZHypo Foundry Corp in the future, we could potentially diversify wafer supply.\n"
+        "Customers: We sell processors directly to ZZCloud Customer Corp, which accounted for 16% of our revenue.\n"
+        "Suppliers: We purchase optical substrates from ZZOptics Supplier GmbH under a multi-year supply contract.\n"
+        "Geography: We distribute products across various countries in Europe and Asia.\n"
+        "Executive Officers: Prior to joining us in 2025, Mr. John Smith previously served as Senior Vice President "
+        "at ZZBio Former Corp from 2019 to 2024.\n"
+        "Industry Note: Third-party industry analysts report that ZZOther Corp purchases memory from ZZMystery Inc."
+    )
+
+    # 0) Clean factual dependency -> 0 flags
+    e_clean = _make_edge(
+        quote="We rely on ZZFAB Corp as our sole wafer foundry for 3nm chips.",
+        target_name="ZZFAB Corp",
+        edge_type="foundry",
+        sole_source=True,
+    )
+    flags_clean, reason_clean, ctx_clean = check_interpretation_rules(e_clean, doc)
+    assert flags_clean == []
+    assert reason_clean is None
+    assert "ZZFAB Corp" in ctx_clean
+
+    # 1) competitor_mention (detected even if the word 'competitors' is just before the quote in the ±300-char context!)
+    e_comp = _make_edge(
+        quote="in data center processors include ZZCompete Corp and ZZRival Ltd.",
+        target_name="ZZCompete Corp",
+        edge_type="supplier",
+    )
+    flags_comp, _, _ = check_interpretation_rules(e_comp, doc)
+    assert "competitor_mention" in flags_comp
+
+    # 2) negated
+    e_neg = _make_edge(
+        quote="We do not rely on ZZNegated Vendor Inc. for any critical components in our current generation.",
+        target_name="ZZNegated Vendor Inc.",
+        edge_type="supplier",
+    )
+    flags_neg, _, _ = check_interpretation_rules(e_neg, doc)
+    assert "negated" in flags_neg
+
+    # 3) hypothetical
+    e_hypo = _make_edge(
+        quote="If we were to engage ZZHypo Foundry Corp in the future, we could potentially diversify wafer supply.",
+        target_name="ZZHypo Foundry Corp",
+        edge_type="foundry",
+    )
+    flags_hypo, _, _ = check_interpretation_rules(e_hypo, doc)
+    assert "hypothetical" in flags_hypo
+
+    # 4a) direction_mismatch: "we sell to X" labelled as supplier
+    e_dir_sup = _make_edge(
+        quote="We sell processors directly to ZZCloud Customer Corp, which accounted for 16% of our revenue.",
+        target_name="ZZCloud Customer Corp",
+        edge_type="supplier",
+    )
+    flags_dir_sup, _, _ = check_interpretation_rules(e_dir_sup, doc)
+    assert "direction_mismatch" in flags_dir_sup
+
+    # 4b) direction_mismatch: "we purchase from X" labelled as customer
+    e_dir_cust = _make_edge(
+        quote="We purchase optical substrates from ZZOptics Supplier GmbH under a multi-year supply contract.",
+        target_name="ZZOptics Supplier GmbH",
+        edge_type="customer",
+    )
+    flags_dir_cust, _, _ = check_interpretation_rules(e_dir_cust, doc)
+    assert "direction_mismatch" in flags_dir_cust
+
+    # 5) generic_reference
+    e_gen = _make_edge(
+        quote="We distribute products across various countries in Europe and Asia.",
+        target_name="various countries",
+        edge_type="facility",
+        target_kind="country",
+    )
+    flags_gen, _, _ = check_interpretation_rules(e_gen, doc)
+    assert "generic_reference" in flags_gen
+
+    # 6a) subject_mismatch (biographical mention in near context)
+    e_bio = _make_edge(
+        quote="Mr. John Smith previously served as Senior Vice President at ZZBio Former Corp from 2019 to 2024.",
+        target_name="ZZBio Former Corp",
+        edge_type="supplier",
+    )
+    flags_bio, _, _ = check_interpretation_rules(e_bio, doc)
+    assert "subject_mismatch" in flags_bio
+
+    # 6b) subject_mismatch (reverse link where filer is not the subject in context)
+    tail_only_doc = "Third-party industry analysts report that ZZOther Corp purchases memory from ZZMystery Inc."
+    e_rev = _make_edge(
+        quote=tail_only_doc,
+        target_name="ZZMystery Inc.",
+        edge_type="supplier",
+        source_company_key="CIK:0008880008",
+        source_company_name="ZZUnmentioned Filer Corp",
+        source_in_portfolio=False,
+    )
+    flags_rev, _, _ = check_interpretation_rules(e_rev, tail_only_doc, is_reverse=True)
+    assert "subject_mismatch" in flags_rev
+
+
+def test_v_int_independent_judge_decisions_and_per_edge_cache(tmp_path: Path):
+    doc = (
+        "Item 1. Business. ZZAlpha Corp designs data center accelerators.\n"
+        "We rely on ZZFAB Corp as our sole wafer foundry for 3nm chips.\n"
+        "We compete with ZZCompete Corp in the server GPU market.\n"
+        "We do not rely on ZZNegated Vendor Inc. for any critical components.\n"
+        "We sell processors directly to ZZCloud Customer Corp, which accounted for 16% of our revenue.\n"
+        "Prior to joining us, Ms. Jane Doe previously served as an officer at ZZBio Former Corp.\n"
+        "If we were to engage ZZHypo Foundry Corp in the future, we could potentially diversify wafer supply.\n"
+    )
+    e_clean = _make_edge(
+        quote="We rely on ZZFAB Corp as our sole wafer foundry for 3nm chips.",
+        target_name="ZZFAB Corp",
+        edge_type="foundry",
+        sole_source=True,
+    )
+    e_comp = _make_edge(
+        quote="We compete with ZZCompete Corp in the server GPU market.",
+        target_name="ZZCompete Corp",
+        edge_type="supplier",
+    )
+    e_neg = _make_edge(
+        quote="We do not rely on ZZNegated Vendor Inc. for any critical components.",
+        target_name="ZZNegated Vendor Inc.",
+        edge_type="supplier",
+    )
+    e_dir = _make_edge(
+        quote="We sell processors directly to ZZCloud Customer Corp, which accounted for 16% of our revenue.",
+        target_name="ZZCloud Customer Corp",
+        edge_type="supplier",
+    )
+    e_bio = _make_edge(
+        quote="Prior to joining us, Ms. Jane Doe previously served as an officer at ZZBio Former Corp.",
+        target_name="ZZBio Former Corp",
+        edge_type="supplier",
+    )
+    e_hypo = _make_edge(
+        quote="If we were to engage ZZHypo Foundry Corp in the future, we could potentially diversify wafer supply.",
+        target_name="ZZHypo Foundry Corp",
+        edge_type="foundry",
+    )
+
+    cache = ExtractionCache(DiskCache(tmp_path))
+    fake_ai = FakeGeminiClient()
+
+    res = verify_company_interpretations(
+        [e_clean, e_comp, e_neg, e_dir, e_bio, e_hypo],
+        doc,
+        client=fake_ai,
+        cache=cache,
+        sample_rate=0.0,  # test flagged edges specifically first
+    )
+
+    # Exactly ONE Flash call made for the company batch with hoc-v3-judge-1
+    assert len(fake_ai.calls) == 1
+    judge_call = fake_ai.calls[0]
+    assert judge_call["schema"] == JUDGE_SCHEMA
+    assert JUDGE_PROMPT_VERSION in judge_call["prompt"]
+
+    # 4 rejected (competitor, negated, direction_mismatch, subject_mismatch)
+    assert res.interpretation_rejected == 4
+    assert {e.target_name for e in res.rejected_edges} == {
+        "ZZCompete Corp",
+        "ZZNegated Vendor Inc.",
+        "ZZCloud Customer Corp",
+        "ZZBio Former Corp",
+    }
+    assert all(
+        e.interpretation is not None and e.interpretation.status == "rejected"
+        for e in res.rejected_edges
+    )
+
+    # 2 kept: ZZFAB Corp (confirmed) + ZZHypo Foundry Corp (flagged with hypothetical + judge_unclear)
+    kept_by_target = {e.target_name: e for e in res.edges}
+    assert set(kept_by_target) == {"ZZFAB Corp", "ZZHypo Foundry Corp"}
+
+    clean_interp = kept_by_target["ZZFAB Corp"].interpretation
+    assert clean_interp is not None
+    assert clean_interp.status == "confirmed"
+    assert clean_interp.method == "rules"
+    assert clean_interp.flags == []
+
+    hypo_interp = kept_by_target["ZZHypo Foundry Corp"].interpretation
+    assert hypo_interp is not None
+    assert hypo_interp.status == "flagged"
+    assert hypo_interp.method == "rules+model"
+    assert "hypothetical" in hypo_interp.flags
+    assert "judge_unclear" in hypo_interp.flags
+    assert hypo_interp.model == DEFAULT_EXTRACTOR_MODEL
+
+    # Also verify that when the judge returns supports + clears a false-alarm flag, status becomes confirmed
+    cleared_interp = decide_interpretation_from_judge(
+        ["competitor_mention"],
+        "Competitor cue near target",
+        label="supports",
+        cleared_flags=["competitor_mention"],
+        judge_reason="Target is a confirmed supplier; 'compete' referred to end-market products.",
+        model=DEFAULT_EXTRACTOR_MODEL,
+    )
+    assert cleared_interp == EdgeInterpretation(
+        status="confirmed",
+        method="rules+model",
+        flags=[],
+        reason="Target is a confirmed supplier; 'compete' referred to end-market products.",
+        model=DEFAULT_EXTRACTOR_MODEL,
+    )
+
+    # Re-running with cache_only=True and a keyless client replays per-edge verdicts from ai/judge cache
+    keyless_ai = FakeGeminiClient(has_api_key=False)
+    cached_res = verify_company_interpretations(
+        [e_clean, e_comp, e_neg, e_dir, e_bio, e_hypo],
+        doc,
+        client=keyless_ai,
+        cache=cache,
+        cache_only=True,
+        sample_rate=0.0,
+    )
+    assert len(keyless_ai.calls) == 0
+    assert cached_res.interpretation_rejected == 4
+    assert [e.edge_id for e in cached_res.edges] == [e.edge_id for e in res.edges]
+    assert cached_res.interpretations[e_hypo.edge_id].status == "flagged"
+
+
+def test_v_int_deterministic_20_percent_unflagged_sampling():
+    sampled = [
+        should_sample_unflagged_edge(f"edge_{i:012x}", sample_rate=0.20)
+        for i in range(500)
+    ]
+    rate = sum(sampled) / len(sampled)
+    # Deterministic hash bucket (~20%)
+    assert 0.14 <= rate <= 0.26
+    # Deterministic across calls
+    assert sampled == [
+        should_sample_unflagged_edge(f"edge_{i:012x}", sample_rate=0.20)
+        for i in range(500)
+    ]
+
+
+def test_extractor_populates_interpretation_and_counts_interpretation_rejected(tmp_path: Path):
+    """End-to-end through DependencyExtractor.extract: quotes that are verbatim in the filing pass
+    verify_quote, and V-INT then rejects competitor/negated mis-extractions while flagging hypotheticals.
+    """
+    doc = (
+        "Item 1. Business. ZZAlpha Corp designs advanced processors. "
+        "We rely on ZZFAB Corp as our sole wafer foundry for all 3nm processor designs. "
+        "We compete intensely with ZZCompete Corp across all server processor segments. "
+        "If we were to engage ZZHypo Foundry Corp in the future, we could potentially add backup capacity."
+    )
+    filing = _make_filing(doc)
+    cache = ExtractionCache(DiskCache(tmp_path))
+    fake_ai = FakeGeminiClient(include_mutated_quotes=False)
+    fake_ai.add_response(
+        "FILING TEXT:",
+        {
+            "edges": [
+                {
+                    "edge_type": "foundry",
+                    "target_name": "ZZFAB Corp",
+                    "target_kind": "company",
+                    "sole_source": True,
+                    "qualifier": "sole wafer foundry",
+                    "section": "1",
+                    "evidence_quote": "We rely on ZZFAB Corp as our sole wafer foundry for all 3nm processor designs.",
+                },
+                {
+                    "edge_type": "supplier",
+                    "target_name": "ZZCompete Corp",
+                    "target_kind": "company",
+                    "sole_source": False,
+                    "qualifier": "",
+                    "section": "1",
+                    "evidence_quote": "We compete intensely with ZZCompete Corp across all server processor segments.",
+                },
+                {
+                    "edge_type": "foundry",
+                    "target_name": "ZZHypo Foundry Corp",
+                    "target_kind": "company",
+                    "sole_source": False,
+                    "qualifier": "",
+                    "section": "1",
+                    "evidence_quote": (
+                        "If we were to engage ZZHypo Foundry Corp in the future, "
+                        "we could potentially add backup capacity."
+                    ),
+                },
+            ]
+        },
+    )
+
+    extractor = DependencyExtractor(fake_ai, cache)
+    result = extractor.extract(("CIK:0009990001", "ZZAlpha Corp"), filing)
+
+    # All 3 quotes are verbatim in `doc`, so quote verifier rejected 0, and V-INT rejected 1 (ZZCompete Corp)
+    assert result.rejected == 0
+    assert result.interpretation_rejected == 1
+    by_target = {e.target_name: e for e in result.edges}
+    assert set(by_target) == {"ZZFAB Corp", "ZZHypo Foundry Corp"}
+    assert by_target["ZZFAB Corp"].interpretation is not None
+    assert by_target["ZZFAB Corp"].interpretation.status == "confirmed"
+    assert by_target["ZZHypo Foundry Corp"].interpretation is not None
+    assert by_target["ZZHypo Foundry Corp"].interpretation.status == "flagged"
+
+    # Also test single-edge helper verify_edge_interpretation + extract_quote_context
+    single_interp = verify_edge_interpretation(
+        by_target["ZZFAB Corp"].model_copy(update={"interpretation": None}),
+        doc,
+        client=fake_ai,
+        cache=cache,
+    )
+    assert single_interp.status == "confirmed"
+    ctx, (q_s, q_e) = extract_quote_context(by_target["ZZFAB Corp"].evidence_quote, doc)
+    assert ctx[q_s:q_e] == by_target["ZZFAB Corp"].evidence_quote
