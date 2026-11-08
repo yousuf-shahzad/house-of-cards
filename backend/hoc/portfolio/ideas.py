@@ -1,4 +1,4 @@
-"""FIX-17: test a bounded ETF shortlist using one verified cache snapshot, with no AI.
+"""FIX-17: verify AI ETF changes and rank rules using a verified cache snapshot.
 
 ETF loading belongs to the service. These functions only use supplied holdings/analyses
 and compare_portfolios; unavailable dependency metrics retain compare's null semantics.
@@ -67,7 +67,29 @@ REJECTION_REASONS = {
     "sector_coverage_decreased": "New missing industry labels cannot count as a diversification gain.",
     "addressed_dependency_unknown": "The addressed dependency cannot be measured on both sides.",
     "no_measurable_gain": "The change does not measurably improve the issue it names.",
+    "already_held_ticker": "The proposed ETF is already in your portfolio.",
+    "unknown_issue_id": "The proposal names an unknown portfolio issue.",
+    "unknown_metric_id": "The rationale includes an unknown metric placeholder.",
+    "unverified_literal_number": "The rationale includes a number that Python did not supply.",
+    "forbidden_jargon_or_trade_verb": "The rationale uses unsupported jargon or a trading instruction.",
+    "rationale_too_long": "The rationale is too long.",
+    "empty_rationale": "The rationale is empty.",
+    "unexpanded_placeholder": "The rationale includes an invalid metric placeholder.",
 }
+
+
+def _explain_rejection(reason: str) -> str:
+    code, _, detail = reason.partition(":")
+    if code == "unknown_entity":
+        return f"The text names an unsupported company or name: {detail}."
+    if code in ("unknown_ticker_in_rationale", "unknown_ticker_in_title"):
+        return f"The text names an unsupported ticker: {detail}."
+    if code == "unsupported_fraction":
+        return REJECTION_REASONS["invalid_fraction"]
+    if code in ("unknown_swap_source", "swap_fraction_exceeds_holding"):
+        return REJECTION_REASONS["invalid_swap_source" if code == "unknown_swap_source"
+                                 else "insufficient_swap_allocation"]
+    return REJECTION_REASONS.get(code, reason)
 
 
 @dataclass(frozen=True)
@@ -144,6 +166,8 @@ def build_proposal_scenarios(
         reason = None
         if proposal.ticker not in allowed:
             reason = "outside_universe"
+        elif proposal.ticker in current:
+            reason = "already_held_ticker"
         elif proposal.action not in ("add", "swap"):
             reason = "invalid_action"
         elif proposal.fraction not in (0.1, 0.2, 0.3):
@@ -174,7 +198,7 @@ def build_proposal_scenarios(
                 reason = "too_many_etfs"
         if reason is not None:
             rejected.append(RejectedIdeaProposal(ticker=proposal.ticker, action=proposal.action,
-                                                 reason=REJECTION_REASONS.get(reason, reason)))
+                                                 reason=_explain_rejection(reason)))
             continue
         items = [PortfolioItem(ticker=t, allocation=a) for t, a in sorted(weights.items())]
         scenario = analyse(PortfolioRequest(holdings=items), loaded, {}, today=baseline.generated_at.date(),
@@ -232,7 +256,7 @@ def rank_change_ideas(
         def reject(reason, proposal=proposal, scenario=scenario):
             if proposal is not None:
                 rejected.append(RejectedIdeaProposal(ticker=scenario.ticker, action=proposal.action,
-                                                     reason=REJECTION_REASONS.get(reason, reason)))
+                                                     reason=_explain_rejection(reason)))
 
         result = compare_portfolios(
             CompareRequest(baseline=request.holdings, candidate=scenario.analysis.request.holdings,
@@ -279,7 +303,7 @@ def rank_change_ideas(
                 allowed_tickers=allowed_tickers, allowed_entities=allowed_entities,
             )
             if error is not None or not rationale:
-                reject(f"Rationale failed verification: {error or 'empty text'}.")
+                reject(_explain_rejection(error or "empty_rationale"))
                 continue
             if (not proposal.title.strip() or len(proposal.title.split()) > 8
                     or any(c.isdigit() for c in proposal.title)):
@@ -291,7 +315,7 @@ def rank_change_ideas(
                 allowed_tickers=allowed_tickers, allowed_entities=allowed_entities,
             )
             if error is not None:
-                reject(f"Title failed verification: {error}.")
+                reject(_explain_rejection(error))
                 continue
             if not _sector_data_preserved(baseline, scenario.analysis):
                 reject("sector_coverage_decreased")
@@ -381,9 +405,12 @@ def rank_change_ideas(
         alternative = next((r[2] for r in results if r[2].ticker in broad), None)
         if alternative is not None:
             selected[-1] = alternative
-    messages = [("Tests a fixed ETF shortlist at ten and twenty percent using cached dependencies only; "
-                 "unknown dependencies are not zero. Whole-share rounding can change these results."), *notes]
-    if len(request.holdings) >= MAX_ETFS:
+    has_ai = any(s.proposal is not None for s in scenarios)
+    method = ("Verifies AI ETF proposals" if has_ai
+              else "Tests a fixed ETF shortlist at ten and twenty percent")
+    messages = [(f"{method} using cached dependencies only; unknown dependencies are not zero. "
+                 "Whole-share rounding can change these results."), *notes]
+    if len(request.holdings) >= MAX_ETFS and not has_ai:
         messages.append(f"The portfolio already has the maximum of {MAX_ETFS} ETFs; no ETF can be added.")
     if baseline.coverage.missing_allocation > 0:
         messages.append("Some current ETF holdings are unavailable; ideas cannot be compared reliably.")
@@ -409,6 +436,8 @@ def verify_change_ideas(
     response.ai_status = proposer_result.ai_status
     response.model = proposer_result.model
     response.prompt_version = proposer_result.prompt_version
-    response.rejected_proposals = [RejectedIdeaProposal.model_validate(r) for r in proposer_result.rejected_proposals]
+    response.rejected_proposals = [RejectedIdeaProposal(ticker=r["ticker"], action=r["action"],
+                                                       reason=_explain_rejection(r["reason"]))
+                                   for r in proposer_result.rejected_proposals]
     response.rejected_proposals.extend([*rejected, *verified.rejected_proposals])
     return response

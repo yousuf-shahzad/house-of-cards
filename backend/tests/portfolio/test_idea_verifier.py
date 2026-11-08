@@ -59,7 +59,7 @@ def test_ai_add_and_swap_use_exact_allocations_and_python_rendered_rationale():
 
 
 @pytest.mark.parametrize('updates', [
-    {'ticker': 'ZZOUTSIDE'}, {'fraction': .15}, {'fraction': float('nan')}, {'action': 'invented'},
+    {'ticker': 'ZZOUTSIDE'}, {'ticker': 'ZZBASE'}, {'fraction': .15}, {'fraction': float('nan')}, {'action': 'invented'},
     {'action': 'swap', 'swap_from': 'ZZNOTHELD'}, {'action': 'swap', 'swap_from': 'ZZADD'},
     {'swap_from': 'ZZBASE'}, {'issue_id': 'invented'}, {'metric_id': 'dep.invented'},
     {'rationale_template': 'This falls to 5%.'}, {'rationale_template': 'Use {{metric:invented}}.'},

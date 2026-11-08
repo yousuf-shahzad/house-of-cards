@@ -262,8 +262,6 @@ class EtfService:
         # Issue facts include values: a refreshed extraction snapshot cannot share stale work.
         key = (holdings_key, tuple((i.issue_id, i.metric_id, i.value) for i in issues),
                self.settings.gemini_orchestrator_model, proposer.prompt_version)
-        rules.model = self.settings.gemini_orchestrator_model
-        rules.prompt_version = proposer.prompt_version
         with self._locks_guard:
             now = _clock()
             self._idea_ai_jobs = {k: v for k, v in self._idea_ai_jobs.items()
@@ -277,6 +275,8 @@ class EtfService:
             if cached_result is None and (not self.settings.gemini_api_key or self.settings.offline):
                 rules.ai_status = "missing_api_key" if not self.settings.gemini_api_key else "not_used"
                 return rules
+            rules.model = self.settings.gemini_orchestrator_model
+            rules.prompt_version = proposer.prompt_version
             with self._locks_guard:
                 entry = self._idea_ai_jobs.get(key)
                 if entry is None:
@@ -288,6 +288,8 @@ class EtfService:
                                                    context, rules.model_copy(deep=True), issues, cached_result)
                     entry = (now, job)
                     self._idea_ai_jobs[key] = entry
+        rules.model = self.settings.gemini_orchestrator_model
+        rules.prompt_version = proposer.prompt_version
         future = entry[1]
         if not future.done():
             rules.ai_status = "pending"
@@ -297,7 +299,7 @@ class EtfService:
         except Exception:
             # Keep the completed failed entry for the memo interval; polling cannot
             # trigger a retry storm. No raw provider exception/key goes into the API.
-            log.warning("AI change idea verification failed")
+            log.warning("AI change idea verification failed", exc_info=True)
             rules.ai_status = "failed"
             return rules
 

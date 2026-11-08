@@ -238,6 +238,7 @@ def test_missing_key_returns_rules_without_starting_model_work(ideas_service):
     service, _, _ = ideas_service
     result = service.change_ideas(ChangeIdeasRequest(holdings=BASELINE))
     assert result.ai_status == 'missing_api_key' and result.ideas
+    assert result.model is None and result.prompt_version is None
     assert service._idea_ai_jobs == {}
 
 
