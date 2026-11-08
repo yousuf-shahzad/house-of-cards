@@ -251,17 +251,6 @@ export const PAGE_INFO_COPY: Readonly<Record<string, TabInfoGuide>> = {
       "Click any cell: Inspect the shared companies driving the overlap between that pair of ETFs.",
     ],
   },
-  network: {
-    title: "About the Network tab",
-    whatsHere:
-      "A visual flow map connecting your portfolio to each ETF and from each ETF into your largest underlying company holdings.",
-    whyItMatters:
-      "Makes it easy to spot when multiple ETFs funnel your money into the same mega-cap companies at the center of the network.",
-    keyDetails: [
-      "Line thickness: Proportional to how much of your total portfolio flows through that ETF-to-company link.",
-      "Interactive filtering: Click an ETF or company node to highlight its specific connections.",
-    ],
-  },
   dependencies: {
     title: "About the Dependencies tab · What's here & why",
     whatsHere:

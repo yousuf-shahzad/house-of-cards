@@ -44,7 +44,6 @@ This is a proof of concept, not investment advice, and it does not trade or simu
   (GOOG + GOOGL = Alphabet), and a searchable, filterable holdings table.
 - **ETF overlap**: a heatmap of weighted overlap between every pair of ETFs (the sum of the smaller weight of
   each shared company), plus the shared companies behind each pair.
-- **Network**: each ETF linked to the largest companies it gives you.
 - **Risk & data**: top-5 and top-10 concentration, the effective number of companies, sector allocation,
   how much of the portfolio the data covers, each fund's source and disclosure date, and any data gaps.
 - **Dependencies** (v2/v3): **Find dependencies** takes your 15 largest company exposures, fetches each one's

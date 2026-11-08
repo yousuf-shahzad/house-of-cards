@@ -24,14 +24,14 @@ function Card({ title, children }: { title: string; children: ReactNode }) {
   </section>;
 }
 
-function Companies({ analysis, network = false }: { analysis: AnalysisResponse; network?: boolean }) {
+function Companies({ analysis }: { analysis: AnalysisResponse }) {
   const [expanded, setExpanded] = useState(false);
   const companies = expanded ? analysis.exposures : analysis.exposures.slice(0, 5);
-  return <Card title={network ? "Your ETFs → your companies" : "Your biggest companies"}>
-    {network && <MoneyFlow analysis={analysis} />}
+  return <Card title="Your biggest companies">
+    <MoneyFlow analysis={analysis} />
     {companies.length === 0 && <p>No company holdings were available for this portfolio.</p>}
     <ol className="flex flex-col gap-3">
-      {companies.map((company) => <CompanyRow key={company.company_key} company={company} network={network} />)}
+      {companies.map((company) => <CompanyRow key={company.company_key} company={company} />)}
     </ol>
     {analysis.exposures.length > 5 && <Button variant="ghost" size="small" className="self-start" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? "Show five" : `Show all ${analysis.exposures.length} loaded companies`}</Button>}
     <p className="text-caption-1-regular text-text-secondary">Percentages are shares of your whole portfolio, using the holdings we could load.</p>
@@ -53,7 +53,7 @@ function MoneyFlow({ analysis }: { analysis: AnalysisResponse }) {
   </figure>;
 }
 
-function CompanyRow({ company, network }: { company: CompanyExposure; network: boolean }) {
+function CompanyRow({ company }: { company: CompanyExposure }) {
   return <li className="rounded-2xl border border-separator-border bg-background-secondary-default p-4">
     <div className="flex flex-wrap items-baseline justify-between gap-2 text-body-medium text-text-primary">
       <span>{company.company_name}</span><Pct value={company.exposure} digits={2} />
@@ -63,7 +63,7 @@ function CompanyRow({ company, network }: { company: CompanyExposure; network: b
     </div>
     <p className="mt-2 text-body-2-regular text-text-secondary">Held through {company.contributions.map((c) => c.etf_ticker).join(", ")}.</p>
     <details className="mt-2 text-body-2-regular text-text-secondary">
-      <summary className="cursor-pointer text-text-primary">{network ? "Follow the money" : "Where this comes from"}</summary>
+      <summary className="cursor-pointer text-text-primary">Where this comes from</summary>
       <ul className="mt-3 flex flex-col gap-2">
         {company.contributions.map((c) => <li key={c.etf_ticker} className="flex flex-wrap items-center justify-between gap-2">
           <span>{c.etf_ticker} → {company.company_name}</span>
@@ -138,11 +138,11 @@ export default function SimplePage({ pageKey }: { pageKey: PageKey }) {
     {(analysis.coverage.covered_weight < analysis.coverage.total_allocation - 0.000001 || analysis.warnings.length > 0) && <div role="status" className="rounded-2xl border border-separator-border p-4 text-body-2-regular text-text-secondary">
       Some holdings or company details are missing. These results cover the data we could load. <a href="#/risk" className="underline">Check data coverage</a>.
     </div>}
-    {(pageKey === "exposures" || pageKey === "network") && <Companies analysis={analysis} network={pageKey === "network"} />}
+    {pageKey === "exposures" && <Companies analysis={analysis} />}
     {pageKey === "overlap" && <Overlap analysis={analysis} />}
     {pageKey === "risk" && <Risk analysis={analysis} />}
     {pageKey === "dependencies" && <SimpleDependencies />}
     {pageKey === "compare" && <TryAChange editorTitle="Your changed portfolio" />}
-    <div><Button variant="secondary" size="small" onClick={() => openExpertPage(`#/${pageKey}`)}>{pageKey === "dependencies" ? "See every link and its evidence" : pageKey === "network" ? "Open the full network graph" : "See this page in Full view"}</Button></div>
+    <div><Button variant="secondary" size="small" onClick={() => openExpertPage(`#/${pageKey}`)}>{pageKey === "dependencies" ? "See every link and its evidence" : "See this page in Full view"}</Button></div>
   </div>;
 }

@@ -16,11 +16,6 @@ export const SIMPLE_COPY: Partial<Record<PageKey, { title: string; description: 
     description: "See which pairs hold the most of the same companies.",
     tip: "Higher overlap means two funds are more alike. It does not measure your chance of losing money.",
   },
-  network: {
-    title: "Follow your money",
-    description: "See which ETFs lead to your biggest companies.",
-    tip: "Each company's total is made up of the slices held through your ETFs. Open a row to follow those slices.",
-  },
   dependencies: {
     title: "What your companies rely on",
     description: "A short check of suppliers, customers and countries in company reports.",

@@ -49,13 +49,22 @@ export function Workspace() {
   const synthetic = MOCK_MODE || analysis?.etfs.some((etf) => etf.source === "fake") === true;
 
   useEffect(() => {
-    const onHash = () => {
+    const syncHash = () => {
+      const rawKey = location.hash.replace(/^#\/?/, "").split(/[/?]/)[0];
+      if (rawKey === "network") {
+        window.location.hash = "#/exposures";
+        setHash("#/exposures");
+        setMobile(false);
+        window.scrollTo({ top: 0 });
+        return;
+      }
       setHash(location.hash);
       setMobile(false);
       window.scrollTo({ top: 0 });
     };
-    window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
+    syncHash();
+    window.addEventListener("hashchange", syncHash);
+    return () => window.removeEventListener("hashchange", syncHash);
   }, []);
   useEffect(() => { document.title = page.label + " | " + APP_NAME; }, [page]);
 
