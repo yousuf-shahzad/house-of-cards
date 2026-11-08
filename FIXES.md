@@ -12,7 +12,7 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
   - Put the ID in your branch and PR title, e.g. `28-fix-3-plain-cards` and "FIX-3: …".
   - Post on the board when you start and when you merge, as usual.
   - Don't edit this file: tell the lead on the board, and the lead updates it.
-  - Exception: the bug hunter (FIX-37), QA (FIX-9) and the new-user review (FIX-39) may add one line per finding under **New**, straight to `main` (pull first, touch only New). The lead triages it into Open.
+  - Exception: the bug hunters (FIX-37, FIX-62), QA (FIX-9) and the new-user review (FIX-39) may add one line per finding under **New**, straight to `main` (pull first, touch only New). The lead triages it into Open.
 
 ## Temporary handoffs
 
@@ -33,16 +33,18 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
-### FIX-59 · high · BUG: guide Step 1 "Next" stays enabled while stale, and steps 4–5 have no stale/error state (bug hunt batch 3)
-- `guide/index.tsx` `canProceedFromStep1` checks `status === "ready" && analysis` without `!stale`, so you can move on with an invalid draft.
-- Steps 4–5 (`step-4-risks.tsx` ~319, `step-5-next.tsx` ~14) don't use the FIX-47 `useGuideAnalysisGate`. With an invalid or stale draft plus an older analysis, Step 4 shows an endless "Reading company reports" bar and Step 5 says "Still checking" forever.
-- Fix: add `!stale` to Step 1's condition, and apply the gate in steps 4–5.
-- **Owner:** Gawyn's Claude (lead), after #248 merges (same files) · **Status:** assigned
+### FIX-62 · medium · Second check of the guide + second bug hunter on Simple view (Gawyn, 10:40)
+Kendrick's Claude is free again. In order:
+1. **Post-merge review of #251 (FIX-59).** Read the diff. In the guide, check steps 2–5 in each state: loading, backend down (error), edited-but-invalid (changed), empty, and editing the portfolio while Step 4's progress bar runs, then restoring it. Step 4 must restart for the new portfolio and never show the old one's results.
+2. **Browser-check FIX-40 on `main`.** The "Learn more in the full …" links in guide steps 1–3 must open Full view.
+3. **Second bug hunter, Simple view only:** Simple Portfolio, Exposures, Dependencies, Try a change, and the guide. Kendrick's Gemini (FIX-37) keeps the whole app. Sign every line `[Kendrick's Claude]` and check New/Open first to avoid duplicates.
+- Report results on the board. Add findings under **New** (FIX-37 rules). Don't edit other owners' files; fixes go to their owners via the lead.
+- **Owner:** Kendrick's Claude · **Status:** assigned
 
 ### FIX-60 · high · BUG: Full Compare ignores error/stale and sends failing requests (bug hunt batch 3)
 `CurrentSummary` (`compare/index.tsx` ~12, 36) checks only `!validation.valid`, and `TryAChange` / `useChangeIdeas` (`try-a-change.tsx` ~289, 523) ignore `useAnalysis().status === "error"` and `stale`. With ZZZZ 100% in % mode, Current shows as valid and `/api/change-ideas` and `/api/compare` keep firing with ZZZZ in the baseline, even after it's removed from "Your new mix".
 - Fix: treat error or stale as "not comparable yet", show the state, and don't send requests until the current portfolio is valid and analysed.
-- **Owner:** Yousuf's Codex (`pages/compare/`, `app/ui/try-a-change.tsx`) · **Status:** assigned
+- **Owner:** Yousuf's Codex (`pages/compare/`, `app/ui/try-a-change.tsx`, plus a narrow `app/scenario.tsx` handoff: a ready/current-analysis guard, and aborting an in-flight compare on invalidation) · **Status:** in progress (issue #249)
 
 ### FIX-61 · low · Wording: "counterparty" still shows on Dependencies (from the lead's #248 review)
 It appears in the coverage note ("Filing leaves specific counterparty identities undisclosed") and in one-liners like "Checked: Broadcom counterparty TSMC — updated".
@@ -53,56 +55,10 @@ It appears in the coverage note ("Filing leaves specific counterparty identities
 Default ETF portfolios plus 10 frozen, unseen non-tech combinations, compared with independent by-hand calculations, TickerInside overlap/correlation and issuer files where the dates align. Shared-source parity (TickerInside is also an upstream source) is reported separately from independent accuracy. No tuning on the holdout. Reuse `scripts/crosscheck_tickerinside.py` where useful.
 - **Owner:** Yousuf's Codex (foreground, Yousuf's direct task) · **Status:** in progress
 
-### FIX-57 · low · BUG: unknown API routes and wrong methods return FastAPI's default error shape (Bekarys's Claude, API hunt)
-`GET /api/nope` returns 404 `{"detail":"Not Found"}`, and `GET /api/analysis` returns 405 `{"detail":"Method Not Allowed"}`. CONTRACT.md says errors are always `{"error": {code, message, details}}`.
-- Fix: add a `StarletteHTTPException` handler in `hoc/api/app.py` that maps to the error envelope with new codes `NOT_FOUND` and `METHOD_NOT_ALLOWED`. Those are lead-approved additive contract changes: `hoc/contract` errors, the `types.ts` mirror, the snapshot (additions only) and the CONTRACT.md error table.
-- Update `app/ui/try-a-change.tsx`'s old-backend check (it relies on `status 404 && code "HTTP_ERROR"`) to the new code. That's a one-line handoff; Codex reviews.
-- The rest of the hunt (32 input cases plus job, research and change-ideas states) came back clean.
-- **Owner:** Bekarys's Claude · **Status:** assigned
-
-### FIX-55 · high · BUG: Full Dependencies ignores stale/error state and drops the top 30 back to 15 (bug hunt batch 2)
-- **Stale/error blind spot:** once an analysis exists, the page hides `analysisStatus === "error"` and shows no stale warning when `result === null`. Find dependencies, Re-evaluate and Go deeper stay enabled when `draft.inputs` is null, so clicking them silently does nothing. Fix: show the state and disable the buttons with a reason.
-- **Top 30 drops to 15:** Run again, Re-evaluate and Try again hard-code `runDependencies(DEFAULT_TOP_N)` (lines ~1821, 1854, 1918), so a top-30 scan drops back to 15. Fix: use the current `effectiveTopN`.
-- **Owner:** Yousuf's Gemini (`pages/dependencies/`), together with FIX-52/FIX-48 · **Status:** assigned
-
-### FIX-52 · high · Reorder the Dependencies page: the important actions and AI synthesis first (Gawyn, 09:57)
-Today the order is: header (Find dependencies, Go deeper) → progress → coverage panel (holding "Scan top 30") → audit bar → AI synthesis → research panel (holding "Investigate gaps") → key numbers → graph → countries.
-
-**New order:**
-1. **Action row at the top** with "Find dependencies"/"Run again", "Go deeper", **"Scan top 30"** (shown when part of the portfolio is outside the top N) and **"Investigate gaps"**. Move the buttons, don't copy them, so there are no duplicates.
-2. **AI synthesis** (the plain cards).
-3. **Investigate uncertain findings** (the research results).
-4. **Key numbers.**
-5. **What we know about your portfolio** (coverage). Point to the action row instead of holding its own Scan button.
-6. **Verification & filing coverage audit.**
-7. **Graph**, then **countries**.
-
-- Keep the FIX-23 collapsing, the FIX-27 graph expansion and the evidence drawer working. Apply the same order to Simple Dependencies where it applies (Codex reviews that part).
-- **Owner:** Yousuf's Gemini (`pages/dependencies/`), right after FIX-40 · **Status:** assigned
-
-### FIX-48 · medium · BUG: Dependencies page interaction and progress (bug hunt)
-- **Selection gets stuck on an old node.** `selectEdge()` doesn't clear `selectedNodeId`, so after clicking a node, clicking an edge or citation opens the edge's drawer while the highlight and inline inspector stay on the old node. Hovering nodes also swaps the 6 inline evidence cards on every mouse move, shifting the layout. Fix: clear the node on edge select, and change the inline cards only on click.
-- **Restarting a scan shows 100% first.** "Go deeper" or "Run again" briefly shows 100% with all phases green, then jumps back. Fix: reset the job progress on start (`dependencies-state.tsx`).
-- **Owner:**
-  - Bekarys's Claude: the `dependencies-state.tsx` parts, **done in #246**. Lead, live: clicking the OpenAI node, then an Apple edge, clears the node highlight, shows "Selected Edge Evidence" and opens the edge's drawer.
-  - Yousuf's Gemini: the page-side hover fix, in its FIX-52 reorder PR.
-- **Status:** assigned
-
 ### FIX-40 · high · BUG: guide steps 1–3 "Learn more in the full …" links land on the Simple page
 Found by Bekarys's Gemini (QA). Since #221, these links only change the hash, so they open the Simple version instead of Full view. Repro: `#/guide`, Step 1, "Learn more in the full Portfolio builder".
 - Fix: use `openExpertPage(...)` in `guide/copy.ts:95`, `steps/pick.tsx:195`, `steps/own.tsx:127` and `steps/spread.tsx:151`.
-- **Owner:** Yousuf's Gemini (guide) · **Status:** PR #234 open
-
-### FIX-42 · medium · UX: plain words in the info text and on the Dependencies page (from FIX-39)
-- **Info banners (`guide/copy.ts`):** SEC N-PORT → "official fund reports"; 10-K/20-F → "company annual reports"; look-through → "the companies inside your ETFs"; ISIN/CIK merging → "merges share classes like GOOG and GOOGL"; HHI/1-HHI → "concentration score"; GICS → "industry breakdown".
-- **Dependencies (Full view):**
-  - "edges" → "links"; "counterparties" → "suppliers & partners"; "SEC 10-K / 20-F" → "annual reports".
-  - Remove internal codes from the visible UI: V-INT, R-IMP, model and version chips. They can stay in a details tooltip.
-  - Show "Item 1A", not "1A".
-  - "Why this tier:" → "Why this matters:".
-  - Drop the two-letter country chips next to country names.
-- **Mobile 390px:** collapse the three rows of graph filter pills into one compact selector.
-- **Owner:** Yousuf's Gemini (`guide/copy.ts`, `pages/dependencies/`) · **Status:** after FIX-40
+- **Owner:** Yousuf's Gemini (guide) · **Status:** #234 merged; browser check on `main` by Kendrick's Claude (FIX-62)
 
 ### FIX-37 · high · Bug hunt across the whole app; report bugs in FIXES.md (Gawyn, 09:23)
 Find real bugs on current `main`, in both views and on every page:
@@ -122,6 +78,15 @@ For each **confirmed** bug, add one line under **New** in FIXES.md: `BUG: <what 
 
 ## Done (checked on `main` by the lead)
 
+- FIX-59 guide: Step 1 Next needs a current analysis, with a "Finish or fix your ETFs" hint. Steps 4–5 show the analysis gate instead of an endless bar or "Still checking". "Back to Step 1" really goes to Step 1 (lead, browser: ZZZZ in place of EEM, then restored) — #251
+- FIX-57 unknown `/api` routes return 404 `NOT_FOUND` and wrong methods return 405 `METHOD_NOT_ALLOWED`, both in the error envelope, with `Allow` kept (lead, curl on `main` after a restart) — #247
+- FIX-52 / FIX-55 / FIX-48 (hover) / FIX-42 Dependencies:
+  - Scan top 30, gaps and AI synthesis come first; Scan top 30 and Run again keep 30.
+  - Stale/invalid drafts show a notice and disable the actions.
+  - Hover no longer swaps the evidence cards.
+  - Plain words throughout ("counterparty" left as FIX-61).
+  - Checked by the lead (browser, pre-merge), QA and Codex — #248
+- FIX-48 `dependencies-state.tsx` parts (selection reset, progress reset on restart) — #246
 - FIX-45 on mobile, tapping the page you're already on closes the navigation drawer (lead, 375px) — #245
 - FIX-56 Simple Try a change has no Shares/% switch and no pins; unknown tickers are flagged in the scenario (lead, browser) — #244
 - FIX-54 Full-view stale/error states. Exposures (#241) and Risk (#242) show "last valid analysis" with Edit portfolio and no endless spinner (lead, browser). The Portfolio link is hidden while stale (#240).
