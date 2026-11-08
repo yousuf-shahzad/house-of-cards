@@ -2,8 +2,9 @@
 tests/snapshots/openapi.json). Owner after W0-B: package f (Bekarys's Claude).
 
 Run: uv run uvicorn hoc.api.app:app --reload --host 127.0.0.1 --port 8000
-The served app warms up in a background thread at startup (example ETFs, reference files, sector data),
-so the first analysis is fast; startup itself never waits for it. Progress goes to the log.
+The served app warms up in a background thread at startup (example ETFs, reference files, sector data,
+then a cache-only replay of their dependency results), so the first analysis is fast; startup itself never
+waits for it and never spends Gemini credit. Progress goes to the log.
 """
 
 from __future__ import annotations
@@ -15,7 +16,7 @@ from collections.abc import Callable
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, FastAPI, Path, Query, Request
+from fastapi import APIRouter, Depends, FastAPI, Path, Query, Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,16 +26,20 @@ from hoc import __version__
 from hoc.config import Settings
 from hoc.contract import (
     AnalysisResponse,
+    DependencyJob,
+    DependencyRequest,
     ErrorBody,
     ErrorResponse,
     EtfSummary,
     ExamplesResponse,
     HealthResponse,
     HocError,
+    PortfolioItem,
     PortfolioRequest,
     SourceName,
 )
 from hoc.contract.api import TICKER_PATTERN
+from hoc.jobs import NotWiredPipeline
 from hoc.service import EtfService
 
 ERRORS = {
@@ -43,6 +48,7 @@ ERRORS = {
                                                  "TOO_MANY_ETFS, UNKNOWN_TICKER"},
     503: {"model": ErrorResponse, "description": "SOURCES_UNAVAILABLE"},
 }
+WARM_DEPENDENCIES_WAIT_SECONDS = 300.0
 
 router = APIRouter(prefix="/api")
 log = logging.getLogger("hoc.warmup")
@@ -65,14 +71,32 @@ def warm_up(state) -> None:
     started = time.monotonic()
     log.info("loading example ETFs, reference files and sector data")
     try:
-        for example in _service(state).examples().examples:
+        service = _service(state)
+        examples = service.examples().examples
+        for example in examples:
             missing = [e.ticker for e in example.holdings if not e.verified]
             log.info("example %s: %s", example.id,
                      "ready" if not missing else f"NOT verified, missing {', '.join(missing)}")
+        _replay_dependencies(service, [e for e in examples if e.verified])
     except Exception:
         log.exception("warm-up failed; the first request will load the data instead")
         return
     log.info("done in %.1f s", time.monotonic() - started)
+
+
+def _replay_dependencies(service: EtfService, examples) -> None:
+    """Cache-only: serves stored extractions and insights, never calls Gemini and never needs a key."""
+    if isinstance(service.dependency_pipeline, NotWiredPipeline):
+        log.info("dependency analysis not wired in yet; skipping its replay")
+        return
+    top_n = getattr(service.settings, "deps_top_n", 15)
+    for example in examples:
+        request = DependencyRequest(top_n=top_n, holdings=[
+            PortfolioItem(ticker=e.ticker, allocation=e.allocation) for e in example.holdings])
+        job = service.submit_dependencies(request, cache_only=True, wait=WARM_DEPENDENCIES_WAIT_SECONDS)
+        cached = sum(c.status in ("cached", "done") for c in job.companies)
+        log.info("dependencies %s: %d/%d companies from cache (%s)", example.id, cached, len(job.companies),
+                 job.status)
 
 
 def _start_warm_up(state) -> threading.Thread:
@@ -113,6 +137,22 @@ def analysis(service: Service, request: PortfolioRequest) -> AnalysisResponse:
 @router.get("/examples", response_model=ExamplesResponse)
 def examples(service: Service) -> ExamplesResponse:
     return service.examples()
+
+
+@router.post("/dependencies", response_model=DependencyJob, responses={
+    202: {"model": DependencyJob, "description": "Queued or running: poll GET /api/dependencies/{job_id}"},
+    **{k: ERRORS[k] for k in (422, 503)}})
+def start_dependencies(service: Service, request: DependencyRequest, response: Response) -> DependencyJob:
+    """Same DependencyJob body either way: 200 when already finished (e.g. all cached), else 202."""
+    job = service.submit_dependencies(request)
+    response.status_code = 200 if job.status in ("done", "error") else 202
+    return job
+
+
+@router.get("/dependencies/{job_id}", response_model=DependencyJob,
+            responses={404: {"model": ErrorResponse, "description": "JOB_NOT_FOUND"}})
+def get_dependencies(service: Service, job_id: Annotated[str, Path(max_length=128)]) -> DependencyJob:
+    return service.dependency_job(job_id)
 
 
 def _error(status: int, body: ErrorResponse) -> JSONResponse:

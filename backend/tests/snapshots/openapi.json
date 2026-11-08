@@ -232,6 +232,93 @@
         "title": "CompanyExposure",
         "type": "object"
       },
+      "CompanyRunStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "company_key": {
+            "title": "Company Key",
+            "type": "string"
+          },
+          "company_name": {
+            "title": "Company Name",
+            "type": "string"
+          },
+          "exposure": {
+            "title": "Exposure",
+            "type": "number"
+          },
+          "extraction_quality": {
+            "anyOf": [
+              {
+                "enum": [
+                  "sections",
+                  "fallback"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extraction Quality"
+          },
+          "filing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FilingRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "rejected_edges": {
+            "default": 0,
+            "title": "Rejected Edges",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "fetching",
+              "extracting",
+              "cached",
+              "done",
+              "no_sec_filing",
+              "unsupported_form",
+              "sec_contact_missing",
+              "missing_api_key",
+              "error"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "verified_edges": {
+            "default": 0,
+            "title": "Verified Edges",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "company_key",
+          "company_name",
+          "exposure",
+          "status"
+        ],
+        "title": "CompanyRunStatus",
+        "type": "object"
+      },
       "Concentration": {
         "additionalProperties": false,
         "properties": {
@@ -427,6 +514,194 @@
           "message"
         ],
         "title": "DataGap",
+        "type": "object"
+      },
+      "DependencyCounts": {
+        "additionalProperties": false,
+        "properties": {
+          "companies_analysed": {
+            "title": "Companies Analysed",
+            "type": "integer"
+          },
+          "companies_requested": {
+            "title": "Companies Requested",
+            "type": "integer"
+          },
+          "companies_skipped": {
+            "title": "Companies Skipped",
+            "type": "integer"
+          },
+          "rejected_edges": {
+            "title": "Rejected Edges",
+            "type": "integer"
+          },
+          "unresolved_counterparties": {
+            "title": "Unresolved Counterparties",
+            "type": "integer"
+          },
+          "verified_edges": {
+            "title": "Verified Edges",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "companies_requested",
+          "companies_analysed",
+          "companies_skipped",
+          "verified_edges",
+          "rejected_edges",
+          "unresolved_counterparties"
+        ],
+        "title": "DependencyCounts",
+        "type": "object"
+      },
+      "DependencyJob": {
+        "additionalProperties": false,
+        "description": "POST /api/dependencies returns this (HTTP 200 if done from cache, 202 otherwise); poll\nGET /api/dependencies/{job_id} every 1-2 s until status is done or error.",
+        "properties": {
+          "companies": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CompanyRunStatus"
+            },
+            "title": "Companies",
+            "type": "array"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ErrorBody"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "progress_done": {
+            "default": 0,
+            "title": "Progress Done",
+            "type": "integer"
+          },
+          "progress_total": {
+            "default": 0,
+            "title": "Progress Total",
+            "type": "integer"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DependencyResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "done",
+              "error"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "status"
+        ],
+        "title": "DependencyJob",
+        "type": "object"
+      },
+      "DependencyRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "holdings": {
+            "items": {
+              "$ref": "#/components/schemas/PortfolioItem"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Holdings",
+            "type": "array"
+          },
+          "top_n": {
+            "default": 15,
+            "maximum": 30.0,
+            "minimum": 1.0,
+            "title": "Top N",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "holdings"
+        ],
+        "title": "DependencyRequest",
+        "type": "object"
+      },
+      "DependencyResult": {
+        "additionalProperties": false,
+        "properties": {
+          "as_of_date": {
+            "format": "date",
+            "title": "As Of Date",
+            "type": "string"
+          },
+          "attributions": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Attribution"
+            },
+            "title": "Attributions",
+            "type": "array"
+          },
+          "companies": {
+            "items": {
+              "$ref": "#/components/schemas/CompanyRunStatus"
+            },
+            "title": "Companies",
+            "type": "array"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/DependencyCounts"
+          },
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/VerifiedEdge"
+            },
+            "title": "Edges",
+            "type": "array"
+          },
+          "insights": {
+            "$ref": "#/components/schemas/Insights"
+          },
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/MetricFact"
+            },
+            "title": "Metrics",
+            "type": "array"
+          },
+          "request": {
+            "$ref": "#/components/schemas/DependencyRequest"
+          }
+        },
+        "required": [
+          "as_of_date",
+          "request",
+          "companies",
+          "edges",
+          "metrics",
+          "insights",
+          "counts"
+        ],
+        "title": "DependencyResult",
         "type": "object"
       },
       "ErrorBody": {
@@ -992,6 +1267,45 @@
         "title": "ExamplesResponse",
         "type": "object"
       },
+      "FilingRef": {
+        "additionalProperties": false,
+        "properties": {
+          "accession": {
+            "title": "Accession",
+            "type": "string"
+          },
+          "company_key": {
+            "title": "Company Key",
+            "type": "string"
+          },
+          "filed": {
+            "format": "date",
+            "title": "Filed",
+            "type": "string"
+          },
+          "form": {
+            "enum": [
+              "10-K",
+              "20-F"
+            ],
+            "title": "Form",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "company_key",
+          "form",
+          "accession",
+          "filed",
+          "url"
+        ],
+        "title": "FilingRef",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1042,6 +1356,172 @@
           "sources"
         ],
         "title": "HealthResponse",
+        "type": "object"
+      },
+      "InsightClaim": {
+        "additionalProperties": false,
+        "properties": {
+          "cited_edge_ids": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Cited Edge Ids",
+            "type": "array"
+          },
+          "cited_metric_ids": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Cited Metric Ids",
+            "type": "array"
+          },
+          "claim_id": {
+            "title": "Claim Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "suggestion",
+              "flaw"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "info",
+              "warning",
+              "critical"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "claim_id",
+          "kind",
+          "severity",
+          "title",
+          "text"
+        ],
+        "title": "InsightClaim",
+        "type": "object"
+      },
+      "Insights": {
+        "additionalProperties": false,
+        "properties": {
+          "flaws": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/InsightClaim"
+            },
+            "title": "Flaws",
+            "type": "array"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "rejected_claims_count": {
+            "default": 0,
+            "title": "Rejected Claims Count",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "ok",
+              "metrics_only",
+              "missing_api_key",
+              "no_verified_edges",
+              "error"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "suggestions": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/InsightClaim"
+            },
+            "title": "Suggestions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "Insights",
+        "type": "object"
+      },
+      "MetricFact": {
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "metric_id": {
+            "title": "Metric Id",
+            "type": "string"
+          },
+          "subject_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Key"
+          },
+          "supporting_edge_ids": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Supporting Edge Ids",
+            "type": "array"
+          },
+          "unit": {
+            "enum": [
+              "fraction",
+              "count",
+              "ratio",
+              "days"
+            ],
+            "title": "Unit",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "metric_id",
+          "label",
+          "value",
+          "unit"
+        ],
+        "title": "MetricFact",
         "type": "object"
       },
       "NormalisedHolding": {
@@ -1633,6 +2113,114 @@
         ],
         "title": "ValidationError",
         "type": "object"
+      },
+      "VerifiedEdge": {
+        "additionalProperties": false,
+        "properties": {
+          "edge_id": {
+            "title": "Edge Id",
+            "type": "string"
+          },
+          "edge_type": {
+            "enum": [
+              "supplier",
+              "customer",
+              "contract_manufacturer",
+              "foundry",
+              "key_input",
+              "facility",
+              "jv_partner"
+            ],
+            "title": "Edge Type",
+            "type": "string"
+          },
+          "evidence_quote": {
+            "title": "Evidence Quote",
+            "type": "string"
+          },
+          "filing": {
+            "$ref": "#/components/schemas/FilingRef"
+          },
+          "qualifier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qualifier"
+          },
+          "section": {
+            "title": "Section",
+            "type": "string"
+          },
+          "sole_source": {
+            "default": false,
+            "title": "Sole Source",
+            "type": "boolean"
+          },
+          "source_company_key": {
+            "title": "Source Company Key",
+            "type": "string"
+          },
+          "source_company_name": {
+            "title": "Source Company Name",
+            "type": "string"
+          },
+          "source_in_portfolio": {
+            "title": "Source In Portfolio",
+            "type": "boolean"
+          },
+          "target_in_portfolio": {
+            "default": false,
+            "title": "Target In Portfolio",
+            "type": "boolean"
+          },
+          "target_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Key"
+          },
+          "target_kind": {
+            "enum": [
+              "company",
+              "country",
+              "region",
+              "material",
+              "component",
+              "facility",
+              "unnamed_customer"
+            ],
+            "title": "Target Kind",
+            "type": "string"
+          },
+          "target_name": {
+            "title": "Target Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "edge_id",
+          "source_company_key",
+          "source_company_name",
+          "source_in_portfolio",
+          "edge_type",
+          "target_name",
+          "target_kind",
+          "evidence_quote",
+          "section",
+          "filing"
+        ],
+        "title": "VerifiedEdge",
+        "type": "object"
       }
     }
   },
@@ -1689,6 +2277,115 @@
           }
         },
         "summary": "Analysis"
+      }
+    },
+    "/api/dependencies": {
+      "post": {
+        "description": "Same DependencyJob body either way: 200 when already finished (e.g. all cached), else 202.",
+        "operationId": "start_dependencies_api_dependencies_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DependencyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DependencyJob"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DependencyJob"
+                }
+              }
+            },
+            "description": "Queued or running: poll GET /api/dependencies/{job_id}"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "VALIDATION_ERROR, ALLOCATION_SUM_INVALID, DUPLICATE_TICKER, TOO_MANY_ETFS, UNKNOWN_TICKER"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "SOURCES_UNAVAILABLE"
+          }
+        },
+        "summary": "Start Dependencies"
+      }
+    },
+    "/api/dependencies/{job_id}": {
+      "get": {
+        "operationId": "get_dependencies_api_dependencies__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DependencyJob"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "JOB_NOT_FOUND"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Dependencies"
       }
     },
     "/api/etfs/{ticker}": {

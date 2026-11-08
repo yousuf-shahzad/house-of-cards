@@ -17,6 +17,8 @@ from datetime import UTC, datetime
 from hoc import __version__
 from hoc.contract import (
     AnalysisResponse,
+    DependencyJob,
+    DependencyRequest,
     EtfFailure,
     EtfHoldings,
     EtfNotFoundError,
@@ -32,6 +34,7 @@ from hoc.contract import (
     UnknownTickerError,
 )
 from hoc.examples import EXAMPLES
+from hoc.jobs import SUBMIT_WAIT_SECONDS, DependencyJobs, NotWiredPipeline
 from hoc.normalise.pipeline import normalise_etf
 from hoc.portfolio.analyse import analyse
 from hoc.portfolio.validation import validate_request
@@ -60,6 +63,9 @@ class EtfService:
         """(loaded at, holdings); reused for MEMO_TTL_SECONDS, then reloaded through the cached HTTP layer."""
         self._locks: dict[tuple[str, str | None], threading.Lock] = {}
         self._locks_guard = threading.Lock()
+        self.dependency_pipeline = NotWiredPipeline()
+        """G-DOC + G-AI + G-ORCH behind hoc.jobs.DependencyPipeline; set before the first dependency request."""
+        self._jobs: DependencyJobs | None = None
 
     @classmethod
     def from_settings(cls, settings) -> EtfService:
@@ -72,6 +78,22 @@ class EtfService:
 
         http = CachedHttpClient(settings, DiskCache(settings.cache_dir))
         return cls(build_registry(settings, http), TickerInsideReference(http, settings), load_aliases(), settings)
+
+    @property
+    def dependency_jobs(self) -> DependencyJobs:
+        with self._locks_guard:
+            if self._jobs is None:
+                self._jobs = DependencyJobs(self.analyse, self.dependency_pipeline)
+            return self._jobs
+
+    def submit_dependencies(self, request: DependencyRequest, *, cache_only: bool = False,
+                            wait: float = SUBMIT_WAIT_SECONDS) -> DependencyJob:
+        """Start or reuse the dependency job for these allocations; analysis errors (422/503) pass through."""
+        return self.dependency_jobs.submit(request, cache_only=cache_only, wait=wait)
+
+    def dependency_job(self, job_id: str) -> DependencyJob:
+        """Raises JobNotFoundError (404)."""
+        return self.dependency_jobs.get(job_id)
 
     def health(self) -> HealthResponse:
         return HealthResponse(version=__version__, offline=self.settings.offline, sources=self.registry.names)
