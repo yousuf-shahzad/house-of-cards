@@ -320,7 +320,12 @@ function useChangeIdeas(): { ideas: IdeasState | null; retry: () => void } {
         })
         .catch((cause: unknown) => {
           if (cause instanceof DOMException && cause.name === "AbortError") return;
-          setState({ key, status: "error", response: null });
+          // A failed poll while the AI was still checking keeps the cards already on screen.
+          setState((prev) =>
+            shown && prev?.key === key && prev.response
+              ? { ...prev, response: { ...prev.response, ai_status: "failed" } }
+              : { key, status: "error", response: null },
+          );
         });
     };
     load();
@@ -357,7 +362,7 @@ function useLoadIdea(): (idea: ChangeIdea) => Promise<void> {
               return;
             }
             if (source?.price && source.value !== null && source.value >= moved * 0.99) {
-              const left = Math.round((source.value - moved) / source.price.price);
+              const left = Math.max(0, Math.round((source.value - moved) / source.price.price));
               const rows = current.rows
                 .map((row) => (row.ticker.trim().toUpperCase() === swap ? { ...row, shares: left } : row))
                 .filter((row) => row.shares !== 0);
