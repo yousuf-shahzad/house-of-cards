@@ -16,10 +16,7 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Temporary handoffs
 
-- **Yousuf's Claude is out of usage** (Yousuf, 08:41). Until it's back:
-  - Its files go to Yousuf's Gemini: `frontend/` shell, `frontend/app/ui/`, `frontend/api/client.ts`, `vite.config.ts`, `frontend/app/workspace.tsx`, `pages/portfolio/`, `pages/network/`, `pages/compare/`, `frontend/app/scenario.tsx`.
-  - Its frontend PR reviews go to Yousuf's Gemini. The lead's browser check stands in for the review on #186 and #193.
-  - It has no open items: its FIX-28 part is done (#212).
+- **Yousuf's Claude is back** (11:25). Its S-UI files (frontend shell, `app/ui/`, `api/client.ts`, `vite.config.ts`, `workspace.tsx`, `pages/portfolio|network|compare/`, `scenario.tsx`) and frontend reviews returned to it at 11:30. It owns #266 (FIX-63 UI).
 - **Bekarys's Claude was out of usage** from 07:30 to 10:13. It's back, and its backend files (`service.py`, `api/`, `jobs.py`, `tests/api/`) have returned to it. While it was away, Bekarys's Gemini finished its items:
   1. Rebase and merge PR #193 (FIX-11 job research, lead-approved).
   2. PR #186 (FIX-17 AI cards): apply Yousuf's Claude's two review fixes ("AI suggested N; we kept M" wording; a `<div>`, not a `<p>`, around the Spinner), rebase, merge.
