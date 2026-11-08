@@ -31,7 +31,7 @@ Kendrick wants the beginner experience to be far less overwhelming: concise summ
 - Shorten the "How we double-checked" research list: one plain line per finding (e.g. "Checked: Apple's reliance on Japan — confirmed"), with the step trace behind a toggle.
 - Trim the step intros.
 
-- **Owner:** Yousuf's Gemini (A and B; it claimed both first and owns the files); Kendrick's Gemini reviews · **Status:** in progress
+- **Owner:** Kendrick's Gemini (Part A, handoff of `dependencies/index.tsx`; Yousuf's Gemini reviews) + Yousuf's Gemini (Part B) · **Status:** in progress (final split, 08:39)
 
 ### FIX-28 · medium · "What's here & why" info button on every page (Yousuf, 08:31)
 Yousuf asked for an info button on every page that explains what's there, why it matters, and how to read it.
