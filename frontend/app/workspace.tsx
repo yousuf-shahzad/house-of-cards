@@ -26,6 +26,7 @@ const PageInfo = lazy(() =>
 );
 const PAGES_WITH_OWN_INFO = new Set(["exposures", "dependencies"]);
 export const APP_NAME = "House of Cards";
+export const APP_ICON = "/brand/hoc-icon.svg";
 const navItems = pages.filter((page) => !page.hiddenFromNav).map(({ key, label, icon, href }) => ({ key, label, icon, href }));
 
 class PageBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
@@ -73,7 +74,7 @@ export function Workspace() {
     <div className="dashboard-shell suite-workspace">
       <div className="dashboard-sidebar-wrap">
         <Suspense fallback={<div className="sidebar-placeholder" />}>
-          <DashboardSidebar workspaceName={APP_NAME} selected={page.key} items={navItems} minimal className="telos-sidebar" />
+          <DashboardSidebar workspaceName={APP_NAME} workspaceIcon={APP_ICON} selected={page.key} items={navItems} minimal className="telos-sidebar" />
         </Suspense>
       </div>
       <Drawer aria-label="Navigation" isOpen={mobile} onOpenChange={setMobile} placement="start" size="sm" className="mobile-workspace-drawer">
@@ -83,7 +84,7 @@ export function Workspace() {
             if (event.target instanceof Element && event.target.closest('a[href^="#/"]')) setMobile(false);
           }}>
             <Suspense fallback={<p className="text-body-regular">Opening…</p>}>
-              <DashboardSidebar workspaceName={APP_NAME} selected={page.key} items={navItems} mobile fluid flat onClose={() => setMobile(false)} minimal className="telos-sidebar" />
+              <DashboardSidebar workspaceName={APP_NAME} workspaceIcon={APP_ICON} selected={page.key} items={navItems} mobile fluid flat onClose={() => setMobile(false)} minimal className="telos-sidebar" />
             </Suspense>
           </div>
         </DrawerBody>

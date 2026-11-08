@@ -279,6 +279,7 @@ function NavRows({
 
 export function DashboardSidebar({
   workspaceName,
+  workspaceIcon,
   mobile = false,
   onClose,
   fluid = false,
@@ -291,6 +292,8 @@ export function DashboardSidebar({
 }: {
   /** Rendered inside the mobile drawer: always expanded, close button instead of collapse. */
   workspaceName?: string;
+  /** Minimal mode: an image (URL) shown left of the product name, and alone when collapsed. */
+  workspaceIcon?: string;
   mobile?: boolean;
   onClose?: () => void;
   /** Expanded width fills its container below `lg` instead of the fixed
@@ -424,8 +427,11 @@ export function DashboardSidebar({
             )}
           >
             {minimal ? (
-              <span className="text-body-medium whitespace-nowrap text-text-primary">
-                {collapsed ? workspaceName?.charAt(0) : workspaceName}
+              <span className="flex items-center gap-2 text-body-medium whitespace-nowrap text-text-primary">
+                {workspaceIcon && (
+                  <img src={workspaceIcon} alt="" aria-hidden width={24} height={24} className="size-6 shrink-0 rounded-md" />
+                )}
+                {collapsed ? (workspaceIcon ? null : workspaceName?.charAt(0)) : workspaceName}
               </span>
             ) : (
               <DashboardUserMenu
