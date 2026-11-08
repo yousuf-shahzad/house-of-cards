@@ -63,6 +63,7 @@ def test_ai_add_and_swap_use_exact_allocations_and_python_rendered_rationale():
     {'action': 'swap', 'swap_from': 'ZZNOTHELD'}, {'action': 'swap', 'swap_from': 'ZZADD'},
     {'swap_from': 'ZZBASE'}, {'issue_id': 'invented'}, {'metric_id': 'dep.invented'},
     {'rationale_template': 'This falls to 5%.'}, {'rationale_template': 'Use {{metric:invented}}.'},
+    {'rationale_template': 'Adding ZZADD reduces reliance on Cyberdyne.'},
     {'title': 'Add 20 percent'}, {'title': 'Add MSFT'},
 ])
 def test_invalid_proposals_are_explained_and_fall_back_to_rules(updates):
@@ -145,3 +146,15 @@ def test_unknown_candidate_industries_never_create_a_verified_gain():
     proposal = proposal_for(request, baseline, loaded)
     result = verify(request, baseline, loaded, scenarios, [proposal])
     assert not result.ideas and any('missing industry' in r.reason for r in result.rejected_proposals)
+
+
+def test_every_ai_proposal_is_accounted_for_in_selected_or_rejected_results():
+    request, baseline, loaded, scenarios = setup()
+    proposals = [proposal_for(request, baseline, loaded, ticker=t)
+                 for t in loaded if t != 'ZZBASE']
+    proposals.append(replace(proposals[0], fraction=.1))
+    result = verify(request, baseline, loaded, scenarios, proposals)
+    assert len(result.ideas) == 3 and all(i.proposed_by == 'ai' for i in result.ideas)
+    assert len(result.rejected_proposals) == 2
+    assert len(result.ideas) + len(result.rejected_proposals) == len(proposals)
+    assert len({i.ticker for i in result.ideas}) == 3

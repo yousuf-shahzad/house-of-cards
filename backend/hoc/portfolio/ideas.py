@@ -405,6 +405,12 @@ def rank_change_ideas(
         alternative = next((r[2] for r in results if r[2].ticker in broad), None)
         if alternative is not None:
             selected[-1] = alternative
+    for _, _, idea, _ in results:
+        if idea.proposed_by == "ai" and not any(idea is chosen for chosen in selected):
+            explanation = ("Another proposal for this ETF ranked higher."
+                           if any(idea.ticker == chosen.ticker for chosen in selected)
+                           else "Other verified ideas ranked higher for your portfolio's issues.")
+            rejected.append(RejectedIdeaProposal(ticker=idea.ticker, action=idea.action, reason=explanation))
     has_ai = any(s.proposal is not None for s in scenarios)
     method = ("Verifies AI ETF proposals" if has_ai
               else "Tests a fixed ETF shortlist at ten and twenty percent")
