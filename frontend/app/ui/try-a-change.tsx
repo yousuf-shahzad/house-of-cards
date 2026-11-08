@@ -398,6 +398,29 @@ function ideaHeadline(idea: ChangeIdea): string {
   return what ? `${verb}: ${what}` : verb;
 }
 
+/** "AI suggested 5 ideas; 2 passed the check with your numbers", with each rejection's reason under a toggle.
+ * The ideas the AI proposed are the kept AI cards plus the rejected proposals. */
+function AiCheckSummary({ response }: { response: ChangeIdeasResponse }) {
+  const rejected = response.rejected_proposals ?? [];
+  const kept = response.ideas.filter((idea) => idea.proposed_by === "ai").length;
+  if (response.ai_status !== "ok" || kept + rejected.length === 0) return null;
+  const proposed = kept + rejected.length;
+  const summary = `AI suggested ${proposed} ${proposed === 1 ? "idea" : "ideas"}; ${kept} passed the check with your numbers.`;
+  if (rejected.length === 0) return <p className="text-body-2-regular text-text-secondary">{summary}</p>;
+  return (
+    <details className="text-body-2-regular text-text-secondary">
+      <summary className="cursor-pointer">{summary} Why the others were dropped</summary>
+      <ul className="flex flex-col gap-1 pt-2">
+        {rejected.map((proposal, index) => (
+          <li key={`${proposal.ticker}-${proposal.action}-${index}`}>
+            {proposal.action === "swap" ? "Swap to" : "Add"} {proposal.ticker}: {proposal.reason}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
+
 /** Up to three ETF ideas with "Try this". `onTried` runs after an idea is loaded into Try a change. */
 export function ChangeIdeas({ heading = "Ideas to try", onTried }: { heading?: string; onTried?: () => void }) {
   const { ideas, retry } = useChangeIdeas();
@@ -439,6 +462,7 @@ export function ChangeIdeas({ heading = "Ideas to try", onTried }: { heading?: s
           </Button>
         </div>
       )}
+      {ideas.response && <AiCheckSummary response={ideas.response} />}
       {ideas.response?.ai_status === "pending" && (
         <p className="flex items-center gap-2 text-body-2-regular text-text-secondary">
           <Spinner size="sm" aria-label="AI is checking more ideas" /> AI is checking more ideas…
