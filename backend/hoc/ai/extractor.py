@@ -6,6 +6,9 @@ Rules (docs/hoc/PLAN-v2.md & docs/hoc/CONTRACT.md section 7):
 - Flat JSON schema (`EXTRACTION_SCHEMA`) with no `$ref` or `anyOf`.
 - Every extracted edge is verified against the whole canonical filing text via `verify_quote`
   (using `hoc.filings.text.normalise`).
+- Generic common nouns (e.g. 'contract manufacturers') are rejected as `target_kind == 'company'`.
+- `edge.section` is set deterministically in Python from the `Filing.sections` span that contains
+  the verified quote match (`'document'` when none), never from the model.
 - Produces frozen `hoc.contract.VerifiedEdge` models with `FilingRef`.
 - Exposes `DependencyExtractor.extract(company, filing, *, cache_only: bool = False) -> Extraction`
   and `DependencyExtractor.extract_reverse(company, filings, *, cache_only: bool = False) -> Extraction`
@@ -32,7 +35,14 @@ from hoc.ai.client import (
     GeminiError,
     GeminiMissingKeyError,
 )
-from hoc.ai.verifier import PROMPT_VERSION, normalise_for_verify, verify_quote
+from hoc.ai.verifier import (
+    PROMPT_VERSION,
+    find_quote_span,
+    is_generic_company_target,
+    normalise_for_verify,
+    resolve_quote_section,
+    verify_quote,
+)
 from hoc.contract import (
     CompanyRunStatus,
     CompanyUnavailable,
@@ -120,7 +130,10 @@ EXTRACTOR_SYSTEM_INSTRUCTION = (
     "3. The `target_name` (or customer revenue percentage for `unnamed_customer`) MUST appear inside `evidence_quote`.\n"
     "4. Set `sole_source` to true ONLY when the quote explicitly describes a sole, single, or exclusive source.\n"
     "5. If a major customer is anonymous (e.g. 'one customer accounted for 22% of revenue'), set `target_kind` to "
-    "`unnamed_customer`, `target_name` to 'Unnamed Customer', and `qualifier` to the percentage (e.g. '22% of revenue')."
+    "`unnamed_customer`, `target_name` to 'Unnamed Customer', and `qualifier` to the percentage (e.g. '22% of revenue').\n"
+    "6. For `target_kind` = `company`, extract ONLY specific named companies or corporate brands (e.g. 'TSMC', "
+    "'Foxconn', 'SK Hynix'). NEVER extract generic common nouns or categories like 'contract manufacturers', "
+    "'third-party suppliers', or 'wafer foundries' as `company`."
 )
 
 _SECTION_PRIORITY: tuple[str, ...] = (
@@ -354,10 +367,15 @@ def verify_and_build_edges(
     source_in_portfolio: bool = True,
     canonical_text: str,
     filing_ref: FilingRef,
+    sections: Mapping[str, tuple[int, int] | str] | None = None,
     portfolio_company_keys: Collection[str] | None = None,
     resolve_target_key: Callable[[str], str | None] | None = None,
 ) -> tuple[list[VerifiedEdge], int]:
     """Verify raw LLM edges against `canonical_text` and deduplicate verified `VerifiedEdge` models.
+
+    - Rejects unverified quotes and generic common-noun targets (`target_kind == 'company'`).
+    - Sets `edge.section` deterministically in Python from the `Filing.sections` span that
+      contains the quote match (`'document'` when none), never from the model.
 
     Returns `(verified_edges, rejected_count)`.
     """
@@ -377,7 +395,6 @@ def verify_and_build_edges(
         raw_kind = str(item.get("target_kind") or item.get("object_kind") or "").strip()
         raw_sole = bool(item.get("sole_source", False))
         raw_qualifier = str(item.get("qualifier") or "").strip()
-        raw_section = str(item.get("section") or "Item 1").strip() or "Item 1"
 
         if not raw_target or not raw_quote or not raw_type:
             rejected_count += 1
@@ -385,6 +402,10 @@ def verify_and_build_edges(
 
         edge_type, sole_source = _normalise_edge_type(raw_type, raw_sole)
         target_kind = _normalise_target_kind(raw_kind, edge_type)
+
+        if target_kind == "company" and is_generic_company_target(raw_target, raw_quote):
+            rejected_count += 1
+            continue
 
         if not verify_quote(
             raw_quote,
@@ -396,6 +417,15 @@ def verify_and_build_edges(
         ):
             rejected_count += 1
             continue
+
+        match_span = find_quote_span(raw_quote, norm_doc, already_normalised_doc=True)
+        resolved_section = resolve_quote_section(
+            raw_quote,
+            canonical_text,
+            sections,
+            match_span=match_span,
+            already_normalised_doc=(len(norm_doc) == len(canonical_text)),
+        )
 
         target_key: str | None = None
         if target_kind == "company" and resolve_target_key is not None:
@@ -426,7 +456,7 @@ def verify_and_build_edges(
             sole_source=sole_source,
             qualifier=raw_qualifier or None,
             evidence_quote=norm_quote_clean,
-            section=raw_section,
+            section=resolved_section,
             filing=filing_ref,
         )
 
@@ -816,6 +846,8 @@ class DependencyExtractor:
             )
             if cached is not None:
                 raw_edges = cached.get("raw_edges")
+                if not isinstance(raw_edges, list):
+                    raw_edges = cached.get("edges")
                 if isinstance(raw_edges, list) and text:
                     verified, rejected = verify_and_build_edges(
                         raw_edges,
@@ -824,6 +856,7 @@ class DependencyExtractor:
                         source_in_portfolio=source_in_portfolio,
                         canonical_text=text,
                         filing_ref=filing_ref,
+                        sections=sections,
                         portfolio_company_keys=portfolio_keys,
                         resolve_target_key=resolver,
                     )
@@ -921,6 +954,7 @@ class DependencyExtractor:
             source_in_portfolio=source_in_portfolio,
             canonical_text=text,
             filing_ref=filing_ref,
+            sections=sections,
             portfolio_company_keys=portfolio_keys,
             resolve_target_key=resolver,
         )

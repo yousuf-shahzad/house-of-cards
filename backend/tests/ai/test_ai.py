@@ -30,7 +30,10 @@ from hoc.ai import (
     GeminiClient,
     GeminiMissingKeyError,
     dedupe_edges,
+    is_generic_company_target,
     pack_filing_sections,
+    resolve_quote_section,
+    verify_and_build_edges,
     verify_quote,
 )
 from hoc.config import Settings
@@ -64,9 +67,9 @@ class SyntheticFiling:
 def _make_filing(text: str = SYNTHETIC_FILING_TEXT) -> SyntheticFiling:
     item2_idx = text.find("Item 2.")
     sections = (
-        {"Item 1": (0, item2_idx), "Item 2": (item2_idx, len(text))}
+        {"1": (0, item2_idx), "2": (item2_idx, len(text))}
         if item2_idx != -1
-        else {"Item 1": (0, len(text))}
+        else {"1": (0, len(text))}
     )
     return SyntheticFiling(
         company_key="CIK:0009990001",
@@ -166,6 +169,122 @@ def test_verify_quote_unnamed_customer_concentration():
         target_kind="unnamed_customer",
         qualifier="22% of total revenue",
     )
+
+
+def test_rejects_generic_nouns_as_company_targets():
+    doc = (
+        "We rely on contract manufacturers and third-party wafer foundries for assembly, "
+        "while Taiwan Semiconductor Manufacturing Co., Ltd. (TSMC) and GlobalFoundries Inc. "
+        "fabricate our core processors."
+    )
+    for bad_target in (
+        "contract manufacturers",
+        "Contract Manufacturers",
+        "third-party wafer foundries",
+        "wafer foundries",
+        "single-source suppliers",
+        "Unnamed Supplier",
+    ):
+        assert is_generic_company_target(bad_target, doc)
+        assert not verify_quote(doc, doc, target_name=bad_target, target_kind="company")
+
+    for real_company in (
+        "TSMC",
+        "Taiwan Semiconductor Manufacturing Co., Ltd.",
+        "GlobalFoundries",
+        "SK Hynix Inc.",
+        "Applied Materials",
+    ):
+        assert not is_generic_company_target(real_company, doc)
+
+
+def test_section_set_in_python_from_section_spans_never_model_free_text():
+    text = (
+        "Item 1. Business. We rely on Taiwan Semiconductor Manufacturing Co., Ltd. (TSMC) for wafers. "
+        "Item 2. Properties. Our cleanroom facilities are in Taiwan and Arizona. "
+        "Note 19. One customer accounted for 18% of revenue in 2026. "
+        "Appendix. Additional wafer testing is performed by ZZFAB Corp in Singapore."
+    )
+    idx_item2 = text.index("Item 2.")
+    idx_note = text.index("Note 19.")
+    idx_app = text.index("Appendix.")
+    sections = {
+        "1": (0, idx_item2),
+        "2": (idx_item2, idx_note),
+        "concentration_1": (idx_note, idx_app),
+    }
+
+    q1 = "We rely on Taiwan Semiconductor Manufacturing Co., Ltd. (TSMC) for wafers."
+    q2 = "Our cleanroom facilities are in Taiwan and Arizona."
+    q_conc = "One customer accounted for 18% of revenue in 2026."
+    q_outside = "Additional wafer testing is performed by ZZFAB Corp in Singapore."
+
+    assert resolve_quote_section(q1, text, sections) == "1"
+    assert resolve_quote_section(q2, text, sections) == "2"
+    assert resolve_quote_section(q_conc, text, sections) == "concentration_1"
+    # Outside all section spans -> must be 'document', even if model claimed 'concentration_11'
+    assert resolve_quote_section(q_outside, text, sections) == "document"
+
+    filing_ref = FilingRef(
+        company_key="CIK:0009990001",
+        form="10-K",
+        accession="0009990001-26-000001",
+        filed=date(2026, 10, 15),
+        url="https://www.sec.gov/Archives/edgar/data/9990001/filing.htm",
+    )
+    raw_edges = [
+        {
+            "edge_type": "foundry",
+            "target_name": "TSMC",
+            "target_kind": "company",
+            "sole_source": True,
+            "qualifier": "",
+            "section": "Supply Chain & Manufacturing",  # model free-text ignored
+            "evidence_quote": q1,
+        },
+        {
+            "edge_type": "facility",
+            "target_name": "Taiwan",
+            "target_kind": "country",
+            "sole_source": False,
+            "qualifier": "",
+            "section": "ITEM 2. PROPERTIES",  # model free-text ignored
+            "evidence_quote": q2,
+        },
+        {
+            "edge_type": "foundry",
+            "target_name": "ZZFAB Corp",
+            "target_kind": "company",
+            "sole_source": False,
+            "qualifier": "",
+            "section": "concentration_11",  # model claimed wrong concentration span
+            "evidence_quote": q_outside,
+        },
+        {
+            "edge_type": "contract_manufacturer",
+            "target_name": "contract manufacturers",  # generic noun -> rejected!
+            "target_kind": "company",
+            "sole_source": False,
+            "qualifier": "",
+            "section": "1",
+            "evidence_quote": q1,
+        },
+    ]
+    verified, rejected = verify_and_build_edges(
+        raw_edges,
+        source_company_key="CIK:0009990001",
+        source_company_name="ZZAlpha Corp",
+        canonical_text=text,
+        filing_ref=filing_ref,
+        sections=sections,
+    )
+    assert rejected == 1
+    by_target = {e.target_name: e.section for e in verified}
+    assert by_target == {
+        "TSMC": "1",
+        "Taiwan": "2",
+        "ZZFAB Corp": "document",
+    }
 
 
 # ---------- 2. REST GeminiClient ----------
@@ -359,9 +478,12 @@ def test_extractor_verifies_valid_quotes_rejects_mutated_and_replays_cache(tmp_p
     # FakeGeminiClient emits 2 mutated quotes by default; both must be rejected!
     assert result.rejected == 2
     assert all(isinstance(e, VerifiedEdge) for e in result.edges)
+    # All sections come from Filing.sections keys ('1', '2'), never 'Item 1' or 'Item 2' from FakeGeminiClient
+    assert {e.section for e in result.edges} <= {"1", "2"}
     tsmc_edges = [e for e in result.edges if e.target_key == "ALIAS:TSMC"]
     assert len(tsmc_edges) == 1
     assert tsmc_edges[0].target_in_portfolio is True
+    assert tsmc_edges[0].section == "1"
     assert tsmc_edges[0].filing.accession == "0009990001-26-000001"
 
     # Second run with NO API key and cache_only=True must replay from disk cache without calling LLM
@@ -375,6 +497,7 @@ def test_extractor_verifies_valid_quotes_rejects_mutated_and_replays_cache(tmp_p
     assert cached_result.cached is True
     assert cached_result.rejected == result.rejected
     assert [e.edge_id for e in cached_result.edges] == [e.edge_id for e in result.edges]
+    assert {e.section for e in cached_result.edges} <= {"1", "2"}
 
 
 def test_extractor_raises_company_unavailable_when_uncached_and_keyless(tmp_path: Path):
@@ -412,7 +535,7 @@ def test_extract_many_isolates_per_company_failure(tmp_path: Path):
         filed=date(2026, 10, 15),
         url="https://www.sec.gov/Archives/edgar/data/9990099/zzfail-10k.htm",
         canonical_text=SYNTHETIC_FILING_TEXT,
-        sections={"Item 1": (0, len(SYNTHETIC_FILING_TEXT))},
+        sections={"1": (0, len(SYNTHETIC_FILING_TEXT))},
     )
 
     outcomes = extractor.extract_many([
@@ -495,7 +618,7 @@ def test_extract_reverse_filters_to_top_n_caps_at_10_and_dedupes_forward(tmp_pat
                 filed=date(2026, 10, 15),
                 url=f"https://www.sec.gov/Archives/edgar/data/{9990000 + idx}/filing.htm",
                 canonical_text=SYNTHETIC_FILING_TEXT,
-                sections={"Item 1": (0, len(SYNTHETIC_FILING_TEXT))},
+                sections={"1": (0, len(SYNTHETIC_FILING_TEXT))},
             )
         )
     assert len(reverse_filings) == 13
