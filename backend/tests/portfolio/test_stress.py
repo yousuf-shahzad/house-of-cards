@@ -44,7 +44,11 @@ def analysis(companies, ticker="ZZBASE", **coverage):
         request=PortfolioRequest(holdings=[{"ticker": ticker, "allocation": 1}]),
         etfs=[], coverage=Coverage(**fields), exposures=companies,
         exposures_truncated=False, other_exposure=0, overlap=Overlap(etfs=[], matrix=[], pairs=[]),
-        concentration=concentration(companies), sectors=[], gaps=[], warnings=[], attributions=[],
+        concentration=concentration(companies), sectors=[
+            SectorExposure(sector=sector, weight=wsum(c.exposure for c in companies if c.sector == sector),
+                           by_etf=[])
+            for sector in sorted({c.sector for c in companies})
+        ], gaps=[], warnings=[], attributions=[],
     )
 
 
@@ -68,9 +72,6 @@ def test_sector_shock_hand_calculated_before_after_and_money():
     )
     req = request(before, after)
     snapshots = [obj.model_dump_json() for obj in (req, before, after, shock)]
-    # Fund-reported sector aggregates deliberately disagree: match CompanyExposure.sector.
-    before.sectors = [SectorExposure(sector="information_technology", weight=.99, by_etf=[])]
-    snapshots[1] = before.model_dump_json()
     result = simulate_failure(req, before, after, shock)
     assert result.status == "ok" and result.notes == []
     assert result.baseline.affected_weight == pytest.approx(.6)
@@ -85,6 +86,54 @@ def test_sector_shock_hand_calculated_before_after_and_money():
     ]
     assert [obj.model_dump_json() for obj in (req, before, after, shock)] == snapshots
     assert StressResponse.model_validate_json(result.model_dump_json()).model_dump_json() == result.model_dump_json()
+
+
+def test_fund_reported_sector_totals_and_unknown_weight_override_company_metadata_on_both_sides():
+    before = analysis([company("ZZ-A", .410), company("ZZ-UNKNOWN", .3261, "unknown"),
+                       company("ZZ-B", .2639, "health_care")])
+    after = analysis([company("ZZ-A", .2), company("ZZ-UNKNOWN", .8, "unknown")], "ZZNEW")
+    before.sectors = [SectorExposure(sector=sector, weight=weight, by_etf=[]) for sector, weight in [
+        ("information_technology", .5111), ("health_care", .4053), ("unknown", .0836),
+    ]]
+    after.sectors = [SectorExposure(sector="information_technology", weight=.35, by_etf=[]),
+                     SectorExposure(sector="health_care", weight=.65, by_etf=[])]
+    req = request(before, after)
+    snapshots = [obj.model_dump_json() for obj in (req, before, after)]
+    result = simulate_failure(req, before, after, basis(.193704))
+    assert result.baseline.affected_weight == .5111
+    assert result.baseline.loss_fraction == pytest.approx(.5111 * .193704)
+    assert result.candidate.affected_weight == .35
+    assert result.candidate.loss_fraction == pytest.approx(.35 * .193704)
+    assert result.baseline.affected_count == result.candidate.affected_count == 1
+    assert result.baseline.affected[0].exposure == .410
+    assert result.baseline.affected[0].loss == pytest.approx(.410 * .193704)
+    assert result.status == "partial"
+    assert any("8.36%" in note and "unknown industry" in note for note in result.notes)
+    assert not any("32.61%" in note or (note.startswith("Your new mix:") and "unknown industry" in note)
+                   for note in result.notes)
+    assert sum("funds' own reports" in note for note in result.notes) == 2
+    assert not any(note.startswith("Your new mix:") and "understated" in note for note in result.notes)
+    assert [obj.model_dump_json() for obj in (req, before, after)] == snapshots
+
+
+def test_absent_sector_has_zero_loss_even_when_company_metadata_disagrees():
+    before = analysis([company("ZZ-A", 1)])
+    before.sectors = [SectorExposure(sector="health_care", weight=1, by_etf=[])]
+    result = simulate_failure(request(before), before, None, basis())
+    assert result.baseline.affected_weight == result.baseline.loss_fraction == 0
+    assert result.baseline.affected_count == 1
+
+
+def test_truncated_company_list_does_not_reduce_fund_reported_sector_total():
+    before = analysis([company("ZZ-A", .2)], covered_weight=1, unexplained_weight=0)
+    before.sectors = [SectorExposure(sector="information_technology", weight=1, by_etf=[])]
+    before.exposures_truncated = True
+    before.other_exposure = .8
+    result = simulate_failure(request(before), before, None, basis())
+    assert result.baseline.affected_weight == 1 and result.baseline.loss_fraction == .1
+    assert result.baseline.affected_count == 1
+    assert any("industry totals were still used" in note for note in result.notes)
+    assert not any("omitted companies were not shocked" in note for note in result.notes)
 
 
 def test_country_matches_country_only_and_ignores_supplier_keys_and_label():
