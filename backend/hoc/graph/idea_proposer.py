@@ -641,14 +641,14 @@ def verify_and_render_proposal_rationale(
             if not subject:
                 return None, f"missing_dependency_subject:{mid}"
             cleaned = prep_noun_re.sub(
-                lambda m, p=ph_literal, s=subject: f"{p} {m.group(1)} {m.group(2)} {s}",
+                lambda m, p=ph_literal, s=subject: f"{m.group(1)} {m.group(2)} {s} ({p} today)",
                 cleaned,
             )
         elif bare_prep_re.search(cleaned) and not has_subject_in_text:
             if not subject:
                 return None, f"missing_dependency_subject:{mid}"
             cleaned = bare_prep_re.sub(
-                lambda m, p=ph_literal, s=subject: f"{p} reliance {m.group(1)} {s}",
+                lambda m, p=ph_literal, s=subject: f"{m.group(1)} {s} ({p} today)",
                 cleaned,
             )
         elif not has_subject_in_text:

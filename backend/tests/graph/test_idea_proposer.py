@@ -495,7 +495,7 @@ def test_dep_placeholder_requires_or_rewrites_company_subject() -> None:
         supporting_edge_ids=["e1"],
     )
 
-    # 1. '...reduces reliance on {{metric:dep.ALIAS:TSMC}}.' is rewritten so the company follows 'reliance on'
+    # 1. '...reduces reliance on {{metric:dep.ALIAS:TSMC}}.' puts subject first with '(12.41% today)' as context
     rewritten, err = verify_and_render_proposal_rationale(
         "Swapping QQQ into VTV reduces reliance on {{metric:dep.ALIAS:TSMC}}.",
         metrics_by_id={"dep.ALIAS:TSMC": tsmc_fact},
@@ -503,7 +503,7 @@ def test_dep_placeholder_requires_or_rewrites_company_subject() -> None:
         allowed_entities={"taiwan semiconductor manufacturing", "tsmc"},
     )
     assert err is None
-    assert rewritten == "Swapping QQQ into VTV reduces 12.41% reliance on Taiwan Semiconductor Manufacturing."
+    assert rewritten == "Swapping QQQ into VTV reduces reliance on Taiwan Semiconductor Manufacturing (12.41% today)."
 
     # 2. When the company name is already present next to the placeholder, it is not duplicated
     existing, err2 = verify_and_render_proposal_rationale(
