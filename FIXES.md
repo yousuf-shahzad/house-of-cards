@@ -31,11 +31,6 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
-### FIX-35 · high · Main is red: the FIX-22 job test asserts the wrong read-pool tasks
-`tests/api/test_agentic_jobs.py::test_fix_22_separate_research_pool_and_start_deadlines` fails 3/3. `read_tasks` also contains `_reverse`, because reverse-link reads legitimately run on the read pool.
-- Fix: assert only `_forward`/`_reverse` on the read pool (2 forwards), `research_tasks == ['_research', '_research']`, and no `_research` on the read pool.
-- **Owner:** Bekarys's Gemini · **Status:** assigned (urgent)
-
 ### FIX-33 · high · Importance scoring bugs from the FIX-30 audit (issue #216, A + C + reverse links)
 Reproduced offline by Codex:
 - **(A) The wrong customer's share.** `_customer_base_score` takes the largest % anywhere in the quote. With qualifier "8% of revenue" and quote "ZZ represented 8%…; Another Company represented 22%", it scores 0.90 / critical and cites 22%. Fix: use only a share grounded to this target (the qualifier, or the % in the clause naming the target); otherwise leave the amount unknown.
@@ -49,18 +44,6 @@ Reproduced offline by Codex:
 - Fix: ground `sole_source`, and any revenue-share qualifier, in the target-specific quote (sole/single/only source wording near the target) before it can raise importance. If it's unsupported, keep the ordinary supplier link, drop the flag, and add a rules flag. Add tests from the issue.
 - **Owner:** Kendrick's Gemini (`hoc/ai/extractor.py`, `hoc/ai/interpretation.py`) · **Status:** assigned
 
-### FIX-32 · low · Beginner wording polish from Kendrick's Gemini's review of #214
-- `guide/sentence.ts` `formatFindingOneLiner`: accept both "->" and "→", and map the trailing tag ("(jv_partner)" → "partnership with", customer → "sales to", default → "reliance on"). Drop "single-source". Then "Nvidia -> OpenAI (jv_partner)" reads "Checked: Nvidia's partnership with OpenAI — still unclear".
-- `dependencies/index.tsx` ClaimCard: when collapsed, hide the cited-metric chips too, so a folded card is just the title, one sentence and "Full detail".
-- **Owner:** Yousuf's Gemini · **Status:** assigned
-
-### FIX-31 · medium · Link importance is shown as a percentage, and graph line width means something else
-From Codex's FIX-30 audit:
-- `importance.score` is a heuristic ranking score, but the UI shows it like a measured share ("Critical 90%").
-- Graph line width follows the company's portfolio exposure, not link importance, and nothing says so.
-- Fix: show only the tier (Critical/High/Medium/Low) with a tooltip such as "how much this link matters to the company, judged from the filing". Add a legend line: "Line thickness = how much of your money is in that company". No backend change.
-- **Owner:** Yousuf's Gemini (Dependencies and Network pages) · **Status:** assigned
-
 ### FIX-30 · high · Yousuf's requests: audit dependency links; a simple dashboard instead of the step-by-step guide (Yousuf, 08:43)
 - **Audit** (read-only, can start now): how dependencies are detected, how links are weighted and displayed. Report findings as new FIX items.
 - **Simple mode as a walkthrough of the real app** (Yousuf clarified at 08:45: "Make the walkthrough of the bigger UI with its more simplified views"):
@@ -68,7 +51,7 @@ From Codex's FIX-30 audit:
   - Walkthrough tips are optional and can be dismissed. No 5-step funnel; you can go anywhere.
   - Needs `workspace.tsx`, `experience.tsx` and `onboarding/welcome-dialog.tsx`.
   - **On hold until Gawyn decides,** because it replaces the 5-step guide Gawyn chose.
-- **Owner:** Yousuf's Codex · **Status:** audit done (issue #216, split into FIX-31, FIX-33, FIX-34); walkthrough waiting for Gawyn
+- **Owner:** Yousuf's Codex (handoff of `workspace.tsx`, `experience.tsx`, `welcome-dialog.tsx`, `pages/simple/` from Yousuf's Gemini) · **Status:** audit done (#216). Yousuf explicitly asked for it, so the walkthrough is being built as a PR that keeps the 5-step guide reachable. Merge waits on Gawyn's choice of the default "I'm new" screen.
 
 ### FIX-9 · medium · Final QA of both views
 - Fix: once everything above merges, audit the full and simple views end to end; send problems to their owners.
@@ -77,6 +60,9 @@ From Codex's FIX-30 audit:
 
 ## Done (checked on `main` by the lead)
 
+- FIX-35 main is green again (561 passed) — #218
+- FIX-31 importance badges show the tier only (no "Critical 90%"); the graph legend says "Line thickness = how much of your money is in that company" — #219
+- FIX-32 one-liners read "Checked: Nvidia's partnership with OpenAI — still unclear" and "Checked: Apple's reliance on Japan — confirmed"; FIX-11 casts removed — #219
 - FIX-17 change ideas: Argon proposes and Python verifies. Screen 5 and Try a change show "AI suggested 5 ideas; we kept 3" with reasons, "AI idea, checked with your numbers" cards, and Try this (lead: the QQQ→VTV swap loads as QQQ 1 sh + VTV 9 sh; Technology 51.1% → 41.7% after whole-share rounding, card says 41.8%). Rules fallback when there's no key — #177–#181, #185, #186, #192, #194, #197, #199, #201, #207, #210
 - FIX-22 research time budgets (lead, live): light 62 s (was 131), 0 'not finished' (was 4); thorough 193 s, 1 'not finished' (was 15), 40/45 findings use search_filings — #206, #217
 - FIX-11 research findings show while the scan runs (lead, live: thorough job.research grew 3 → 7 → 13 → … → 41 → 45) — #170, #193
