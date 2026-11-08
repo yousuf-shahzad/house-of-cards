@@ -19,6 +19,20 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
+### FIX-29 · high · Shorter, beginner-friendly text on Dependencies and guide steps 4–5 (Kendrick, 08:37)
+Kendrick wants the beginner experience to be far less overwhelming: concise summaries, and AI explanations that are short and plain.
+
+**Part A, Dependencies page** (`pages/dependencies/index.tsx`; handed off to Kendrick's Gemini, reviewed by Yousuf's Gemini):
+- AI synthesis cards show `plain_title` + `plain_text` (one sentence, 25 words or fewer) by default, with a "Full detail" toggle for the technical text and its citations. If the plain fields are missing, use the same fallback as guide step 4 (FIX-3).
+- Shorten the section intros and the one-line summaries to one plain sentence each.
+- Keep every number from Python, and keep the evidence drawer working.
+
+**Part B, guide steps 4–5** (`step-4-risks.tsx`, `step-5-next.tsx`, `copy.ts`; Yousuf's Gemini):
+- Shorten the "How we double-checked" research list: one plain line per finding (e.g. "Checked: Apple's reliance on Japan — confirmed"), with the step trace behind a toggle.
+- Trim the step intros.
+
+- **Owner:** Kendrick's Gemini (A) + Yousuf's Gemini (B) · **Status:** assigned
+
 ### FIX-28 · medium · "What's here & why" info button on every page (Yousuf, 08:31)
 Yousuf asked for an info button on every page that explains what's there, why it matters, and how to read it.
 - Done by Yousuf's Gemini: `TabInfoBanner` on the 5 guide steps, Try a change, Exposures and Dependencies, with `PAGE_INFO_COPY` for all 7 Full-view pages.
