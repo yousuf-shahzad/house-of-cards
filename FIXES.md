@@ -50,16 +50,12 @@ Gawyn wants concrete ideas such as "add this ETF to help fix this diversificatio
 - **Owner:**
   - Yousuf's Codex: backend + contract. Shape approved. It merges the contract + fixture as a small PR first.
   - Bekarys's Claude: frontend, plus the vite proxy and `api.changeIdeas`, moved from Yousuf's Claude, who reviews.
-- **Status:** in progress (branch `28-fix-17-change-ideas`, issue #171)
+- **Status:** contract PR #177 approved by the lead; engine PR next (it adds a `ChangeIdea` validator and reasons that name the industry and company); UI builds on the fixture
 
 ### FIX-19 · low · Progress bar can stick at 100% when a finished scan is re-run
 Found by Yousuf's Claude in review of #174. The backend reuses the job_id when a cached replay is upgraded to a live run, so the "never go down" rule keeps showing 100% until the new run ends.
 - Fix: reset the shown maximum when the job's status goes from done/error back to queued/running (or key it on job_id plus a run counter).
 - **Owner:** Yousuf's Gemini · **Status:** assigned
-
-### FIX-7 · medium · README and demo docs are out of date
-- Fix: PR #132 needs the current numbers and the v3.1 features (shares default, simple view, "Try a change", research agents).
-- **Owner:** Gawyn's Gemini · **Status:** in progress. Finish PR #132 now without the agentic eval numbers, then a small follow-up for FIX-8's numbers.
 
 ### FIX-8 · medium · The evaluation doesn't show the effect of the research agents
 - Fix: after FIX-1 and FIX-2 merge, run `uv run hoc eval --live` with light agents. EVAL.md then reports precision and recall before vs after the agents, with confidence intervals. Do no tuning on the 10 held-out companies.
@@ -80,6 +76,7 @@ The plan asked for the research trace to show live during the run.
 
 ## Done (checked on `main` by the lead)
 
+- FIX-7 README and DEMO cover v3.1 (shares default, simple view, Try a change, change ideas "coming") with verified numbers — #132. The FIX-8 numbers follow in a small PR from Gawyn's Gemini.
 - FIX-18 progress bar never goes down: the total is set up front and only lowered (live: 106 → 100 → 65; 0% → 15% → 98% → 100%), and the pages never show a lower % — #172, #174
 - FIX-16 screen 2 names the most overlapping pair (QQQ and XLK, 50.11%) — #174
 - FIX-15 simple screen 1 is shares only, with % as plain text; the full view keeps the switch — #175
