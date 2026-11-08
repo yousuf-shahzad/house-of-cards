@@ -61,9 +61,8 @@ def read_cached_extractions(
         return {}
     disk = DiskCache(Path(cache_dir))
     selected: dict[str, tuple[tuple[date, str, int], list[VerifiedEdge]]] = {}
-    for path in sorted((disk.root / EXTRACTION_CACHE_NAMESPACE).glob("*.json")):
+    for meta in disk.iter_metadata(EXTRACTION_CACHE_NAMESPACE):
         try:
-            meta = json.loads(path.read_text(encoding="utf-8"))
             company, accession, model, version = meta["key"].split("|")
             if company not in wanted or model not in priorities or version != prompt_version:
                 continue

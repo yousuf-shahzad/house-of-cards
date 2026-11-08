@@ -35,8 +35,13 @@ def _write_atomic(path: Path, data: bytes) -> None:
 
 
 class DiskCache:
-    def __init__(self, root: Path) -> None:
+    def __init__(self, root: Path, *, remote: bool | None = None) -> None:
         self.root = root
+        self._remote = None
+        if remote is not False and os.environ.get("HOC_CACHE_BACKEND") == "vercel":
+            from hoc.deployment.cache import BlobCache
+
+            self._remote = BlobCache(root)
 
     def _paths(self, namespace: str, key: str) -> tuple[Path, Path]:
         folder = self.root.joinpath(*(part for part in namespace.split("/") if part not in ("", ".", "..")))
@@ -45,6 +50,8 @@ class DiskCache:
 
     def get(self, namespace: str, key: str) -> CacheEntry | None:
         """Return the entry regardless of age (callers decide freshness), or None."""
+        if self._remote is not None:
+            return self._remote.get(namespace, key)
         body_path, meta_path = self._paths(namespace, key)
         try:
             meta = json.loads(meta_path.read_text(encoding="utf-8"))
@@ -58,6 +65,8 @@ class DiskCache:
 
     def put(self, namespace: str, key: str, body: bytes, meta: dict[str, Any]) -> CacheEntry:
         """meta may carry an aware `fetched_at` (datetime or ISO string); otherwise now (UTC)."""
+        if self._remote is not None:
+            return self._remote.put(namespace, key, body, meta)
         body_path, meta_path = self._paths(namespace, key)
         body_path.parent.mkdir(parents=True, exist_ok=True)
         fetched = meta.get("fetched_at") or datetime.now(UTC)
@@ -67,3 +76,14 @@ class DiskCache:
         _write_atomic(body_path, body)
         _write_atomic(meta_path, json.dumps(meta, sort_keys=True).encode("utf-8"))
         return CacheEntry(body=body, meta=meta, fetched_at=fetched_at)
+
+    def iter_metadata(self, namespace: str):
+        """Enumerate cache metadata without assuming a local filesystem backend."""
+        if self._remote is not None:
+            yield from self._remote.iter_metadata(namespace)
+            return
+        for path in sorted((self.root / namespace).glob("*.json")):
+            try:
+                yield json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
