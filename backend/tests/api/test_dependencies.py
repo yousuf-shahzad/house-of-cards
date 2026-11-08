@@ -197,6 +197,12 @@ class NamingPipeline(FakePipeline):
                               evidence_quote=f"We rely on {name} for our wafers (synthetic).", section="1",
                               filing=filing)
                  for i, name in enumerate(self.NAMES)]
+        # A material whose name exact-matches a holding must never be resolved to it (lead check on #96).
+        edges.append(VerifiedEdge(edge_id=f"{company.company_key}-material", source_company_key=company.company_key,
+                                  source_company_name=company.company_name, source_in_portfolio=False,
+                                  edge_type="key_input", target_name="ZZ Foundry", target_kind="material",
+                                  evidence_quote="We buy ZZ Foundry grade silicon (synthetic).", section="1",
+                                  filing=filing))
         return Extraction(edges=edges, cached=True)
 
     def resolver_for(self, portfolio):
@@ -210,7 +216,9 @@ def test_name_variants_resolve_to_one_portfolio_key(setup, make_service):
     foundry_key = service.analyse(PortfolioRequest(holdings=HOLDINGS)).exposures[2].company_key
     client, _, pipeline = setup(NamingPipeline(foundry_key))
     edges = post(client, top_n=1).json()["result"]["edges"]
-    by_name = {e["target_name"]: e for e in edges}
+    material = next(e for e in edges if e["target_kind"] == "material")
+    assert material["target_key"] is None and material["target_in_portfolio"] is False
+    by_name = {e["target_name"]: e for e in edges if e["target_kind"] == "company"}
     assert by_name["ZZ Foundry"]["target_key"] == by_name["ZZ Foundry Manufacturing Company Limited"]["target_key"] \
         == foundry_key
     assert by_name["ZZ Foundry"]["target_in_portfolio"] and by_name["ZZ Foundry"]["source_in_portfolio"]
