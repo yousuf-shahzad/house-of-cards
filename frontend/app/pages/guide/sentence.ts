@@ -96,7 +96,16 @@ export function shouldExpandOnKeyChange(
 const CORP_SUFFIX_RE =
   /,?\s+\b(?:Co\.,?\s*Ltd\.?|Corporation|Corp\.?|Incorporated|Inc\.?|Limited|Ltd\.?|PLC|Plc|N\.V\.?|S\.A\.?|AG|LLC|L\.P\.?)$/i;
 
-const TRAILING_TAG_RE = /\s*\([a-z_]+\)\s*$/i;
+const TRAILING_TAG_RE = /\s*\(([a-z_]+)\)\s*$/i;
+const ARROW_SPLIT_RE = /\s*(?:→|->)\s*/;
+const INLINE_RELIANCE_RE =
+  /^(.+?)\s+(?:single-source\s+)?(reliance on|partnership with|sales to|licensing with)\s+(.+)$/i;
+
+const TAG_RELATION_LABELS: Record<string, string> = {
+  jv_partner: "partnership with",
+  customer: "sales to",
+  licensing: "licensing with",
+};
 
 function cleanEntityName(raw: string): string {
   return raw
@@ -105,6 +114,10 @@ function cleanEntityName(raw: string): string {
     .replace(CORP_SUFFIX_RE, "")
     .replace(CORP_SUFFIX_RE, "")
     .trim();
+}
+
+function possessiveName(name: string): string {
+  return name.endsWith("s") ? `${name}'` : `${name}'s`;
 }
 
 const PLAIN_OUTCOME_LABELS: Record<string, string> = {
@@ -116,31 +129,45 @@ const PLAIN_OUTCOME_LABELS: Record<string, string> = {
 };
 
 /**
- * FIX-29 Part B: Formats a research finding into a single beginner-friendly plain line,
- * e.g. "Checked: Apple's reliance on Japan — confirmed".
+ * FIX-29 Part B & FIX-32: Formats a research finding into a single beginner-friendly plain line,
+ * e.g. "Checked: Apple's reliance on Japan — confirmed" or
+ * "Checked: Nvidia's partnership with OpenAI — still unclear".
  */
 export function formatFindingOneLiner(
   subject: string,
   outcome: string,
   explanation?: string,
 ): string {
-  const raw = subject.trim().replace(TRAILING_TAG_RE, "").trim();
+  const trimmed = subject.trim();
+  const tagMatch = trimmed.match(TRAILING_TAG_RE);
+  const tag = tagMatch?.[1]?.toLowerCase() ?? "";
+  const relationPhrase = TAG_RELATION_LABELS[tag] ?? "reliance on";
+  const raw = trimmed.replace(TRAILING_TAG_RE, "").trim();
   let plainSubject = raw;
 
-  if (raw.includes("→")) {
-    const [left, right] = raw.split("→", 2);
+  if (ARROW_SPLIT_RE.test(raw)) {
+    const [left, right] = raw.split(ARROW_SPLIT_RE, 2);
     const src = cleanEntityName(left ?? "");
     const tgt = cleanEntityName(right ?? "");
     if (src && tgt) {
-      const possessive = src.endsWith("s") ? `${src}'` : `${src}'s`;
-      plainSubject = `${possessive} reliance on ${tgt}`;
+      plainSubject = `${possessiveName(src)} ${relationPhrase} ${tgt}`;
     }
   } else if (raw.includes(" — ")) {
     const [left, right] = raw.split(" — ", 2);
     const src = cleanEntityName(left ?? "");
     plainSubject = src && right ? `${src} (${right.trim()})` : raw;
   } else {
-    plainSubject = cleanEntityName(raw) || raw;
+    const inlineMatch = raw.match(INLINE_RELIANCE_RE);
+    if (inlineMatch) {
+      const src = cleanEntityName(inlineMatch[1] ?? "");
+      const rel = (inlineMatch[2] ?? "reliance on").toLowerCase();
+      const tgt = cleanEntityName(inlineMatch[3] ?? "");
+      if (src && tgt) {
+        plainSubject = `${possessiveName(src)} ${rel} ${tgt}`;
+      }
+    } else {
+      plainSubject = cleanEntityName(raw) || raw;
+    }
   }
 
   const timedOut =

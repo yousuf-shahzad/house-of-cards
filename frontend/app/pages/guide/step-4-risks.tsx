@@ -316,7 +316,7 @@ export default function RisksStep(_props: RiskStepProps) {
   // Keep existing result visible in place while "Go deeper" polls on the same portfolio.
   const result = !stale ? job?.result ?? null : null;
   const running = !error && (status === "starting" || status === "polling" || (stale && analysisStatus === "ready"));
-  const liveResearch = (job as { research?: readonly ResearchFinding[] } | null)?.research ?? [];
+  const liveResearch = job?.research ?? [];
 
   const activePhase = job?.phase ?? "reading";
   const stepsDone = job?.steps_done || job?.progress_done || 0;

@@ -372,7 +372,7 @@ export default function NetworkPage() {
           </div>
         )}
         <p className="text-caption-1-regular text-text-tertiary">
-          Thicker lines mean more of your portfolio reaches that company through that ETF. Bigger circles mean bigger
+          Line thickness = how much of your money is in that company through that ETF. Bigger circles mean bigger
           positions. Select a circle for details, and press Esc to clear it.
         </p>
       </section>
