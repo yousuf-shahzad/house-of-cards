@@ -101,11 +101,18 @@ function ServerError({ error, retry }: { error: ApiError; retry: () => void }) {
   );
 }
 
-/** Portfolio-level valuation issues (blocking first). Row-level ones show on their row. */
-function ValuationIssues({ issues }: { issues: ValuationIssue[] }) {
+/** Portfolio-level valuation issues (blocking first). Issues naming a ticker already show on their row. */
+function ValuationIssues({ issues, blocked }: { issues: ValuationIssue[]; blocked: boolean }) {
   const shown = issues
-    .filter((issue) => issue.ticker === null || issue.severity === "blocking")
+    .filter((issue) => issue.ticker === null)
     .sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "blocking" ? -1 : 1));
+  if (blocked && !shown.some((issue) => issue.severity === "blocking")) {
+    return (
+      <p className="text-body-regular text-text-error-primary">
+        Some ETFs can't be valued yet. Fix the rows marked above, or type a % to pin them.
+      </p>
+    );
+  }
   return (
     <>
       {shown.map((issue, i) => (
@@ -133,6 +140,8 @@ function Status({ validation }: { validation: Validation }) {
   const blocked = validation.issues.includes("valuation-blocked");
   const totalOk = rows.length > 0 && validation.valid;
   const pricing = valuation.status === "pricing";
+  // Without a usable valuation the unpinned rows have no %, so a partial total would mislead.
+  const totalKnown = !(mode === "shares" && (pricing || blocked || valuation.status === "error"));
   const totalValue = valuation.result?.total_value;
   return (
     <div className="flex flex-col gap-2" aria-live="polite">
@@ -141,9 +150,9 @@ function Status({ validation }: { validation: Validation }) {
           <span className="flex items-center gap-2">
             <span className="text-body-medium text-text-primary">Total</span>
             <span className="text-title-3-semibold text-text-primary" style={tabular}>
-              {validation.totalPct.toFixed(2)}%
+              {totalKnown ? `${validation.totalPct.toFixed(2)}%` : "—"}
             </span>
-            {rows.length > 0 && !pricing && (
+            {rows.length > 0 && totalKnown && (
               <Chip variant="caption" color={totalOk ? "lime" : "rose"}>
                 {totalOk ? "100%" : "Must total 100%"}
               </Chip>
@@ -177,7 +186,7 @@ function Status({ validation }: { validation: Validation }) {
         </p>
       ))}
       {mode === "shares" && valuation.result && (blocked || valuation.status === "usable") && (
-        <ValuationIssues issues={valuation.result.issues} />
+        <ValuationIssues issues={valuation.result.issues} blocked={blocked} />
       )}
       {valuation.status === "error" && valuation.error && <ServerError error={valuation.error} retry={retry} />}
       {status === "error" && error && <ServerError error={error} retry={retry} />}
@@ -302,7 +311,6 @@ function PriceLine({ row, priced }: { row: DraftRow; priced?: ValuationRowResult
           className={issue.severity === "blocking" ? "text-body-2-regular text-text-error-primary" : "text-body-2-regular text-text-secondary"}
         >
           {issue.message}
-          {issue.severity === "blocking" && " Type a % to pin this ETF instead."}
         </span>
       ))}
     </>
