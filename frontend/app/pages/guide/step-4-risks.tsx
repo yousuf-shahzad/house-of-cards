@@ -5,6 +5,7 @@
 // blocks: if the check is unavailable or fails, it says so and the user can carry on.
 // Every number is a backend metric or coverage figure, formatted with formatPct.
 
+import { useState } from "react";
 import { useAnalysis } from "@/app/analysis";
 import { useDependencies } from "@/app/dependencies-state";
 import { useExperience } from "@/app/experience";
@@ -62,8 +63,12 @@ export function buildFindings(result: DependencyResult): Finding[] {
       note: dependency.companies ? RISKS_COPY.reliesThrough(dependency.companies) : undefined,
     });
   }
-  // Country metrics only (facility.<ISO2>); named sites are not countries.
-  const country = cards.find((card) => card.kind === "facility" && /^facility\.[A-Z]{2}$/.test(card.share.metric_id));
+  // Country metrics only (facility.<ISO2>); named sites are not countries. The home market (US) isn't a
+  // hidden risk for a US investor, so show the biggest country abroad.
+  const country = cards.find(
+    (card) =>
+      card.kind === "facility" && /^facility\.[A-Z]{2}$/.test(card.share.metric_id) && card.share.metric_id !== "facility.US",
+  );
   if (country) {
     findings.push({ key: "country", text: RISKS_COPY.country(formatPct(country.share.value, 0), country.subject) });
   }
@@ -76,18 +81,34 @@ export function buildFindings(result: DependencyResult): Finding[] {
   return findings;
 }
 
+/** "First sentence." and the rest, so beginners see a short summary with the detail one click away. */
+export function splitFirstSentence(text: string): [string, string] {
+  const match = /^(.+?[.!?])\s+(?=[A-Z0-9"'(])/.exec(text.trim());
+  return match ? [match[1], text.trim().slice(match[0].length)] : [text.trim(), ""];
+}
+
+function ClaimCard({ claim }: { claim: InsightClaim }) {
+  const [open, setOpen] = useState(false);
+  const [first, rest] = splitFirstSentence(claim.text);
+  return (
+    <li className="flex flex-col gap-1 rounded-2xl border border-border-button-default bg-background-secondary-default p-4">
+      <span className="text-body-semibold text-text-primary">{claim.title}</span>
+      <span className="text-body-2-regular text-text-secondary">{open && rest ? `${first} ${rest}` : first}</span>
+      {rest ? (
+        <Button variant="ghost" size="xs" className="self-start" aria-expanded={open} onClick={() => setOpen(!open)}>
+          {open ? RISKS_COPY.showLess : RISKS_COPY.readMore}
+        </Button>
+      ) : null}
+    </li>
+  );
+}
+
 export function ClaimCards({ claims, empty }: { claims: readonly InsightClaim[]; empty: string }) {
   if (claims.length === 0) return <p className="text-body-2-regular text-text-secondary">{empty}</p>;
   return (
     <ul className="flex flex-col gap-3">
       {claims.map((claim) => (
-        <li
-          key={claim.claim_id}
-          className="flex flex-col gap-1 rounded-2xl border border-border-button-default bg-background-secondary-default p-4"
-        >
-          <span className="text-body-semibold text-text-primary">{claim.title}</span>
-          <span className="text-body-2-regular text-text-secondary">{claim.text}</span>
-        </li>
+        <ClaimCard key={claim.claim_id} claim={claim} />
       ))}
     </ul>
   );
