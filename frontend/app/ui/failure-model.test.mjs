@@ -132,3 +132,17 @@ test("parseShockHash reads ?shock=<kind>:<key> from the Compare hash", () => {
     assert.equal(parseShockHash(bad), null, bad);
   }
 });
+
+test("both sides start from the same amount, so the comparison is on equal pots", () => {
+  const live = fixture("stress-it.json");
+  const before = 9817.68;
+  const base = moneyRow(before, live.baseline.loss_fraction);
+  const cand = moneyRow(before, live.candidate.loss_fraction);
+  assert.equal(formatDollars(base.loss), "$972");
+  assert.equal(formatDollars(cand.loss), "$743");
+  assert.deepEqual(lossDifference(base.loss, cand.loss), { tone: "better", text: "loses $229 less" });
+  // A smaller fraction always reads as "less" on the same pot, even if the new mix's own value is bigger.
+  const biggerOwnPot = moneyRow(before * 1.4, live.candidate.loss_fraction);
+  assert.equal(lossDifference(base.loss, biggerOwnPot.loss).tone, "worse");
+  assert.equal(lossDifference(base.loss, cand.loss).tone, "better");
+});

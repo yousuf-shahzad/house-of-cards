@@ -137,11 +137,11 @@ export function FailureSimulator() {
 
   if (!baselineReady || !analysis) return null;
 
-  // Money (CONTRACT.md §11): each side starts from its own value in shares mode, else the notional $10,000.
-  // A % new mix next to a shares portfolio uses the portfolio's value, so the two rows stay like-for-like.
+  // Money (CONTRACT.md §11): the portfolio's value in shares mode, else the notional $10,000.
+  // The new mix starts from the same amount, so "loses $X less" compares equal-sized pots even when an idea adds shares.
   const baseValue = portfolioValue(current.mode, current.valuation.result);
   const baseBefore = baseValue ?? NOTIONAL_DOLLARS;
-  const candBefore = portfolioValue(scenario.mode, scenario.valuation.result) ?? baseBefore;
+  const candBefore = baseBefore;
 
   const baseRow = result ? moneyRow(baseBefore, result.baseline.loss_fraction) : null;
   const candSide = result?.candidate ?? null;
@@ -246,6 +246,7 @@ export function FailureSimulator() {
             {candSide && candRow ? (
               <SideRow
                 label="Your new mix"
+                hint={`Same ${formatDollars(candBefore)} in your new mix`}
                 side={candSide}
                 money={candRow}
                 badge={
@@ -312,12 +313,25 @@ export function FailureSimulator() {
   );
 }
 
-function SideRow({ label, side, money, badge }: { label: string; side: StressSide; money: MoneyRow; badge?: ReactNode }) {
+function SideRow({
+  label,
+  hint,
+  side,
+  money,
+  badge,
+}: {
+  label: string;
+  hint?: string;
+  side: StressSide;
+  money: MoneyRow;
+  badge?: ReactNode;
+}) {
   return (
     <li className="flex flex-wrap items-baseline justify-between gap-2 py-3">
       <div className="flex flex-col gap-0.5">
         <span className="text-body-medium text-text-primary">{label}</span>
         <span className="text-caption-1-regular text-text-tertiary">
+          {hint && `${hint} · `}
           {formatPct(side.affected_weight, 1)} exposed · loses {formatPct(side.loss_fraction, 1)}
         </span>
       </div>
