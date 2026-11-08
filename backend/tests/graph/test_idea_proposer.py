@@ -320,7 +320,7 @@ def test_verify_rationale_rejects_made_up_company_name() -> None:
     assert consider_text == "Consider broader exposure for 51.0%."
 
     ok_text, ok_err = verify_and_render_proposal_rationale(
-        "Shifting out of XLK into VTV lowers your {{metric:dep.ALIAS:TSMC}} Taiwan Semiconductor reliance.",
+        "Shifting out of XLK into VTV reduces reliance on Taiwan Semiconductor ({{metric:dep.ALIAS:TSMC}} today).",
         metrics_by_id=metrics_lookup,
         allowed_tickers=allowed_tickers,
         allowed_entities=allowed_entities,
@@ -486,44 +486,83 @@ def test_proposer_builds_real_gemini_client_and_classifies_timeout_by_type(tmp_p
 
 
 def test_dep_placeholder_requires_or_rewrites_company_subject() -> None:
-    """FIX-26: dep.* placeholders without their company subject are rewritten with the company name or rejected."""
+    """FIX-26: Never insert text. Drop rationale (None) if a dep.* placeholder lacks its subject nearby or follows a change verb."""
+    openai_fact = MetricFact(
+        metric_id="dep.NAME:openai",
+        label="Portfolio exposure that depends on OpenAI",
+        value=0.1241,
+        unit="fraction",
+        supporting_edge_ids=["e1"],
+    )
+    gpu_fact = MetricFact(
+        metric_id="dep.NAME:graphics-processing-units",
+        label="Portfolio exposure that depends on graphics processing units",
+        value=0.0813,
+        unit="fraction",
+        supporting_edge_ids=["e2"],
+    )
     tsmc_fact = MetricFact(
         metric_id="dep.ALIAS:TSMC",
         label="Portfolio exposure dependent on Taiwan Semiconductor Manufacturing Co., Ltd.",
         value=0.1241,
         unit="fraction",
-        supporting_edge_ids=["e1"],
+        supporting_edge_ids=["e3"],
     )
+    metrics = {
+        "top_sector": 0.5109,
+        "dep.NAME:openai": openai_fact,
+        "dep.NAME:graphics-processing-units": gpu_fact,
+        "dep.ALIAS:TSMC": tsmc_fact,
+    }
+    allowed_tickers = {"QQQ", "VTV", "SCHD", "TSMC"}
+    allowed_entities = {
+        "openai",
+        "graphics processing units",
+        "taiwan semiconductor manufacturing",
+        "tsmc",
+        "technology",
+    }
 
-    # 1. '...reduces reliance on {{metric:dep.ALIAS:TSMC}}.' puts subject first with '(12.41% today)' as context
-    rewritten, err = verify_and_render_proposal_rationale(
-        "Swapping QQQ into VTV reduces reliance on {{metric:dep.ALIAS:TSMC}}.",
-        metrics_by_id={"dep.ALIAS:TSMC": tsmc_fact},
-        allowed_tickers={"QQQ", "VTV", "TSMC"},
-        allowed_entities={"taiwan semiconductor manufacturing", "tsmc"},
+    # 1. Live VTV sentence: '...reduces reliance on {{metric:dep.NAME:openai}}.' -> dropped (None)
+    vtv_rat, vtv_err = verify_and_render_proposal_rationale(
+        "Moving part of QQQ into large value companies led by financials cuts the {{metric:top_sector}} technology weight and reduces reliance on {{metric:dep.NAME:openai}}.",
+        metrics_by_id=metrics,
+        allowed_tickers=allowed_tickers,
+        allowed_entities=allowed_entities,
     )
-    assert err is None
-    assert rewritten == "Swapping QQQ into VTV reduces reliance on Taiwan Semiconductor Manufacturing (12.41% today)."
+    assert vtv_rat is None
+    assert vtv_err is None
 
-    # 2. When the company name is already present next to the placeholder, it is not duplicated
-    existing, err2 = verify_and_render_proposal_rationale(
+    # 2. Live SCHD sentence: '...dilutes the {{metric:dep.NAME:graphics-processing-units}} reliance on chip hardware...' -> dropped (None)
+    schd_rat, schd_err = verify_and_render_proposal_rationale(
+        "Adding dividend-paying healthcare and consumer companies dilutes the {{metric:dep.NAME:graphics-processing-units}} reliance on chip hardware and cuts the {{metric:top_sector}} technology share.",
+        metrics_by_id=metrics,
+        allowed_tickers=allowed_tickers,
+        allowed_entities=allowed_entities,
+    )
+    assert schd_rat is None
+    assert schd_err is None
+
+    # 3. Change verb before dep.* placeholder even when subject is named -> dropped (None)
+    change_verb_rat, change_verb_err = verify_and_render_proposal_rationale(
         "Swapping QQQ into VTV lowers your {{metric:dep.ALIAS:TSMC}} Taiwan Semiconductor reliance.",
-        metrics_by_id={"dep.ALIAS:TSMC": tsmc_fact},
-        allowed_tickers={"QQQ", "VTV", "TSMC"},
-        allowed_entities={"taiwan semiconductor manufacturing", "tsmc"},
+        metrics_by_id=metrics,
+        allowed_tickers=allowed_tickers,
+        allowed_entities=allowed_entities,
     )
-    assert err2 is None
-    assert existing == "Swapping QQQ into VTV lowers your 12.41% Taiwan Semiconductor reliance."
+    assert change_verb_rat is None
+    assert change_verb_err is None
 
-    # 3. When neither the text nor the metric has a company subject, the rationale is rejected
-    missing_text, missing_err = verify_and_render_proposal_rationale(
-        "Swapping QQQ into VTV reduces reliance on {{metric:dep.CIK:0000000000}}.",
-        metrics_by_id={"dep.CIK:0000000000": 0.1241},
-        allowed_tickers={"QQQ", "VTV"},
-        allowed_entities=set(),
+    # 4. Subject display name within a few words + parenthetical '(12.41% today)' context -> kept and rendered
+    valid_ctx, valid_err = verify_and_render_proposal_rationale(
+        "Swapping QQQ into VTV reduces reliance on OpenAI ({{metric:dep.NAME:openai}} today).",
+        metrics_by_id=metrics,
+        allowed_tickers=allowed_tickers,
+        allowed_entities=allowed_entities,
     )
-    assert missing_text is None
-    assert missing_err == "missing_dependency_subject:dep.CIK:0000000000"
+    assert valid_err is None
+    assert valid_ctx == "Swapping QQQ into VTV reduces reliance on OpenAI (12.41% today)."
+
 
 
 
