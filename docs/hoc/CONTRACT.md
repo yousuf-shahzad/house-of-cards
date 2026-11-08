@@ -286,3 +286,35 @@ Models live in `hoc/contract/ideas.py`, mirrored in
   to an empty list; each entry has `ticker`, `action`, and a machine-readable `reason`.
   Proposal caching includes holdings, Python issues, model and prompt version, with disk reuse across
   restarts. Pending work is shared rather than starting a model call on each poll.
+
+## 11. Failure simulator (Compare screen, Gawyn 2026-11-08)
+
+Lead-approved additive extension. Models: `hoc/contract/stress.py`; TypeScript: `frontend/api/types.ts`.
+
+`POST /api/stress` takes a `StressRequest`:
+- `baseline`: the current holdings.
+- `candidate`: the Try a change mix, optional.
+- `shock`: a `ShockSpec`, one of:
+  - `sector` + a `Sector` value;
+  - `country` + ISO alpha-2;
+  - `supplier` + the dependency target key, plus `company_keys` hit.
+- `drop`: an optional override.
+
+It returns a `StressResponse`. The same 422/503 analysis errors as `/api/compare` pass through.
+
+**The drop (`basis`).**
+- **Historical** when a proxy ETF has price history: the worst 21-trading-day return in the last 5 years of daily adjusted closes.
+  - Sector proxies are the SPDR sector ETFs: information_technology XLK, financials XLF, health_care XLV, consumer_discretionary XLY, communication_services XLC, industrials XLI, consumer_staples XLP, energy XLE, utilities XLU, real_estate XLRE, materials XLB.
+  - Country proxies are iShares MSCI country ETFs (e.g. TW EWT, CN MCHI, JP EWJ, KR EWY); US uses SPY.
+- **Otherwise simulated:** `DEFAULT_SHOCK_DROP` = 10%, with `source="simulated"` and a description saying why.
+- `supplier` is always simulated unless `drop` is given.
+
+**Each side (`StressSide`).**
+- `affected_weight` is the look-through weight of the affected companies:
+  - sector: companies with that `sector`;
+  - country: companies with that `country`;
+  - supplier: companies in `company_keys`.
+- `loss_fraction = affected_weight * basis.drop`.
+- `affected` lists up to 10 companies, largest loss first.
+
+**Money is a UI concern.** Before is the portfolio value (shares mode) or a notional $10,000 (% mode). After is `before * (1 - loss_fraction)`.

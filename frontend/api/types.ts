@@ -802,3 +802,71 @@ export interface RejectedIdeaProposal {
   action: string;
   reason: string;
 }
+
+// ---------- Failure simulator (POST /api/stress), Compare screen ----------
+// Every affected company loses basis.drop of its value: the proxy ETF's worst one-month fall
+// (21 trading days) in the last 5 years of daily closes, else a simulated 10% fall.
+// The API returns fractions; the UI turns them into money (before = portfolio value in shares
+// mode, or a notional $10,000 in % mode; after = before * (1 - loss_fraction)).
+
+export type ShockKind = "sector" | "country" | "supplier";
+export type ShockSource = "historical" | "simulated";
+export const DEFAULT_SHOCK_DROP = 0.1;
+
+export interface ShockSpec {
+  kind: ShockKind;
+  /** sector: a Sector value; country: ISO 3166-1 alpha-2 (e.g. "TW"); supplier: the dependency target key. */
+  key: string;
+  /** Display name, echoed back. */
+  label?: string | null;
+  /** Override the fall (0.10 = 10%). Omit for historical-if-possible, else 10%. */
+  drop?: number | null;
+}
+
+export interface StressRequest {
+  baseline: PortfolioItem[];
+  /** The changed portfolio from Try a change; omit to shock only the current portfolio. */
+  candidate?: PortfolioItem[] | null;
+  shock: ShockSpec;
+  /** supplier only: the company_keys the failure hits (the supplier if held, plus the companies that rely on it). */
+  company_keys?: string[];
+}
+
+export interface ShockBasis {
+  source: ShockSource;
+  /** Fraction each affected company loses (0.193 = 19.3%). */
+  drop: number;
+  /** ETF whose history set the drop (e.g. "XLK"); null when simulated. */
+  proxy: string | null;
+  window_start: string | null;
+  window_end: string | null;
+  /** One plain-English line explaining the drop. */
+  description: string;
+}
+
+export interface AffectedCompany {
+  company_key: string;
+  company_name: string;
+  exposure: number;
+  /** exposure * drop: share of the whole portfolio's value this company loses. */
+  loss: number;
+}
+
+export interface StressSide {
+  /** Share of the portfolio held in affected companies. */
+  affected_weight: number;
+  /** Share of the portfolio's value lost (affected_weight * drop). */
+  loss_fraction: number;
+  affected_count: number;
+  /** Largest loss first; at most 10. */
+  affected: AffectedCompany[];
+}
+
+export interface StressResponse {
+  status: "ok" | "partial";
+  shock: ShockSpec;
+  basis: ShockBasis;
+  baseline: StressSide;
+  candidate: StressSide | null;
+  notes: string[];
+}

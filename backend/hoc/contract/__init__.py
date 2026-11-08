@@ -31,6 +31,20 @@ from .api import (
     TopShared,
 )
 from .compare import CompareRequest, CompareResponse, ConcentrationDelta, MetricDelta
+from .stress import (
+    DEFAULT_SHOCK_DROP,
+    HISTORY_YEARS,
+    MAX_AFFECTED_LISTED,
+    SHOCK_WINDOW_DAYS,
+    AffectedCompany,
+    ShockBasis,
+    ShockKind,
+    ShockSource,
+    ShockSpec,
+    StressRequest,
+    StressResponse,
+    StressSide,
+)
 from .dependencies import (
     DEFAULT_RESEARCH_ITEMS,
     DEFAULT_TOP_N,
