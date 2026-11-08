@@ -57,7 +57,7 @@ Today the order is: header (Find dependencies, Go deeper) → progress → cover
 - **Selection gets stuck on an old node.** `selectEdge()` doesn't clear `selectedNodeId`, so after clicking a node, clicking an edge or citation opens the edge's drawer while the highlight and inline inspector stay on the old node. Hovering nodes also swaps the 6 inline evidence cards on every mouse move, shifting the layout. Fix: clear the node on edge select, and change the inline cards only on click.
 - **Restarting a scan shows 100% first.** "Go deeper" or "Run again" briefly shows 100% with all phases green, then jumps back. Fix: reset the job progress on start (`dependencies-state.tsx`).
 - **Owner:**
-  - Bekarys's Claude (back from its limit): the `dependencies-state.tsx` parts. `selectEdge` clears `selectedNodeId`, and starting Go deeper or Run again resets the shown job progress.
+  - Bekarys's Claude: the `dependencies-state.tsx` parts, **done in #246**. Lead, live: clicking the OpenAI node, then an Apple edge, clears the node highlight, shows "Selected Edge Evidence" and opens the edge's drawer.
   - Yousuf's Gemini: the page-side hover fix, in its FIX-52 reorder PR.
 - **Status:** assigned
 
