@@ -26,35 +26,13 @@ Live: the VTV idea's rationale reads "...reduces reliance on 12.41%". The placeh
   - VTV: "reduces 12.41% reliance on Portfolio exposure that depends on OpenAI"
   - SCHD: "dilutes the 8.13% Portfolio exposure that depends on graphics processing units reliance on chip hardware"
 - **New fix:** don't rewrite. If a `dep.*` placeholder isn't next to its subject's display name (the company or input name, e.g. "OpenAI", never the label), drop the rationale (`None`). The card then shows Python's reason, which is always correct. Add tests with both live sentences.
+- **After #204 (lead, live):** still inserts the label: VTV "...reduces reliance on Portfolio exposure that depends on OpenAI (12.41% today)"; SCHD unchanged and garbled.
 - **Owner:** Gawyn's Gemini (`hoc/graph/idea_proposer.py`) · **Status:** assigned (reopened)
 
-### FIX-23 · high · Dependencies page is overloaded and scrolls too long (Gawyn, 07:40)
-Make these four sections collapsible:
-- "AI synthesis: critical flaws & diversification ideas"
-- "Investigate uncertain findings"
-- "Verified Counterparty & Supply-Chain Graph"
-- "Facility & Manufacturing Concentration by Country"
-
-**Collapsed (default):** show the header (title plus a one-line summary or count), then a short preview of the content (about 280 px) that fades out at the bottom, then a "Show all" button that unfolds the rest. "Show less" folds it back.
-
-**Previews:**
-- AI synthesis: the first 2 claim cards.
-- Investigate: the first 2 findings.
-- Graph: the top of the graph.
-- Countries: the chart.
-
-**Countries layout:** stack the two inner panels: the chart full width on top, the country list below. Today they sit side by side (`lg:grid-cols-12`, 5/7).
-
-**Details:**
-- One small page-local component, `pages/dependencies/collapsible-section.tsx`.
-- The button has `aria-expanded`/`aria-controls`, and Tab into the hidden part expands it.
-- The fade uses theme tokens (light and dark).
-- Remember each section's state per viewer with localStorage, wrapped in try/catch.
-- Selecting an edge elsewhere, such as from an insight card, expands the Graph section so the evidence drawer still works.
-
-**Check:** report the page's scroll height before and after at 1280×800. The progress bar, headline numbers and "Go deeper" stay visible at the top.
-
-- **Owner:** Yousuf's Gemini (Dependencies page); Yousuf's Claude reviews · **Status:** assigned
+### FIX-27 · medium · The Graph section can't be folded again while anything is selected
+Found by Yousuf's Claude in review of #203. `forceExpand={Boolean(selectedEdgeId || selectedNodeId)}` re-expands right after "Show less", and a clicked node stays selected (app-level store; closing the drawer doesn't clear it).
+- Fix: expand when the selection changes (an `expandKey` effect without `expanded` in its deps), and don't save forced opens to localStorage. Test: select a node, Show less, and the section stays folded.
+- **Owner:** Yousuf's Gemini · **Status:** assigned
 
 ### FIX-22 · medium · Research time budgets are too tight
 In the FIX-1 live check, 4 of 23 light findings stopped after one tool call ("step budget expired"), and 15 of 45 thorough findings were skipped ("time budget reached").
@@ -131,6 +109,7 @@ The plan asked for the research trace to show live during the run.
 
 ## Done (checked on `main` by the lead)
 
+- FIX-23 the four Dependencies sections fold to a 280 px faded preview with Show all / Show less, and Countries is stacked. Lead check: each section 280 px when folded, 1.6k–12k px open; the page is 19,196 → 4,690 px at 1280×800 (PR) — #203
 - FIX-25 AI swaps into XLV and VTV accepted under a worst-case industry check (live: XLK→XLV Technology 51.1% → 41.2%; QQQ→VTV → 41.8%; all 3 AI ideas match compare) — #201
 - FIX-24 the idea proposer reaches Argon (the invalid timeout argument is gone; timeouts classified by type) — #199
 - FIX-21 docs: swap 12.39% → 6.30% (−6.10 pts), XLU 9.92%, slide 3 companies Nvidia/Broadcom/AMD/Intel, and the honest held-out agent result (+0.0 pp, no accuracy claims) — #195, #198
