@@ -56,10 +56,6 @@ In the FIX-1 live check, 4 of 23 light findings stopped after one tool call ("st
 - After it merges, Bekarys's Gemini re-runs the held-out eval at thorough depth to see whether deeper research changes links.
 - **Owner:** Kendrick's Gemini (+ Bekarys's Claude for job limits) · **Status:** plan approved (an 8-worker research pool; light 40 s and thorough 85 s per company)
 
-### FIX-21 · medium · Docs: say what the research agents did on the held-out eval
-Done in #195 (checked by the lead): swap figure 12.39% → 6.30% (−6.10 pts), +20% XLU 12.39% → 9.92%, and slide 3 names Nvidia, Broadcom, AMD and Intel.
-- Still to do: add the FIX-8 result honestly to README, DEMO and PITCH_DECK. Light research double-checks findings (18/18 with 2+ lookups, 0 circular) but changes no links on the held-out set, so precision and recall stay 88.4% / 96.1% / 57.4% (+0.0 pp). Don't say the agents raise accuracy.
-- **Owner:** Gawyn's Gemini · **Status:** assigned (after the "Consider" checker fix)
 ### FIX-17 · high · Change ideas: AI proposes, Python verifies (Gawyn, 07:08)
 Gawyn wants concrete ideas ("add this ETF to help fix this diversification issue") on screen 5 and in Try a change, in both views. **The AI proposes the changes and Python verifies them**, the same pattern as the AI summaries.
 
@@ -105,8 +101,8 @@ Survivors are measured with cache-only compare on one company set (FIX-20). Pyth
 - **Live check (lead):** sample portfolio. Every shown idea improves its named issue by the shown amount; the AI and fallback paths both work, including with no key.
 - **Owners:** Gawyn's Gemini (proposer) + Yousuf's Codex (verifier, contract) + Bekarys's Claude (UI)
 - **Status:**
-  - Merged: rules version (#177–#181), AI contract (#185), proposer (#194, plus name and sector checks).
-  - Engine PR #192 is approved and blocked only on the proposer's "Consider" false positive (Gawyn's Gemini).
+  - Merged: rules version (#177–#181), AI contract (#185), proposer (#194, plus name and sector checks; "Consider" fixed in #197).
+  - Engine PR #192 is approved and finishing its full test run.
   - UI PR #186 is in review.
 
 ### FIX-9 · medium · Final QA of both views
@@ -123,6 +119,7 @@ The plan asked for the research trace to show live during the run.
 
 ## Done (checked on `main` by the lead)
 
+- FIX-21 docs: swap 12.39% → 6.30% (−6.10 pts), XLU 9.92%, slide 3 companies Nvidia/Broadcom/AMD/Intel, and the honest held-out agent result (+0.0 pp, no accuracy claims) — #195, #198
 - FIX-8 before/after eval on the 10 held-out 10-Ks (light agents): precision 88.4% blind / 96.1% pooled and core recall 57.4%, all unchanged (+0.0 pp); 18 findings, 0 links added or removed; agentic check PASS (18/18 make 2+ tool calls, 0 circular). Reproduced offline by the lead — #196
 - FIX-1, FIX-2, FIX-14 real research loop. Light: 17/23 findings make 2+ tool calls (was 3/25). Thorough: 27/45 use `search_filings` (was 0). Thorough keeps every light edge. 0 duplicate or group customer links — #189
 - FIX-19 the bar resets only when a reused job starts again; a running bar at 100% stays at 100% — #187, #191
