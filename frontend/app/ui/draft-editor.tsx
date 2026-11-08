@@ -5,7 +5,10 @@ import { createContext, useContext, useEffect, type ReactNode } from "react";
 import { RiAddLine, RiEqualizerLine, RiPushpinLine, RiRefreshLine, RiUnpinLine } from "@remixicon/react";
 import type { ApiError } from "@/api/client";
 import { MAX_ETFS, PRICE_STALE_DAYS, type EtfReport, type ValuationIssue, type ValuationRowResult } from "@/api/types";
+import { plainValuationIssue } from "@/app/pages/simple/issues";
 import { validShares, type DraftRow, type InputMode, type PortfolioDraft, type RowIssue } from "@/app/portfolio-draft";
+
+export { plainValuationIssue };
 import { AsOfBadge } from "@/app/ui/as-of-badge";
 import { Button } from "@/components/base/buttons/button";
 import { CloseButton } from "@/components/base/buttons/close-button";
@@ -125,8 +128,14 @@ function ValuationIssues({ issues, blocked }: { issues: ValuationIssue[]; blocke
           key={`${issue.code}-${issue.ticker ?? ""}-${i}`}
           className={issue.severity === "blocking" ? "text-body-regular text-text-error-primary" : "text-body-regular text-text-secondary"}
         >
-          {issue.ticker ? `${issue.ticker}: ` : ""}
-          {issue.message}
+          {sharesOnly ? (
+            plainValuationIssue(issue, { withTicker: true })
+          ) : (
+            <>
+              {issue.ticker ? `${issue.ticker}: ` : ""}
+              {issue.message}
+            </>
+          )}
         </p>
       ))}
     </>
@@ -321,7 +330,7 @@ function PriceLine({ row, priced }: { row: DraftRow; priced?: ValuationRowResult
           key={`${issue.code}-${i}`}
           className={issue.severity === "blocking" ? "text-body-2-regular text-text-error-primary" : "text-body-2-regular text-text-secondary"}
         >
-          {issue.message}
+          {sharesOnly ? plainValuationIssue(issue, { withTicker: false }) : issue.message}
         </span>
       ))}
     </>
