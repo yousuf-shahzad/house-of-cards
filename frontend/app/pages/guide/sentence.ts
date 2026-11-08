@@ -92,3 +92,63 @@ export function shouldExpandOnKeyChange(
   }
   return { prevKey: next, shouldExpand: Boolean(next) };
 }
+
+const CORP_SUFFIX_RE =
+  /,?\s+\b(?:Co\.,?\s*Ltd\.?|Corporation|Corp\.?|Incorporated|Inc\.?|Limited|Ltd\.?|PLC|Plc|N\.V\.?|S\.A\.?|AG|LLC|L\.P\.?)$/i;
+
+const TRAILING_TAG_RE = /\s*\([a-z_]+\)\s*$/i;
+
+function cleanEntityName(raw: string): string {
+  return raw
+    .trim()
+    .replace(TRAILING_TAG_RE, "")
+    .replace(CORP_SUFFIX_RE, "")
+    .replace(CORP_SUFFIX_RE, "")
+    .trim();
+}
+
+const PLAIN_OUTCOME_LABELS: Record<string, string> = {
+  confirmed: "confirmed",
+  new_evidence: "new link found",
+  revised: "updated",
+  rejected: "ruled out",
+  unresolved: "still unclear",
+};
+
+/**
+ * FIX-29 Part B: Formats a research finding into a single beginner-friendly plain line,
+ * e.g. "Checked: Apple's reliance on Japan — confirmed".
+ */
+export function formatFindingOneLiner(
+  subject: string,
+  outcome: string,
+  explanation?: string,
+): string {
+  const raw = subject.trim().replace(TRAILING_TAG_RE, "").trim();
+  let plainSubject = raw;
+
+  if (raw.includes("→")) {
+    const [left, right] = raw.split("→", 2);
+    const src = cleanEntityName(left ?? "");
+    const tgt = cleanEntityName(right ?? "");
+    if (src && tgt) {
+      const possessive = src.endsWith("s") ? `${src}'` : `${src}'s`;
+      plainSubject = `${possessive} reliance on ${tgt}`;
+    }
+  } else if (raw.includes(" — ")) {
+    const [left, right] = raw.split(" — ", 2);
+    const src = cleanEntityName(left ?? "");
+    plainSubject = src && right ? `${src} (${right.trim()})` : raw;
+  } else {
+    plainSubject = cleanEntityName(raw) || raw;
+  }
+
+  const timedOut =
+    typeof explanation === "string" &&
+    /^not finished in time:/i.test(explanation.trim());
+  const plainOutcome = timedOut
+    ? "not finished in time"
+    : (PLAIN_OUTCOME_LABELS[outcome] ?? outcome);
+
+  return `Checked: ${plainSubject} — ${plainOutcome}`;
+}

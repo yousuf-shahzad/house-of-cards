@@ -25,9 +25,13 @@ import type {
 } from "@/api/types";
 import { useAutoDependencies } from "./use-auto-dependencies";
 import { RISKS_COPY } from "./copy";
-import { monotonicProgressPct, splitFirstSentence } from "./sentence";
+import {
+  formatFindingOneLiner,
+  monotonicProgressPct,
+  splitFirstSentence,
+} from "./sentence";
 
-export { splitFirstSentence };
+export { formatFindingOneLiner, splitFirstSentence };
 
 /** Props from the guide stepper (pages/guide/index.tsx). */
 export interface RiskStepProps {
@@ -241,30 +245,64 @@ const OUTCOME_BADGE: Record<ResearchOutcome, { label: string; color: ChipColor }
   unresolved: { label: "Unresolved", color: "yellow" },
 };
 
+function ResearchFindingItem({ finding }: { finding: ResearchFinding }) {
+  const [showTrace, setShowTrace] = useState(false);
+  const badge = OUTCOME_BADGE[finding.outcome] ?? {
+    label: finding.outcome,
+    color: "neutral" as ChipColor,
+  };
+  const oneLiner = formatFindingOneLiner(
+    finding.subject,
+    finding.outcome,
+    finding.explanation,
+  );
+  const hasDetails = Boolean(finding.explanation?.trim() || finding.steps?.length);
+
+  return (
+    <li className="flex flex-col gap-1.5 rounded-xl border border-separator-border bg-background-primary-default p-3 text-caption-1-regular text-text-secondary">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="font-medium text-text-primary">{oneLiner}</span>
+        <div className="flex items-center gap-2">
+          <Chip variant="caption" color={badge.color}>
+            {badge.label}
+          </Chip>
+          {hasDetails && (
+            <Button
+              variant="ghost"
+              size="xs"
+              aria-expanded={showTrace}
+              onClick={() => setShowTrace((prev) => !prev)}
+            >
+              {showTrace ? RISKS_COPY.showLess : "Details"}
+            </Button>
+          )}
+        </div>
+      </div>
+      {showTrace && (
+        <div className="flex flex-col gap-1.5 border-t border-separator-border pt-2">
+          {finding.explanation && <p>{finding.explanation}</p>}
+          {finding.steps.length > 0 && (
+            <ol className="list-decimal space-y-1 pl-4 text-text-tertiary">
+              {finding.steps.map((step) => (
+                <li key={step.index}>
+                  <span className="text-text-secondary">{step.summary}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      )}
+    </li>
+  );
+}
+
 function ResearchFindingsList({ findings }: { findings: readonly ResearchFinding[] }) {
   if (findings.length === 0) return null;
   return (
     <ul className="flex flex-col gap-2">
-      {findings.map((finding) => {
-        const badge = OUTCOME_BADGE[finding.outcome] ?? {
-          label: finding.outcome,
-          color: "neutral" as ChipColor,
-        };
-        return (
-          <li
-            key={finding.finding_id}
-            className="flex flex-col gap-1 rounded-xl border border-separator-border bg-background-primary-default p-3 text-caption-1-regular text-text-secondary"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="font-medium text-text-primary">{finding.subject}</span>
-              <Chip variant="caption" color={badge.color}>
-                {badge.label}
-              </Chip>
-            </div>
-            <span>{finding.explanation}</span>
-          </li>
-        );
-      })}
+      {findings.map((finding) => (
+        <ResearchFindingItem key={finding.finding_id} finding={finding} />
+      ))}
     </ul>
   );
 }
