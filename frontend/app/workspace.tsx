@@ -85,8 +85,8 @@ export function Workspace() {
           </div>
           <div className="ms-auto flex shrink-0 items-center gap-3">
             {simple && <Button variant="ghost" size="small" aria-pressed={tips} onClick={() => setTips((value) => !value)}>{tips ? "Hide tips" : "Show tips"}</Button>}
-            <Switch size="sm" aria-label="Simple view / Full view" isSelected={!isBeginner} onChange={(full) => setMode(full ? "expert" : "beginner")}>
-              <span className="text-caption-1-medium text-text-secondary">Simple view / Full view</span>
+            <Switch size="sm" aria-label="Full view" isSelected={!isBeginner} onChange={(full) => setMode(full ? "expert" : "beginner")}>
+              <span className="text-caption-1-medium text-text-primary">{isBeginner ? "Simple view" : "Full view"}</span>
             </Switch>
           </div>
         </header>
@@ -108,7 +108,10 @@ export function Workspace() {
                 <p className="text-body-medium text-text-primary">{copy.tip}</p>
                 <p className="text-caption-1-regular text-text-secondary">Use any page in the sidebar. Switch to Full view here for more detail.</p>
               </div>
-              <Button variant="ghost" size="small" onClick={() => setTips(false)}>Dismiss tips</Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="ghost" size="small" onClick={() => openBeginnerGuide()}>Open the five-step guide</Button>
+                <Button variant="ghost" size="small" onClick={() => setTips(false)}>Dismiss tips</Button>
+              </div>
             </aside>
           )}
           <PageBoundary key={page.key + "-" + simple}>
@@ -116,7 +119,6 @@ export function Workspace() {
               {simple ? <SimplePage pageKey={page.key} /> : <Page />}
             </Suspense>
           </PageBoundary>
-          {simple && <div className="mt-6"><Button variant="ghost" size="small" onClick={() => openBeginnerGuide()}>Open the five-step guide</Button></div>}
           {analysis && analysis.attributions.length > 0 && (
             <footer aria-label="Data attributions" className="mt-6 border-t border-separator-border pt-4 text-caption-1-regular text-text-tertiary">
               <ul className="flex flex-col gap-1.5">
