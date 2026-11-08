@@ -2310,7 +2310,7 @@ function DependenciesPageContent() {
                             )}
                             {cardSupplierKey && (
                               <a
-                                href={`#/compare?shock=supplier:${cardSupplierKey}`}
+                                href={`#/compare?shock=supplier:${encodeURIComponent(cardSupplierKey)}`}
                                 className="inline-flex items-center gap-1 rounded-lg border border-border-button-default bg-background-secondary-default px-2 py-0.5 text-caption-1-medium text-text-primary transition-colors hover:bg-background-primary-hover focus-visible:ring-2 focus-visible:ring-border-focus-ring outline-none"
                               >
                                 <span>What if it fails?</span>
@@ -2824,7 +2824,9 @@ function DependenciesPageContent() {
                         edge={edge}
                         exposureMap={exposureMap}
                         supplierShockHref={
-                          supplierKey ? `#/compare?shock=supplier:${supplierKey}` : null
+                          supplierKey
+                            ? `#/compare?shock=supplier:${encodeURIComponent(supplierKey)}`
+                            : null
                         }
                         isSelected={edge.edge_id === selectedEdgeId && drawerOpen}
                         onSelect={(id) => selectEdge(id, true)}
@@ -2913,7 +2915,7 @@ function DependenciesPageContent() {
                                 </span>
                                 {supplierKeyByEdgeId.has(edge.edge_id) && (
                                   <a
-                                    href={`#/compare?shock=supplier:${supplierKeyByEdgeId.get(edge.edge_id)}`}
+                                    href={`#/compare?shock=supplier:${encodeURIComponent(supplierKeyByEdgeId.get(edge.edge_id) ?? "")}`}
                                     className="inline-flex items-center gap-1 rounded-lg border border-border-button-default bg-background-secondary-default px-2 py-0.5 text-caption-1-medium text-text-primary transition-colors hover:bg-background-primary-hover focus-visible:ring-2 focus-visible:ring-border-focus-ring outline-none"
                                   >
                                     <span>What if it fails?</span>
@@ -3107,7 +3109,7 @@ function DependenciesPageContent() {
                 exposureMap={exposureMap}
                 supplierShockHref={
                   supplierKeyByEdgeId.has(drawerEdge.edge_id)
-                    ? `#/compare?shock=supplier:${supplierKeyByEdgeId.get(drawerEdge.edge_id)}`
+                    ? `#/compare?shock=supplier:${encodeURIComponent(supplierKeyByEdgeId.get(drawerEdge.edge_id) ?? "")}`
                     : null
                 }
                 isSelected
