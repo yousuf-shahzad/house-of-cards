@@ -20,6 +20,7 @@ import { useExperience } from "@/app/experience";
 import { metricCitationLabel } from "@/app/pages/dependencies/metrics";
 import { useScenario } from "@/app/scenario";
 import { DraftEditor, normTicker, ServerError } from "@/app/ui/draft-editor";
+import { FailureSimulator } from "@/app/ui/failure-simulator";
 import { formatPct } from "@/app/ui/pct";
 import { Chip } from "@/components/base/badges/chip";
 import { Button, ButtonLink } from "@/components/base/buttons/button";
@@ -658,6 +659,8 @@ export function TryAChange({ editorTitle = "Your new mix" }: { editorTitle?: str
           </p>
         )}
       </section>
+
+      {baselineReady && <FailureSimulator />}
 
       {baselineReady && result && (
         <details className="rounded-2xl border border-separator-border bg-background-primary-default px-4 py-3">

@@ -18,6 +18,9 @@ import {
   type HealthResponse,
   type ResearchDepth,
   type ResearchJob,
+  type ShockSpec,
+  type StressRequest,
+  type StressResponse,
   type ValuationIssue,
   type ValuationRequest,
   type ValuationResponse,
@@ -79,6 +82,22 @@ export function toCompareRequest(baseline: AllocationInput[], candidate: Allocat
     baseline: toAnalysisRequest(baseline).holdings,
     candidate: toAnalysisRequest(candidate).holdings,
     top_n: topN,
+  };
+}
+
+export function toStressRequest(
+  baseline: AllocationInput[],
+  candidate: AllocationInput[] | null | undefined,
+  shock: ShockSpec,
+  companyKeys?: string[],
+): StressRequest {
+  return {
+    baseline: toAnalysisRequest(baseline).holdings,
+    ...(candidate && candidate.length > 0
+      ? { candidate: toAnalysisRequest(candidate).holdings }
+      : {}),
+    shock,
+    ...(companyKeys && companyKeys.length > 0 ? { company_keys: companyKeys } : {}),
   };
 }
 
@@ -219,6 +238,18 @@ const mockResearch = async (): Promise<ResearchJob> =>
 const mockDependencies = async (): Promise<DependencyJob> =>
   (await import("./__fixtures__/synthetic-dependencies.json")).default as unknown as DependencyJob;
 
+// Mock mode replays the real /api/stress fixtures (IT, Taiwan, TSMC supplier) for each shock kind.
+async function mockStress(req: StressRequest): Promise<StressResponse> {
+  const fixture = (
+    req.shock.kind === "country"
+      ? await import("./__fixtures__/stress-tw.json")
+      : req.shock.kind === "supplier"
+        ? await import("./__fixtures__/stress-supplier.json")
+        : await import("./__fixtures__/stress-it.json")
+  ).default as unknown as StressResponse;
+  return { ...fixture, shock: req.shock, candidate: req.candidate ? fixture.candidate : null };
+}
+
 export const api = {
   health: (signal?: AbortSignal) =>
     MOCK_MODE
@@ -274,6 +305,20 @@ export const api = {
     MOCK_MODE
       ? mockCompare()
       : request<CompareResponse>("/api/compare", postJson(toCompareRequest(baseline, candidate, topN), signal)),
+  /** Simulates a sector, country, or supplier failure before and after the change (POST /api/stress). */
+  stress: (
+    baseline: AllocationInput[],
+    candidate: AllocationInput[] | null | undefined,
+    shock: ShockSpec,
+    companyKeys?: string[],
+    signal?: AbortSignal,
+  ) =>
+    MOCK_MODE
+      ? mockStress(toStressRequest(baseline, candidate, shock, companyKeys))
+      : request<StressResponse>(
+          "/api/stress",
+          postJson(toStressRequest(baseline, candidate, shock, companyKeys), signal),
+        ),
   /** Starts the research loop on a finished dependency job (202, or 200 if cached); poll researchJob(research_id). */
   research: (dependencyJobId: string, maxItems = DEFAULT_RESEARCH_ITEMS, signal?: AbortSignal) =>
     MOCK_MODE
