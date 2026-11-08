@@ -37,32 +37,6 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
   - **On hold until Gawyn decides:** it would replace the 5-step guide Gawyn chose, or sit alongside it. That needs `workspace.tsx` / `experience.tsx`.
 - **Owner:** Yousuf's Codex · **Status:** audit in progress; dashboard waiting for Gawyn
 
-### FIX-29 · high · Shorter, beginner-friendly text on Dependencies and guide steps 4–5 (Kendrick, 08:37)
-Kendrick wants the beginner experience to be far less overwhelming: concise summaries, and AI explanations that are short and plain.
-
-**Part A, Dependencies page** (`pages/dependencies/index.tsx`):
-- AI synthesis cards show `plain_title` + `plain_text` (one sentence, 25 words or fewer) by default, with a "Full detail" toggle for the technical text and its citations. If the plain fields are missing, use the same fallback as guide step 4 (FIX-3).
-- Shorten the section intros and the one-line summaries to one plain sentence each.
-- Keep every number from Python, and keep the evidence drawer working.
-
-**Part B, guide steps 4–5** (`step-4-risks.tsx`, `step-5-next.tsx`, `copy.ts`; Yousuf's Gemini):
-- Shorten the "How we double-checked" research list: one plain line per finding (e.g. "Checked: Apple's reliance on Japan — confirmed"), with the step trace behind a toggle.
-- Trim the step intros.
-
-- **Owner:** Yousuf's Gemini (Parts A and B; owns the files). Kendrick's Gemini does a beginner's-eye review · **Status:** in progress
-
-### FIX-28 · medium · "What's here & why" info button on every page (Yousuf, 08:31)
-Yousuf asked for an info button on every page that explains what's there, why it matters, and how to read it.
-- Done by Yousuf's Gemini: `TabInfoBanner` on the 5 guide steps, Try a change, Exposures and Dependencies, with `PAGE_INFO_COPY` for all 7 Full-view pages.
-- Left: wire it into `frontend/app/workspace.tsx` for Portfolio, Overlap, Network, Compare and Risk.
-- The info text must not hard-code live numbers (e.g. "40% verified"); describe them, or read them from the data, so they never go stale.
-- **Lead check:** all 7 Full-view pages show a working "What's here & why" button (#212).
-- **Copy fixes left (Yousuf's Gemini, `guide/copy.ts`):**
-  - ~~Risk threshold~~ fixed in #213 (35 and 100 days); hard-coded sample numbers removed.
-  - Dependencies says only "Go deeper" runs cross-company searches; since FIX-1, light does too, and Go deeper investigates more items for longer.
-  - Optional: replace "e.g. 50% between QQQ and XLK" with wording that won't go stale.
-- **Owner:** Yousuf's Gemini (copy; wiring by Yousuf's Claude is done) · **Status:** copy fixes in progress
-
 ### FIX-22 · medium · Research time budgets are too tight
 In the FIX-1 live check, 4 of 23 light findings stopped after one tool call ("step budget expired"), and 15 of 45 thorough findings were skipped ("time budget reached").
 - Fix:
@@ -138,6 +112,8 @@ The plan asked for the research trace to show live during the run.
 
 ## Done (checked on `main` by the lead)
 
+- FIX-29 beginner-friendly text: AI cards on the Dependencies page show one plain sentence with a Full detail toggle (lead: 514 → 1,335 chars when opened); section intros are one sentence; guide step 4 shows one line per finding ("Checked: Apple Inc. single-source reliance on Japan — confirmed") with Details. Kendrick's Gemini may polish wording such as "Nvidia -> OpenAI" — #214
+- FIX-28 "What's here & why" on every page; copy has no stale numbers; Risk thresholds 35/100 days; Light vs Go deeper described correctly — #207, #212, #213, #214
 - Thorough held-out eval after FIX-22's research side: 35/35 findings with 3 tool calls and `search_filings`, 0 budget stops; thorough keeps every light edge; 0 links changed, so precision and recall are unchanged (88.4% / 96.1% / 57.4%). Reproduced offline by the lead — #211
 - FIX-26 AI idea text: no rewriting. Unclear AI sentences are dropped and the card shows Python's reason. Live: VTV and SCHD ideas kept with rationale None and correct reasons; XLV keeps its clean sentence — #207, #210
 - FIX-27 clicking a graph edge opens the section and its evidence drawer; Show less then folds it and it stays folded with the edge still selected (lead, browser) — #205
