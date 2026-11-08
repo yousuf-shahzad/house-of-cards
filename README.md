@@ -201,6 +201,26 @@ The exact definitions, identity rules, API and error codes are in
 [`docs/hoc/CONTRACT.md`](docs/hoc/CONTRACT.md). The backend is laid out so a corporate dependency graph can
 plug in after identity resolution without touching ingestion ([`backend/hoc/graph/`](backend/hoc/graph/README.md)).
 
+## Failure simulator
+
+On the **Compare / Try a change** screen (`POST /api/stress`), the failure simulator answers *"If one industry,
+country or supplier fails, what happens to my money?"* Pick an **Industry**, **Country**, or **Supplier** to see
+before → after money for **Your portfolio** alongside **Your new mix** (using your shares-mode portfolio value, or
+a notional $10,000 in `%` mode), how much less the new mix loses, the shock basis, and the top affected companies:
+
+- **Historical vs. simulated drops:** When a proxy ETF has price history, the drop is **historical** — the proxy
+  ETF's worst 1-month (**21-trading-day**) fall over the last **5 years** of daily adjusted closes from the Yahoo
+  Finance v8 chart API (e.g. `XLK` `-19.37%` from `2026-10-07` to `2026-11-05` for Information Technology, `EWT`
+  `-26.12%` for Taiwan, `SPY` `-12.80%` for the US; full proxy map in [`docs/hoc/CONTRACT.md`](docs/hoc/CONTRACT.md)
+  §11 and standalone stdlib verification in [`validation/stress/`](validation/stress/)). When no proxy history is
+  available, it falls back to a **simulated 10% fall** and says why. **Supplier** shocks are always a simulated 10%
+  fall across the supplier (if held) and the portfolio companies that rely on it in the verified dependency scan.
+- **Known limits:** Country codes come from TickerInside's per-stock files and are unknown (`null`) for **~70–80%**
+  of a typical US-heavy portfolio (those holdings are excluded from country shocks and the uncounted share is
+  shown on screen). For industry shocks, `affected_weight` and `loss_fraction` use the portfolio's `analysis.sectors`
+  totals (which come from the funds' own published breakdowns when line-level company sectors are incomplete), while
+  the expandable company list shows the individual holdings we can name.
+
 ## Data sources
 
 | Source | Used for | Notes |
