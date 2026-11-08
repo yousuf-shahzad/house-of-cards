@@ -259,6 +259,6 @@ def test_fix_22_separate_research_pool_and_start_deadlines(make_service):
     )
     job = submit(service, top_n=2)
     assert job.status == "done"
-    assert read_tasks == ["_forward", "_forward"]
+    assert read_tasks == ["_forward", "_forward", "_reverse", "_reverse"]
     assert research_tasks == ["_research", "_research"]
 
