@@ -96,7 +96,7 @@ export default function GuidePage() {
           <h1 className="text-display-4-medium text-text-primary">{showTryChange ? "Try a change" : entry.meta.title}</h1>
           <p className="text-body-regular text-text-secondary">
             {showTryChange
-              ? "Change your ETFs below. The comparison with your portfolio updates as you type."
+              ? "Change your ETFs below. The comparison with your portfolio updates each time you change a value."
               : entry.meta.subtitle}
           </p>
         </div>

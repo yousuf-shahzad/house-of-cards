@@ -331,8 +331,8 @@ export function TryAChange({ editorTitle = "Your new mix" }: { editorTitle?: str
         {result && unanalysed.length > 0 && (
           <p className="text-body-2-regular text-text-secondary">
             Not checked yet: {unanalysed.length} {unanalysed.length === 1 ? "company" : "companies"} in the new mix (
-            {formatPct(unanalysedWeight, 1)} of it), so {unanalysed.length === 1 ? "its" : "their"} dependencies aren't
-            counted.
+            {formatPct(unanalysedWeight, 1)} of it) {unanalysed.length === 1 ? "has" : "have"} no analysed filing, so{" "}
+            {unanalysed.length === 1 ? "its" : "their"} dependencies aren't counted.
           </p>
         )}
       </section>
