@@ -1,13 +1,17 @@
 "use client";
 // Dependencies page (G-UI, owned by Yousuf's Gemini).
-// Displays:
+// Displays (in order per PLAN-v2 & lead audit #6715309042):
 // 1. Click-to-run ("Find dependencies") trigger + live per-company job progress
 // 2. Verification & Filing Coverage Audit Bar (verified edges, rejected/unverified counts, non-SEC skipped holdings)
-// 3. Deterministic Python Dependency Metrics strip
-// 4. Zero-dependency bipartite SVG Dependency Graph + accessible table fallback
-// 5. Facility concentration by country (Recharts horizontal BarChart + jurisdiction cards)
-// 6. Orchestrator Insights panel (Critical Flaws + Diversification Suggestions) with clickable metric & edge citations
-// 7. Evidence Drawer + inline Evidence Inspector (verbatim quote, 10-K/20-F form, filing date, section, SEC link)
+// 3. Orchestrator Insights panel (Critical Flaws + Diversification Suggestions) straight after the audit bar,
+//    showing metric labels (never raw IDs) and collapsible "N sources" edge citations
+// 4. Deterministic Python Dependency Metrics strip (top 8 fraction metrics by value, merged ".companies" counts,
+//    human labels, collapsible "N sources", and "Show all N" toggle)
+// 5. Zero-dependency bipartite SVG Dependency Graph (top 25 counterparties cap with "Show all N", per-source
+//    unnamed customers, keyboard focus-visible rings, and accessible table fallback)
+// 6. Facility concentration by country grouped strictly from backend `facility.<ISO2>` metrics, with named
+//    sites listed separately under their holdings
+// 7. SEC Filing Evidence Drawer + inline Evidence Inspector (verbatim quote, 10-K/20-F form, filing date, section, SEC link)
 
 import { useCallback, useMemo, useState, type KeyboardEvent } from "react";
 import {
@@ -15,6 +19,7 @@ import {
   RiArrowRightUpLine,
   RiBuilding2Line,
   RiCheckboxCircleLine,
+  RiDoubleQuotesL,
   RiErrorWarningLine,
   RiExternalLinkLine,
   RiFileTextLine,
@@ -23,7 +28,6 @@ import {
   RiLinksLine,
   RiMindMap,
   RiPlayCircleLine,
-  RiDoubleQuotesL,
   RiRefreshLine,
   RiShieldCheckLine,
   RiSparklingLine,
@@ -36,6 +40,7 @@ import {
   type CompanyRunStatus,
   type CompanyStatus,
   type InsightClaim,
+  type Insights,
   type MetricFact,
   type TargetKind,
   type VerifiedEdge,
@@ -53,9 +58,11 @@ import {
 } from "@/components/base/segmented-control/segmented-control";
 import { Spinner } from "@/components/base/spinner/spinner";
 import { cx } from "@/utils/cx";
+import { buildMetricCards, buildSummaryFacts, metricCitationLabel } from "./metrics";
 import {
   buildDependencyGraph,
   buildFacilityBreakdown,
+  DEFAULT_TARGET_LIMIT,
   EDGE_TYPE_META,
   SVG_WIDTH,
   targetNodeIdForEdge,
@@ -63,6 +70,7 @@ import {
   type DependencyGraph,
   type EdgeFilterGroup,
 } from "./graph";
+
 
 const COMPANY_STATUS_META: Record<
   CompanyStatus,
@@ -112,7 +120,7 @@ const TARGET_KIND_LABEL: Record<TargetKind, string> = {
   material: "Material",
   component: "Component",
   facility: "Facility",
-  unnamed_customer: "Unnamed customer",
+  unnamed_customer: "Undisclosed customer",
 };
 
 const CLAIM_SEVERITY_META: Record<
@@ -136,6 +144,11 @@ const CLAIM_SEVERITY_META: Record<
   },
 };
 
+/** The backend message for a company, with its internal key (e.g. ALIAS:SAMSUNG_ELEC) shown as its name. */
+function companyMessage(company: CompanyRunStatus): string {
+  return (company.message ?? "").split(company.company_key).join(company.company_name);
+}
+
 function analysisErrorCopy(error: ApiError): string {
   const tickers = (error.details as { tickers?: string[] } | undefined)?.tickers;
   if (error.code === "UNKNOWN_TICKER" && tickers?.length) {
@@ -150,11 +163,186 @@ function analysisErrorCopy(error: ApiError): string {
   return error.message;
 }
 
+/** Metric cards shown before "Show all": the largest shares, so the page stays short. */
+const METRIC_CARDS_SHOWN = 9;
+
+/** Plain-English status of the AI synthesis step (the contract's InsightsStatus). */
+const INSIGHTS_STATUS_META: Record<Insights["status"], { label: string; chipColor: ChipColor; note: string | null }> = {
+  ok: { label: "Every number checked", chipColor: "lime", note: null },
+  metrics_only: {
+    label: "Numbers only",
+    chipColor: "yellow",
+    note: "The AI step was skipped, so these points come straight from the calculated numbers.",
+  },
+  missing_api_key: {
+    label: "AI not set up",
+    chipColor: "yellow",
+    note: "No Gemini API key is set on the server, so there is no AI synthesis. The numbers below still apply.",
+  },
+  no_verified_edges: {
+    label: "Nothing to reason about",
+    chipColor: "yellow",
+    note: "No dependency could be verified in the filings, so the AI was not asked to speculate.",
+  },
+  error: {
+    label: "AI step failed",
+    chipColor: "rose",
+    note: "The AI synthesis failed this time. The verified links and numbers below are unaffected.",
+  },
+};
+
+type CitationProps = {
+  metricById: ReadonlyMap<string, MetricFact>;
+  edgeById: ReadonlyMap<string, VerifiedEdge>;
+  selectEdge: (edgeId: string, openDrawer: boolean) => void;
+};
+
+const CITATION_CHIP =
+  "inline-flex cursor-pointer items-center gap-1 rounded-md border border-border-button-default bg-background-secondary-default px-2 py-0.5 text-start text-caption-1-regular text-text-primary hover:bg-background-primary-hover focus-visible:outline-2 focus-visible:outline-border-focus-ring";
+
+/** One AI claim: its text, the numbers it cites in plain words, and its filing quotes folded away. */
+function ClaimCard({ claim, metricById, edgeById, selectEdge }: CitationProps & { claim: InsightClaim }) {
+  const sev = CLAIM_SEVERITY_META[claim.severity] ?? CLAIM_SEVERITY_META.warning;
+  const sources = claim.cited_edge_ids.length;
+  return (
+    <article className={cx("flex flex-col gap-2.5 rounded-2xl border bg-background-primary-default p-4", sev.borderClass)}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h5 className="text-body-medium text-text-primary">{claim.title}</h5>
+        <Chip variant="caption" color={sev.chipColor}>
+          {sev.label}
+        </Chip>
+      </div>
+      <p className="text-body-2-regular text-text-secondary">{claim.text}</p>
+      {claim.cited_metric_ids.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {claim.cited_metric_ids.map((metricId) => {
+            const metric = metricById.get(metricId);
+            const firstEdgeId = metric?.supporting_edge_ids[0] ?? null;
+            return (
+              <button
+                key={metricId}
+                type="button"
+                disabled={!firstEdgeId}
+                onClick={() => firstEdgeId && selectEdge(firstEdgeId, true)}
+                className={CITATION_CHIP}
+              >
+                {metric ? `${metricCitationLabel(metric)}: ${formatMetricValue(metric)}` : "Cited number"}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {sources > 0 && (
+        <details>
+          <summary className="cursor-pointer text-caption-1-regular text-text-tertiary">
+            {sources === 1 ? "1 source in the filings" : `${sources} sources in the filings`}
+          </summary>
+          <div className="flex flex-wrap gap-1.5 pt-2">
+            {claim.cited_edge_ids.map((edgeId) => {
+              const edge = edgeById.get(edgeId);
+              return (
+                <button key={edgeId} type="button" onClick={() => selectEdge(edgeId, true)} className={CITATION_CHIP}>
+                  <RiDoubleQuotesL className="size-3" aria-hidden />
+                  <span>
+                    {edge ? `${edge.source_company_name} → ${edge.target_name} (${edge.filing.form})` : "Filing quote"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </details>
+      )}
+    </article>
+  );
+}
+
+/** The AI synthesis: critical flaws and diversification ideas, each citing checked numbers and quotes. */
+function InsightsPanel({ insights, ...citations }: CitationProps & { insights: Insights }) {
+  const status = INSIGHTS_STATUS_META[insights.status] ?? INSIGHTS_STATUS_META.error;
+  const columns = [
+    {
+      key: "flaws",
+      icon: <RiAlertLine className="size-4 text-text-error-primary" aria-hidden />,
+      title: "Critical flaws",
+      claims: insights.flaws,
+      empty: "No critical concentration flaws were flagged in the verified links.",
+    },
+    {
+      key: "suggestions",
+      icon: <RiMindMap className="size-4 text-text-primary" aria-hidden />,
+      title: "Diversification ideas",
+      claims: insights.suggestions,
+      empty: "No diversification changes were suggested from the verified links.",
+    },
+  ];
+  return (
+    <section
+      aria-label="AI synthesis: critical flaws and diversification ideas"
+      className="flex flex-col gap-4 rounded-3xl border border-border-button-default bg-background-secondary-default p-5"
+    >
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <RiSparklingLine className="size-5 text-text-primary" aria-hidden />
+          <h3 className="text-headline-small text-text-primary">AI synthesis: critical flaws &amp; diversification ideas</h3>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Chip variant="caption" color={status.chipColor}>
+            {status.label}
+          </Chip>
+          {insights.model && (
+            <Chip variant="caption" color="purple">
+              {insights.model}
+            </Chip>
+          )}
+          {insights.rejected_claims_count > 0 && (
+            <Chip variant="caption" color="orange">
+              {insights.rejected_claims_count} unchecked {insights.rejected_claims_count === 1 ? "claim" : "claims"} dropped
+            </Chip>
+          )}
+        </div>
+        <p className="text-body-2-regular text-text-secondary">
+          {status.note ??
+            "Written by the AI from the verified filing quotes. Every number in it was checked against the calculated numbers, and claims that failed were dropped. Advisory only, not investment advice."}
+        </p>
+      </div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {columns.map((column) => (
+          <div key={column.key} className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              {column.icon}
+              <h4 className="text-body-semibold text-text-primary">
+                {column.title} ({column.claims.length})
+              </h4>
+            </div>
+            {column.claims.length === 0 ? (
+              <p className="rounded-2xl border border-separator-border bg-background-primary-default p-4 text-body-2-regular text-text-secondary">
+                {column.empty}
+              </p>
+            ) : (
+              column.claims.map((claim) => <ClaimCard key={claim.claim_id} claim={claim} {...citations} />)
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function formatMetricValue(metric: MetricFact): string {
   if (metric.unit === "fraction") return formatPct(metric.value, 2);
   if (metric.unit === "count") return `${Math.round(metric.value)}`;
   if (metric.unit === "days") return `${Math.round(metric.value)} days`;
   return metric.value.toFixed(2);
+}
+
+function formatSectionLabel(section: string): string {
+  if (/^(1|1A|1B|2|3|3D|3\.D|4|5|7|7A)$/i.test(section.trim())) {
+    return `Item ${section.trim()}`;
+  }
+  if (/^concentration_\d+$/i.test(section.trim())) {
+    return "Concentration note";
+  }
+  return section;
 }
 
 function EdgeEvidenceCard({
@@ -218,17 +406,8 @@ function EdgeEvidenceCard({
         <span className="text-body-medium text-text-primary">{edge.target_name}</span>
         {edge.target_in_portfolio && (
           <Chip variant="caption" color="purple">
-            Also held in portfolio
+            In portfolio
           </Chip>
-        )}
-        {edge.target_key ? (
-          <span className="font-mono text-caption-1-regular text-text-tertiary">
-            ({edge.target_key})
-          </span>
-        ) : (
-          <span className="text-caption-1-regular text-text-tertiary">
-            (Unresolved counterparty)
-          </span>
         )}
       </div>
 
@@ -243,7 +422,7 @@ function EdgeEvidenceCard({
             <RiFileTextLine className="me-1 inline size-3" aria-hidden />
             SEC {edge.filing.form}
           </Chip>
-          <span>Section: {edge.section}</span>
+          <span>{formatSectionLabel(edge.section)}</span>
           <span>·</span>
           <span className="tabular-nums">Filed {edge.filing.filed}</span>
           <span className="font-mono text-text-tertiary">({edge.filing.accession})</span>
@@ -266,6 +445,64 @@ function EdgeEvidenceCard({
         </div>
       </div>
     </article>
+  );
+}
+
+function CollapsibleEdgeSources({
+  edgeIds,
+  edgeById,
+  onSelectEdge,
+}: {
+  edgeIds: string[];
+  edgeById: Map<string, VerifiedEdge>;
+  onSelectEdge: (edgeId: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  if (edgeIds.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <button
+        type="button"
+        onClick={() => setExpanded((prev) => !prev)}
+        aria-expanded={expanded}
+        className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border-button-default bg-background-secondary-default px-2 py-0.5 text-caption-1-medium text-text-primary hover:bg-background-primary-hover focus-visible:ring-2 focus-visible:ring-border-focus-ring outline-none"
+      >
+        <RiDoubleQuotesL className="size-3 text-text-tertiary" aria-hidden />
+        <span>
+          {edgeIds.length} {edgeIds.length === 1 ? "source" : "sources"}
+          {expanded ? " (hide)" : ""}
+        </span>
+      </button>
+      {!expanded && edgeIds[0] && (
+        <button
+          type="button"
+          onClick={() => onSelectEdge(edgeIds[0])}
+          className="cursor-pointer text-caption-1-regular text-text-secondary underline hover:text-text-primary focus-visible:ring-2 focus-visible:ring-border-focus-ring outline-none"
+        >
+          View quote
+        </button>
+      )}
+      {expanded &&
+        edgeIds.map((edgeId) => {
+          const edge = edgeById.get(edgeId);
+          return (
+            <button
+              key={edgeId}
+              type="button"
+              onClick={() => onSelectEdge(edgeId)}
+              className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border-button-default bg-background-primary-default px-2 py-0.5 text-caption-1-regular text-text-primary hover:bg-background-primary-hover focus-visible:ring-2 focus-visible:ring-border-focus-ring outline-none"
+            >
+              <RiDoubleQuotesL className="size-3 text-text-tertiary" aria-hidden />
+              <span>
+                {edge
+                  ? `${edge.source_company_name} → ${edge.target_name} (${edge.filing.form})`
+                  : "Filing quote"}
+              </span>
+            </button>
+          );
+        })}
+    </div>
   );
 }
 
@@ -327,7 +564,6 @@ function DependencyDiagram({
           if (e.target === e.currentTarget) onSelectNode(null);
         }}
       >
-        {/* Column headers inside SVG */}
         <text
           x={230}
           y={20}
@@ -345,19 +581,17 @@ function DependencyDiagram({
           COUNTERPARTIES, INPUTS & FACILITIES (DEPENDENT WEIGHT)
         </text>
 
-        {/* Directed edges */}
         <g fill="none">
           {graph.edges.map((edge) => {
             const highlighted = isEdgeHighlighted(edge);
             const isSelected = edge.id === selectedEdgeId;
             return (
               <g key={edge.id}>
-                {/* Wider invisible hit target for easy clicking */}
                 <path
                   d={edge.path}
                   stroke="transparent"
                   strokeWidth={Math.max(14, edge.width + 8)}
-                  className="cursor-pointer"
+                  className="cursor-pointer focus-visible:outline-2 focus-visible:outline-border-focus-ring"
                   role="button"
                   tabIndex={0}
                   aria-label={`${edge.edge.source_company_name} ${EDGE_TYPE_META[edge.edge.edge_type]?.label ?? edge.edge.edge_type} ${edge.edge.target_name}${edge.edge.sole_source ? " (sole source)" : ""}. Click to inspect verbatim SEC filing quote.`}
@@ -390,7 +624,6 @@ function DependencyDiagram({
           })}
         </g>
 
-        {/* Left column: portfolio company nodes */}
         {graph.sources.map((node) => {
           const dimmed = hasHighlight && !linkedNodes.has(node.id);
           return (
@@ -400,7 +633,7 @@ function DependencyDiagram({
               tabIndex={0}
               aria-label={`${node.name}, ${formatPct(node.exposure)} of portfolio, ${node.edgeCount} verified dependency edges`}
               aria-pressed={activeNodeId === node.id}
-              className="cursor-pointer outline-none"
+              className="cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-border-focus-ring [&:focus-visible>circle]:stroke-border-focus-ring [&:focus-visible>circle]:stroke-[3px]"
               style={{ opacity: dimmed ? 0.25 : 1, transition: "opacity 120ms" }}
               onMouseEnter={() => onHoverNode(node.id)}
               onMouseLeave={() => onHoverNode(null)}
@@ -449,7 +682,6 @@ function DependencyDiagram({
           );
         })}
 
-        {/* Right column: counterparty / input / facility nodes */}
         {graph.targets.map((node) => {
           const dimmed = hasHighlight && !linkedNodes.has(node.id);
           const meta = node.hasSoleSource
@@ -463,7 +695,7 @@ function DependencyDiagram({
               tabIndex={0}
               aria-label={`${node.name} (${TARGET_KIND_LABEL[node.kind]}), ${formatPct(node.dependentExposure)} dependent portfolio exposure across ${node.dependentCompanyKeys.length} holdings`}
               aria-pressed={activeNodeId === node.id}
-              className="cursor-pointer outline-none"
+              className="cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-border-focus-ring [&:focus-visible>circle]:stroke-border-focus-ring [&:focus-visible>circle]:stroke-[3px]"
               style={{ opacity: dimmed ? 0.25 : 1, transition: "opacity 120ms" }}
               onMouseEnter={() => onHoverNode(node.id)}
               onMouseLeave={() => onHoverNode(null)}
@@ -499,7 +731,7 @@ function DependencyDiagram({
                 className="fill-text-primary text-body-2-medium"
               >
                 <title>{node.name}</title>
-                {truncateText(node.name, 26)}
+                {truncateText(node.name, 28)}
               </text>
               <text
                 x={node.x + node.r + 10}
@@ -533,6 +765,7 @@ function DependenciesPageContent() {
     status: depStatus,
     job,
     stale: depStale,
+    reconnecting,
     error: depError,
     selectedEdgeId,
     selectedNodeId,
@@ -546,6 +779,8 @@ function DependenciesPageContent() {
   const [loadingExample, setLoadingExample] = useState(false);
   const [exampleError, setExampleError] = useState<string | null>(null);
   const [edgeFilter, setEdgeFilter] = useState<EdgeFilterGroup>("all");
+  const [showAllTargets, setShowAllTargets] = useState(false);
+  const [showAllMetrics, setShowAllMetrics] = useState(false);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
   const handleLoadExample = useCallback(async () => {
@@ -608,9 +843,14 @@ function DependenciesPageContent() {
   const graph = useMemo(
     () =>
       result
-        ? buildDependencyGraph(result, analysis?.exposures ?? [], edgeFilter)
+        ? buildDependencyGraph(
+            result,
+            analysis?.exposures ?? [],
+            edgeFilter,
+            showAllTargets ? null : DEFAULT_TARGET_LIMIT,
+          )
         : null,
-    [result, analysis?.exposures, edgeFilter],
+    [result, analysis?.exposures, edgeFilter, showAllTargets],
   );
 
   const facilityRows = useMemo(
@@ -639,23 +879,28 @@ function DependenciesPageContent() {
     return map;
   }, [result]);
 
+  const metricCards = useMemo(() => (result ? buildMetricCards(result.metrics) : []), [result]);
+  const summaryFacts = useMemo(() => (result ? buildSummaryFacts(result.metrics) : []), [result]);
+  const visibleMetricCards = showAllMetrics ? metricCards : metricCards.slice(0, METRIC_CARDS_SHOWN);
+
   const activeNodeId = hoveredNodeId ?? selectedNodeId;
 
   const inspectedEdges = useMemo<VerifiedEdge[]>(() => {
     if (!result) return [];
-    if (selectedEdgeId && edgeById.has(selectedEdgeId)) {
-      return [edgeById.get(selectedEdgeId)!];
-    }
     if (activeNodeId) {
       return result.edges.filter(
         (e) =>
           e.source_company_key === activeNodeId ||
+          (e.target_in_portfolio && e.target_key === activeNodeId) ||
           targetNodeIdForEdge(e) === activeNodeId ||
           `TARGET_KEY:${e.source_company_key}` === activeNodeId,
       );
     }
+    if (selectedEdgeId && edgeById.has(selectedEdgeId)) {
+      return [edgeById.get(selectedEdgeId)!];
+    }
     return result.edges.slice(0, 2);
-  }, [result, selectedEdgeId, edgeById, activeNodeId]);
+  }, [result, activeNodeId, selectedEdgeId, edgeById]);
 
   const drawerEdge = useMemo<VerifiedEdge | null>(
     () => (selectedEdgeId ? (edgeById.get(selectedEdgeId) ?? null) : null),
@@ -799,8 +1044,8 @@ function DependenciesPageContent() {
                 SEC 10-K / 20-F Supply-Chain & Facility Intelligence
               </h2>
               <Chip variant="caption" color="purple">
-                Top {topExposures.length} holdings (<Pct value={topExposureSum} digits={1} /> of
-                portfolio)
+                {/* One string: the chip is a flex box, which drops the space before " of". */}
+                {`Top ${topExposures.length} holdings (${formatPct(topExposureSum, 1)} of portfolio)`}
               </Chip>
             </div>
             <p className="text-body-2-regular text-text-secondary">
@@ -818,7 +1063,9 @@ function DependenciesPageContent() {
               onClick={() => runDependencies(DEFAULT_TOP_N)}
             >
               {isRunning
-                ? `Scanning filings (${job?.progress_done ?? 0}/${job?.progress_total ?? topExposures.length})…`
+                ? reconnecting
+                  ? "Reconnecting…"
+                  : `Scanning filings (${job?.progress_done ?? 0}/${job?.progress_total ?? topExposures.length})…`
                 : result
                   ? depStale
                     ? "Re-evaluate dependencies"
@@ -828,7 +1075,6 @@ function DependenciesPageContent() {
           </div>
         </div>
 
-        {/* Stale portfolio warning */}
         {(depStale || analysisStale) && result && (
           <div
             role="status"
@@ -854,7 +1100,6 @@ function DependenciesPageContent() {
           </div>
         )}
 
-        {/* Missing GEMINI_API_KEY banner */}
         {showMissingKeyBanner && (
           <div
             role="status"
@@ -878,7 +1123,6 @@ function DependenciesPageContent() {
           </div>
         )}
 
-        {/* Missing HOC_SEC_CONTACT banner */}
         {showMissingSecBanner && (
           <div
             role="status"
@@ -898,7 +1142,6 @@ function DependenciesPageContent() {
           </div>
         )}
 
-        {/* Job error banner */}
         {depStatus === "error" && depError && (
           <div
             role="alert"
@@ -921,7 +1164,6 @@ function DependenciesPageContent() {
           </div>
         )}
 
-        {/* Live polling progress bar */}
         {isRunning && (
           <div
             role="status"
@@ -932,9 +1174,9 @@ function DependenciesPageContent() {
               <div className="flex items-center gap-2 text-body-2-medium text-text-primary">
                 <Spinner size="sm" />
                 <span>
-                  Extracting and verifying SEC 10-K / 20-F disclosures… (
-                  {job?.progress_done ?? 0} of {job?.progress_total ?? topExposures.length}{" "}
-                  companies)
+                  {reconnecting
+                    ? "Reconnecting… Waiting for the backend service and resuming your dependency scan…"
+                    : `Extracting and verifying SEC 10-K / 20-F disclosures… (${job?.progress_done ?? 0} of ${job?.progress_total ?? topExposures.length} companies)`}
                 </span>
               </div>
               <span className="font-mono text-caption-1-regular text-text-tertiary">
@@ -967,7 +1209,6 @@ function DependenciesPageContent() {
         )}
       </section>
 
-      {/* Idle pre-run preview when no result has been loaded yet */}
       {!result && !isRunning && (
         <section
           aria-label="Top holdings queued for dependency scan"
@@ -1008,13 +1249,12 @@ function DependenciesPageContent() {
         </section>
       )}
 
-      {/* Main results view once `result` is available */}
       {result && (
         <div
           className="flex flex-col gap-6"
           style={{ opacity: depStale ? 0.82 : 1, transition: "opacity 150ms" }}
         >
-          {/* 2. Verification & Filing Coverage Audit Bar */}
+          {/* 2. Verification & Filing Coverage Audit Bar (non-clipping badges at 800px / 360px) */}
           <section
             aria-label="Verification and filing coverage audit"
             className="flex flex-col gap-4 rounded-3xl border border-border-button-default bg-background-secondary-default p-5"
@@ -1031,28 +1271,26 @@ function DependenciesPageContent() {
               </span>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {/* Bucket 1: Verified edges */}
-              <div className="flex flex-col gap-1 rounded-2xl border border-separator-border bg-background-primary-default p-4">
-                <div className="flex items-center justify-between gap-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="flex min-w-0 flex-col gap-1 rounded-2xl border border-separator-border bg-background-primary-default p-4">
+                <div className="flex flex-wrap items-center justify-between gap-1.5">
                   <span className="text-caption-1-semibold text-text-secondary">
                     VERIFIED EDGES
                   </span>
                   <Chip variant="caption" color="lime">
-                    Verbatim match
+                    Verified
                   </Chip>
                 </div>
                 <span className="text-display-4-medium text-text-primary tabular-nums">
                   {result.counts.verified_edges}
                 </span>
                 <span className="text-caption-1-regular text-text-secondary">
-                  Quotes verified in canonical SEC 10-K / 20-F text
+                  Verbatim quotes matched in SEC 10-K / 20-F text
                 </span>
               </div>
 
-              {/* Bucket 2: Rejected / Unverified omitted */}
-              <div className="flex flex-col gap-1 rounded-2xl border border-separator-border bg-background-primary-default p-4">
-                <div className="flex items-center justify-between gap-2">
+              <div className="flex min-w-0 flex-col gap-1 rounded-2xl border border-separator-border bg-background-primary-default p-4">
+                <div className="flex flex-wrap items-center justify-between gap-1.5">
                   <span className="text-caption-1-semibold text-text-secondary">
                     UNVERIFIED OMITTED
                   </span>
@@ -1064,21 +1302,25 @@ function DependenciesPageContent() {
                         : "neutral"
                     }
                   >
-                    Dropped by Python
+                    Dropped
                   </Chip>
                 </div>
-                <span className="text-display-4-medium text-text-primary tabular-nums">
-                  {result.counts.rejected_edges} edges · {result.insights.rejected_claims_count}{" "}
-                  claims
+                <span className="flex flex-col text-display-4-medium text-text-primary tabular-nums">
+                  <span>
+                    {result.counts.rejected_edges} {result.counts.rejected_edges === 1 ? "quote" : "quotes"}
+                  </span>
+                  <span className="text-body-semibold text-text-secondary">
+                    {result.insights.rejected_claims_count} AI{" "}
+                    {result.insights.rejected_claims_count === 1 ? "claim" : "claims"}
+                  </span>
                 </span>
                 <span className="text-caption-1-regular text-text-secondary">
-                  Failed verbatim quote or metric allow-list check; never shown in graph
+                  Failed verbatim quote or metric check; never shown
                 </span>
               </div>
 
-              {/* Bucket 3: Holdings analysed */}
-              <div className="flex flex-col gap-1 rounded-2xl border border-separator-border bg-background-primary-default p-4">
-                <div className="flex items-center justify-between gap-2">
+              <div className="flex min-w-0 flex-col gap-1 rounded-2xl border border-separator-border bg-background-primary-default p-4">
+                <div className="flex flex-wrap items-center justify-between gap-1.5">
                   <span className="text-caption-1-semibold text-text-secondary">
                     FILINGS ANALYSED
                   </span>
@@ -1095,9 +1337,8 @@ function DependenciesPageContent() {
                 </span>
               </div>
 
-              {/* Bucket 4: Skipped / Non-SEC holdings */}
-              <div className="flex flex-col gap-1 rounded-2xl border border-separator-border bg-background-primary-default p-4">
-                <div className="flex items-center justify-between gap-2">
+              <div className="flex min-w-0 flex-col gap-1 rounded-2xl border border-separator-border bg-background-primary-default p-4">
+                <div className="flex flex-wrap items-center justify-between gap-1.5">
                   <span className="text-caption-1-semibold text-text-secondary">
                     SKIPPED HOLDINGS
                   </span>
@@ -1105,7 +1346,7 @@ function DependenciesPageContent() {
                     variant="caption"
                     color={result.counts.companies_skipped > 0 ? "yellow" : "neutral"}
                   >
-                    Honest coverage
+                    Coverage
                   </Chip>
                 </div>
                 <span className="text-display-4-medium text-text-primary tabular-nums">
@@ -1113,7 +1354,7 @@ function DependenciesPageContent() {
                 </span>
                 <span className="text-caption-1-regular text-text-secondary">
                   {nonSecCompanies.length > 0
-                    ? `No primary SEC 10-K/20-F (${nonSecCompanies.map((c) => c.company_name).join(", ")})`
+                    ? `No primary SEC filing (${nonSecCompanies.map((c) => c.company_name).join(", ")})`
                     : "All requested holdings had primary SEC filings"}
                 </span>
               </div>
@@ -1125,7 +1366,7 @@ function DependenciesPageContent() {
                 {nonSecCompanies
                   .map(
                     (c) =>
-                      `${c.company_name} (${formatPct(c.exposure, 2)}${c.message ? ` — ${c.message}` : " — no primary SEC 10-K/20-F disclosure; appears only in other filers' verified quotes"})`,
+                      `${c.company_name} (${formatPct(c.exposure, 2)}${c.message ? ` — ${companyMessage(c)}` : " — no primary SEC 10-K/20-F disclosure; appears only in other filers' verified quotes"})`,
                   )
                   .join("; ")}
                 .
@@ -1140,7 +1381,6 @@ function DependenciesPageContent() {
               </p>
             )}
 
-            {/* Expandable per-company filing & verification status table */}
             <details className="rounded-2xl border border-separator-border bg-background-primary-default px-4 py-3">
               <summary className="cursor-pointer text-body-2-medium text-text-primary">
                 Show per-company filing status and quote verification counts (
@@ -1202,7 +1442,7 @@ function DependenciesPageContent() {
                             </div>
                             {comp.message && (
                               <p className="mt-0.5 text-caption-1-regular text-text-tertiary">
-                                {comp.message}
+                                {companyMessage(comp)}
                               </p>
                             )}
                           </td>
@@ -1238,265 +1478,108 @@ function DependenciesPageContent() {
             </details>
           </section>
 
-          {/* 3. Deterministic Python Dependency Metrics */}
-          {result.metrics.length > 0 && (
+          {/* 4. AI synthesis, straight after the audit bar so the key findings come first */}
+          <InsightsPanel
+            insights={result.insights}
+            metricById={metricById}
+            edgeById={edgeById}
+            selectEdge={selectEdge}
+          />
+
+          {/* 5. Key numbers: one plain-English card per subject (% and company count together) */}
+          {(metricCards.length > 0 || summaryFacts.length > 0) && (
             <section
-              aria-label="Deterministic dependency metrics"
+              aria-label="Key dependency numbers"
               className="flex flex-col gap-3 rounded-3xl border border-border-button-default bg-background-secondary-default p-5"
             >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-headline-small text-text-primary">
-                  Deterministic Portfolio Dependency Metrics
-                </h3>
-                <span className="text-caption-1-regular text-text-tertiary">
-                  Computed in Python (unioned per holding so exposure is never double-counted)
-                </span>
+              <div className="flex flex-col gap-1">
+                <h3 className="text-headline-small text-text-primary">Key numbers</h3>
+                <p className="text-body-2-regular text-text-secondary">
+                  Calculated directly from the verified filing quotes, not by the AI. Each of your
+                  companies is counted once, so the percentages never double-count.
+                </p>
               </div>
+              {summaryFacts.length > 0 && (
+                <ul className="flex flex-wrap gap-x-5 gap-y-1">
+                  {summaryFacts.map(({ metric, text }) => (
+                    <li key={metric.metric_id} className="text-body-2-regular text-text-secondary">
+                      <span className="text-body-semibold text-text-primary tabular-nums">
+                        {formatMetricValue(metric)}
+                      </span>{" "}
+                      {text}
+                    </li>
+                  ))}
+                </ul>
+              )}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {result.metrics.map((metric) => (
+                {visibleMetricCards.map((card) => (
                   <div
-                    key={metric.metric_id}
+                    key={card.share.metric_id}
                     className="flex flex-col justify-between gap-2 rounded-2xl border border-separator-border bg-background-primary-default p-4"
                   >
                     <div className="flex flex-col gap-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-mono text-caption-1-regular text-text-tertiary">
-                          {metric.metric_id}
-                        </span>
-                        <Chip variant="caption" color="neutral">
-                          {metric.unit}
-                        </Chip>
-                      </div>
-                      <span className="text-display-4-medium text-text-primary tabular-nums">
-                        {formatMetricValue(metric)}
-                      </span>
-                      <p className="text-body-2-regular text-text-secondary">{metric.label}</p>
-                    </div>
-                    {metric.supporting_edge_ids.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-1.5 border-t border-separator-border pt-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="text-caption-1-regular text-text-tertiary">
-                          Evidence ({metric.supporting_edge_ids.length}):
+                          {card.category}
                         </span>
-                        {metric.supporting_edge_ids.map((edgeId) => {
-                          const edge = edgeById.get(edgeId);
-                          return (
-                            <button
-                              key={edgeId}
-                              type="button"
-                              onClick={() => selectEdge(edgeId, true)}
-                              className="cursor-pointer rounded-md border border-border-button-default bg-background-secondary-default px-2 py-0.5 font-mono text-caption-1-regular text-text-primary hover:bg-background-primary-hover"
-                            >
-                              {edge
-                                ? `${edge.source_company_name} → ${edge.target_name}`
-                                : edgeId}
-                            </button>
-                          );
-                        })}
+                        {card.singlePoint && (
+                          <Chip variant="caption" color="orange">
+                            Single point of failure
+                          </Chip>
+                        )}
                       </div>
+                      <p className="text-body-semibold text-text-primary">{card.subject}</p>
+                      <p className="text-body-2-regular text-text-secondary">
+                        <span className="text-display-4-medium text-text-primary tabular-nums">
+                          {formatMetricValue(card.share)}
+                        </span>{" "}
+                        {card.explanation}
+                      </p>
+                    </div>
+                    {card.supportingEdgeIds.length > 0 && (
+                      <details className="border-t border-separator-border pt-2">
+                        <summary className="cursor-pointer text-caption-1-regular text-text-tertiary">
+                          {card.supportingEdgeIds.length === 1
+                            ? "1 source in the filings"
+                            : `${card.supportingEdgeIds.length} sources in the filings`}
+                        </summary>
+                        <div className="flex flex-wrap gap-1.5 pt-2">
+                          {card.supportingEdgeIds.map((edgeId) => {
+                            const edge = edgeById.get(edgeId);
+                            return (
+                              <button
+                                key={edgeId}
+                                type="button"
+                                onClick={() => selectEdge(edgeId, true)}
+                                className="cursor-pointer rounded-md border border-border-button-default bg-background-secondary-default px-2 py-0.5 text-caption-1-regular text-text-primary hover:bg-background-primary-hover"
+                              >
+                                {edge ? `${edge.source_company_name} → ${edge.target_name}` : edgeId}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </details>
                     )}
                   </div>
                 ))}
               </div>
+              {metricCards.length > METRIC_CARDS_SHOWN && (
+                <div>
+                  <Button
+                    variant="ghost"
+                    size="small"
+                    onClick={() => setShowAllMetrics((shown) => !shown)}
+                  >
+                    {showAllMetrics
+                      ? "Show only the largest"
+                      : `Show all ${metricCards.length} numbers`}
+                  </Button>
+                </div>
+              )}
             </section>
           )}
 
-          {/* 4. Orchestrator Insights Panel (Flaws + Diversification Suggestions) */}
-          <section
-            aria-label="Orchestrator insights and diversification suggestions"
-            className="flex flex-col gap-4 rounded-3xl border border-border-button-default bg-background-secondary-default p-5"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <RiSparklingLine className="size-5 text-text-primary" aria-hidden />
-                <h3 className="text-headline-small text-text-primary">
-                  Orchestrator Synthesis: Critical Flaws & Diversification Suggestions
-                </h3>
-                {result.insights.model && (
-                  <Chip variant="caption" color="purple">
-                    Model: {result.insights.model}
-                  </Chip>
-                )}
-                <Chip
-                  variant="caption"
-                  color={result.insights.status === "ok" ? "lime" : "yellow"}
-                >
-                  Status: {result.insights.status}
-                </Chip>
-                {result.insights.rejected_claims_count > 0 && (
-                  <Chip variant="caption" color="orange">
-                    {result.insights.rejected_claims_count} unverified{" "}
-                    {result.insights.rejected_claims_count === 1 ? "claim" : "claims"} dropped
-                  </Chip>
-                )}
-              </div>
-              <span className="text-caption-1-regular text-text-tertiary">
-                Advisory only (not investment advice) · Click any citation to open the SEC filing quote
-              </span>
-            </div>
-
-            {result.insights.status === "metrics_only" && (
-              <p className="text-body-2-regular text-text-secondary">
-                Showing deterministic metric-backed insights (LLM orchestrator skipped or running in
-                metrics-only mode).
-              </p>
-            )}
-            {result.insights.status === "no_verified_edges" && (
-              <p className="text-body-2-regular text-text-secondary">
-                No verified dependency edges were found for this portfolio, so orchestrator
-                synthesis was skipped to prevent speculation.
-              </p>
-            )}
-
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              {/* Critical Flaws column */}
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2">
-                  <RiAlertLine className="size-4 text-text-error-primary" aria-hidden />
-                  <h4 className="text-body-semibold text-text-primary">
-                    Critical Flaws & Single Points of Failure ({result.insights.flaws.length})
-                  </h4>
-                </div>
-                {result.insights.flaws.length === 0 ? (
-                  <p className="rounded-2xl border border-separator-border bg-background-primary-default p-4 text-body-2-regular text-text-secondary">
-                    No critical concentration flaws flagged across verified edges.
-                  </p>
-                ) : (
-                  result.insights.flaws.map((claim) => {
-                    const sev = CLAIM_SEVERITY_META[claim.severity] ?? CLAIM_SEVERITY_META.warning;
-                    return (
-                      <article
-                        key={claim.claim_id}
-                        className={cx(
-                          "flex flex-col gap-2.5 rounded-2xl border bg-background-primary-default p-4",
-                          sev.borderClass,
-                        )}
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <h5 className="text-body-medium text-text-primary">{claim.title}</h5>
-                          <Chip variant="caption" color={sev.chipColor}>
-                            {sev.label}
-                          </Chip>
-                        </div>
-                        <p className="text-body-2-regular text-text-secondary">{claim.text}</p>
-                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                          {claim.cited_metric_ids.map((mId) => {
-                            const m = metricById.get(mId);
-                            const firstEdgeId = m?.supporting_edge_ids[0] ?? null;
-                            return (
-                              <button
-                                key={mId}
-                                type="button"
-                                onClick={() => {
-                                  if (firstEdgeId) selectEdge(firstEdgeId, true);
-                                }}
-                                className="cursor-pointer rounded-md border border-border-button-default bg-background-secondary-default px-2 py-0.5 text-caption-1-regular text-text-primary hover:bg-background-primary-hover"
-                              >
-                                Metric {mId}
-                                {m ? `: ${formatMetricValue(m)}` : ""}
-                              </button>
-                            );
-                          })}
-                          {claim.cited_edge_ids.map((eId) => {
-                            const edge = edgeById.get(eId);
-                            return (
-                              <button
-                                key={eId}
-                                type="button"
-                                onClick={() => selectEdge(eId, true)}
-                                className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border-button-default bg-background-secondary-default px-2 py-0.5 text-caption-1-regular text-text-primary hover:bg-background-primary-hover"
-                              >
-                                <RiDoubleQuotesL className="size-3" aria-hidden />
-                                <span>
-                                  {edge
-                                    ? `${edge.source_company_name} → ${edge.target_name} (${edge.filing.form})`
-                                    : eId}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </article>
-                    );
-                  })
-                )}
-              </div>
-
-              {/* Diversification Suggestions column */}
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2">
-                  <RiMindMap className="size-4 text-text-primary" aria-hidden />
-                  <h4 className="text-body-semibold text-text-primary">
-                    Diversification Suggestions ({result.insights.suggestions.length})
-                  </h4>
-                </div>
-                {result.insights.suggestions.length === 0 ? (
-                  <p className="rounded-2xl border border-separator-border bg-background-primary-default p-4 text-body-2-regular text-text-secondary">
-                    No structural diversification changes suggested from current verified edges.
-                  </p>
-                ) : (
-                  result.insights.suggestions.map((claim) => {
-                    const sev = CLAIM_SEVERITY_META[claim.severity] ?? CLAIM_SEVERITY_META.info;
-                    return (
-                      <article
-                        key={claim.claim_id}
-                        className={cx(
-                          "flex flex-col gap-2.5 rounded-2xl border bg-background-primary-default p-4",
-                          sev.borderClass,
-                        )}
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <h5 className="text-body-medium text-text-primary">{claim.title}</h5>
-                          <Chip variant="caption" color={sev.chipColor}>
-                            {sev.label}
-                          </Chip>
-                        </div>
-                        <p className="text-body-2-regular text-text-secondary">{claim.text}</p>
-                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                          {claim.cited_metric_ids.map((mId) => {
-                            const m = metricById.get(mId);
-                            const firstEdgeId = m?.supporting_edge_ids[0] ?? null;
-                            return (
-                              <button
-                                key={mId}
-                                type="button"
-                                onClick={() => {
-                                  if (firstEdgeId) selectEdge(firstEdgeId, true);
-                                }}
-                                className="cursor-pointer rounded-md border border-border-button-default bg-background-secondary-default px-2 py-0.5 text-caption-1-regular text-text-primary hover:bg-background-primary-hover"
-                              >
-                                Metric {mId}
-                                {m ? `: ${formatMetricValue(m)}` : ""}
-                              </button>
-                            );
-                          })}
-                          {claim.cited_edge_ids.map((eId) => {
-                            const edge = edgeById.get(eId);
-                            return (
-                              <button
-                                key={eId}
-                                type="button"
-                                onClick={() => selectEdge(eId, true)}
-                                className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border-button-default bg-background-secondary-default px-2 py-0.5 text-caption-1-regular text-text-primary hover:bg-background-primary-hover"
-                              >
-                                <RiDoubleQuotesL className="size-3" aria-hidden />
-                                <span>
-                                  {edge
-                                    ? `${edge.source_company_name} → ${edge.target_name} (${edge.filing.form})`
-                                    : eId}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </article>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          </section>
-
-          {/* 5. Bipartite SVG Dependency Graph + Evidence Inspector */}
+          {/* 6. Bipartite SVG Dependency Graph + Evidence Inspector */}
           <section
             aria-label="Supply-chain and counterparty dependency graph"
             className="flex flex-col gap-4 rounded-3xl border border-border-button-default bg-background-secondary-default p-5"
@@ -1510,28 +1593,47 @@ function DependenciesPageContent() {
                   </h3>
                 </div>
                 <p className="text-caption-1-regular text-text-secondary">
-                  Showing {graph?.edges.length ?? 0} of {result.edges.length} verified edges. Click
-                  any line or circle to inspect its verbatim SEC filing quote.
+                  Showing {graph?.targets.length ?? 0} of {graph?.totalTargetsBeforeLimit ?? 0}{" "}
+                  counterparties ({graph?.edges.length ?? 0} verified edges). Click any line or
+                  circle to inspect its verbatim SEC filing quote.
                 </p>
               </div>
-              <SegmentedControl
-                aria-label="Filter dependency edges by type"
-                selectedKeys={[edgeFilter]}
-                onSelectionChange={(keys) => {
-                  const [key] = [...keys];
-                  if (key) setEdgeFilter(String(key) as EdgeFilterGroup);
-                }}
-              >
-                <SegmentedControlItem id="all">All ({result.edges.length})</SegmentedControlItem>
-                <SegmentedControlItem id="supply_chain">Suppliers & Foundries</SegmentedControlItem>
-                <SegmentedControlItem id="sole_source">Sole source</SegmentedControlItem>
-                <SegmentedControlItem id="customers">Customers</SegmentedControlItem>
-                <SegmentedControlItem id="inputs">Key inputs</SegmentedControlItem>
-                <SegmentedControlItem id="facilities">Facilities</SegmentedControlItem>
-              </SegmentedControl>
+              <div className="flex max-w-full flex-wrap items-center gap-2">
+                {graph && graph.totalTargetsBeforeLimit > DEFAULT_TARGET_LIMIT && (
+                  <Button
+                    variant="secondary"
+                    size="xs"
+                    onClick={() => setShowAllTargets((prev) => !prev)}
+                  >
+                    {showAllTargets
+                      ? `Show top ${DEFAULT_TARGET_LIMIT} counterparties`
+                      : `Show all ${graph.totalTargetsBeforeLimit} counterparties`}
+                  </Button>
+                )}
+                <div className="max-w-full overflow-x-auto pb-1">
+                  <SegmentedControl
+                    aria-label="Filter dependency edges by type"
+                    selectedKeys={[edgeFilter]}
+                    onSelectionChange={(keys) => {
+                      const [key] = [...keys];
+                      if (key) setEdgeFilter(String(key) as EdgeFilterGroup);
+                    }}
+                  >
+                    <SegmentedControlItem id="all">
+                      All ({result.edges.length})
+                    </SegmentedControlItem>
+                    <SegmentedControlItem id="supply_chain">
+                      Suppliers & Foundries
+                    </SegmentedControlItem>
+                    <SegmentedControlItem id="sole_source">Sole source</SegmentedControlItem>
+                    <SegmentedControlItem id="customers">Customers</SegmentedControlItem>
+                    <SegmentedControlItem id="inputs">Key inputs</SegmentedControlItem>
+                    <SegmentedControlItem id="facilities">Facilities</SegmentedControlItem>
+                  </SegmentedControl>
+                </div>
+              </div>
             </div>
 
-            {/* Edge type colour legend */}
             <div className="flex flex-wrap items-center gap-3 text-caption-1-regular text-text-secondary">
               {(
                 [
@@ -1575,7 +1677,7 @@ function DependenciesPageContent() {
               </p>
             )}
 
-            {/* Inline Evidence Inspector for selected edge/node */}
+            {/* Inline Evidence Inspector for selected node/edge */}
             <div
               aria-label="Selected dependency evidence"
               aria-live="polite"
@@ -1583,11 +1685,11 @@ function DependenciesPageContent() {
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h4 className="text-body-semibold text-text-primary">
-                  {selectedEdgeId
-                    ? "Selected Edge Evidence"
-                    : activeNodeId
-                      ? `Verified Evidence for Selected Node (${inspectedEdges.length})`
-                      : "Highlighted Filing Evidence"}
+                  {activeNodeId
+                    ? `Verified Evidence for Selected Node (${inspectedEdges.length})`
+                    : selectedEdgeId
+                      ? "Selected Edge Evidence"
+                      : "Sample Verified Filing Evidence"}
                 </h4>
                 {(selectedEdgeId || selectedNodeId) && (
                   <Button
@@ -1609,7 +1711,7 @@ function DependenciesPageContent() {
                 </p>
               ) : (
                 <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                  {inspectedEdges.map((edge) => (
+                  {inspectedEdges.slice(0, 6).map((edge) => (
                     <EdgeEvidenceCard
                       key={edge.edge_id}
                       edge={edge}
@@ -1622,7 +1724,6 @@ function DependenciesPageContent() {
               )}
             </div>
 
-            {/* Accessible table fallback for all verified edges */}
             {result.edges.length > 0 && (
               <details className="rounded-2xl border border-separator-border bg-background-primary-default px-4 py-3">
                 <summary className="cursor-pointer text-body-2-medium text-text-primary">
@@ -1689,7 +1790,8 @@ function DependenciesPageContent() {
                                 className="inline-flex items-center gap-1 text-text-primary underline"
                               >
                                 <span>
-                                  {edge.filing.form} · {edge.section} ({edge.filing.filed})
+                                  {edge.filing.form} · {formatSectionLabel(edge.section)} (
+                                  {edge.filing.filed})
                                 </span>
                                 <RiExternalLinkLine className="size-3.5" aria-hidden />
                               </a>
@@ -1713,7 +1815,7 @@ function DependenciesPageContent() {
             )}
           </section>
 
-          {/* 6. Facility Concentration by Country */}
+          {/* 6. Facility Concentration by Country (grouped strictly from backend `facility.<ISO2>` metrics) */}
           <section
             aria-label="Facility concentration by country"
             className="flex flex-col gap-4 rounded-3xl border border-border-button-default bg-background-secondary-default p-5"
@@ -1726,7 +1828,8 @@ function DependenciesPageContent() {
                 </h3>
               </div>
               <span className="text-caption-1-regular text-text-tertiary">
-                Unioned portfolio exposure with disclosed facilities or assembly per jurisdiction
+                Grouped by canonical country from deterministic Python metrics, with named sites
+                listed under each holding
               </span>
             </div>
 
@@ -1736,11 +1839,10 @@ function DependenciesPageContent() {
               </p>
             ) : (
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-                {/* Recharts horizontal BarChart */}
                 <div className="flex flex-col justify-center rounded-2xl border border-separator-border bg-background-primary-default p-4 lg:col-span-5">
                   <div
                     className="w-full"
-                    style={{ height: Math.max(180, facilityRows.length * 48) }}
+                    style={{ height: Math.max(200, facilityRows.length * 44) }}
                   >
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
@@ -1761,12 +1863,15 @@ function DependenciesPageContent() {
                         <YAxis
                           type="category"
                           dataKey="country"
-                          width={100}
+                          width={120}
                           tick={{ fontSize: 12 }}
                           stroke="var(--color-text-secondary)"
                         />
                         <Tooltip
-                          formatter={(value) => [`${Number(value).toFixed(2)}%`, "Dependent exposure"]}
+                          formatter={(value) => [
+                            `${Number(value).toFixed(2)}%`,
+                            "Dependent exposure",
+                          ]}
                         />
                         <Bar
                           dataKey="exposurePct"
@@ -1778,27 +1883,23 @@ function DependenciesPageContent() {
                   </div>
                 </div>
 
-                {/* Jurisdiction breakdown cards */}
                 <div className="flex flex-col gap-3 lg:col-span-7">
                   {facilityRows.map((row) => (
                     <div
-                      key={row.country}
+                      key={row.countryCode}
                       className="flex flex-col gap-2.5 rounded-2xl border border-separator-border bg-background-primary-default p-4"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <RiBuilding2Line className="size-4 text-text-primary" aria-hidden />
                           <span className="text-body-semibold text-text-primary">
                             {row.country}
                           </span>
-                          {row.subjectKey && (
-                            <Chip variant="caption" color="neutral">
-                              {row.subjectKey}
-                            </Chip>
-                          )}
+                          <Chip variant="caption" color="neutral">
+                            {row.countryCode}
+                          </Chip>
                           <Chip variant="caption" color="cyan">
-                            {row.companyCount}{" "}
-                            {row.companyCount === 1 ? "holding" : "holdings"}
+                            {row.companyCount} {row.companyCount === 1 ? "company" : "companies"}
                           </Chip>
                         </div>
                         <span className="text-body-semibold text-text-primary tabular-nums">
@@ -1806,27 +1907,37 @@ function DependenciesPageContent() {
                         </span>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-1.5">
+                      <div className="flex flex-col gap-2">
                         {row.companies.map((c) => (
-                          <Chip key={c.companyKey} variant="caption" color="neutral">
-                            {c.companyName} ({formatPct(c.exposure, 2)})
-                          </Chip>
-                        ))}
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                        {row.edges.map((edge) => (
-                          <button
-                            key={edge.edge_id}
-                            type="button"
-                            onClick={() => selectEdge(edge.edge_id, true)}
-                            className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border-button-default bg-background-secondary-default px-2.5 py-1 text-caption-1-regular text-text-primary hover:bg-background-primary-hover"
+                          <div
+                            key={c.companyKey}
+                            className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-separator-border bg-background-secondary-default px-3 py-2 text-caption-1-regular"
                           >
-                            <RiDoubleQuotesL className="size-3" aria-hidden />
-                            <span>
-                              {edge.source_company_name} ({edge.filing.form} {edge.filing.filed})
-                            </span>
-                          </button>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="font-medium text-text-primary">
+                                {c.companyName}
+                              </span>
+                              <span className="text-text-tertiary tabular-nums">
+                                ({formatPct(c.exposure, 2)})
+                              </span>
+                              {c.namedSites.map((site) => (
+                                <button
+                                  key={site.edgeId}
+                                  type="button"
+                                  onClick={() => selectEdge(site.edgeId, true)}
+                                  className="cursor-pointer rounded-md border border-border-button-default bg-background-primary-default px-2 py-0.5 text-caption-1-regular text-text-primary hover:bg-background-primary-hover"
+                                >
+                                  Site: {site.siteName}
+                                  {site.qualifier ? ` (${site.qualifier})` : ""}
+                                </button>
+                              ))}
+                            </div>
+                            <CollapsibleEdgeSources
+                              edgeIds={c.edges.map((e) => e.edge_id)}
+                              edgeById={edgeById}
+                              onSelectEdge={(edgeId) => selectEdge(edgeId, true)}
+                            />
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -1868,7 +1979,7 @@ function DependenciesPageContent() {
                   {drawerEdge.filing.form} (accession{" "}
                   <code className="font-mono">{drawerEdge.filing.accession}</code>, filed{" "}
                   {drawerEdge.filing.filed}) and confirmed that the quote above appears verbatim in{" "}
-                  {drawerEdge.section}.
+                  {formatSectionLabel(drawerEdge.section)}.
                 </p>
               </div>
             </div>
