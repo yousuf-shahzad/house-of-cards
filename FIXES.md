@@ -33,6 +33,10 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
+### FIX-53 · high · A "Next" button on the Simple Portfolio page (Gawyn, 10:03)
+Once the portfolio is ready, Simple Portfolio shows a clear primary **Next** button that leads on to the next page of the walkthrough (Exposures, "What you really own"), staying in Simple view. Hide or disable it until the portfolio is valid, with a short reason.
+- **Owner:** Gawyn's Claude (lead, at Gawyn's request; `pages/simple/`, with Codex's OK since it owns the folder) · **Status:** in progress
+
 ### FIX-52 · high · Reorder the Dependencies page: the important actions and AI synthesis first (Gawyn, 09:57)
 Today the order is: header (Find dependencies, Go deeper) → progress → coverage panel (holding "Scan top 30") → audit bar → AI synthesis → research panel (holding "Investigate gaps") → key numbers → graph → countries.
 
@@ -48,28 +52,10 @@ Today the order is: header (Find dependencies, Go deeper) → progress → cover
 - Keep the FIX-23 collapsing, the FIX-27 graph expansion and the evidence drawer working. Apply the same order to Simple Dependencies where it applies (Codex reviews that part).
 - **Owner:** Yousuf's Gemini (`pages/dependencies/`), right after FIX-40 · **Status:** assigned
 
-### FIX-51 · high · UX: the Simple/Full switch looks "off" in Simple view (Gawyn, 09:55)
-The top bar uses an on/off `Switch` (`workspace.tsx:88`, `isSelected={!isBeginner}`), so Simple view always looks like something is switched off.
-- Fix: replace it with the existing `SegmentedControl` (as in the editor's "Shares | %"), with two options **Simple** and **Full** and the active one highlighted. Use `aria-label="View"`. Keep the route and portfolio when switching.
-- Update the tip text "Switch to Full view here…" to match (e.g. "Choose Full at the top for more detail").
-- Check: Simple active by default after "Simple view"; clicking Full highlights Full and stays on the same page; it works at 390px and in dark mode.
-- **Owner:** Yousuf's Codex (`workspace.tsx`), in the same PR as FIX-46 · **Status:** assigned
-
-### FIX-46 · high · BUG: Simple mode state (bug hunt, Kendrick's Gemini)
-- **Guide → sidebar switches you into Full view.** Going from the 5-step guide (`#/guide`) to any sidebar page, or pressing Back, switches to Full view, because `experience.tsx` treats every hash change away from `#/guide` as opening an expert page. Fix: only `openExpertPage` switches mode.
-- **Simple pages show stale results.** Simple Exposures, Overlap and Risk show the previous portfolio's results after the portfolio becomes incomplete or gets an unknown ticker (e.g. ZZZZ), with no warning. With no earlier analysis they say "Pick your ETFs…" instead of the actual error. Fix: show the stale or error state (`pages/simple/`).
-- **Simple info banners use Full-view text.** They tell users to click rows, heatmap cells and graph lines that don't exist on Simple pages. Fix: give Simple mode its own info text (in `pages/simple/copy.ts`, passed in from `workspace.tsx`).
-- **Owner:** Yousuf's Codex (`experience.tsx`, `workspace.tsx`, `pages/simple/`); do this **first** · **Status:** assigned
-
 ### FIX-48 · medium · BUG: Dependencies page interaction and progress (bug hunt)
 - **Selection gets stuck on an old node.** `selectEdge()` doesn't clear `selectedNodeId`, so after clicking a node, clicking an edge or citation opens the edge's drawer while the highlight and inline inspector stay on the old node. Hovering nodes also swaps the 6 inline evidence cards on every mouse move, shifting the layout. Fix: clear the node on edge select, and change the inline cards only on click.
 - **Restarting a scan shows 100% first.** "Go deeper" or "Run again" briefly shows 100% with all phases green, then jumps back. Fix: reset the job progress on start (`dependencies-state.tsx`).
 - **Owner:** Yousuf's Gemini (`dependencies-state.tsx`, `pages/dependencies/`, `step-4-risks.tsx`), after FIX-47 · **Status:** assigned
-
-### FIX-49 · medium · BUG: portfolio inputs accept 0 shares and absurdly large share counts (bug hunt)
-- **0 shares are accepted.** Zero shares next to a positive ETF passes validation (`validShares` allows ≥ 0). That sends `allocation: 0` and fills Exposures, Overlap and Step 2 with 0.00% holdings, false "held in 2+ ETFs" counts and false overlap. Fix: treat 0 shares as "remove/ignore this row", and count multi-ETF holdings only for ETFs with allocation > 0.
-- **Huge share counts are accepted.** 1e25 or more is accepted with no upper bound. It renders 30+ digit strings that overflow the card on mobile, and other ETFs collapse to 0.00%. Fix: a sensible maximum (e.g. 1e9 shares) on the client and in `/api/valuation`, and wrap or abbreviate long values.
-- **Owner:** Kendrick's Gemini (found it). Lead-approved handoff: `frontend/app/portfolio-draft.ts` and minimal `app/ui/draft-editor.tsx` edits (FIX-49 lands **before** Codex's FIX-43 copy edits in the same file), plus `backend/hoc/portfolio/valuation.py` and `exposure.py` with Codex reviewing · **Status:** assigned (after the bug-hunt pass)
 
 ### FIX-50 · medium · BUG: Try a change actions (bug hunt)
 - **"Try this" changes the idea it loads.** In % mode it forces Shares mode and rounds to whole shares of $10,000, so the numbers differ from the card. With small holdings, leftover rounding keeps 1 share of the swapped-out ETF, turning a swap into an add. Fix: in % mode apply the idea's exact allocations; in Shares mode make the swap source go to 0.
@@ -84,7 +70,7 @@ Found by Codex during the #223 review (existing behaviour). The hash doesn't cha
 ### FIX-40 · high · BUG: guide steps 1–3 "Learn more in the full …" links land on the Simple page
 Found by Bekarys's Gemini (QA). Since #221, these links only change the hash, so they open the Simple version instead of Full view. Repro: `#/guide`, Step 1, "Learn more in the full Portfolio builder".
 - Fix: use `openExpertPage(...)` in `guide/copy.ts:95`, `steps/pick.tsx:195`, `steps/own.tsx:127` and `steps/spread.tsx:151`.
-- **Owner:** Yousuf's Gemini (guide) · **Status:** assigned
+- **Owner:** Yousuf's Gemini (guide) · **Status:** PR #234 open
 
 ### FIX-41 · medium · UX: Simple-mode controls (from FIX-39)
 - The top-bar switch says "Simple view / Full view" without showing which is active. Label the state clearly, e.g. "Full view" on or off, or highlight the active mode.
@@ -112,21 +98,6 @@ Found by Bekarys's Gemini (QA). Since #221, these links only change the hash, so
   - Put "Use this as my portfolio" next to "Reset to my portfolio", not only inside More details.
 - Copy and presentation only; no logic or data changes.
 - **Owner:** Yousuf's Codex. Lead-approved handoffs: `pages/exposures/` from Yousuf's Gemini, `pages/overlap/` from Bekarys's Gemini (busy with QA), `app/ui/draft-editor.tsx` and `app/ui/try-a-change.tsx` (Yousuf's Claude's, held by Yousuf's Gemini) · **Status:** after FIX-41
-
-### FIX-44 · low · UX: plain words on Risk & data (from FIX-39)
-- Remove the raw "HHI 0.0201 (201 pts)" from the card face (keep it in a tooltip).
-- "GICS sector exposures" → "Industry breakdown"; "Line-level (>=95%)" → "From company holdings".
-- Remove "layer: l1_sec_nport" and raw warning-code prefixes such as `STALE_HOLDINGS:`.
-- Spell out "Excluded" and "Portfolio coverage".
-- **Owner:** Gawyn's Gemini (`pages/risk/`), after FIX-36 · **Status:** queued
-
-### FIX-38 · high · Remove the Network page; Exposures covers it (Gawyn, 09:27)
-- Remove the `network` entry from `frontend/app/registry.tsx` (lead-approved edit), so it leaves the sidebar in both views. Old `#/network` links redirect to `#/exposures`.
-- Delete `frontend/app/pages/network/index.tsx`, but **keep the graph helper**: `pages/simple/index.tsx` imports `buildGraph` from `../network/graph`. Move it to `frontend/app/ui/money-flow-graph.ts`, or leave `graph.ts` in place and update the import.
-- Simple mode: drop the `pageKey === "network"` branch in `pages/simple/index.tsx`. If the money-flow diagram is shown only there, show it on Simple Exposures instead, so nothing useful is lost.
-- Remove `PAGE_INFO_COPY.network` in `guide/copy.ts`, and any "Network" mentions in the README, DEMO and pitch deck.
-- Check: `npm run build` / tsc clean; no sidebar entry; `#/network` lands on Exposures; Simple Exposures still works.
-- **Owner:** Yousuf's Gemini; Codex reviews · **Status:** PR #223 passed Codex's review and the lead's browser check (no Network in either sidebar; `#/network` → Exposures on cold load and in-app; money flow on Simple Exposures). Author merges.
 
 ### FIX-36 · high · Independent proof outside the app: QQQ vs XLK overlap, and dependencies vs price history (Gawyn, 09:22)
 Prove one example without the app's own code or validation.
@@ -170,6 +141,10 @@ For each **confirmed** bug, add one line under **New** in FIXES.md: `BUG: <what 
 
 ## Done (checked on `main` by the lead)
 
+- FIX-46 + FIX-51 Simple mode stays Simple when leaving the guide via the sidebar or Back; Simple pages show stale/error state and their own info text; the top bar is a "Simple | Full" toggle with the active side highlighted (lead, browser) — #231
+- FIX-49 0-share rows are ignored (lead: 1,293 companies without IVV, no IVV on Exposures); share counts above 1,000,000,000 are marked invalid with a clear message, and nothing overflows — #230
+- FIX-44 Risk page in plain words (HHI in a tooltip, "Industry breakdown", no raw codes); verified by QA — #229
+- FIX-38 Network page removed; old links go to Exposures; money flow on Simple Exposures — #223
 - FIX-47 the guide's auto-scan re-runs after A → B → A, and steps 2–3 show loading/error/"can't price"/"changed" instead of old numbers (lead's own fix, checked in the browser) — #233
 - FIX-39 new-user UX/jargon review: 9 findings, triaged into FIX-41 to FIX-44 (Yousuf's Gemini)
 - FIX-34 sole-source and qualifiers grounded in the target's own clause, and exact word-boundary name matching. Lead, live: all 3 remaining sole-source links have explicit sole/single/only wording; 1 mismatched link dropped (129 → 128); TSMC 12.39% unchanged — #222
