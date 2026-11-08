@@ -29,6 +29,8 @@ OTHER_ANNUAL_FORMS = ("40-F", "10-KT", "20-FR")
 TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
 SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK{cik}.json"
 ARCHIVE_URL = "https://www.sec.gov/Archives/edgar/data/{cik}/{accession}/{document}"
+EFTS_URL = "https://efts.sec.gov/LATEST/search-index"
+MAX_REVERSE_HITS = 10
 METADATA_TTL = timedelta(hours=24)
 SOURCE = "sec_filings"
 
@@ -75,9 +77,9 @@ class FilingFetcher:
             raise FilingUnavailable("sec_contact_missing", "Set HOC_SEC_CONTACT (SEC requires contact details).")
         return {"User-Agent": f"{self.settings.user_agent} ({contact})", "Accept": "*/*"}
 
-    def _get(self, url: str, ttl: timedelta | None):
+    def _get(self, url: str, ttl: timedelta | None, params: dict[str, str] | None = None):
         try:
-            response = self.http.get(url, source=SOURCE, ttl=ttl, headers=self._headers())
+            response = self.http.get(url, source=SOURCE, ttl=ttl, headers=self._headers(), params=params)
         except SourceError as exc:
             raise FilingUnavailable("error", f"SEC request failed: {exc}") from exc
         return response
@@ -119,6 +121,11 @@ class FilingFetcher:
             status: FilingStatus = "unsupported_form" if other else "no_sec_filing"
             raise FilingUnavailable(status, f"No 10-K or 20-F for CIK {cik}" + (f" (files {', '.join(other)})" if other else ""))
         form, accession, filed, document = max(annual, key=lambda row: (row[2], row[1]))  # newest filing date
+        return self.filing_at(cik, form, accession, filed, document)
+
+    def filing_at(self, cik: str, form: str, accession: str, filed: str, document: str) -> Filing:
+        """One specific filing document as a Filing (memoised per accession)."""
+        cik = cik.zfill(10)
         with self._lock:
             if accession in self._memo:
                 return self._memo[accession]
@@ -133,3 +140,47 @@ class FilingFetcher:
                         sha256=hashlib.sha256(text.encode("utf-8")).hexdigest(), sections=sections, quality=quality)
         with self._lock:
             return self._memo.setdefault(accession, filing)
+
+    def sec_titles(self) -> dict[str, str]:
+        """SEC company title -> 10-digit CIK (company_tickers.json, 24 h), for NameResolver(sec_titles=...)."""
+        response = self._get(TICKERS_URL, METADATA_TTL)
+        if response.status != 200:
+            raise FilingUnavailable("error", f"SEC company_tickers.json returned HTTP {response.status}")
+        try:
+            return {str(r["title"]): str(int(r["cik_str"])).zfill(10) for r in response.json().values()}
+        except (AttributeError, KeyError, TypeError, ValueError) as exc:
+            raise FilingUnavailable("error", "SEC company_tickers.json is malformed") from exc
+
+    def names_in_other_filings(self, name: str, *, exclude_cik: str | None = None,
+                               limit: int = MAX_REVERSE_HITS) -> list[Filing]:
+        """Other companies' latest-year 10-K/20-F that mention `name` verbatim (EDGAR full-text search).
+
+        One filing per filer (the newest hit), the queried company itself excluded, at most `limit`.
+        A hit only means the name appears (often as a competitor); the extractor decides the relationship.
+        """
+        response = self._get(EFTS_URL, METADATA_TTL, params={"q": f'"{name}"', "forms": ",".join(ANNUAL_FORMS)})
+        if response.status != 200:
+            raise FilingUnavailable("error", f"EDGAR full-text search returned HTTP {response.status}")
+        try:
+            hits = response.json()["hits"]["hits"]
+            rows = []
+            for hit in hits:
+                accession, document = str(hit["_id"]).split(":", 1)
+                source = hit["_source"]
+                form = str(source.get("form") or source["root_forms"][0])
+                rows.append((str(source["ciks"][0]).zfill(10), form, accession, str(source["file_date"]), document))
+        except (KeyError, IndexError, TypeError, ValueError) as exc:
+            raise FilingUnavailable("error", "EDGAR full-text search answer is malformed") from exc
+        newest: dict[str, tuple] = {}
+        for row in sorted(rows, key=lambda r: (r[3], r[2]), reverse=True):
+            if row[1] in ANNUAL_FORMS and row[0] != (exclude_cik or "").zfill(10):
+                newest.setdefault(row[0], row)
+        filings = []
+        for cik, form, accession, filed, document in sorted(newest.values(), key=lambda r: (r[3], r[2]), reverse=True):
+            if len(filings) >= limit:
+                break
+            try:
+                filings.append(self.filing_at(cik, form, accession, filed, document))
+            except FilingUnavailable:
+                continue  # one unreadable hit doesn't cost the others
+        return filings

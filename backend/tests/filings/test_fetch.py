@@ -118,3 +118,48 @@ def test_live_nvidia_10k_names_its_foundry(tmp_path):
     filing = fetcher.for_company(SimpleNamespace(company_key="CIK:0001045810", symbols=["NVDA"]))
     assert filing.form == "10-K" and filing.quality == "sections"
     assert "foundr" in filing.section_texts()["1"].lower()
+
+
+def efts_route(name):
+    from hoc.filings.fetch import EFTS_URL
+    return f'{EFTS_URL}?forms=10-K,20-F&q="{name}"'
+
+
+def hit(cik, form, accession, filed, document):
+    return {"_id": f"{accession}:{document}", "_source": {"ciks": [cik], "form": form, "file_date": filed}}
+
+
+def test_names_in_other_filings_one_per_filer_newest_excluding_self():
+    http = http_with()
+    other = "9990000077"
+    hits = [hit(CIK, "10-K", "0000999-26-000002", "2026-02-01", "zz-10k.htm"),  # the company itself
+            hit(other, "10-K", "0000777-26-000001", "2026-01-15", "other-10k.htm"),
+            hit(other, "10-K", "0000777-25-000001", "2025-01-15", "other-old.htm"),  # older year, same filer
+            hit("9990000088", "8-K", "0000888-26-000001", "2026-03-01", "x-8k.htm")]  # not an annual report
+    http.add(efts_route("ZZ Foundry Ltd"), json.dumps({"hits": {"hits": hits}}))
+    http.add(ARCHIVE_URL.format(cik=int(other), accession="000077726000001", document="other-10k.htm"),
+             "<p>Item 1. Business</p><p>We buy wafers from ZZ Foundry Ltd.</p>")
+    filings = FilingFetcher(http, SETTINGS).names_in_other_filings("ZZ Foundry Ltd", exclude_cik=CIK)
+    assert [(f.cik, f.accession) for f in filings] == [(other, "0000777-26-000001")]
+    assert "We buy wafers from ZZ Foundry Ltd." in filings[0].text and filings[0].quality == "fallback"
+
+
+def test_names_in_other_filings_caps_hits_and_skips_unreadable_ones():
+    http = http_with()
+    hits = [hit(f"99900001{i:02d}", "10-K", f"0001{i:02d}-26-000001", f"2026-01-{i + 1:02d}", "d.htm") for i in range(15)]
+    http.add(efts_route("ZZ Optics"), json.dumps({"hits": {"hits": hits}}))
+    for i in range(1, 15):  # the newest hit (i=14) and one more (i=0) have no document route
+        if i != 14:
+            http.add(ARCHIVE_URL.format(cik=int(f"99900001{i:02d}"), accession=f"0001{i:02d}26000001", document="d.htm"),
+                     "<p>ZZ Optics supplies lenses.</p>")
+    filings = FilingFetcher(http, SETTINGS).names_in_other_filings("ZZ Optics", limit=10)
+    assert len(filings) == 10 and filings[0].cik == "9990000113"
+
+
+def test_efts_failures_and_sec_titles():
+    http = http_with()
+    http.add(efts_route("ZZ Bad"), json.dumps({"hits": {"hits": [{"_id": "no-colon"}]}}))
+    with pytest.raises(FilingUnavailable) as exc:
+        FilingFetcher(http, SETTINGS).names_in_other_filings("ZZ Bad")
+    assert exc.value.status == "error"
+    assert FilingFetcher(http, SETTINGS).sec_titles() == {"ZZ Alpha Corp": CIK}
