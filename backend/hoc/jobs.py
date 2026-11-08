@@ -96,6 +96,50 @@ class NotWiredPipeline:
         return [], Insights(status="no_verified_edges")
 
 
+class LivePipeline:
+    """The real pipeline: G-DOC filing fetch -> G-AI extraction (Gemini Flash) -> G-ORCH metrics + insights.
+
+    One instance per service, so the fetcher's per-accession memo and the extraction/orchestrator disk caches
+    are shared by every job."""
+
+    def __init__(self, fetcher, extractor, orchestrator, *, resolve_target_key=None) -> None:
+        self.fetcher = fetcher
+        self.extractor = extractor
+        self.orchestrator = orchestrator
+        self.resolve_target_key = resolve_target_key
+        self.prompt_version = f"{extractor.prompt_version}+{orchestrator.prompt_version}"
+        self._filings: dict[str, object] = {}
+        self._lock = threading.Lock()
+
+    @classmethod
+    def from_settings(cls, http, settings) -> LivePipeline:
+        from hoc.ai import DependencyExtractor, ExtractionCache, GeminiClient
+        from hoc.core.cache import DiskCache
+        from hoc.filings.fetch import FilingFetcher
+        from hoc.graph import DependencyOrchestrator
+
+        extractor = DependencyExtractor(GeminiClient(http, settings), ExtractionCache(DiskCache(settings.cache_dir)))
+        return cls(FilingFetcher(http, settings), extractor, DependencyOrchestrator(http=http, settings=settings))
+
+    def filing(self, company: CompanyExposure) -> FilingRef:
+        filing = self.fetcher.for_company(company)  # raises FilingUnavailable, a CompanyUnavailable
+        with self._lock:
+            self._filings[filing.accession] = filing
+        return FilingRef(company_key=company.company_key, form=filing.form, accession=filing.accession,
+                         filed=filing.filed, url=filing.url)
+
+    def extract(self, company: CompanyExposure, filing: FilingRef, *, cache_only: bool) -> Extraction:
+        with self._lock:
+            document = self._filings.get(filing.accession)
+        found = self.extractor.extract(company, document or filing, cache_only=cache_only,
+                                       resolve_target_key=self.resolve_target_key)
+        return Extraction(edges=list(found.edges), rejected=found.rejected, quality=found.quality,
+                          cached=found.cached)
+
+    def insights(self, analysis, edges, *, cache_only):
+        return self.orchestrator.insights(analysis, edges, cache_only=cache_only)
+
+
 class InlineExecutor(Executor):
     """Runs each task immediately in the caller's thread: deterministic jobs for tests."""
 
@@ -119,6 +163,14 @@ def job_id_for(request: DependencyRequest, companies: Sequence[CompanyExposure],
         "top_n": request.top_n,
     }
     return hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
+
+
+def _portfolio_flags(analysis: AnalysisResponse, edges: list[VerifiedEdge]) -> list[VerifiedEdge]:
+    """source/target_in_portfolio from this job's own analysis (extractions are cached across portfolios)."""
+    keys = {c.company_key for c in analysis.exposures}
+    return [e.model_copy(update={"source_in_portfolio": e.source_company_key in keys,
+                                 "target_in_portfolio": e.target_key is not None and e.target_key in keys})
+            for e in edges]
 
 
 @dataclass
@@ -218,7 +270,8 @@ class DependencyJobs:
         try:
             futures = [self._workers.submit(self._company, job, i, c) for i, c in enumerate(job.top)]
             extractions = [f.result() for f in futures]
-            edges = list({e.edge_id: e for x in extractions if x for e in x.edges}.values())
+            edges = _portfolio_flags(job.analysis,
+                                     list({e.edge_id: e for x in extractions if x for e in x.edges}.values()))
             metrics, insights = self.pipeline.insights(job.analysis, edges, cache_only=job.cache_only)
             with self._lock:
                 companies = list(job.companies)

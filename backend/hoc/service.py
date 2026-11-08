@@ -38,7 +38,7 @@ from hoc.contract import (
     ValuationResponse,
 )
 from hoc.examples import EXAMPLES
-from hoc.jobs import SUBMIT_WAIT_SECONDS, DependencyJobs, NotWiredPipeline
+from hoc.jobs import SUBMIT_WAIT_SECONDS, DependencyJobs, LivePipeline, NotWiredPipeline
 from hoc.normalise.pipeline import normalise_etf
 from hoc.portfolio.analyse import analyse
 from hoc.portfolio.validation import validate_request
@@ -87,6 +87,7 @@ class EtfService:
         http = CachedHttpClient(settings, DiskCache(settings.cache_dir))
         service = cls(build_registry(settings, http), TickerInsideReference(http, settings), load_aliases(), settings)
         service.quotes = TickerInsideAdapter(http, settings)
+        service.dependency_pipeline = LivePipeline.from_settings(http, settings)
         return service
 
     def valuation(self, request: ValuationRequest) -> ValuationResponse:
