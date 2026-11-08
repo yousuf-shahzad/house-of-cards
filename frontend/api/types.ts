@@ -50,6 +50,7 @@ export type ErrorCode =
   | "UNKNOWN_TICKER"
   | "ETF_NOT_FOUND"
   | "JOB_NOT_FOUND"
+  | "RESEARCH_NOT_FOUND"
   | "SOURCES_UNAVAILABLE"
   | "INTERNAL_ERROR";
 
@@ -467,6 +468,37 @@ export type TargetKind =
   | "unnamed_customer";
 
 /** Only edges whose evidence_quote Python found verbatim in the filing. */
+// ---------- v3 (docs/hoc/PLAN-v3.md): importance and interpretation of an edge ----------
+
+export type ImportanceTier = "critical" | "high" | "medium" | "low";
+
+/** R-IMP: scored in Python. critical >= 0.8, high >= 0.6, medium >= 0.4, else low. */
+export interface EdgeImportance {
+  score: number;
+  tier: ImportanceTier;
+  /** Plain English; cue words are quoted from the verified evidence. */
+  reasons: string[];
+}
+
+export type InterpretationStatus = "confirmed" | "flagged" | "rejected";
+export type InterpretationFlag =
+  | "competitor_mention"
+  | "negated"
+  | "hypothetical"
+  | "direction_mismatch"
+  | "generic_reference"
+  | "subject_mismatch"
+  | "judge_unclear";
+
+/** V-INT: never "rejected" inside DependencyResult.edges (rejected edges are only counted). */
+export interface EdgeInterpretation {
+  status: InterpretationStatus;
+  method: "rules" | "rules+model";
+  flags: InterpretationFlag[];
+  reason: string | null;
+  model: string | null;
+}
+
 export interface VerifiedEdge {
   edge_id: string;
   source_company_key: string;
@@ -483,6 +515,10 @@ export interface VerifiedEdge {
   evidence_quote: string;
   section: string;
   filing: FilingRef;
+  /** v3: null until R-IMP has scored it. */
+  importance: EdgeImportance | null;
+  /** v3: null until V-INT has checked it. */
+  interpretation: EdgeInterpretation | null;
 }
 
 export type MetricUnit = "fraction" | "count" | "ratio" | "days";
@@ -526,6 +562,53 @@ export interface DependencyCounts {
   verified_edges: number;
   rejected_edges: number;
   unresolved_counterparties: number;
+  /** v3: quote verified but meaning did not (competitor, negated, wrong direction...). */
+  interpretation_rejected: number;
+}
+
+// ---------- v3 C-COV: coverage ----------
+
+export type CoverageKind = "verified" | "no_disclosures" | "no_sec_filing" | "not_analysed" | "outside_top_n";
+
+export interface CoverageBucket {
+  kind: CoverageKind;
+  /** Fraction of the whole portfolio; the buckets of one report sum to 1. */
+  weight: number;
+  companies: number;
+  label: string;
+}
+
+export interface EtfCoverage {
+  ticker: string;
+  /** Fraction of this ETF's own look-through weight in the "verified" bucket. */
+  verified_weight: number;
+}
+
+export interface UnanalysedCompany {
+  company_key: string;
+  company_name: string;
+  exposure: number;
+}
+
+export type CoverageGapKind =
+  | "outside_top_n"
+  | "unnamed_customers"
+  | "non_sec_counterparties"
+  | "old_filings"
+  | "region_only_facilities";
+
+export interface CoverageGap {
+  kind: CoverageGapKind;
+  message: string;
+  weight: number | null;
+}
+
+export interface CoverageReport {
+  buckets: CoverageBucket[];
+  by_etf: EtfCoverage[];
+  /** The largest exposures outside the analysed top N (at most 10). */
+  largest_unanalysed: UnanalysedCompany[];
+  gaps: CoverageGap[];
 }
 
 export interface DependencyResult {
@@ -537,6 +620,8 @@ export interface DependencyResult {
   insights: Insights;
   counts: DependencyCounts;
   attributions: Attribution[];
+  /** v3: null until C-COV is wired in. */
+  coverage: CoverageReport | null;
 }
 
 export type JobStatus = "queued" | "running" | "done" | "error";
@@ -550,4 +635,96 @@ export interface DependencyJob {
   companies: CompanyRunStatus[];
   result: DependencyResult | null;
   error: ErrorResponse["error"] | null;
+}
+
+// ---------- v3 A-RES: research loop ----------
+
+export const DEFAULT_RESEARCH_ITEMS = 6;
+
+/** POST /api/dependencies/{job_id}/research */
+export interface ResearchRequest {
+  max_items?: number;
+}
+
+export type ResearchItemKind =
+  | "flagged_edge"
+  | "undisclosed_customer"
+  | "single_source"
+  | "no_disclosures"
+  | "unresolved_counterparty";
+export type ResearchAction = "search_filings" | "read_section" | "find_in_filing" | "conclude";
+export type ResearchOutcome = "confirmed" | "revised" | "rejected" | "new_evidence" | "unresolved";
+
+export interface ResearchStep {
+  index: number;
+  action: ResearchAction;
+  query: string | null;
+  /** Python-rendered description of what the tool returned. */
+  summary: string;
+  filing: FilingRef | null;
+}
+
+export interface ResearchFinding {
+  finding_id: string;
+  kind: ResearchItemKind;
+  subject: string;
+  question: string;
+  outcome: ResearchOutcome;
+  explanation: string;
+  steps: ResearchStep[];
+  confirmed_edge_ids: string[];
+  rejected_edge_ids: string[];
+  new_edges: VerifiedEdge[];
+}
+
+/** POST /api/dependencies/{job_id}/research (202, or 200 if cached); poll GET /api/research/{research_id}. */
+export interface ResearchJob {
+  research_id: string;
+  dependency_job_id: string;
+  status: JobStatus;
+  progress_done: number;
+  progress_total: number;
+  findings: ResearchFinding[];
+  /** The dependency result with findings merged in (metrics and insights recomputed). */
+  result: DependencyResult | null;
+  error: ErrorResponse["error"] | null;
+}
+
+// ---------- v3 X-API: before/after comparison (POST /api/compare; cache-only, no Gemini) ----------
+
+export interface CompareRequest {
+  baseline: PortfolioItem[];
+  candidate: PortfolioItem[];
+  top_n?: number;
+}
+
+export interface MetricDelta {
+  metric_id: string;
+  label: string;
+  unit: MetricUnit;
+  baseline: number | null;
+  candidate: number | null;
+  /** candidate - baseline when both exist. */
+  delta: number | null;
+}
+
+export type ConcentrationName = "top5" | "top10" | "top20" | "effective_n" | "largest_company";
+
+export interface ConcentrationDelta {
+  name: ConcentrationName;
+  baseline: number;
+  candidate: number;
+  delta: number;
+}
+
+export interface CompareResponse {
+  /** "partial" when some candidate top-N companies have no cached extraction yet. */
+  status: "ok" | "partial";
+  baseline_top_n_weight: number;
+  candidate_top_n_weight: number;
+  /** Sorted by absolute delta, largest first. */
+  dependency_deltas: MetricDelta[];
+  concentration_deltas: ConcentrationDelta[];
+  candidate_unanalysed: UnanalysedCompany[];
+  notes: string[];
 }

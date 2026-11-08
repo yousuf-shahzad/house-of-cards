@@ -134,6 +134,21 @@
           "accession": "9990000001-26-000001",
           "filed": "2026-10-30",
           "url": "https://example.invalid/synthetic/zzalp-10k"
+        },
+        "importance": {
+          "score": 0.95,
+          "tier": "critical",
+          "reasons": [
+            "Foundry relationship",
+            "Named as the sole source ('sole source')"
+          ]
+        },
+        "interpretation": {
+          "status": "confirmed",
+          "method": "rules",
+          "flags": [],
+          "reason": null,
+          "model": null
         }
       },
       {
@@ -156,6 +171,20 @@
           "accession": "9990000001-26-000001",
           "filed": "2026-10-30",
           "url": "https://example.invalid/synthetic/zzalp-10k"
+        },
+        "importance": {
+          "score": 0.7,
+          "tier": "high",
+          "reasons": [
+            "Production facility ('final assembly')"
+          ]
+        },
+        "interpretation": {
+          "status": "confirmed",
+          "method": "rules",
+          "flags": [],
+          "reason": null,
+          "model": null
         }
       },
       {
@@ -178,6 +207,20 @@
           "accession": "9990000002-26-000001",
           "filed": "2026-02-20",
           "url": "https://example.invalid/synthetic/zzbet-10k"
+        },
+        "importance": {
+          "score": 0.9,
+          "tier": "critical",
+          "reasons": [
+            "Foundry relationship"
+          ]
+        },
+        "interpretation": {
+          "status": "confirmed",
+          "method": "rules+model",
+          "flags": [],
+          "reason": "The quote states the company uses ZZ Epsilon to manufacture its wafers.",
+          "model": "gemini-3.8-flash"
         }
       },
       {
@@ -200,6 +243,23 @@
           "accession": "9990000002-26-000001",
           "filed": "2026-02-20",
           "url": "https://example.invalid/synthetic/zzbet-10k"
+        },
+        "importance": {
+          "score": 0.55,
+          "tier": "medium",
+          "reasons": [
+            "Customer at 10-20% of revenue ('18% of revenue')",
+            "Capped at medium: interpretation flagged"
+          ]
+        },
+        "interpretation": {
+          "status": "flagged",
+          "method": "rules+model",
+          "flags": [
+            "judge_unclear"
+          ],
+          "reason": "The customer is not named, so the relationship cannot be confirmed.",
+          "model": "gemini-3.8-flash"
         }
       }
     ],
@@ -232,6 +292,28 @@
         "unit": "count",
         "subject_key": null,
         "supporting_edge_ids": []
+      },
+      {
+        "metric_id": "critical.ALIAS:ZZEPSILON",
+        "label": "Portfolio exposure critically dependent on ZZ Epsilon Semiconductor",
+        "value": 0.58,
+        "unit": "fraction",
+        "subject_key": "ALIAS:ZZEPSILON",
+        "supporting_edge_ids": [
+          "e-alp-foundry-eps",
+          "e-bet-foundry-eps"
+        ]
+      },
+      {
+        "metric_id": "critical.ALIAS:ZZEPSILON.companies",
+        "label": "Portfolio companies critically dependent on ZZ Epsilon Semiconductor",
+        "value": 2.0,
+        "unit": "count",
+        "subject_key": "ALIAS:ZZEPSILON",
+        "supporting_edge_ids": [
+          "e-alp-foundry-eps",
+          "e-bet-foundry-eps"
+        ]
       }
     ],
     "insights": {
@@ -276,7 +358,8 @@
       "companies_skipped": 1,
       "verified_edges": 4,
       "rejected_edges": 2,
-      "unresolved_counterparties": 0
+      "unresolved_counterparties": 0,
+      "interpretation_rejected": 1
     },
     "attributions": [
       {
@@ -285,7 +368,75 @@
         "url": null,
         "licence": null
       }
-    ]
+    ],
+    "coverage": {
+      "buckets": [
+        {
+          "kind": "verified",
+          "weight": 0.58,
+          "companies": 2,
+          "label": "Analysed, with verified dependencies"
+        },
+        {
+          "kind": "no_disclosures",
+          "weight": 0.0,
+          "companies": 0,
+          "label": "Analysed, but the filing names no dependencies"
+        },
+        {
+          "kind": "no_sec_filing",
+          "weight": 0.088,
+          "companies": 1,
+          "label": "No SEC annual report to read"
+        },
+        {
+          "kind": "not_analysed",
+          "weight": 0.0,
+          "companies": 0,
+          "label": "Could not be analysed this run"
+        },
+        {
+          "kind": "outside_top_n",
+          "weight": 0.332,
+          "companies": 4,
+          "label": "Outside the companies we analysed"
+        }
+      ],
+      "by_etf": [
+        {
+          "ticker": "ZZAAA",
+          "verified_weight": 0.62
+        },
+        {
+          "ticker": "ZZBBB",
+          "verified_weight": 0.51
+        }
+      ],
+      "largest_unanalysed": [
+        {
+          "company_key": "CIK:9990000004",
+          "company_name": "ZZ Delta Foods",
+          "exposure": 0.12
+        },
+        {
+          "company_key": "CIK:9990000005",
+          "company_name": "ZZ Zeta Retail",
+          "exposure": 0.09
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "outside_top_n",
+          "message": "33.20% of your portfolio is in companies outside the 3 we analysed. Raise the number analysed to 30 to cover more.",
+          "weight": 0.332
+        },
+        {
+          "kind": "unnamed_customers",
+          "message": "1 customer is not named in the filing (ZZ Beta Holdings, 18% of revenue).",
+          "weight": 0.24
+        }
+      ]
+    }
   },
   "error": null
 }

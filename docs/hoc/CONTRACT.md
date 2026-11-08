@@ -169,3 +169,40 @@ Routes are wired by I-API (Bekarys's Claude); the OpenAPI snapshot updates with 
 - **Settings** (env): `GEMINI_API_KEY` (secret; never in URLs, cache or logs; `repr=False`),
   `HOC_GEMINI_EXTRACTOR_MODEL` (default `gemini-3.8-flash`), `HOC_GEMINI_ORCHESTRATOR_MODEL` (default `gemini-4-argon`),
   `HOC_DEPS_TOP_N` (default 15). Fetching filings needs `HOC_SEC_CONTACT`.
+
+## 8. v3 additions (PLAN-v3, C0-v3)
+
+Models: `hoc/contract/dependencies.py` (edge, coverage and research models) and `hoc/contract/compare.py`. Mirrored in `frontend/api/types.ts`. Fixtures:
+- `synthetic-dependencies.json` (now with importance, interpretation, coverage and `critical.*`);
+- `synthetic-research.json`;
+- `synthetic-compare.json`.
+
+`tests/test_contract_v3.py` checks the invariants below.
+
+- **`VerifiedEdge.importance`** (`EdgeImportance{score 0..1, tier, reasons}`, R-IMP):
+  - computed in Python only;
+  - tier is critical when score ≥ 0.8, high ≥ 0.6, medium ≥ 0.4, otherwise low;
+  - a `flagged` interpretation caps the tier at medium;
+  - `reasons` quote any cue words from the verified evidence.
+- **`VerifiedEdge.interpretation`** (`EdgeInterpretation{status, method, flags, reason, model}`, V-INT):
+  - `rejected` edges never appear in `DependencyResult.edges`; they are counted in `DependencyCounts.interpretation_rejected`;
+  - `flagged` edges stay, with their flags.
+  - The judge sees only the quote, its context and the claimed relationship, never the extractor's output.
+- **`critical.<key>`** (with a `.companies` twin): exposure that depends on `<key>` through critical- or high-tier edges. It always has a `dep.<key>` twin.
+- **`DependencyResult.coverage`** (`CoverageReport`, C-COV):
+  - the `buckets` (verified, no_disclosures, no_sec_filing, not_analysed, outside_top_n) are portfolio-weight fractions that sum to 1 within ±1e-6;
+  - `by_etf` gives each ETF's verified share;
+  - `largest_unanalysed` lists at most 10 companies;
+  - `gaps` are plain-English messages whose numbers are rendered by Python.
+- **Research** (A-RES):
+  - `POST /api/dependencies/{job_id}/research` (`ResearchRequest{max_items 1..10 = 6}`) → `ResearchJob`, with HTTP 202, or 200 if cached;
+  - poll `GET /api/research/{research_id}`; an unknown id gives 404 `RESEARCH_NOT_FOUND` (`ResearchNotFoundError`).
+  - Each `ResearchFinding` has `steps` numbered 1..n and ending in `conclude`.
+  - Every edge in `new_edges` passed `verify_quote` and V-INT, and appears in `ResearchJob.result.edges`. No `rejected_edge_ids` remain in the result.
+  - `explanation` contains digits only inside quotes of verified evidence.
+- **Compare** (X-API):
+  - `POST /api/compare` (`CompareRequest{baseline, candidate, top_n}`) → `CompareResponse`.
+  - It is synchronous and cache-only: no Gemini calls and no filing fetches.
+  - `delta = candidate − baseline` when both exist, otherwise null.
+  - `dependency_deltas` are sorted by absolute delta, largest first.
+  - `status` is `partial` exactly when `candidate_unanalysed` is non-empty.

@@ -99,7 +99,8 @@ def test_all_cached_run_is_200_done_with_counts(setup):
     result = job["result"]
     assert len(result["edges"]) == 4  # three own edges + one shared edge, deduplicated by edge_id
     assert result["counts"] == {"companies_requested": 3, "companies_analysed": 3, "companies_skipped": 0,
-                                "verified_edges": 4, "rejected_edges": 3, "unresolved_counterparties": 1}
+                                "verified_edges": 4, "rejected_edges": 3, "unresolved_counterparties": 1,
+                                "interpretation_rejected": 0}
     assert result["insights"]["status"] == "metrics_only" and result["metrics"][0]["metric_id"] == "m1"
     assert client.get(f"/api/dependencies/{job['job_id']}").json() == job  # POST and GET share one shape
 

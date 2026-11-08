@@ -76,6 +76,13 @@ class JobNotFoundError(HocError):
     status = 404
 
 
+class ResearchNotFoundError(HocError):
+    """GET /api/research/{research_id} for an unknown or expired research job (v3)."""
+
+    code = "RESEARCH_NOT_FOUND"
+    status = 404
+
+
 class SourcesUnavailableError(HocError):
     """No requested ETF could be loaded because sources were unavailable."""
 

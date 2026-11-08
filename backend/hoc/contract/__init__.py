@@ -30,17 +30,30 @@ from .api import (
     SecurityExposure,
     TopShared,
 )
+from .compare import CompareRequest, CompareResponse, ConcentrationDelta, MetricDelta
 from .dependencies import (
+    DEFAULT_RESEARCH_ITEMS,
     DEFAULT_TOP_N,
     CompanyRunStatus,
+    CoverageBucket,
+    CoverageGap,
+    CoverageReport,
     DependencyCounts,
     DependencyJob,
     DependencyRequest,
     DependencyResult,
+    EdgeImportance,
+    EdgeInterpretation,
+    EtfCoverage,
     FilingRef,
     InsightClaim,
     Insights,
     MetricFact,
+    ResearchFinding,
+    ResearchJob,
+    ResearchRequest,
+    ResearchStep,
+    UnanalysedCompany,
     VerifiedEdge,
 )
 from .errors import (
@@ -49,6 +62,7 @@ from .errors import (
     HocError,
     JobNotFoundError,
     PortfolioValidationError,
+    ResearchNotFoundError,
     SourceError,
     SourceParseError,
     SourcesUnavailableError,
