@@ -33,6 +33,7 @@ import type {
 } from "@/api/types";
 import { useAnalysis } from "@/app/analysis";
 import { AsOfBadge } from "@/app/ui/as-of-badge";
+import { hhiRating } from "@/app/ui/concentration";
 import { EtfChip } from "@/app/ui/etf-chip";
 import { etfVisual } from "@/app/ui/etf-color";
 import { Pct, formatPct } from "@/app/ui/pct";
@@ -151,12 +152,6 @@ const GAP_SEVERITY_META: Record<
     borderClass: "border-border-button-default",
   },
 };
-
-function hhiRating(hhi: number): { label: string; color: ChipColor } {
-  if (hhi >= 0.18) return { label: "Highly concentrated", color: "rose" };
-  if (hhi >= 0.1) return { label: "Moderately concentrated", color: "yellow" };
-  return { label: "Diversified", color: "lime" };
-}
 
 /** Avoid displaying "-0.00%" when a weight is a tiny negative (e.g. short futures line in XLK). */
 function cleanSignedZero(value: number, digits = 2): number {
