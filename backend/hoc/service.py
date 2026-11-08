@@ -28,16 +28,21 @@ from hoc.contract import (
     ExamplesResponse,
     HealthResponse,
     PortfolioRequest,
+    PriceQuote,
     SourceError,
     SourceName,
     SourcesUnavailableError,
+    TickerNotFound,
     UnknownTickerError,
+    ValuationRequest,
+    ValuationResponse,
 )
 from hoc.examples import EXAMPLES
 from hoc.jobs import SUBMIT_WAIT_SECONDS, DependencyJobs, NotWiredPipeline
 from hoc.normalise.pipeline import normalise_etf
 from hoc.portfolio.analyse import analyse
 from hoc.portfolio.validation import validate_request
+from hoc.portfolio.valuation import value_portfolio
 
 MAX_WORKERS = 8
 MEMO_TTL_SECONDS = 24 * 3600
@@ -63,6 +68,8 @@ class EtfService:
         """(loaded at, holdings); reused for MEMO_TTL_SECONDS, then reloaded through the cached HTTP layer."""
         self._locks: dict[tuple[str, str | None], threading.Lock] = {}
         self._locks_guard = threading.Lock()
+        self.quotes = None
+        """Cheap price source with quote(ticker) -> PriceQuote | None (TickerInside, from its cached fund file)."""
         self.dependency_pipeline = NotWiredPipeline()
         """G-DOC + G-AI + G-ORCH behind hoc.jobs.DependencyPipeline; set before the first dependency request."""
         self._jobs: DependencyJobs | None = None
@@ -74,10 +81,38 @@ class EtfService:
         from hoc.core.http import CachedHttpClient
         from hoc.identity.resolver import load_aliases
         from hoc.sources.registry import build_registry
+        from hoc.sources.tickerinside.adapter import TickerInsideAdapter
         from hoc.sources.tickerinside.reference import TickerInsideReference
 
         http = CachedHttpClient(settings, DiskCache(settings.cache_dir))
-        return cls(build_registry(settings, http), TickerInsideReference(http, settings), load_aliases(), settings)
+        service = cls(build_registry(settings, http), TickerInsideReference(http, settings), load_aliases(), settings)
+        service.quotes = TickerInsideAdapter(http, settings)
+        return service
+
+    def valuation(self, request: ValuationRequest) -> ValuationResponse:
+        """Shares -> allocations (hoc.portfolio.valuation). Prices come from memoised holdings, else a quote
+        from the cached fund file: valuing never runs normalisation or sector loading."""
+        tickers = list(dict.fromkeys(row.ticker for row in request.rows))
+        with ThreadPoolExecutor(max_workers=min(MAX_WORKERS, len(tickers))) as pool:
+            prices = dict(zip(tickers, pool.map(self._price, tickers), strict=True))
+        quotes = {t: p for t, p in prices.items() if p != "unavailable"}
+        unavailable = [t for t, p in prices.items() if p == "unavailable"]
+        return value_portfolio(request, quotes, unavailable, today=datetime.now(UTC).date())
+
+    def _price(self, ticker: str) -> PriceQuote | None | str:
+        """A PriceQuote, None (no published price), or "unavailable" (the price source failed)."""
+        memo = self._memo.get((ticker, None))
+        if memo is not None and _clock() - memo[0] < MEMO_TTL_SECONDS and memo[1].price is not None:
+            return memo[1].price
+        if self.quotes is None:
+            return None
+        try:
+            return self.quotes.quote(ticker)
+        except TickerNotFound:
+            return "unavailable"  # not at the price source: pin it, or analysis reports UNKNOWN_TICKER
+        except Exception:  # SourceUnavailable, SourceParseError or a bug: this row only, never a 500
+            log.exception("price lookup failed for %s", ticker)
+            return "unavailable"
 
     @property
     def dependency_jobs(self) -> DependencyJobs:

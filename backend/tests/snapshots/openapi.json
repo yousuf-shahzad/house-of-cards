@@ -2114,6 +2114,261 @@
         "title": "ValidationError",
         "type": "object"
       },
+      "ValuationIssue": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "no_price",
+              "invalid_price",
+              "non_usd_price",
+              "price_unavailable",
+              "stale_price",
+              "missing_shares",
+              "pinned_over_100",
+              "nothing_to_rescale",
+              "allocation_sum_invalid",
+              "duplicate_ticker",
+              "too_many_etfs"
+            ],
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "warning",
+              "blocking"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "ticker": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ticker"
+          }
+        },
+        "required": [
+          "code",
+          "severity",
+          "message"
+        ],
+        "title": "ValuationIssue",
+        "type": "object"
+      },
+      "ValuationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ValuationRow"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rows"
+        ],
+        "title": "ValuationRequest",
+        "type": "object"
+      },
+      "ValuationResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "as_of_date": {
+            "format": "date",
+            "title": "As Of Date",
+            "type": "string"
+          },
+          "attributions": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Attribution"
+            },
+            "title": "Attributions",
+            "type": "array"
+          },
+          "issues": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ValuationIssue"
+            },
+            "title": "Issues",
+            "type": "array"
+          },
+          "pinned_total": {
+            "title": "Pinned Total",
+            "type": "number"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ValuationRowResult"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "usable",
+              "blocked"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "total_value": {
+            "title": "Total Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "status",
+          "as_of_date",
+          "rows",
+          "total_value",
+          "pinned_total"
+        ],
+        "title": "ValuationResponse",
+        "type": "object"
+      },
+      "ValuationRow": {
+        "additionalProperties": false,
+        "properties": {
+          "allocation_override": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allocation Override"
+          },
+          "shares": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shares"
+          },
+          "ticker": {
+            "pattern": "^[A-Za-z0-9.\\-]{1,12}$",
+            "title": "Ticker",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticker"
+        ],
+        "title": "ValuationRow",
+        "type": "object"
+      },
+      "ValuationRowResult": {
+        "additionalProperties": false,
+        "properties": {
+          "allocation": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allocation"
+          },
+          "issues": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ValuationIssue"
+            },
+            "title": "Issues",
+            "type": "array"
+          },
+          "pinned": {
+            "title": "Pinned",
+            "type": "boolean"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PriceQuote"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "price_age_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Age Days"
+          },
+          "price_stale": {
+            "default": false,
+            "title": "Price Stale",
+            "type": "boolean"
+          },
+          "shares": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shares"
+          },
+          "ticker": {
+            "title": "Ticker",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "ticker",
+          "pinned"
+        ],
+        "title": "ValuationRowResult",
+        "type": "object"
+      },
       "VerifiedEdge": {
         "additionalProperties": false,
         "properties": {
@@ -2518,6 +2773,45 @@
           }
         },
         "summary": "Health"
+      }
+    },
+    "/api/valuation": {
+      "post": {
+        "description": "Shares -> allocations. A blocked valuation is still 200, with status 'blocked' and its issues.",
+        "operationId": "valuation_api_valuation_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValuationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValuationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "VALIDATION_ERROR, ALLOCATION_SUM_INVALID, DUPLICATE_TICKER, TOO_MANY_ETFS, UNKNOWN_TICKER"
+          }
+        },
+        "summary": "Valuation"
       }
     }
   }

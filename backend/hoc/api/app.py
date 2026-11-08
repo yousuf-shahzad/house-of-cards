@@ -37,6 +37,8 @@ from hoc.contract import (
     PortfolioItem,
     PortfolioRequest,
     SourceName,
+    ValuationRequest,
+    ValuationResponse,
 )
 from hoc.contract.api import TICKER_PATTERN
 from hoc.jobs import NotWiredPipeline
@@ -137,6 +139,12 @@ def analysis(service: Service, request: PortfolioRequest) -> AnalysisResponse:
 @router.get("/examples", response_model=ExamplesResponse)
 def examples(service: Service) -> ExamplesResponse:
     return service.examples()
+
+
+@router.post("/valuation", response_model=ValuationResponse, responses={422: ERRORS[422]})
+def valuation(service: Service, request: ValuationRequest) -> ValuationResponse:
+    """Shares -> allocations. A blocked valuation is still 200, with status 'blocked' and its issues."""
+    return service.valuation(request)
 
 
 @router.post("/dependencies", response_model=DependencyJob, responses={

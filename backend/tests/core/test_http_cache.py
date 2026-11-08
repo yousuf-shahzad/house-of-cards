@@ -160,12 +160,13 @@ def test_post_json_is_cached_by_body(tmp_path):
 def test_sec_requests_are_spaced(tmp_path, monkeypatch):
     waits = []
     monkeypatch.setattr(http_module.time, "sleep", waits.append)
+    monkeypatch.setattr(http_module.time, "monotonic", lambda: 1000.0)  # frozen: a slow machine can't skip the wait
     client, _, _ = make(tmp_path, ok())
     client.get("https://www.sec.gov/a", source="sec", ttl=DAY)
     client.get("https://www.sec.gov/b", source="sec", ttl=DAY)
     client.get("https://example.invalid/c", source="ti", ttl=DAY)
     client.get("https://example.invalid/d", source="ti", ttl=DAY)
-    assert len(waits) == 1 and 0 < waits[0] <= http_module.MIN_INTERVAL_SECONDS["sec.gov"]
+    assert waits == [pytest.approx(http_module.MIN_INTERVAL_SECONDS["sec.gov"])]
 
 
 # ---------- Gemini host rules (PLAN-v2 I-API) ----------
