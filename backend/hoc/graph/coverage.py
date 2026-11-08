@@ -276,15 +276,20 @@ def compute_coverage_report(
     if outside_w > 1e-6 or outside_count > 0:
         comp_noun = "company" if outside_count == 1 else "companies"
         verb = "was" if outside_count == 1 else "were"
+        action_suffix = (
+            "; raise the number analysed to 30 to cover more."
+            if len(companies) < 30
+            else "."
+        )
         if outside_count > 0:
             msg = (
                 f"{outside_count} portfolio {comp_noun} ({outside_w * 100:.1f}% of exposure) "
-                f"{verb} outside the top-{len(companies)} cutoff and {verb} not analysed."
+                f"{verb} outside the top-{len(companies)} cutoff and {verb} not analysed{action_suffix}"
             )
         else:
             msg = (
                 f"{outside_w * 100:.1f}% of portfolio exposure was outside the "
-                f"top-{len(companies)} cutoff and was not analysed."
+                f"top-{len(companies)} cutoff and was not analysed{action_suffix}"
             )
         gaps.append(
             CoverageGap(

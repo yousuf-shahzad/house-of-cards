@@ -282,6 +282,7 @@ def test_coverage_buckets_sum_to_one_and_match_synthetic_fixture_invariants() ->
     gap_by_kind = {g.kind: g for g in report.gaps}
     assert "outside_top_n" in gap_by_kind
     assert gap_by_kind["outside_top_n"].weight == pytest.approx(0.18)
+    assert "raise the number analysed to 30 to cover more" in gap_by_kind["outside_top_n"].message
     assert "unnamed_customers" in gap_by_kind
     assert gap_by_kind["unnamed_customers"].weight == pytest.approx(0.19)
     assert "non_sec_counterparties" in gap_by_kind
