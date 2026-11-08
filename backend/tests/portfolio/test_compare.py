@@ -15,6 +15,7 @@ from hoc.contract import (
     Overlap,
     PortfolioRequest,
     PortfolioValidationError,
+    SectorExposure,
     VerifiedEdge,
 )
 from hoc.core.cache import DiskCache
@@ -97,11 +98,31 @@ def test_top_n_selection_is_independent_and_concentration_uses_full_analysis():
     dep = next(d for d in result.dependency_deltas if d.metric_id.startswith("dep.") and d.unit == "fraction")
     assert dep.baseline == .6 and dep.candidate is None and dep.delta is None
     conc = {d.name: d for d in result.concentration_deltas}
-    assert list(conc) == ["top5", "top10", "top20", "effective_n", "largest_company"]
+    assert list(conc) == ["top5", "top10", "top20", "effective_n", "largest_company", "top_sector"]
     assert conc["top5"].baseline == conc["top5"].candidate == 1
     assert conc["effective_n"].baseline == pytest.approx(1/(.6**2+.3**2+.1**2))
     assert conc["effective_n"].candidate == pytest.approx(1/(.7**2+.2**2+.1**2))
     assert conc["largest_company"].delta == pytest.approx(.1)
+
+
+@pytest.mark.parametrize(("baseline_sectors", "candidate_sectors", "expected"), [
+    # Unsorted sectors, a different leading industry, and no renormalisation to known weight.
+    ([("health_care", .1), ("information_technology", .5), ("unknown", .4)],
+     [("information_technology", .1), ("unknown", .6), ("health_care", .3)], (.5, .3, -.2)),
+    ([], [], (0, 0, 0)),
+    ([("unknown", 1)], [("health_care", .25), ("unknown", .75)], (0, .25, .25)),
+    ([("information_technology", .4), ("unknown", .6)], [], (.4, 0, -.4)),
+])
+def test_top_sector_uses_full_analysis_known_sectors(baseline_sectors, candidate_sectors, expected):
+    before = analysis([(A, .6), (B, .4)])
+    after = analysis([(B, .7), (A, .3)], "ZZSCEN")
+    for side, sectors in ((before, baseline_sectors), (after, candidate_sectors)):
+        side.sectors = [SectorExposure(sector=sector, weight=weight, by_etf=[]) for sector, weight in sectors]
+    # Both company-level sectors are technology; the analysis sector breakdown is authoritative.
+    result = compare(before, after, {}, top_n=1)
+    delta = next(d for d in result.concentration_deltas if d.name == "top_sector")
+    assert (delta.baseline, delta.candidate, delta.delta) == pytest.approx(expected)
+    CompareResponse.model_validate_json(result.model_dump_json())
 
 
 def test_cache_miss_is_partial_but_cached_empty_is_analysed():

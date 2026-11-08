@@ -76,7 +76,7 @@ def test_nothing_cached_is_partial_with_concentration_and_unanalysed(compared):
     assert not [d for d in body["dependency_deltas"] if d["metric_id"].startswith(("dep.", "critical.", "facility."))]
     assert all(d["delta"] in (0, None) for d in body["dependency_deltas"])
     assert [d["name"] for d in body["concentration_deltas"]] == [
-        "top5", "top10", "top20", "effective_n", "largest_company"]
+        "top5", "top10", "top20", "effective_n", "largest_company", "top_sector"]
     assert len(body["candidate_unanalysed"]) == 3
     assert 0 < body["candidate_top_n_weight"] <= 1 and 0 < body["baseline_top_n_weight"] <= 1
 
