@@ -54,12 +54,14 @@ const SUMMARY_TEXT: Record<string, string> = {
   "summary.analysed_weight": "of your portfolio is in companies with at least one verified dependency",
   "summary.verified_edges": "verified links found in company filings",
   "spof.count": "suppliers shared by several of your companies, or their only source",
+  "facility.unplaced.count": "facility links that name a region, not one country (left out of the country chart)",
 };
 
 const COMPANIES_SUFFIX = ".companies";
 const UNNAMED_CUSTOMERS = "Undisclosed major customers";
 
 export function metricKind(metricId: string): MetricKind {
+  if (metricId === "facility.unplaced.count") return "summary"; // a count of edges, not a country
   if (metricId.startsWith("dep.")) return "depends_on";
   if (metricId.startsWith("facility.")) return "facility";
   if (metricId.startsWith("customer.")) return "customer";
@@ -138,7 +140,7 @@ export function buildMetricCards(metrics: readonly MetricFact[]): MetricCard[] {
   return cards.sort((a, b) => b.share.value - a.share.value);
 }
 
-/** The headline facts above the cards (summary.* and spof.count), in plain words. */
+/** The headline facts above the cards (summary.*, spof.count, facility.unplaced.count), in plain words. */
 export function buildSummaryFacts(metrics: readonly MetricFact[]): SummaryFact[] {
   return metrics
     .filter((m) => metricKind(m.metric_id) === "summary")
