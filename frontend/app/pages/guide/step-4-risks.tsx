@@ -40,6 +40,7 @@ export interface RiskStepProps {
   onJumpToStep?: (step: number) => void;
   onStartOver?: () => void;
   onTryChange?: () => void;
+  showLearnMore?: boolean;
 }
 
 const SUPPLY_EDGE_TYPES = new Set<EdgeType>(["supplier", "foundry", "contract_manufacturer", "key_input"]);
@@ -307,7 +308,7 @@ function ResearchFindingsList({ findings }: { findings: readonly ResearchFinding
   );
 }
 
-export default function RisksStep(_props: RiskStepProps) {
+export default function RisksStep({ showLearnMore = true }: RiskStepProps) {
   useAutoDependencies(); // safety net if step 2 was skipped
   const { status: analysisStatus } = useAnalysis();
   const { status, job, stale, error, depth, goDeeper } = useDependencies();
@@ -451,9 +452,9 @@ export default function RisksStep(_props: RiskStepProps) {
       <div aria-live="polite" className="flex flex-col gap-5">
         {body}
       </div>
-      <Button variant="ghost" size="small" className="self-start" onClick={() => openExpertPage("#/dependencies")}>
+      {showLearnMore && <Button variant="ghost" size="small" className="self-start" onClick={() => openExpertPage("#/dependencies")}>
         {RISKS_COPY.learnMore}
-      </Button>
+      </Button>}
     </div>
   );
 }

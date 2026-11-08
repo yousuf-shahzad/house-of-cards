@@ -20,7 +20,7 @@ export function SimpleDependencies() {
   const allEdges = [...(result?.edges ?? [])].sort((a, b) => (b.importance?.score ?? 0) - (a.importance?.score ?? 0));
   const edges = expanded ? allEdges : allEdges.slice(0, 5);
   return <div className="flex flex-col gap-5">
-    <RisksStep onNext={() => { window.location.hash = "#/compare"; }} onBack={() => { window.location.hash = "#/portfolio"; }} />
+    <RisksStep showLearnMore={false} onNext={() => { window.location.hash = "#/compare"; }} onBack={() => { window.location.hash = "#/portfolio"; }} />
     {edges.length > 0 && <section className="suite-card flex flex-col gap-3" aria-label="Filing evidence">
       <h2 className="text-headline-medium text-text-primary">See what the reports say</h2>
       <p className="text-body-2-regular text-text-secondary">Links ranked by how much they matter to the company. This is a judgement from the report, not a share of your money.</p>
