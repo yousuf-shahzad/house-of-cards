@@ -222,15 +222,16 @@ def test_end_to_end_with_real_packages(fake_source, fake_reference):
 def test_startup_warm_up_preloads_examples_without_blocking(make_service, monkeypatch):
     monkeypatch.setattr("hoc.service.EXAMPLES", (
         ExampleDefinition("zz", "ZZ", "synthetic", (("ZZAAA", 0.6), ("ZZBBB", 0.4))),))
+    monkeypatch.setattr("hoc.service.IDEA_TICKERS", ("ZZCCC",))  # FIX-17: the idea shortlist is warmed too
     service, source = make_service()
     app = create_app(lambda: service, Settings(), warm=True)
     with TestClient(app) as warmed:  # entering runs the lifespan, which starts the thread
         app.state.warm_up_thread.join(timeout=10)
-        assert sorted(source.calls) == ["ZZAAA", "ZZBBB"]
+        assert sorted(source.calls) == ["ZZAAA", "ZZBBB", "ZZCCC"]
         response = warmed.post("/api/analysis", json={"holdings": [
             {"ticker": "ZZAAA", "allocation": 0.6}, {"ticker": "ZZBBB", "allocation": 0.4}]})
     assert response.status_code == 200
-    assert sorted(source.calls) == ["ZZAAA", "ZZBBB"]  # the first analysis was served from the memo
+    assert sorted(source.calls) == ["ZZAAA", "ZZBBB", "ZZCCC"]  # the first analysis was served from the memo
 
 
 def test_failed_warm_up_still_serves(make_service, monkeypatch):
