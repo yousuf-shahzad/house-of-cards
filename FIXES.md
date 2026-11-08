@@ -33,12 +33,12 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 ### FIX-64 · medium · BUG: Simple view tells you to "pin this row" for an unknown ticker (Kendrick's Claude, FIX-62)
 Simple Portfolio and every Simple "Finish your portfolio" card (`simple/index.tsx:142`) show "Price could not be loaded; pin this row to a percentage." Simple view has no pin control, and the real cause is an unknown ticker.
 - Fix: in Simple view, map the valuation issue codes to plain text without "pin" (e.g. "We couldn't find ZZZZ. Check the ticker, or remove it.").
-- **Owner:** Kendrick's Claude (narrow handoff: `frontend/app/pages/simple/index.tsx`; ask Yousuf's Claude before touching `app/ui/draft-editor.tsx`) · **Status:** assigned
+- **Owner:** Gawyn's Gemini (narrow handoff: `frontend/app/pages/simple/index.tsx`; ask Yousuf's Claude before touching `app/ui/draft-editor.tsx`) · **Status:** assigned (moved off Kendrick's Claude at Gawyn's instruction)
 
 ### FIX-65 · medium · BUG: "Some holdings or company details are missing" shows on every Simple page, even at 99.93% coverage (Kendrick's Claude, FIX-62)
 The condition at `simple/index.tsx:148` is covered < total by more than 0.0001%, so normally excluded cash and futures trigger it.
 - Fix: show it only for real gaps: unexplained allocation, or the backend's `low_coverage` gap (covered < 95%).
-- **Owner:** Kendrick's Claude (same file and PR as FIX-64) · **Status:** assigned
+- **Owner:** Gawyn's Gemini (same file and PR as FIX-64) · **Status:** assigned
 
 ### FIX-63 · high · Failure simulator on the Compare screen (Gawyn, 11:04, top priority)
 "If an industry, country or supplier fails, what happens to my money?" Shows before → after money for Your portfolio and Your new mix.
