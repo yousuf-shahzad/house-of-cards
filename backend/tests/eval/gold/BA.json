@@ -292,6 +292,38 @@
         "BA-B3"
       ],
       "notes": "Item 1 Raw Materials; explicitly required inputs, not individually identified as sole sourced."
+    },
+    {
+      "id": "BA-P1",
+      "edge_type": "customer",
+      "target_name": "United States Department of War",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "We derive a substantial portion of our revenue from the U.S. government, primarily from defense related programs with the United States Department of War (DoW) and contracts with other government agencies, including NASA.",
+      "importance": "high",
+      "tier": "extended",
+      "source": "pooled",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [],
+      "notes": "Pooled (lead): A substantial portion of Boeing revenue comes from the US government, primarily the Department of War. Prediction edge_8058aeca27ad."
+    },
+    {
+      "id": "BA-P2",
+      "edge_type": "customer",
+      "target_name": "NASA",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "We derive a substantial portion of our revenue from the U.S. government, primarily from defense related programs with the United States Department of War (DoW) and contracts with other government agencies, including NASA.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "pooled",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [],
+      "notes": "Pooled (lead): NASA is named among Boeing's government customers. Prediction edge_dea2976ebbd3."
     }
   ],
   "negatives": [

@@ -102,3 +102,27 @@ Where the core items came from: 81 were labelled by both annotators, 26 by A onl
 **Recall** counts core items only. **Precision** treats a prediction as correct when it matches a core or extended item. A prediction that matches nothing goes to the adjudicator for pooled review: approved ones are added with `source: "pooled"`, and the count is reported. A prediction that matches a negative is always a false positive.
 
 **Known issue found while adjudicating.** `hoc.graph.metrics` does not recognise "Cambodia" as a country. This was reported to G-ORCH; the answer key maps it to KH explicitly.
+
+## Pooled review (after the first live run, PR #131)
+
+The 14 predictions that matched no gold item were reviewed by the adjudicator against the labelling policy.
+Accepted ones were added as `source: "pooled"`, `tier: "extended"`. They therefore add precision credit but never enlarge recall's core denominator, so core recall stays measured against the two blind annotators only. Rejected ones remain false positives.
+
+| Prediction | Company | Target | Decision | Reason |
+|---|---|---|---|---|
+| `edge_d3ccd3a1052a` | NKE | Unnamed Customer | reject | Customer group ('three largest customers outside the US'), not one counterparty (policy 3). |
+| `edge_db8132253be5` | NKE | Air Manufacturing Innovation | reject | Air Manufacturing Innovation is a wholly-owned Nike subsidiary, not an external supplier. |
+| `edge_55810b619d12` | NKE | Sojitz Corporation of America | reject | Sojitz America provides import-export financing and holds preferred stock; not a supply dependency (already rejected in adjudication). |
+| `edge_83e00ad1aec8` | F | Takata | reject | Takata appears only in an industry-wide NHTSA study; the filing does not state Takata supplies Ford. |
+| `edge_cf85a07ce5ef` | F | ARC Automotive | accept | Ford has 2.5 million vehicles with ARC inflators: a supplier relationship evidenced in the filing. |
+| `edge_a7c38c5f5085` | F | Delphi Automotive | accept | Ford has 2.5 million vehicles with Delphi inflators: a supplier relationship evidenced in the filing. |
+| `edge_d3d268649da2` | GM | SAIC General Motors Sales Co., Ltd. | accept | SGMS is one of GM's named Automotive China joint ventures. |
+| `edge_85f1bd72c86f` | GM | SAIC GM Wuling Automobile Co., Ltd. | accept | SGMW is one of GM's named Automotive China joint ventures. |
+| `edge_8058aeca27ad` | BA | United States Department of War | accept | A substantial portion of Boeing revenue comes from the US government, primarily the Department of War. |
+| `edge_dea2976ebbd3` | BA | NASA | accept | NASA is named among Boeing's government customers. |
+| `edge_bc723b6898e2` | SWKS | Unnamed Customer | accept | One unnamed customer above 10% of net revenue (policy 2). |
+| `edge_e60d52406d66` | DE | The Home Depot | accept | The Home Depot is named as a mass-retail channel for Deere turf products. |
+| `edge_a31a7be471da` | DE | Lowe's | accept | Lowe's is named as a mass-retail channel for Deere turf products. |
+| `edge_448da3c0e5ef` | DE | rare earth minerals | accept | Rare earth minerals singled out as an input, a significant majority sourced from China. |
+
+Result: 10 accepted, 4 rejected (Nike non-US customer group, Air Manufacturing Innovation, Sojitz America, Takata).
