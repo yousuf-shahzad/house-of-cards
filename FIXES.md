@@ -12,7 +12,7 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
   - Put the ID in your branch and PR title, e.g. `28-fix-3-plain-cards` and "FIX-3: …".
   - Post on the board when you start and when you merge, as usual.
   - Don't edit this file: tell the lead on the board, and the lead updates it.
-  - Exception: the bug hunters (FIX-37, FIX-62), QA (FIX-9) and the new-user review (FIX-39) may add one line per finding under **New**, straight to `main` (pull first, touch only New). The lead triages it into Open.
+  - Exception: the bug hunters (FIX-37, FIX-62), QA (FIX-9) and the new-user review (FIX-39) — all PAUSED since 11:04 — may add one line per finding under **New**, straight to `main` (pull first, touch only New). The lead triages it into Open.
 
 ## Temporary handoffs
 
@@ -33,13 +33,28 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
+### FIX-63 · high · Failure simulator on the Compare screen (Gawyn, 11:04, top priority)
+"If an industry, country or supplier fails, what happens to my money?" Shows before → after money for Your portfolio and Your new mix.
+- The drop is **historical** when possible: the proxy ETF's worst one-month (21 trading days) fall in the last 5 years. Otherwise it's a **simulated 10% fall**.
+- Contract: **landed** in #255 (`hoc/contract/stress.py`, `api/types.ts`, CONTRACT.md §11).
+- **Owners** (board post 11:12):
+  1. Kendrick's Claude: `backend/hoc/history/` (new): proxy ETFs, Yahoo daily closes, `historical_shock`.
+  2. Yousuf's Codex: `backend/hoc/portfolio/stress.py` (the maths).
+  3. Bekarys's Claude: `Service.stress()` + `POST /api/stress` + snapshot.
+  4. Yousuf's Gemini: `api/client.ts` + `app/ui/failure-simulator.tsx` in Try a change (Full + Simple).
+  5. Gawyn's Gemini: `app/ui/failure-suppliers.ts` (supplier options from the dependencies result).
+  6. Kendrick's Gemini: independent history check in `validation/stress/`.
+  7. Bekarys's Gemini: independent maths check + E2E.
+  - Lead: contract, merge order, final browser check.
+- **Status:** in progress
+
 ### FIX-62 · medium · Second check of the guide + second bug hunter on Simple view (Gawyn, 10:40)
 Kendrick's Claude is free again. In order:
 1. **Post-merge review of #251 (FIX-59).** Read the diff. In the guide, check steps 2–5 in each state: loading, backend down (error), edited-but-invalid (changed), empty, and editing the portfolio while Step 4's progress bar runs, then restoring it. Step 4 must restart for the new portfolio and never show the old one's results.
 2. **Browser-check FIX-40 on `main`.** The "Learn more in the full …" links in guide steps 1–3 must open Full view.
 3. **Second bug hunter, Simple view only:** Simple Portfolio, Exposures, Dependencies, Try a change, and the guide. Kendrick's Gemini (FIX-37) keeps the whole app. Sign every line `[Kendrick's Claude]` and check New/Open first to avoid duplicates.
 - Report results on the board. Add findings under **New** (FIX-37 rules). Don't edit other owners' files; fixes go to their owners via the lead.
-- **Owner:** Kendrick's Claude · **Status:** assigned
+- **Owner:** Kendrick's Claude · **Status:** assigned · **PAUSED 11:04 (Gawyn): moved to FIX-63**
 
 ### FIX-58 · medium · Benchmark: system output vs independent calculations (Yousuf's request, 10:27)
 Default ETF portfolios plus 10 frozen, unseen non-tech combinations, compared with independent by-hand calculations, TickerInside overlap/correlation and issuer files where the dates align. Shared-source parity (TickerInside is also an upstream source) is reported separately from independent accuracy. No tuning on the holdout. Reuse `scripts/crosscheck_tickerinside.py` where useful.
@@ -59,12 +74,12 @@ Find real bugs on current `main`, in both views and on every page:
 
 For each **confirmed** bug, add one line under **New** in FIXES.md: `BUG: <what happens> — repro: <steps> — where: <page/file> (Kendrick's Gemini)`. Skip anything already in Open. Don't fix bugs; the lead assigns them. Post a short board summary every ~10 bugs or 30 minutes.
 
-- **Owner:** Kendrick's Gemini · **Status:** assigned
+- **Owner:** Kendrick's Gemini · **Status:** assigned · **PAUSED 11:04 (Gawyn): moved to FIX-63**
 
 ### FIX-9 · medium · Final QA of both views
 - Fix: once everything above merges, audit the full and simple views end to end; send problems to their owners.
 - Also test with no AI key or SEC contact: page 4 must say "The AI check couldn't run on this computer" (FIX-4 was checked in code only).
-- **Owner:** Bekarys's Gemini · **Status:** START NOW (FIX-34 has landed). Final pass of both views, including the new Simple walkthrough (#221) and change ideas. Add bugs under New.
+- **Owner:** Bekarys's Gemini · **Status:** START NOW (FIX-34 has landed). Final pass of both views, including the new Simple walkthrough (#221) and change ideas. Add bugs under New. · **PAUSED 11:04 (Gawyn): moved to FIX-63**
 
 ## Done (checked on `main` by the lead)
 
