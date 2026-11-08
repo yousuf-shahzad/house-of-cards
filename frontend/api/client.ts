@@ -6,6 +6,8 @@ import {
   DEFAULT_TOP_N,
   type PortfolioRequest,
   type AnalysisResponse,
+  type ChangeIdeasRequest,
+  type ChangeIdeasResponse,
   type CompareRequest,
   type CompareResponse,
   type DependencyJob,
@@ -66,6 +68,10 @@ export function toDependencyRequest(
   return depth
     ? { ...toAnalysisRequest(rows), top_n: topN, depth }
     : { ...toAnalysisRequest(rows), top_n: topN };
+}
+
+export function toChangeIdeasRequest(rows: AllocationInput[], topN: number): ChangeIdeasRequest {
+  return { ...toAnalysisRequest(rows), top_n: topN };
 }
 
 export function toCompareRequest(baseline: AllocationInput[], candidate: AllocationInput[], topN: number): CompareRequest {
@@ -201,6 +207,9 @@ async function mockValuation(rows: ShareInput[]): Promise<ValuationResponse> {
   };
 }
 
+const mockChangeIdeas = async (): Promise<ChangeIdeasResponse> =>
+  (await import("./__fixtures__/synthetic-change-ideas.json")).default as unknown as ChangeIdeasResponse;
+
 const mockCompare = async (): Promise<CompareResponse> =>
   (await import("./__fixtures__/synthetic-compare.json")).default as unknown as CompareResponse;
 
@@ -256,6 +265,11 @@ export const api = {
       ? mockDependencies()
       : request<DependencyJob>(`/api/dependencies/${encodeURIComponent(jobId)}`, { signal }),
   /** Before/after comparison of two portfolios. Synchronous and cache-only: it never calls Gemini. */
+  /** Up to three ETF ideas that would improve the portfolio, each with its before/after (FIX-17). Never calls Gemini. */
+  changeIdeas: (rows: AllocationInput[], topN = DEFAULT_TOP_N, signal?: AbortSignal) =>
+    MOCK_MODE
+      ? mockChangeIdeas()
+      : request<ChangeIdeasResponse>("/api/change-ideas", postJson(toChangeIdeasRequest(rows, topN), signal)),
   compare: (baseline: AllocationInput[], candidate: AllocationInput[], topN = DEFAULT_TOP_N, signal?: AbortSignal) =>
     MOCK_MODE
       ? mockCompare()
