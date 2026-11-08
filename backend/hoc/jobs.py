@@ -142,6 +142,13 @@ class LivePipeline:
     def insights(self, analysis, edges, *, cache_only):
         return self.orchestrator.insights(analysis, edges, cache_only=cache_only)
 
+    def resolver_for(self, portfolio: Sequence[CompanyExposure]) -> Callable[[str], str | None]:
+        """G-DOC's deterministic name -> company_key resolver for one job's portfolio (exact match only)."""
+        from hoc.filings.names import NameResolver
+        from hoc.identity.resolver import load_aliases
+
+        return NameResolver(portfolio, load_aliases()).resolve
+
 
 class InlineExecutor(Executor):
     """Runs each task immediately in the caller's thread: deterministic jobs for tests."""
