@@ -28,7 +28,7 @@ def _side(
         if request.shock.kind == "sector":
             matches = company.sector == request.shock.key
         elif request.shock.kind == "country":
-            matches = company.country == request.shock.key
+            matches = company.country is not None and company.country.casefold() == request.shock.key.casefold()
         else:
             matches = company.company_key in keys
         if matches:
@@ -61,7 +61,8 @@ def _side(
     elif request.shock.kind == "country":
         unknown = wsum(company.exposure for company in companies if not (company.country or "").strip())
         if unknown > 0:
-            notes.append(f"{label}: {unknown:.2%} of the portfolio has an unknown country.")
+            notes.append(f"{label}: we don't know the country for {unknown:.2%} of the portfolio, "
+                         "so it isn't counted.")
     if notes:
         notes.append(f"{label}: coverage is incomplete, so the loss may be understated.")
 

@@ -98,6 +98,15 @@ def test_country_matches_country_only_and_ignores_supplier_keys_and_label():
     assert result.candidate is None and result.status == "ok"
 
 
+@pytest.mark.parametrize(("country", "key"), [("tw", "TW"), ("TW", "tw"), ("Tw", "tW")])
+def test_country_matching_is_case_insensitive_and_never_matches_null(country, key):
+    before = analysis([company("ZZ-TW", .3, country=country), company("ZZ-UNKNOWN", .7, country=None)])
+    result = simulate_failure(request(before, kind="country", key=key), before, None, basis())
+    assert result.baseline.affected_weight == .3 and result.baseline.affected_count == 1
+    assert result.status == "partial"
+    assert any("70.00%" in note and "isn't counted" in note for note in result.notes)
+
+
 def test_supplier_uses_explicit_keys_once_with_supplier_and_candidate_entrant():
     before = analysis([company("ZZ-DEPENDENT", .4), company("ZZ-SUPPLIER", .1), company("ZZ-OTHER", .5)])
     after = analysis([company("ZZ-DEPENDENT", .1), company("ZZ-ENTRANT", .7), company("ZZ-OTHER", .2)], "ZZNEW")
@@ -160,8 +169,8 @@ def test_incomplete_coverage_is_partial_and_never_renormalised(changes, phrase):
 
 @pytest.mark.parametrize(("kind", "unknown", "phrase"), [
     ("sector", company("ZZ-UNKNOWN", .3, "unknown"), "unknown industry"),
-    ("country", company("ZZ-UNKNOWN", .3, country=None), "unknown country"),
-    ("country", company("ZZ-UNKNOWN", .3, country=""), "unknown country"),
+    ("country", company("ZZ-UNKNOWN", .3, country=None), "don't know the country"),
+    ("country", company("ZZ-UNKNOWN", .3, country=""), "don't know the country"),
 ])
 def test_missing_matching_metadata_is_partial(kind, unknown, phrase):
     before = analysis([company("ZZ-A", .7), unknown])
