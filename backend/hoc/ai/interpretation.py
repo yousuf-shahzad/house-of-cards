@@ -6,8 +6,8 @@ Spec (`docs/hoc/PLAN-v3.md` §5 & `docs/hoc/CONTRACT.md` §8):
   set in `backend/hoc/ai/` after `verify_quote` (before `R-IMP` scores importance).
 - **Rules first.** Run on the quote plus ~300 characters of context on each side from `Filing.text`.
   Flags:
-  - `competitor_mention` (compete, competitor(s), rival)
-  - `negated` (not, no, never, without, nor, or "do not rely" in the clause that names the target)
+  - `competitor_mention` (compete, competitor(s), rival — in the same sentence as the target name or reverse-link subject)
+  - `negated` (not, no, never, without, nor, or "do not rely" in the clause/sentence that names the target)
   - `hypothetical` (if, could, may, might, would, with no factual verb)
   - `direction_mismatch` (supplier or customer patterns pointing the wrong way, e.g. "we sell to X" labelled supplier)
   - `generic_reference` (a target that is a class, not an entity)
@@ -118,19 +118,7 @@ JUDGE_SYSTEM_INSTRUCTION = (
 # ---------- Regexes for the 6 deterministic V-INT rules ----------
 
 _COMPETITOR_RE = re.compile(
-    r"\b(compete|competes|competing|competition|competitor|competitors|competitive|rival|rivals)\b",
-    re.IGNORECASE,
-)
-
-_STRONG_POSITIVE_DEPENDENCY_RE = re.compile(
-    r"\b("
-    r"rely\s+on|relies\s+on|relied\s+on|depend\s+on|depends\s+on|dependent\s+on|"
-    r"purchase\s+(?:[\w\-]+\s+){0,4}from|purchased\s+(?:[\w\-]+\s+){0,4}from|"
-    r"source\s+(?:[\w\-]+\s+){0,4}from|sourced\s+(?:[\w\-]+\s+){0,4}from|"
-    r"manufactured\s+by|fabricated\s+by|supplied\s+by|assembled\s+by|"
-    r"our\s+(?:primary|principal|sole|single|key)\s+(?:wafer\s+)?(?:foundry|foundries|supplier|suppliers|manufacturer)|"
-    r"accounted\s+for\s+(?:approximately\s+|more\s+than\s+)?\d{1,2}(?:\.\d+)?\s*%"
-    r")\b",
+    r"\b(compete|competes|competing|competitor|competitors|rival|rivals)\b",
     re.IGNORECASE,
 )
 
@@ -147,7 +135,7 @@ _NEGATION_CLAUSE_RE = re.compile(
 )
 
 _HYPOTHETICAL_MODAL_RE = re.compile(
-    r"\b(if|could|may|might|would|were\s+to|in\s+the\s+event|hypothetically)\b",
+    r"\b(if|could|might|would|were\s+to|in\s+the\s+event|hypothetically|may(?!\s+\d{1,4}\b))\b",
     re.IGNORECASE,
 )
 
@@ -171,7 +159,8 @@ _FACTUAL_VERB_RE = re.compile(
     r"use|uses|used|contract|contracts|contracted|produce|produces|produced|"
     r"fabricate|fabricates|fabricated|assemble|assembles|assembled|"
     r"provide|provides|provided|partner|partners|partnered|source|sources|sourced|"
-    r"obtain|obtains|obtained|procure|procures|procured|enter|entered"
+    r"obtain|obtains|obtained|procure|procures|procured|enter|entered|"
+    r"launch|launches|launched|establish|established|engage|engages|engaged|utilize|utilizes|utilized"
     r")\b",
     re.IGNORECASE,
 )
@@ -222,6 +211,12 @@ _BIOGRAPHICAL_OR_LITIGATION_RE = re.compile(
 _FIRST_PERSON_FILER_RE = re.compile(
     r"\b(we|our|us|the\s+company|the\s+corporation|the\s+group|the\s+registrant)\b",
     re.IGNORECASE,
+)
+
+# Sentence boundary regex: splits on [.!?] followed by whitespace + uppercase/digit/quote (or end of string),
+# while ignoring mid-sentence abbreviations like "Inc. and" (lowercase after period) or "Mr. Smith".
+_SENTENCE_BOUNDARY_RE = re.compile(
+    r"(?<!\bMr)(?<!\bMs)(?<!\bDr)(?<!\bNo)(?<!\bSt)(?<!\bvs)(?:[.!?](?:\s+(?=[A-Z0-9\"'\[])|$)|\n+)",
 )
 
 
@@ -288,31 +283,114 @@ def extract_quote_context(
     return norm_doc[ctx_start:ctx_end], (start - ctx_start, end - ctx_start)
 
 
-def _extract_target_clauses(quote_text: str, target_name: str) -> list[str]:
-    """Split `quote_text` into clauses and return those mentioning `target_name` (or the whole quote if none)."""
+def _significant_tokens(name: str) -> list[str]:
+    norm_name = normalise_for_verify(name).casefold()
+    return [
+        t
+        for t in re.split(r"[^a-z0-9]+", norm_name)
+        if len(t) >= 3
+        and t not in {"inc", "corp", "corporation", "ltd", "limited", "llc", "plc", "company", "the", "and", "group"}
+    ]
+
+
+def _extract_enclosing_sentence_window(
+    context_window: str,
+    q_start: int,
+    q_end: int,
+) -> str:
+    """Expand `context_window[q_start:q_end]` to its enclosing sentence boundaries without spilling into adjacent sentences."""
+    left_prefix = context_window[:q_start]
+    if re.search(r"[.!?]\s*$|\n\s*$", left_prefix):
+        sent_start = q_start
+    else:
+        sent_start = 0
+        for m in _SENTENCE_BOUNDARY_RE.finditer(left_prefix):
+            sent_start = m.end()
+
+    quote_slice = context_window[q_start:q_end].rstrip()
+    if re.search(r"(?<!\bMr)(?<!\bMs)(?<!\bDr)(?<!\bNo)[.!?]$", quote_slice):
+        sent_end = q_end
+    else:
+        right_suffix = context_window[q_end:]
+        m_right = _SENTENCE_BOUNDARY_RE.search(right_suffix)
+        sent_end = q_end + m_right.end() if m_right else len(context_window)
+
+    return context_window[sent_start:sent_end].strip() or context_window[q_start:q_end]
+
+
+def _extract_target_sentences(
+    enclosing_text: str,
+    edge: VerifiedEdge,
+    *,
+    is_reverse: bool = False,
+) -> list[str]:
+    """Return only the sentence(s) within `enclosing_text` that mention `edge.target_name`
+    (or the edge's subject `edge.source_company_name` in reverse links).
+    """
+    sentences = [
+        s.strip()
+        for s in _SENTENCE_BOUNDARY_RE.split(enclosing_text)
+        if s.strip()
+    ]
+    if not sentences:
+        return [enclosing_text]
+
+    norm_target = normalise_for_verify(edge.target_name).casefold()
+    target_tokens = _significant_tokens(edge.target_name)
+    subject_tokens = _significant_tokens(edge.source_company_name) if is_reverse else []
+
+    matching: list[str] = []
+    for sent in sentences:
+        sent_cf = sent.casefold()
+        if (
+            edge.target_kind == "unnamed_customer"
+            and re.search(r"\b\d{1,2}(?:\.\d+)?\s*%", sent_cf)
+            and "no other" not in sent_cf
+        ):
+            matching.append(sent)
+            continue
+        if (
+            (norm_target and norm_target in sent_cf)
+            or any(tok in sent_cf for tok in target_tokens)
+            or (is_reverse and any(tok in sent_cf for tok in subject_tokens))
+        ):
+            matching.append(sent)
+
+    return matching if matching else [enclosing_text]
+
+
+def _extract_target_clauses(text: str, target_name: str, *, target_kind: str = "company", subject_name: str = "") -> list[str]:
+    """Split `text` into clauses and return those mentioning `target_name` (or `subject_name` if provided)."""
     clauses = [
         c.strip()
         for c in re.split(
             r"[.;]|\b(?:whereas|while|although|however|but)\b|,\s+(?:and|but|while|whereas)\s+",
-            quote_text,
+            text,
             flags=re.IGNORECASE,
         )
         if c.strip()
     ]
     if not clauses:
-        return [quote_text]
+        return [text]
+
+    if target_kind == "unnamed_customer":
+        pct_clauses = [
+            c for c in clauses
+            if re.search(r"\b\d{1,2}(?:\.\d+)?\s*%", c) and "no other" not in c.casefold()
+        ]
+        if pct_clauses:
+            return pct_clauses
 
     norm_target = normalise_for_verify(target_name).casefold()
-    tokens = [
-        t for t in re.split(r"[^a-z0-9]+", norm_target)
-        if len(t) >= 3 and t not in {"inc", "corp", "ltd", "llc", "plc", "company", "the", "and"}
-    ]
+    tokens = _significant_tokens(target_name)
+    subj_tokens = _significant_tokens(subject_name) if subject_name else []
     matching = [
         c for c in clauses
         if (norm_target and norm_target in c.casefold())
         or any(tok in c.casefold() for tok in tokens)
+        or any(tok in c.casefold() for tok in subj_tokens)
     ]
-    return matching if matching else [quote_text]
+    return matching if matching else [text]
 
 
 def check_interpretation_rules(
@@ -325,6 +403,10 @@ def check_interpretation_rules(
 ) -> tuple[list[InterpretationFlag], str | None, str]:
     """Run the 6 deterministic V-INT rules on `edge.evidence_quote` + ±300 chars of `Filing.text`.
 
+    - `competitor_mention` and `negated` require the cue word to appear in the SAME sentence as the
+      target name (or as the edge's subject in reverse links), avoiding window spill-over from adjacent
+      sentences while preserving the full `±300`-char `context_window` for the Flash judge.
+
     Returns `(flags, reason, context_window)`.
     """
     norm_doc = canonical_text if already_normalised_doc else normalise_for_verify(canonical_text)
@@ -336,30 +418,26 @@ def check_interpretation_rules(
         already_normalised_doc=True,
     )
     quote_text = edge.evidence_quote
-    target_clauses = _extract_target_clauses(quote_text, edge.target_name)
-    # Enclosing sentence around the quote within the ±300-char context window (never bleeding across sentence/line boundaries)
-    left_prefix = context_window[:q_start]
-    sent_start = 0
-    for m in re.finditer(r"(?:[.!?]\s+|\n+)", left_prefix):
-        sent_start = m.end()
-    right_suffix = context_window[q_end:]
-    m_right = re.search(r"(?:[.!?](?:\s+|$)|\n+)", right_suffix)
-    sent_end = q_end + m_right.end() if m_right else len(context_window)
-    near_context = context_window[sent_start:sent_end]
+    enclosing_window = _extract_enclosing_sentence_window(context_window, q_start, q_end)
+    target_sentences = _extract_target_sentences(enclosing_window, edge, is_reverse=is_reverse)
+    target_sentence_joined = " ".join(target_sentences)
+    target_clauses = _extract_target_clauses(
+        target_sentence_joined,
+        edge.target_name,
+        target_kind=edge.target_kind,
+        subject_name=edge.source_company_name if is_reverse else "",
+    )
 
     flags: list[InterpretationFlag] = []
     reasons: list[str] = []
 
-    # 1. competitor_mention
-    comp_in_quote = _COMPETITOR_RE.search(quote_text)
-    comp_in_near = _COMPETITOR_RE.search(near_context)
-    has_positive_dep_in_quote = bool(_STRONG_POSITIVE_DEPENDENCY_RE.search(quote_text))
-    if comp_in_quote or (comp_in_near and not has_positive_dep_in_quote):
-        matched_word = (comp_in_quote or comp_in_near).group(0)  # type: ignore[union-attr]
+    # 1. competitor_mention: cue must be in the same sentence as the target name (or reverse-link subject)
+    comp_match = _COMPETITOR_RE.search(target_sentence_joined)
+    if comp_match:
         flags.append("competitor_mention")
-        reasons.append(f"Competitor cue ('{matched_word}') near '{edge.target_name}'")
+        reasons.append(f"Competitor cue ('{comp_match.group(0)}') in target sentence for '{edge.target_name}'")
 
-    # 2. negated
+    # 2. negated: cue must be in the target clause of the target sentence
     for clause in target_clauses:
         neg_match = _NEGATION_CLAUSE_RE.search(clause)
         if neg_match:
@@ -374,9 +452,9 @@ def check_interpretation_rules(
             break
 
     # 3. hypothetical
-    has_modal = _HYPOTHETICAL_MODAL_RE.search(quote_text)
-    has_strict_hypo = _STRICT_HYPOTHETICAL_PHRASE_RE.search(quote_text)
-    has_factual_verb = bool(_FACTUAL_VERB_RE.search(quote_text))
+    has_modal = _HYPOTHETICAL_MODAL_RE.search(target_sentence_joined)
+    has_strict_hypo = _STRICT_HYPOTHETICAL_PHRASE_RE.search(target_sentence_joined)
+    has_factual_verb = bool(_FACTUAL_VERB_RE.search(target_sentence_joined))
     if has_strict_hypo or (has_modal and not has_factual_verb):
         cue = (has_strict_hypo or has_modal).group(0)  # type: ignore[union-attr]
         flags.append("hypothetical")
@@ -408,17 +486,14 @@ def check_interpretation_rules(
         reasons.append(f"Target '{edge.target_name}' is a generic class/category, not a specific entity")
 
     # 6. subject_mismatch
-    bio_match = _BIOGRAPHICAL_OR_LITIGATION_RE.search(near_context)
+    bio_match = _BIOGRAPHICAL_OR_LITIGATION_RE.search(target_sentence_joined)
     if bio_match:
         flags.append("subject_mismatch")
         reasons.append(
             f"Biographical or litigation context ('{bio_match.group(0)}') rather than operational dependency"
         )
     elif is_reverse:
-        filer_tokens = [
-            t for t in re.split(r"[^a-z0-9]+", normalise_for_verify(edge.source_company_name).casefold())
-            if len(t) >= 3 and t not in {"inc", "corp", "ltd", "llc", "plc", "company", "the", "and"}
-        ]
+        filer_tokens = _significant_tokens(edge.source_company_name)
         has_filer_anchor = bool(_FIRST_PERSON_FILER_RE.search(context_window)) or any(
             tok in context_window.casefold() for tok in filer_tokens
         )
