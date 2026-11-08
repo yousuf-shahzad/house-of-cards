@@ -97,19 +97,19 @@ const SECTOR_BASIS_META: Record<
   { label: string; color: ChipColor; description: string }
 > = {
   holdings: {
-    label: "Line-level (≥95%)",
+    label: "From company holdings",
     color: "lime",
-    description: "Computed directly from individual security sector tags",
+    description: "Computed directly from the industries of the individual companies held",
   },
   fund_reported: {
     label: "Fund breakdown",
     color: "cyan",
-    description: "Scaled from the ETF's published sector breakdown",
+    description: "Scaled from the ETF's published industry breakdown",
   },
   none: {
-    label: "No sector data",
+    label: "No industry data",
     color: "rose",
-    description: "Source provides no sector tags; assigned to Unknown",
+    description: "Source provides no industry tags; assigned to Unknown",
   },
 };
 
@@ -324,8 +324,8 @@ export default function RiskPage() {
           </h2>
           <p className="text-body-regular text-text-secondary">
             Enter ETF tickers totaling 100% on the Portfolio page, or load a verified example
-            portfolio to inspect concentration metrics (Top-N, HHI), GICS sector breakdown,
-            coverage accounting, and source disclosure dates.
+            portfolio to inspect concentration metrics, industry breakdown, coverage accounting,
+            and source disclosure dates.
           </p>
         </div>
         {exampleError && (
@@ -434,7 +434,7 @@ export default function RiskPage() {
               <h2 className="text-body-semibold">
                 {unavailableEtfs.length} ETF{unavailableEtfs.length > 1 ? "s" : ""} could not be
                 loaded (<Pct value={coverage.missing_allocation} digits={2} /> of portfolio
-                unallocated in look-through)
+                not covered)
               </h2>
             </div>
             <Chip variant="subtle" color="rose">
@@ -526,8 +526,11 @@ export default function RiskPage() {
           </div>
         </div>
 
-        {/* Card 2: Herfindahl Index (HHI) & Effective Companies */}
-        <div className="flex flex-col justify-between gap-3 rounded-2xl border border-border-button-default bg-background-secondary-default p-4">
+        {/* Card 2: Effective Companies */}
+        <div
+          className="flex flex-col justify-between gap-3 rounded-2xl border border-border-button-default bg-background-secondary-default p-4"
+          title={`Herfindahl-Hirschman concentration index (HHI): ${concentration.hhi.toFixed(4)} (${Math.round(concentration.hhi * 10_000).toLocaleString()} pts)`}
+        >
           <div className="flex items-center justify-between gap-2">
             <span className="text-body-2-medium text-text-secondary">
               Effective company count
@@ -549,16 +552,9 @@ export default function RiskPage() {
             </Chip>
           </div>
 
-          <div className="flex items-center justify-between text-caption-1-regular text-text-tertiary">
-            <span>
-              HHI:{" "}
-              <strong className="font-mono text-text-secondary tabular-nums">
-                {concentration.hhi.toFixed(4)}
-              </strong>{" "}
-              ({Math.round(concentration.hhi * 10_000).toLocaleString()} pts)
-            </span>
-            <span>Concentration index</span>
-          </div>
+          <p className="text-caption-1-regular text-text-tertiary">
+            How many equal-sized holdings this portfolio behaves like.
+          </p>
         </div>
 
         {/* Card 3: Distinct Companies vs Securities */}
@@ -584,15 +580,17 @@ export default function RiskPage() {
 
           <p className="text-caption-1-regular text-text-tertiary">
             {mergedListingsDelta > 0
-              ? `${mergedListingsDelta} duplicate share class / ADR listing${mergedListingsDelta === 1 ? "" : "s"} merged via CIK/alias.`
+              ? `${mergedListingsDelta} duplicate share class / ADR listing${mergedListingsDelta === 1 ? "" : "s"} merged (such as GOOG and GOOGL).`
               : "Every security resolves to a distinct company."}
           </p>
         </div>
 
-        {/* Card 4: Look-Through Coverage & Data Quality */}
+        {/* Card 4: Holdings Traced to Companies & Data Quality */}
         <div className="flex flex-col justify-between gap-3 rounded-2xl border border-border-button-default bg-background-secondary-default p-4">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-body-2-medium text-text-secondary">Look-through coverage</span>
+            <span className="text-body-2-medium text-text-secondary">
+              Holdings traced to companies
+            </span>
             <RiShieldCheckLine className="size-4 text-foreground-icon-tertiary" aria-hidden />
           </div>
 
@@ -607,10 +605,10 @@ export default function RiskPage() {
 
           <div className="flex flex-wrap items-center justify-between gap-2 text-caption-1-regular text-text-tertiary">
             <span>
-              Sector known: <Pct value={coverage.sector_known_weight} digits={1} />
+              Industry known: <Pct value={coverage.sector_known_weight} digits={1} />
             </span>
             <span>
-              Unmatched ID: <Pct value={coverage.unmatched_weight} digits={2} />
+              Unmatched: <Pct value={coverage.unmatched_weight} digits={2} />
             </span>
           </div>
         </div>
@@ -630,7 +628,7 @@ export default function RiskPage() {
               </h2>
               <p className="text-body-2-regular text-text-secondary">
                 How every dollar of your <Pct value={coverage.total_allocation} digits={2} />{" "}
-                portfolio breaks down between looked-through stocks, non-equity items, and gaps.
+                portfolio breaks down between company holdings, non-equity items, and gaps.
               </p>
             </div>
             <Chip
@@ -652,7 +650,7 @@ export default function RiskPage() {
                 <div
                   className="h-full bg-chart-1 transition-[width] duration-200"
                   style={{ width: `${Math.min(100, (coverage.covered_weight / totalAlloc) * 100)}%` }}
-                  title={`Covered look-through holdings: ${formatPct(coverage.covered_weight)}`}
+                  title={`Covered company holdings: ${formatPct(coverage.covered_weight)}`}
                 />
               )}
               {coverage.excluded_weight > 0 && (
@@ -691,14 +689,14 @@ export default function RiskPage() {
                   className="text-body-semibold text-text-primary"
                 />
                 <span className="text-caption-1-regular text-text-tertiary">
-                  Looked-through companies
+                  Traced to companies
                 </span>
               </div>
 
               <div className="flex flex-col gap-0.5 rounded-xl border border-separator-border bg-background-primary-default p-2.5">
                 <div className="flex items-center gap-1.5 text-caption-1-medium text-text-secondary">
                   <span className="size-2.5 rounded-full bg-chart-3" aria-hidden />
-                  <span>Excluded lines</span>
+                  <span>Excluded items</span>
                 </div>
                 <Pct
                   value={cleanSignedZero(coverage.excluded_weight)}
@@ -738,7 +736,7 @@ export default function RiskPage() {
                   className="text-body-semibold text-text-primary"
                 />
                 <span className="text-caption-1-regular text-text-tertiary">
-                  Rounding / NAV remainder
+                  Rounding remainder
                 </span>
               </div>
             </div>
@@ -755,7 +753,7 @@ export default function RiskPage() {
               />
             </span>
             <span>
-              Sector-mapped weight:{" "}
+              Industry-mapped weight:{" "}
               <Pct
                 value={coverage.sector_known_weight}
                 digits={2}
@@ -763,7 +761,7 @@ export default function RiskPage() {
               />
             </span>
             <span>
-              Unmatched company IDs:{" "}
+              Unmatched companies:{" "}
               <Pct
                 value={coverage.unmatched_weight}
                 digits={2}
@@ -872,11 +870,11 @@ export default function RiskPage() {
             <div className="flex items-center gap-2">
               <RiPieChart2Line className="size-5 text-foreground-icon-secondary" aria-hidden />
               <h2 id="sector-breakdown-heading" className="text-headline-medium text-text-primary">
-                GICS sector exposures
+                Industry breakdown
               </h2>
             </div>
             <p className="text-body-2-regular text-text-secondary">
-              Each bar adds up what every ETF contributes to that sector across your covered
+              Each bar adds up what every ETF contributes to that industry across your covered
               holdings (<Pct value={coverage.covered_weight} digits={2} />).
             </p>
           </div>
@@ -1032,9 +1030,9 @@ export default function RiskPage() {
           <TableHeader>
             <TableColumn className="w-[180px]">ETF &amp; Allocation</TableColumn>
             <TableColumn className="w-[120px]">Status</TableColumn>
-            <TableColumn className="w-[180px]">Source &amp; Layer</TableColumn>
+            <TableColumn className="w-[180px]">Source</TableColumn>
             <TableColumn className="w-[170px]">Disclosure Date</TableColumn>
-            <TableColumn className="w-[160px]">Sector Basis</TableColumn>
+            <TableColumn className="w-[160px]">Industry Source</TableColumn>
             <TableColumn className="w-[180px]">Holdings Coverage</TableColumn>
             <TableColumn className="min-w-[240px]">Attribution &amp; Links</TableColumn>
           </TableHeader>
@@ -1081,14 +1079,12 @@ export default function RiskPage() {
 
                   <TableCell>
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-body-2-medium text-text-primary">
+                      <span
+                        className="text-body-2-medium text-text-primary"
+                        title={etf.source_layer ? `Source layer: ${etf.source_layer}` : undefined}
+                      >
                         {etf.source ? SOURCE_LABELS[etf.source] : "None"}
                       </span>
-                      {etf.source_layer && (
-                        <span className="font-mono text-caption-1-regular text-text-tertiary">
-                          layer: {etf.source_layer}
-                        </span>
-                      )}
                     </div>
                   </TableCell>
 
@@ -1113,8 +1109,8 @@ export default function RiskPage() {
                         {basisMeta.label}
                       </Chip>
                       <span className="text-caption-1-regular text-text-tertiary tabular-nums">
-                        {etf.company_count.toLocaleString()} co /{" "}
-                        {etf.holdings_count.toLocaleString()} sec
+                        {etf.company_count.toLocaleString()} companies ·{" "}
+                        {etf.holdings_count.toLocaleString()} holdings
                       </span>
                     </div>
                   </TableCell>
@@ -1125,11 +1121,11 @@ export default function RiskPage() {
                         Holdings: <Pct value={etf.holdings_weight} digits={2} />
                       </span>
                       <span className="text-text-tertiary">
-                        Excl: <Pct value={cleanSignedZero(etf.excluded_weight)} digits={2} /> · Unmatched:{" "}
+                        Excluded: <Pct value={cleanSignedZero(etf.excluded_weight)} digits={2} /> · Unmatched:{" "}
                         <Pct value={cleanSignedZero(etf.unmatched_weight)} digits={2} />
                       </span>
                       <span className="text-text-secondary">
-                        Portfolio cov:{" "}
+                        Portfolio coverage:{" "}
                         <Pct
                           value={etf.portfolio_covered_weight}
                           digits={2}
@@ -1207,9 +1203,7 @@ export default function RiskPage() {
                                 className="mt-0.5 size-3.5 shrink-0 text-foreground-icon-secondary"
                                 aria-hidden
                               />
-                              <span>
-                                <strong className="font-mono">{w.code}:</strong> {w.message}
-                              </span>
+                              <span title={w.code}>{w.message}</span>
                             </div>
                           ))}
                           {etf.attempts.length > 0 && (
@@ -1335,9 +1329,7 @@ export default function RiskPage() {
                 className="flex items-center gap-2 text-body-2-regular text-text-secondary"
               >
                 <RiInformationLine className="size-4 shrink-0 text-foreground-icon-tertiary" />
-                <span>
-                  <strong className="font-mono text-text-primary">{w.code}:</strong> {w.message}
-                </span>
+                <span title={w.code}>{w.message}</span>
               </div>
             ))}
           </div>
