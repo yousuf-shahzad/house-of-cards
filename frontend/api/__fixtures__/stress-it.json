@@ -1,0 +1,162 @@
+{
+  "status": "partial",
+  "shock": {
+    "kind": "sector",
+    "key": "information_technology",
+    "label": null,
+    "drop": null
+  },
+  "basis": {
+    "source": "historical",
+    "drop": 0.1937,
+    "proxy": "XLK",
+    "window_start": "2026-10-07",
+    "window_end": "2026-11-05",
+    "description": "Technology: XLK's worst month in the last 5 years was a 19.4% fall (07 Oct 2026 to 05 Nov 2026)."
+  },
+  "baseline": {
+    "affected_weight": 0.511152265,
+    "loss_fraction": 0.0990101937,
+    "affected_count": 35,
+    "affected": [
+      {
+        "company_key": "CIK:0000320193",
+        "company_name": "Apple Inc.",
+        "exposure": 0.073099707,
+        "loss": 0.0141594132
+      },
+      {
+        "company_key": "CIK:0001045810",
+        "company_name": "Nvidia",
+        "exposure": 0.068670973,
+        "loss": 0.0133015675
+      },
+      {
+        "company_key": "CIK:0000789019",
+        "company_name": "Microsoft",
+        "exposure": 0.0554156348,
+        "loss": 0.0107340085
+      },
+      {
+        "company_key": "CIK:0000723125",
+        "company_name": "Micron Technology",
+        "exposure": 0.0244573933,
+        "loss": 0.0047373971
+      },
+      {
+        "company_key": "CIK:0001730168",
+        "company_name": "Broadcom",
+        "exposure": 0.0227748688,
+        "loss": 0.0044114921
+      },
+      {
+        "company_key": "CIK:0000002488",
+        "company_name": "Advanced Micro Devices",
+        "exposure": 0.0209451953,
+        "loss": 0.0040570843
+      },
+      {
+        "company_key": "CIK:0000050863",
+        "company_name": "Intel",
+        "exposure": 0.0123317598,
+        "loss": 0.0023886619
+      },
+      {
+        "company_key": "CIK:0000858877",
+        "company_name": "Cisco",
+        "exposure": 0.0114729211,
+        "loss": 0.0022223048
+      },
+      {
+        "company_key": "CIK:0000006951",
+        "company_name": "Applied Materials",
+        "exposure": 0.0107525676,
+        "loss": 0.0020827723
+      },
+      {
+        "company_key": "CIK:0000707549",
+        "company_name": "Lam Research",
+        "exposure": 0.0100290207,
+        "loss": 0.0019426213
+      }
+    ]
+  },
+  "candidate": {
+    "affected_weight": 0.3908814867,
+    "loss_fraction": 0.075713744,
+    "affected_count": 35,
+    "affected": [
+      {
+        "company_key": "CIK:0000320193",
+        "company_name": "Apple Inc.",
+        "exposure": 0.0539692,
+        "loss": 0.010453834
+      },
+      {
+        "company_key": "CIK:0001045810",
+        "company_name": "Nvidia",
+        "exposure": 0.0507461,
+        "loss": 0.0098295196
+      },
+      {
+        "company_key": "CIK:0000789019",
+        "company_name": "Microsoft",
+        "exposure": 0.0408884,
+        "loss": 0.0079200831
+      },
+      {
+        "company_key": "CIK:0000723125",
+        "company_name": "Micron Technology",
+        "exposure": 0.0180863,
+        "loss": 0.0035033163
+      },
+      {
+        "company_key": "CIK:0001730168",
+        "company_name": "Broadcom",
+        "exposure": 0.0168402,
+        "loss": 0.0032619467
+      },
+      {
+        "company_key": "CIK:0000002488",
+        "company_name": "Advanced Micro Devices",
+        "exposure": 0.0153425,
+        "loss": 0.0029718423
+      },
+      {
+        "company_key": "CIK:0000050863",
+        "company_name": "Intel",
+        "exposure": 0.009073,
+        "loss": 0.0017574401
+      },
+      {
+        "company_key": "CIK:0000858877",
+        "company_name": "Cisco",
+        "exposure": 0.0083609,
+        "loss": 0.0016195063
+      },
+      {
+        "company_key": "CIK:0000006951",
+        "company_name": "Applied Materials",
+        "exposure": 0.0078951,
+        "loss": 0.0015292809
+      },
+      {
+        "company_key": "CIK:0000707549",
+        "company_name": "Lam Research",
+        "exposure": 0.0073666,
+        "loss": 0.0014269104
+      }
+    ]
+  },
+  "notes": [
+    "Your portfolio: 0.07% of the portfolio was not shocked because holdings weight was unexplained.",
+    "Your portfolio: 8.36% of the portfolio has an unknown industry.",
+    "Your portfolio: coverage is incomplete, so the loss may be understated.",
+    "Your portfolio: industry totals come from the funds' own reports; the companies listed are the ones we can name.",
+    "Your new mix: 0.00% of the portfolio was not shocked because cash, derivative or FX holdings were excluded.",
+    "Your new mix: 0.10% of the portfolio was not shocked because holdings weight was unexplained.",
+    "Your new mix: 8.11% of the portfolio has an unknown industry.",
+    "Your new mix: coverage is incomplete, so the loss may be understated.",
+    "Your new mix: industry totals come from the funds' own reports; the companies listed are the ones we can name."
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "status": "partial",
+  "shock": {
+    "kind": "supplier",
+    "key": "TSMC",
+    "label": "TSMC",
+    "drop": null
+  },
+  "basis": {
+    "source": "simulated",
+    "drop": 0.1,
+    "proxy": null,
+    "window_start": null,
+    "window_end": null,
+    "description": "A supplier failure has no price history to replay, so we simulated a 10% fall for every company that relies on it."
+  },
+  "baseline": {
+    "affected_weight": 0.1417706799,
+    "loss_fraction": 0.014177068,
+    "affected_count": 2,
+    "affected": [
+      {
+        "company_key": "CIK:0000320193",
+        "company_name": "Apple Inc.",
+        "exposure": 0.073099707,
+        "loss": 0.0073099707
+      },
+      {
+        "company_key": "CIK:0001045810",
+        "company_name": "Nvidia",
+        "exposure": 0.068670973,
+        "loss": 0.0068670973
+      }
+    ]
+  },
+  "candidate": {
+    "affected_weight": 0.1047153,
+    "loss_fraction": 0.01047153,
+    "affected_count": 2,
+    "affected": [
+      {
+        "company_key": "CIK:0000320193",
+        "company_name": "Apple Inc.",
+        "exposure": 0.0539692,
+        "loss": 0.00539692
+      },
+      {
+        "company_key": "CIK:0001045810",
+        "company_name": "Nvidia",
+        "exposure": 0.0507461,
+        "loss": 0.00507461
+      }
+    ]
+  },
+  "notes": [
+    "Your portfolio: 0.07% of the portfolio was not shocked because holdings weight was unexplained.",
+    "Your portfolio: coverage is incomplete, so the loss may be understated.",
+    "Your new mix: 0.00% of the portfolio was not shocked because cash, derivative or FX holdings were excluded.",
+    "Your new mix: 0.10% of the portfolio was not shocked because holdings weight was unexplained.",
+    "Your new mix: coverage is incomplete, so the loss may be understated."
+  ]
+}

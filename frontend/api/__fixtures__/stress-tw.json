@@ -1,0 +1,160 @@
+{
+  "status": "partial",
+  "shock": {
+    "kind": "country",
+    "key": "TW",
+    "label": null,
+    "drop": null
+  },
+  "basis": {
+    "source": "historical",
+    "drop": 0.2612,
+    "proxy": "EWT",
+    "window_start": "2026-10-07",
+    "window_end": "2026-11-05",
+    "description": "Taiwan: EWT's worst month in the last 5 years was a 26.1% fall (07 Oct 2026 to 05 Nov 2026)."
+  },
+  "baseline": {
+    "affected_weight": 0.0549862807,
+    "loss_fraction": 0.0143624165,
+    "affected_count": 74,
+    "affected": [
+      {
+        "company_key": "ALIAS:TSMC",
+        "company_name": "Taiwan Semiconductor Manufacturing Co., Ltd.",
+        "exposure": 0.0309528088,
+        "loss": 0.0080848737
+      },
+      {
+        "company_key": "SYM:2454.TW",
+        "company_name": "Mediatek Inc",
+        "exposure": 0.002801638,
+        "loss": 0.0007317878
+      },
+      {
+        "company_key": "SYM:2317.TW",
+        "company_name": "Hon Hai Precision Industry",
+        "exposure": 0.001616464,
+        "loss": 0.0004222204
+      },
+      {
+        "company_key": "SYM:2308.TW",
+        "company_name": "Delta Electronics Inc",
+        "exposure": 0.0012344878,
+        "loss": 0.0003224482
+      },
+      {
+        "company_key": "SYM:3711.TW",
+        "company_name": "Ase Technology Holding Co LT",
+        "exposure": 0.0010725743,
+        "loss": 0.0002801564
+      },
+      {
+        "company_key": "SYM:2881.TW",
+        "company_name": "Fubon Financial Holding Co",
+        "exposure": 0.000734775,
+        "loss": 0.0001919232
+      },
+      {
+        "company_key": "SYM:2891.TW",
+        "company_name": "CTBC Financial Holding Co LT",
+        "exposure": 0.000703543,
+        "loss": 0.0001837654
+      },
+      {
+        "company_key": "SYM:1303.TW",
+        "company_name": "Nan Ya Plastics Corp",
+        "exposure": 0.0006647084,
+        "loss": 0.0001736218
+      },
+      {
+        "company_key": "SYM:2383.TW",
+        "company_name": "Elite Material Co Ltd",
+        "exposure": 0.0006589551,
+        "loss": 0.0001721191
+      },
+      {
+        "company_key": "SYM:2303.TW",
+        "company_name": "United Microelectronics Corp",
+        "exposure": 0.0006244355,
+        "loss": 0.0001631025
+      }
+    ]
+  },
+  "candidate": {
+    "affected_weight": 0.0535214,
+    "loss_fraction": 0.0139797897,
+    "affected_count": 74,
+    "affected": [
+      {
+        "company_key": "ALIAS:TSMC",
+        "company_name": "Taiwan Semiconductor Manufacturing Co., Ltd.",
+        "exposure": 0.0301282,
+        "loss": 0.0078694858
+      },
+      {
+        "company_key": "SYM:2454.TW",
+        "company_name": "Mediatek Inc",
+        "exposure": 0.002727,
+        "loss": 0.0007122924
+      },
+      {
+        "company_key": "SYM:2317.TW",
+        "company_name": "Hon Hai Precision Industry",
+        "exposure": 0.0015734,
+        "loss": 0.0004109721
+      },
+      {
+        "company_key": "SYM:2308.TW",
+        "company_name": "Delta Electronics Inc",
+        "exposure": 0.0012016,
+        "loss": 0.0003138579
+      },
+      {
+        "company_key": "SYM:3711.TW",
+        "company_name": "Ase Technology Holding Co LT",
+        "exposure": 0.001044,
+        "loss": 0.0002726928
+      },
+      {
+        "company_key": "SYM:2881.TW",
+        "company_name": "Fubon Financial Holding Co",
+        "exposure": 0.0007152,
+        "loss": 0.0001868102
+      },
+      {
+        "company_key": "SYM:2891.TW",
+        "company_name": "CTBC Financial Holding Co LT",
+        "exposure": 0.0006848,
+        "loss": 0.0001788698
+      },
+      {
+        "company_key": "SYM:1303.TW",
+        "company_name": "Nan Ya Plastics Corp",
+        "exposure": 0.000647,
+        "loss": 0.0001689964
+      },
+      {
+        "company_key": "SYM:2383.TW",
+        "company_name": "Elite Material Co Ltd",
+        "exposure": 0.0006414,
+        "loss": 0.0001675337
+      },
+      {
+        "company_key": "SYM:2303.TW",
+        "company_name": "United Microelectronics Corp",
+        "exposure": 0.0006078,
+        "loss": 0.0001587574
+      }
+    ]
+  },
+  "notes": [
+    "Your portfolio: 0.07% of the portfolio was not shocked because holdings weight was unexplained.",
+    "Your portfolio: we don't know the country for 80.04% of the portfolio, so it isn't counted.",
+    "Your portfolio: coverage is incomplete, so the loss may be understated.",
+    "Your new mix: 0.00% of the portfolio was not shocked because cash, derivative or FX holdings were excluded.",
+    "Your new mix: 0.10% of the portfolio was not shocked because holdings weight was unexplained.",
+    "Your new mix: we don't know the country for 80.54% of the portfolio, so it isn't counted.",
+    "Your new mix: coverage is incomplete, so the loss may be understated."
+  ]
+}
