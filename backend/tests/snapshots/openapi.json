@@ -1406,7 +1406,9 @@
               "JOB_NOT_FOUND",
               "RESEARCH_NOT_FOUND",
               "SOURCES_UNAVAILABLE",
-              "INTERNAL_ERROR"
+              "INTERNAL_ERROR",
+              "NOT_FOUND",
+              "METHOD_NOT_ALLOWED"
             ],
             "title": "Code",
             "type": "string"

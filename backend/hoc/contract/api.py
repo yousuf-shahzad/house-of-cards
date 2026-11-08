@@ -302,6 +302,8 @@ ErrorCode = Literal[
     "RESEARCH_NOT_FOUND",
     "SOURCES_UNAVAILABLE",
     "INTERNAL_ERROR",
+    "NOT_FOUND",
+    "METHOD_NOT_ALLOWED",
 ]
 
 
