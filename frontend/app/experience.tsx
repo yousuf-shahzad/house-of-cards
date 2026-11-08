@@ -54,7 +54,6 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<ExperienceMode>(null);
   const [step, setStepState] = useState<number>(1);
   const lastExpertHashRef = useRef<string>("#/portfolio");
-  const previousHashRef = useRef(window.location.hash);
 
   const setStep = useCallback((nextStep: number) => {
     setStepState(clampStep(nextStep));
@@ -68,7 +67,6 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
     setModeState(nextMode);
     const nextHash = targetHash ??
       (!currentHash || isGuideHash(currentHash) ? lastExpertHashRef.current : currentHash);
-    previousHashRef.current = nextHash;
     if (window.location.hash !== nextHash) {
       window.location.hash = nextHash;
     }
@@ -91,14 +89,12 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
     [setMode, setStep],
   );
 
-  // Ordinary navigation preserves the detail level. Legacy guide links to the full
-  // pages still open Full view; the guide's openInFullView helper changes only the hash.
+  // Sidebar links and browser history preserve the chosen detail level.
+  // Full-view actions use openExpertPage explicitly.
   useEffect(() => {
     const onHashChange = () => {
       const currentHash = window.location.hash;
       if (!currentHash) return;
-      const wasGuide = isGuideHash(previousHashRef.current);
-      previousHashRef.current = currentHash;
       if (isGuideHash(currentHash)) {
         const match = currentHash.match(/[?&]step=(\d+)/);
         if (match) {
@@ -107,7 +103,6 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
         setModeState((prev) => (prev === null ? prev : "beginner"));
       } else {
         lastExpertHashRef.current = currentHash;
-        if (wasGuide) setModeState((prev) => (prev === null ? prev : "expert"));
       }
     };
     window.addEventListener("hashchange", onHashChange);

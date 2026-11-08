@@ -126,12 +126,22 @@ function Risk({ analysis }: { analysis: AnalysisResponse }) {
 }
 
 export default function SimplePage({ pageKey }: { pageKey: PageKey }) {
-  const { analysis, status, stale, error, retry } = useAnalysis();
+  const { analysis, status, stale, error, retry, valuation, validation, rows } = useAnalysis();
   const { openExpertPage } = useExperience();
   useAutoDependencies();
   if (pageKey === "portfolio") return <SimplePortfolio />;
-  if (status === "error" && error) return <ServerError error={error} retry={retry} />;
+  const currentError = error ?? valuation.error;
+  if (currentError) return <Card title="Couldn't update your portfolio">
+    <ServerError error={currentError} retry={retry} />
+    {stale && <p className="text-body-regular text-text-secondary">Previous results are hidden until this portfolio can be checked.</p>}
+    <div><ButtonLink href="#/portfolio" variant="secondary">Edit portfolio</ButtonLink></div>
+  </Card>;
   if (status === "loading") return <Card title="Updating your portfolio"><div role="status" className="flex items-center gap-3"><Spinner size="sm" aria-label="Loading portfolio" />Adding up the holdings inside your ETFs…</div></Card>;
+  if (stale || (rows.length > 0 && !validation.valid)) return <Card title="Finish your portfolio">
+    <p role="status" className="text-body-regular text-text-secondary">{stale ? "Your portfolio has changed. Previous results are hidden until your ETFs and shares are valid." : "Complete your ETFs and shares on Portfolio before viewing these results."}</p>
+    {valuation.result?.issues.filter((issue) => issue.severity === "blocking").map((issue, index) => <p key={index} role="alert" className="text-body-regular text-text-error-primary">{issue.ticker ? `${issue.ticker}: ` : ""}{issue.message}</p>)}
+    <div><ButtonLink href="#/portfolio" variant="secondary">Edit portfolio</ButtonLink></div>
+  </Card>;
   if (!analysis || stale || status !== "ready") return <Card title="Start with your portfolio"><p className="text-body-regular text-text-secondary">Load a sample or enter your ETFs to see this page's results.</p><div><ButtonLink href="#/portfolio" variant="secondary">Go to Portfolio</ButtonLink></div></Card>;
 
   return <div className="flex flex-col gap-5" data-testid={`simple-${pageKey}`}>
