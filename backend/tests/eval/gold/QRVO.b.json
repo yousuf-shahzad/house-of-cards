@@ -1,0 +1,43 @@
+{
+  "company": {"name": "Qorvo, Inc.", "cik": "0001604778", "ticker": "QRVO"},
+  "filing": {"form": "10-K", "accession": "0001628280-26-032873", "url": "https://www.sec.gov/Archives/edgar/data/1604778/000162828026032873/rfmd-20260328.htm"},
+  "annotator": "Bekarys's Claude",
+  "relationships": [
+    {"id": "QRVO-B1", "edge_type": "customer", "target_name": "Apple Inc.", "target_kind": "company", "direction": "target_depends_on_company",
+     "quote": "We provide products to our largest end customer, Apple Inc. (\"Apple\"), through sales to multiple contract manufacturers, which in the aggregate accounted for 50% and 47% of total revenue in fiscal years 2026 and 2025, respectively.",
+     "importance": "critical", "notes": "50% of total revenue."},
+    {"id": "QRVO-B2", "edge_type": "customer", "target_name": "Samsung Electronics Co., Ltd.", "target_kind": "company", "direction": "target_depends_on_company",
+     "quote": "Samsung Electronics Co., Ltd. (\"Samsung\") accounted for 10% of total revenue in both fiscal years 2026 and 2025.",
+     "importance": "high", "notes": "10% of total revenue."},
+    {"id": "QRVO-B3", "edge_type": "key_input", "target_name": "GaAs wafers", "target_kind": "material", "direction": "depends_on_target",
+     "quote": "we use several raw materials, including GaN on silicon carbide (\"SiC\") wafers and GaAs wafers",
+     "importance": "medium", "notes": ""},
+    {"id": "QRVO-B4", "edge_type": "key_input", "target_name": "GaN on silicon carbide (SiC) wafers", "target_kind": "material", "direction": "depends_on_target",
+     "quote": "we use several raw materials, including GaN on silicon carbide (\"SiC\") wafers and GaAs wafers",
+     "importance": "medium", "notes": ""},
+    {"id": "QRVO-B5", "edge_type": "key_input", "target_name": "lithium niobate and lithium tantalate", "target_kind": "material", "direction": "depends_on_target",
+     "quote": "In our acoustic filter manufacturing operations, raw materials include silicon, lithium niobate and lithium tantalate.",
+     "importance": "low", "notes": "Acoustic filter materials."},
+    {"id": "QRVO-B6", "edge_type": "supplier", "target_name": "buyer of the North Carolina fabrication facility", "target_kind": "company", "direction": "depends_on_target",
+     "quote": "we completed the sale of our North Carolina fabrication facility and are operating under a short-term supply agreement with the buyer",
+     "importance": "medium", "notes": "Unnamed buyer supplies SAW filters until production moves to Texas."},
+    {"id": "QRVO-B7", "edge_type": "facility", "target_name": "wafer fabrication facilities in Hillsboro, Oregon and Richardson, Texas", "target_kind": "facility", "direction": "depends_on_target",
+     "quote": "Hillsboro, Oregon",
+     "importance": "high", "notes": "country: US (production). The source is a properties table; Richardson, Texas also does wafer fab, assembly and test."},
+    {"id": "QRVO-B8", "edge_type": "facility", "target_name": "packaging and test facility in Nuremberg, Germany", "target_kind": "facility", "direction": "depends_on_target",
+     "quote": "Nuremberg, Germany",
+     "importance": "medium", "notes": "country: DE (production). Source is the properties table."}
+  ],
+  "negatives": [
+    {"id": "QRVO-BN1", "target_name": "Skyworks Solutions, Inc.", "kind": "competitor",
+     "quote": "Silicon Laboratories Inc.; Skyworks Solutions, Inc.; and Vanchip (Tianjin) Technology Co., Ltd."},
+    {"id": "QRVO-BN2", "target_name": "Broadcom Inc.", "kind": "competitor",
+     "quote": "ACG competes primarily with Broadcom Inc.; Maxscend Microelectronics Co., Ltd.; Murata Manufacturing Co., Ltd."},
+    {"id": "QRVO-BN3", "target_name": "Murata Manufacturing Co., Ltd.", "kind": "competitor",
+     "quote": "ACG competes primarily with Broadcom Inc.; Maxscend Microelectronics Co., Ltd.; Murata Manufacturing Co., Ltd."},
+    {"id": "QRVO-BN4", "target_name": "Costa Rica facility", "kind": "negated",
+     "quote": "In the third quarter of fiscal 2026, we completed the sale of our Costa Rica facility."},
+    {"id": "QRVO-BN5", "target_name": "third-party foundries", "kind": "generic",
+     "quote": "third-party foundries and other third-party suppliers to manufacture, assemble and test our products and otherwise deliver on their commitments to us in a timely and cost-effective manner"}
+  ]
+}

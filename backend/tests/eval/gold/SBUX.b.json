@@ -1,0 +1,37 @@
+{
+  "company": {"name": "Starbucks Corporation", "cik": "0000829224", "ticker": "SBUX"},
+  "filing": {"form": "10-K", "accession": "0000829224-25-000114", "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"},
+  "annotator": "Bekarys's Claude",
+  "relationships": [
+    {"id": "SBUX-B1", "edge_type": "jv_partner", "target_name": "Nestlé S.A.", "target_kind": "company", "direction": "depends_on_target",
+     "quote": "through our Global Coffee Alliance with Nestlé S.A. (“Nestlé”)",
+     "importance": "high", "notes": "Global Coffee Alliance: grocery and foodservice."},
+    {"id": "SBUX-B2", "edge_type": "jv_partner", "target_name": "PepsiCo, Inc.", "target_kind": "company", "direction": "depends_on_target",
+     "quote": "businesses operate under collaborative relationships with PepsiCo, Inc., Nestlé, and others.",
+     "importance": "medium", "notes": "Ready-to-drink."},
+    {"id": "SBUX-B3", "edge_type": "jv_partner", "target_name": "Boyu Capital", "target_kind": "company", "direction": "depends_on_target",
+     "quote": "our new strategic joint venture partner, Boyu Capital, to accelerate long-term growth in China",
+     "importance": "medium", "notes": "China JV."},
+    {"id": "SBUX-B4", "edge_type": "key_input", "target_name": "green coffee beans", "target_kind": "material", "direction": "depends_on_target",
+     "quote": "We purchase green coffee beans from multiple coffee-producing regions around the world and custom roast them to our exacting standards for our many blends and single-origin coffees.",
+     "importance": "critical", "notes": "Multiple regions."},
+    {"id": "SBUX-B5", "edge_type": "key_input", "target_name": "dairy (fluid milk)", "target_kind": "material", "direction": "depends_on_target",
+     "quote": "In addition to coffee, we also purchase significant amounts of dairy, particularly fluid milk",
+     "importance": "medium", "notes": "Suppliers considered reliable."},
+    {"id": "SBUX-B6", "edge_type": "facility", "target_name": "roasting plants in York, PA, Minden, NV and Kent, WA", "target_kind": "facility", "direction": "depends_on_target",
+     "quote": "The material properties used by Starbucks in connection with its roasting, manufacturing, warehousing, distribution, and corporate administrative operations, serving all segments, are as follows",
+     "importance": "high", "notes": "country: US (production; York PA is the largest)"},
+    {"id": "SBUX-B7", "edge_type": "facility", "target_name": "roasting plant in Kunshan, China", "target_kind": "facility", "direction": "depends_on_target",
+     "quote": "Kunshan, China", "importance": "medium", "notes": "country: CN (production). Quote from the properties table."}
+  ],
+  "negatives": [
+    {"id": "SBUX-BN1", "target_name": "a limited number of suppliers", "kind": "generic",
+     "quote": "For certain products, we depend on a limited number of suppliers"},
+    {"id": "SBUX-BN2", "target_name": "competitors", "kind": "competitor",
+     "quote": "substantial competition from new entrants, consolidations by competitors, and other competitive activities"},
+    {"id": "SBUX-BN3", "target_name": "dairy suppliers (non-delivery)", "kind": "negated",
+     "quote": "that the risk of non-delivery of sufficient fluid milk and plant-based dairy-free alternatives to support our stores generally is remote."},
+    {"id": "SBUX-BN4", "target_name": "specialty tea and ready-to-drink suppliers", "kind": "generic",
+     "quote": "a number of ready-to-drink beverages that are purchased from several specialty suppliers, usually under long-term supply contracts."}
+  ]
+}
