@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+import threading
 from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Literal
@@ -60,6 +61,12 @@ class FilingFetcher:
     def __init__(self, http, settings) -> None:
         self.http = http
         self.settings = settings
+        self._memo: dict[str, Filing] = {}  # accession -> Filing (filings are immutable)
+        self._lock = threading.Lock()
+
+    def for_company(self, company) -> Filing:
+        """Latest 10-K/20-F for a CompanyExposure-like object (company_key, symbols). Raises FilingUnavailable."""
+        return self.latest(self.cik_for(company.company_key, tuple(company.symbols)))
 
     def _headers(self) -> dict[str, str]:
         contact = (self.settings.sec_contact or "").strip()
@@ -111,6 +118,9 @@ class FilingFetcher:
             status: FilingStatus = "unsupported_form" if other else "no_sec_filing"
             raise FilingUnavailable(status, f"No 10-K or 20-F for CIK {cik}" + (f" (files {', '.join(other)})" if other else ""))
         form, accession, filed, document = max(annual, key=lambda row: (row[2], row[1]))  # newest filing date
+        with self._lock:
+            if accession in self._memo:
+                return self._memo[accession]
         url = ARCHIVE_URL.format(cik=int(cik), accession=accession.replace("-", ""), document=document)
         doc = self._get(url, None)
         if doc.status != 200:
@@ -118,5 +128,7 @@ class FilingFetcher:
         body = doc.body.decode("utf-8", errors="replace")
         text = normalise(body) if document.lower().endswith(".txt") else html_to_text(body)
         sections, quality = section_map(text, form)
-        return Filing(cik=cik, form=form, accession=accession, filed=date.fromisoformat(filed), url=url, text=text,
-                      sha256=hashlib.sha256(text.encode("utf-8")).hexdigest(), sections=sections, quality=quality)
+        filing = Filing(cik=cik, form=form, accession=accession, filed=date.fromisoformat(filed), url=url, text=text,
+                        sha256=hashlib.sha256(text.encode("utf-8")).hexdigest(), sections=sections, quality=quality)
+        with self._lock:
+            return self._memo.setdefault(accession, filing)
