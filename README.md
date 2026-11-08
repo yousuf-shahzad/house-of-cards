@@ -94,7 +94,7 @@ cd backend && uv run pytest
 
 # Run standalone stdlib evaluation & validation suites
 cd backend && uv run hoc eval
-python validation/run_all.py
+python validation/run_validation.py
 python validation/stress/run_stress_validation.py
 
 # Run frontend unit tests and production type-check + build

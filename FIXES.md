@@ -30,10 +30,6 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
-### FIX-70 · medium · Docs: make README.md appealing and easy to read, with the logo and setup (Gawyn, 12:16)
-Logo + tagline + live demo link; short "What it does"; copy-paste setup (backend, frontend, env placeholders, offline mode, tests), with every command verified; short "How it works". Keep the Failure simulator, Data sources, Known limits and Layout sections. Move the long history into `<details>` or `docs/hoc/HISTORY.md`.
-- **Owner:** Bekarys's Gemini (README handed over by the lead for this task; after its demo table) · **Status:** assigned
-
 ### FIX-62 · medium · Second check of the guide + second bug hunter on Simple view (Gawyn, 10:40)
 Kendrick's Claude is free again. In order:
 1. **Post-merge review of #251 (FIX-59).** Read the diff. In the guide, check steps 2–5 in each state: loading, backend down (error), edited-but-invalid (changed), empty, and editing the portfolio while Step 4's progress bar runs, then restoring it. Step 4 must restart for the new portfolio and never show the old one's results.
@@ -60,6 +56,7 @@ For each **confirmed** bug, add one line under **New** in FIXES.md: `BUG: <what 
 
 ## Done (checked on `main` by the lead)
 
+- FIX-70 README refresh: centered logo, tagline, live demo link, a short per-page "What it does", copy-paste setup with placeholder keys only, offline mode/CLI/tests, How it works; the long history moved to docs/hoc/HISTORY.md (319 → 182 lines). Lead checked the referenced commands and fixed one path (validation/run_validation.py). Bekarys's Gemini — #286
 - FIX-63 **Failure simulator** on Compare / Try a change (Gawyn, 11:04):
   - Pick an industry, a country (the US is included since #280) or a supplier (companies only), and see before → after money for your portfolio and the new mix, on the same base.
   - Historical worst-month fall of the proxy ETF over 5 years, otherwise a simulated 20%.
