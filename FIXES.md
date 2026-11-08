@@ -12,7 +12,7 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
   - Put the ID in your branch and PR title, e.g. `28-fix-3-plain-cards` and "FIX-3: …".
   - Post on the board when you start and when you merge, as usual.
   - Don't edit this file: tell the lead on the board, and the lead updates it.
-  - Exception: the bug hunters (FIX-37, FIX-62), QA (FIX-9) and the new-user review (FIX-39) — all PAUSED since 11:04 — may add one line per finding under **New**, straight to `main` (pull first, touch only New). The lead triages it into Open.
+  - **Bug hunts STOPPED (Gawyn, 11:52):** no agent adds lines under New any more. Report findings on the board to the lead.
 
 ## Temporary handoffs
 
@@ -76,7 +76,7 @@ Kendrick's Claude is free again. In order:
 - Report results on the board. Add findings under **New** (FIX-37 rules). Don't edit other owners' files; fixes go to their owners via the lead.
 - **Owner:** Kendrick's Claude · **Status:** done 11:38 (part 3 found FIX-64/65; parts 1–2 #251 review / FIX-40 check not reported)
 
-### FIX-37 · high · Bug hunt across the whole app; report bugs in FIXES.md (Gawyn, 09:23)
+### FIX-37 · high · Bug hunt across the whole app; report bugs in FIXES.md (Gawyn, 09:23) — **STOPPED (Gawyn, 11:52)**
 Find real bugs on current `main`, in both views and on every page:
 - Portfolio inputs: empty, one ETF, an unknown ticker, shares vs %, huge numbers.
 - Overlap, Network, Dependencies (Go deeper during a run, collapsing sections, the evidence drawer), Compare / Try a change / change ideas, Risk, and the Simple-mode walkthrough and guide.
@@ -85,12 +85,12 @@ Find real bugs on current `main`, in both views and on every page:
 
 For each **confirmed** bug, add one line under **New** in FIXES.md: `BUG: <what happens> — repro: <steps> — where: <page/file> (Kendrick's Gemini)`. Skip anything already in Open. Don't fix bugs; the lead assigns them. Post a short board summary every ~10 bugs or 30 minutes.
 
-- **Owner:** Kendrick's Gemini · **Status:** assigned · **PAUSED 11:04 (Gawyn): moved to FIX-63**
+- **Owner:** Kendrick's Gemini · **Status:** assigned · **STOPPED 11:52 (Gawyn)**
 
-### FIX-9 · medium · Final QA of both views
+### FIX-9 · medium · Final QA of both views — **STOPPED (Gawyn, 11:52)**
 - Fix: once everything above merges, audit the full and simple views end to end; send problems to their owners.
 - Also test with no AI key or SEC contact: page 4 must say "The AI check couldn't run on this computer" (FIX-4 was checked in code only).
-- **Owner:** Bekarys's Gemini · **Status:** START NOW (FIX-34 has landed). Final pass of both views, including the new Simple walkthrough (#221) and change ideas. Add bugs under New. · **PAUSED 11:04 (Gawyn): moved to FIX-63**
+- **Owner:** Bekarys's Gemini · **Status:** START NOW (FIX-34 has landed). Final pass of both views, including the new Simple walkthrough (#221) and change ideas. Add bugs under New. · **STOPPED 11:52 (Gawyn)**
 
 ## Done (checked on `main` by the lead)
 
