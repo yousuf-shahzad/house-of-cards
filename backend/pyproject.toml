@@ -18,6 +18,9 @@ dev = [
     "ruff>=0.6",
 ]
 
+[project.scripts]
+hoc = "hoc.cli:main"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

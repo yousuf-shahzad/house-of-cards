@@ -494,10 +494,13 @@ def test_adjudicated_gold_fields_tier_aliases_alternatives_and_country() -> None
     docs = load_gold_directory(DEFAULT_GOLD_DIR)
     assert len(docs) == 10
     total_core = sum(1 for d in docs for r in d.relationships if r.tier == "core")
-    total_ext = sum(1 for d in docs for r in d.relationships if r.tier == "extended")
+    total_ext = sum(1 for d in docs for r in d.relationships if r.tier == "extended" and r.source != "pooled")
+    total_pooled = sum(1 for d in docs for r in d.relationships if r.source == "pooled")
     total_neg = sum(len(d.negatives) for d in docs)
     assert total_core == 115
-    assert total_ext == 97
+    assert total_ext == 97  # blind annotators' optional items
+    assert total_pooled == 10  # lead pooled review after the first live run (docs/hoc/eval/ADJUDICATION.md)
+    assert all(r.tier == "extended" for d in docs for r in d.relationships if r.source == "pooled")
     assert total_neg == 79
 
     # Find NKE document and verify Cambodia ('KH'), aliases, edge_type_alternatives, and core vs extended recall
