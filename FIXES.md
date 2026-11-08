@@ -58,16 +58,10 @@ The condition at `simple/index.tsx:148` is covered < total by more than 0.0001%,
   7. Bekarys's Gemini: independent maths check + E2E.
   8. Kendrick's Gemini B (11:21): `frontend/api/__fixtures__/stress-*.json`, the demo scenario table in `docs/hoc/demo/`, a README section, and second review of the UI PR.
   - Lead: contract, merge order, final browser check.
-- **Status:** core **live on main** (cce5c89), checked by the lead in the browser:
-  - the Compare panel shows before → after money for both portfolios: tech fails $9,818 → $8,846; Taiwan $9,818 → $9,677;
-  - Risk links preselect the failure; README in #272.
-  - Left:
-    - Yousuf's Claude: scroll on deep link, hide 0.0% countries.
-    - Yousuf's Gemini: Dependencies and guide links (E+F).
-    - Bekarys's Claude: history pre-warm.
-    - Kendrick's Gemini B: demo table.
-    - Bekarys's Gemini: E2E.
-
+- **Status:** **live and verified on main** (fbd70f2):
+  - #266 panel, #267 supplier list, #270 history pre-warm, #271 Risk links, #272 README, #273 deep-link scroll and 0.05% filter, #275 company-only suppliers and a 20% simulated fall.
+  - The lead browser-checked it, and Bekarys's Gemini's E2E passed (32 frontend tests, 623 backend tests, and live tech, TW and TSMC cases).
+  - Left: Yousuf's Gemini's Dependencies and guide links (E+F), and Kendrick's Gemini B's demo table.
 ### FIX-62 · medium · Second check of the guide + second bug hunter on Simple view (Gawyn, 10:40)
 Kendrick's Claude is free again. In order:
 1. **Post-merge review of #251 (FIX-59).** Read the diff. In the guide, check steps 2–5 in each state: loading, backend down (error), edited-but-invalid (changed), empty, and editing the portfolio while Step 4's progress bar runs, then restoring it. Step 4 must restart for the new portfolio and never show the old one's results.
