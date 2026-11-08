@@ -8,6 +8,7 @@ import hashlib
 import json
 import threading
 import time
+from datetime import datetime
 from pathlib import Path
 from typing import ClassVar
 
@@ -41,7 +42,10 @@ class BlobCache:
             value = json.loads(found.body)
             if value["meta"].get("key") != key:
                 return None
-            body = gzip.decompress(base64.b64decode(value["body"]))
+            datetime.fromisoformat(value["meta"]["fetched_at"])
+            body = gzip.decompress(base64.b64decode(value["body"], validate=True))
+            if not body:
+                return None
             return self.local.put(namespace, key, body, value["meta"])
         except (OSError, EOFError, ValueError, KeyError, TypeError, AttributeError):
             return None
@@ -77,8 +81,12 @@ class BlobCache:
                 meta = value["meta"]
                 if self._key(namespace, meta["key"]) != key:
                     continue
+                datetime.fromisoformat(meta["fetched_at"])
+                body = gzip.decompress(base64.b64decode(value["body"], validate=True))
+                if not body:
+                    continue
                 # Hydrate the ordinary reader so it validates verified edges and dates.
-                self.local.put(namespace, meta["key"], gzip.decompress(base64.b64decode(value["body"])), meta)
+                self.local.put(namespace, meta["key"], body, meta)
             except (OSError, EOFError, ValueError, KeyError, TypeError, AttributeError):
                 continue
             yield meta
