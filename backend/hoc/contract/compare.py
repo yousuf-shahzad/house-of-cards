@@ -42,7 +42,8 @@ class MetricDelta(_Model):
     """candidate - baseline when both exist, else None."""
 
 
-ConcentrationName = Literal["top5", "top10", "top20", "effective_n", "largest_company"]
+ConcentrationName = Literal["top5", "top10", "top20", "effective_n", "largest_company", "top_sector"]
+"""top_sector (v3.1): the largest industry's share of the portfolio."""
 
 
 class ConcentrationDelta(_Model):

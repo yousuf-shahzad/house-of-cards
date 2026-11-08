@@ -206,3 +206,22 @@ Models: `hoc/contract/dependencies.py` (edge, coverage and research models) and 
   - `delta = candidate − baseline` when both exist, otherwise null.
   - `dependency_deltas` list fraction metrics first, then count metrics. Within each unit they are sorted by absolute delta, largest first; a metric on only one side sorts by its value, and ties go by `metric_id`.
   - `status` is `partial` exactly when `candidate_unanalysed` is non-empty.
+
+## 9. v3.1 additions (PLAN-v3.1, C0-v3.1)
+
+All additive with defaults, so v3 payloads stay valid.
+
+- **`DependencyRequest.depth`** (`"light"` default, or `"thorough"`): how far each company's agent investigates its own uncertain findings. It is part of the job id, so a thorough run is a separate job that reuses cached extractions and light findings.
+- **`DependencyJob` progress fields:**
+  - `phase`: queued → reading (fetch + extract) → researching (the agentic loop) → synthesising (metrics + insights) → done;
+  - `steps_done` / `steps_total`: progress across all phases, with `0 <= steps_done <= steps_total`.
+  - `CompanyStatus` gains `"researching"`.
+- **`DependencyResult` research fields:**
+  - `research: list[ResearchFinding]` holds the findings from the run's own agentic loop. Every finding obeys the §8 research rules: steps numbered 1..n ending in `conclude`, `new_edges` verified and present in `edges`, and no `rejected_edge_ids` left in the result.
+  - `research_depth` is `"none"`, `"light"` or `"thorough"`.
+- **`InsightClaim` beginner fields:**
+  - `plain_title` (≤ 8 words);
+  - `plain_text` (≤ 25 words, at most 1 number, and only via a cited `{{metric:id}}` placeholder, rendered like `text`).
+
+  The orchestrator verifies both with the same rules as `text`. A field that fails is set to null, and the claim itself is kept.
+- **`ConcentrationName`** gains `"top_sector"`: the largest industry's share of the portfolio.

@@ -67,6 +67,12 @@
       "baseline": 0.34,
       "candidate": 0.24,
       "delta": -0.1
+    },
+    {
+      "name": "top_sector",
+      "baseline": 0.52,
+      "candidate": 0.39,
+      "delta": -0.13
     }
   ],
   "candidate_unanalysed": [
