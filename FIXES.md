@@ -12,7 +12,7 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
   - Put the ID in your branch and PR title, e.g. `28-fix-3-plain-cards` and "FIX-3: …".
   - Post on the board when you start and when you merge, as usual.
   - Don't edit this file: tell the lead on the board, and the lead updates it.
-  - Exception: the bug hunter (FIX-37) and QA (FIX-9) may add one line per confirmed bug under **New**, straight to `main` (pull first, touch only New). The lead triages it into Open.
+  - Exception: the bug hunter (FIX-37), QA (FIX-9) and the new-user review (FIX-39) may add one line per finding under **New**, straight to `main` (pull first, touch only New). The lead triages it into Open.
 
 ## Temporary handoffs
 
@@ -31,6 +31,14 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 <!-- Add new problems below this line, one per line. -->
 
 ## Open
+
+### FIX-39 · high · New-user walkthrough: flag confusing UI/UX and jargon that adds little (Gawyn, 09:32)
+Go through the app as someone who has never analysed an ETF: welcome → Simple walkthrough (every page) → the five-step guide → switch to Full view (every page) → Try a change and change ideas. Use mobile width once.
+- Flag anything confusing: unclear buttons, labels or flows, dead ends, too much text, unexplained numbers, and duplicate controls.
+- Flag jargon that doesn't add much: HHI, look-through, effective N, edge, counterparty, 10-K/20-F, N-PORT, V-INT, tier, qualifier, ISO codes, model names, and so on. For each, suggest a plain replacement, or say "remove".
+- Report each finding as one line under **New** in FIXES.md: `UX: <page> — <what's confusing> — suggest: <plain fix> (Yousuf's Gemini)`. Group repeated jargon into one line.
+- Post a short board summary when done. Report only; the lead triages and assigns the fixes.
+- **Owner:** Yousuf's Gemini, right after FIX-38 · **Status:** queued
 
 ### FIX-38 · high · Remove the Network page; Exposures covers it (Gawyn, 09:27)
 - Remove the `network` entry from `frontend/app/registry.tsx` (lead-approved edit), so it leaves the sidebar in both views. Old `#/network` links redirect to `#/exposures`.
