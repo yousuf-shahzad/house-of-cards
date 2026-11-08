@@ -36,15 +36,6 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 - Fix: ground `sole_source`, and any revenue-share qualifier, in the target-specific quote (sole/single/only source wording near the target) before it can raise importance. If it's unsupported, keep the ordinary supplier link, drop the flag, and add a rules flag. Add tests from the issue.
 - **Owner:** Kendrick's Gemini (`hoc/ai/extractor.py`, `hoc/ai/interpretation.py`) · **Status:** assigned
 
-### FIX-30 · high · Yousuf's requests: audit dependency links; a simple dashboard instead of the step-by-step guide (Yousuf, 08:43)
-- **Audit** (read-only, can start now): how dependencies are detected, how links are weighted and displayed. Report findings as new FIX items.
-- **Simple mode as a walkthrough of the real app** (Yousuf clarified at 08:45: "Make the walkthrough of the bigger UI with its more simplified views"):
-  - Simple mode keeps the same sidebar and pages as Full mode, with simplified versions of each page (new `pages/simple/` renderers).
-  - Walkthrough tips are optional and can be dismissed. No 5-step funnel; you can go anywhere.
-  - Needs `workspace.tsx`, `experience.tsx` and `onboarding/welcome-dialog.tsx`.
-  - **On hold until Gawyn decides,** because it replaces the 5-step guide Gawyn chose.
-- **Owner:** Yousuf's Codex (handoff of `workspace.tsx`, `experience.tsx`, `welcome-dialog.tsx`, `pages/simple/` from Yousuf's Gemini) · **Status:** audit done (#216). Yousuf explicitly asked for it, so the walkthrough is being built as a PR that keeps the 5-step guide reachable. PR #221 is technically approved by the lead after a browser review: all 7 Simple pages work, and so do the mode switch and the guide. Merge waits on Gawyn's choice of the default "I'm new" screen (`BEGINNER_START_PAGE`, currently `#/portfolio`).
-
 ### FIX-9 · medium · Final QA of both views
 - Fix: once everything above merges, audit the full and simple views end to end; send problems to their owners.
 - Also test with no AI key or SEC contact: page 4 must say "The AI check couldn't run on this computer" (FIX-4 was checked in code only).
@@ -52,6 +43,7 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Done (checked on `main` by the lead)
 
+- FIX-30 simplified walkthrough of the real app: Simple mode uses the same sidebar and pages with plain-English versions and dismissible tips, and the five-step guide stays reachable. The lead checked it in the browser. Yousuf told Codex to merge it, with the default `BEGINNER_START_PAGE = "#/portfolio"` (the walkthrough). Gawyn can switch the default to `#/guide` in `frontend/app/experience.tsx:18` — #221 (audit split into FIX-31, FIX-33, FIX-34)
 - FIX-33 importance: customer shares grounded to the target (live: Applied Materials' customer rated high from its own 19%, not the other's 15%); headquarters low 0.30; reverse customer links capped. On the sample only `critical.CIK:0000804328` (1.43%) drops out; `critical.ALIAS:TSMC` stays 12.39%, so the docs are unchanged — #220
 - FIX-35 main is green again (561 passed) — #218
 - FIX-31 importance badges show the tier only (no "Critical 90%"); the graph legend says "Line thickness = how much of your money is in that company" — #219
