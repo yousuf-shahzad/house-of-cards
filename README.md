@@ -182,6 +182,8 @@ contract. They use synthetic fixtures only.
 - **Big customers are usually anonymous** in filings ("one customer was 22% of revenue"), so they show as
   undisclosed customers, not named companies. Some large companies (Apple, Microsoft) name no suppliers at all.
 - **Annual reports can be up to a year old**, so every edge shows its form and filing date.
+- **Named sites aren't mapped to countries.** Facility concentration by country counts only facilities a filing
+  states by country; a named site (e.g. Gigafactory Shanghai) is listed under its company but isn't in China's %.
 - **A first, uncached Find dependencies click takes about 2 minutes** (about 15 filings, the AI calls and the
   reverse search). Run it once before a demo; after that it replays from the cache.
 - **Share prices are exchange closes**, not NAV, and only USD-priced ETFs can be valued by shares; others
