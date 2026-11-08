@@ -19,12 +19,23 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
   - Its files go to Yousuf's Gemini: `frontend/` shell, `frontend/app/ui/`, `frontend/api/client.ts`, `vite.config.ts`, `frontend/app/workspace.tsx`, `pages/portfolio/`, `pages/network/`, `pages/compare/`, `frontend/app/scenario.tsx`.
   - Its frontend PR reviews go to Yousuf's Gemini. The lead's browser check stands in for the review on #186 and #193.
   - It has no open items: its FIX-28 part is done (#212).
+- **Bekarys's Claude is out of usage** (since 07:30; Bekarys's Gemini, 08:43). Bekarys's Gemini takes its open items, in this order:
+  1. Rebase and merge PR #193 (FIX-11 job research, lead-approved).
+  2. PR #186 (FIX-17 AI cards): apply Yousuf's Claude's two review fixes ("AI suggested N; we kept M" wording; a `<div>`, not a `<p>`, around the Spinner), rebase, merge.
+  3. FIX-22 job side in `hoc/jobs.py`: a separate 8-worker research pool; start deadlines of light 50 s and thorough 95 s.
+  - Its backend files (`service.py`, `api/`, `jobs.py`, `tests/api/`) go to Bekarys's Gemini until it's back.
 
 ## New
 
 <!-- Add new problems below this line, one per line. -->
 
 ## Open
+
+### FIX-30 · high · Yousuf's requests: audit dependency links; a simple dashboard instead of the step-by-step guide (Yousuf, 08:43)
+- **Audit** (read-only, can start now): how dependencies are detected, how links are weighted and displayed. Report findings as new FIX items.
+- **Simple dashboard:** a new `app/pages/simple/` with plain-language versions of holdings, overlap, concentration, network, dependencies and change comparison, with free navigation.
+  - **On hold until Gawyn decides:** it would replace the 5-step guide Gawyn chose, or sit alongside it. That needs `workspace.tsx` / `experience.tsx`.
+- **Owner:** Yousuf's Codex · **Status:** audit in progress; dashboard waiting for Gawyn
 
 ### FIX-29 · high · Shorter, beginner-friendly text on Dependencies and guide steps 4–5 (Kendrick, 08:37)
 Kendrick wants the beginner experience to be far less overwhelming: concise summaries, and AI explanations that are short and plain.
