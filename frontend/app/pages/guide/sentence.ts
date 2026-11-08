@@ -74,3 +74,21 @@ export function monotonicProgressPct(
   }
   return { jobId, pct: clamped, status };
 }
+
+/**
+ * FIX-27: Determines whether a collapsible section should auto-expand when
+ * its selection `expandKey` changes. Returns `shouldExpand: true` only when
+ * `nextKey` is non-empty and differs from `prevKey`, so clicking "Show less"
+ * while a node or edge remains selected does not re-open the section.
+ */
+export function shouldExpandOnKeyChange(
+  prevKey: string | null | undefined,
+  nextKey: string | null | undefined,
+): { prevKey: string | null; shouldExpand: boolean } {
+  const prev = prevKey ?? null;
+  const next = nextKey ?? null;
+  if (prev === next) {
+    return { prevKey: prev, shouldExpand: false };
+  }
+  return { prevKey: next, shouldExpand: Boolean(next) };
+}
