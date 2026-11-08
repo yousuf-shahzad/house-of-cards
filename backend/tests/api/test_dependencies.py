@@ -308,3 +308,22 @@ def test_reverse_is_skipped_once_the_time_budget_is_spent(setup, monkeypatch):
     assert pipeline.reverse_calls == []
     assert all(c["status"] == "cached" and c["verified_edges"] == 2 for c in job["companies"])  # forward intact
     assert all("time budget" in c["message"] for c in job["companies"])
+
+
+def test_a_reverse_filer_that_is_a_holding_gets_its_portfolio_name(setup, make_service):
+    service, _ = make_service()
+    top = service.analyse(PortfolioRequest(holdings=HOLDINGS)).exposures[:2]
+
+    class HoldingFiler(ReversePipeline):
+        def reverse(self, company, *, cache_only):
+            found = super().reverse(company, cache_only=cache_only)
+            filer = top[1] if company.company_key == top[0].company_key else top[0]
+            edge = found.edges[0].model_copy(update={"source_company_key": filer.company_key,
+                                                     "source_company_name": "ZZ SEC TITLE INC"})
+            return Extraction(edges=[edge])
+
+    client, _, _ = setup(HoldingFiler())
+    edges = post(client, top_n=2).json()["result"]["edges"]
+    reverse_edges = [e for e in edges if e["edge_id"].startswith("rev-")]
+    assert reverse_edges and all(e["source_company_name"] != "ZZ SEC TITLE INC" for e in reverse_edges)
+    assert {e["source_company_name"] for e in reverse_edges} == {c.company_name for c in top}

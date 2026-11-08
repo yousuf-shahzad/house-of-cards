@@ -20,7 +20,7 @@ from hoc.core.cache import DiskCache
 from hoc.filings.fetch import Filing, FilingUnavailable
 from hoc.filings.text import normalise
 from hoc.graph import DependencyOrchestrator
-from hoc.jobs import DependencyJobs, InlineExecutor, LivePipeline
+from hoc.jobs import DependencyJobs, InlineExecutor, LivePipeline, search_name
 
 TEXT = normalise(
     "Item 1. Business. We design SYNTHETIC test processors. We rely on ZZ Foundry Co. as our sole wafer "
@@ -119,8 +119,10 @@ def test_live_pipeline_reverse_wiring(make_service, tmp_path):
     company = service.analyse(PortfolioRequest(holdings=HOLDINGS)).exposures[0].model_copy(
         update={"company_key": "CIK:0009990001"})
     searched, passed = [], {}
+    other = type("OtherFiling", (), {"cik": "9990000077"})()
     pipeline.fetcher.names_in_other_filings = (
-        lambda name, *, exclude_cik=None, limit: searched.append((name, exclude_cik, limit)) or ["F"])
+        lambda name, *, exclude_cik=None, limit: searched.append((name, exclude_cik, limit)) or [other])
+    pipeline.fetcher.sec_titles = lambda: {"ZZ OTHER FILER INC": "9990000077"}
 
     def fake_reverse(company_arg, filings, *, cache_only, top_n_company_keys, resolve_target_key):
         passed.update(filings=filings, cache_only=cache_only, keys=top_n_company_keys,
@@ -129,8 +131,10 @@ def test_live_pipeline_reverse_wiring(make_service, tmp_path):
 
     pipeline.extractor.extract_reverse = fake_reverse
     result = pipeline.reverse(company, cache_only=True)
-    assert searched == [(company.company_name, "0009990001", 3)]  # HOC_DEPS_REVERSE_LIMIT default
-    assert passed == {"filings": ["F"], "cache_only": True, "keys": {"CIK:0009990001"}, "resolves": "CIK:0009990001"}
+    assert searched == [(search_name(company.company_name), "0009990001", 3)]  # legal form dropped; limit 3
+    assert searched[0][0] != company.company_name
+    assert passed == {"filings": [("CIK:9990000077", "ZZ OTHER FILER INC", other)], "cache_only": True,
+                      "keys": {"CIK:0009990001"}, "resolves": "CIK:0009990001"}
     assert result.edges == [] and result.cached
 
 
@@ -148,3 +152,24 @@ def test_reverse_limit_setting():
     assert Settings.from_env({"HOC_DEPS_REVERSE_LIMIT": "0"}).deps_reverse_limit == 0
     assert Settings.from_env({"HOC_DEPS_REVERSE_LIMIT": "7"}).deps_reverse_limit == 7
     assert Settings.from_env({"HOC_DEPS_REVERSE_LIMIT": "99"}).deps_reverse_limit == 3  # out of range: default
+
+
+def test_search_name_drops_trailing_legal_forms_only():
+    assert search_name("Taiwan Semiconductor Manufacturing Co., Ltd.") == "Taiwan Semiconductor Manufacturing"
+    assert search_name("Samsung Electronics Co., Ltd.") == "Samsung Electronics"
+    assert search_name("AT&T Inc.") == "AT&T"
+    assert search_name("The Coca-Cola Company") == "The Coca-Cola"
+    assert search_name("Co.") == "Co."  # never empties a name
+
+
+def test_reverse_filers_fall_back_to_their_cik_when_titles_fail(make_service, tmp_path):
+    service, _ = make_service()
+    _, pipeline = build(service, tmp_path)
+    other = type("OtherFiling", (), {"cik": "9990000077"})()
+    pipeline.fetcher.names_in_other_filings = lambda name, *, exclude_cik=None, limit: [other]
+    pipeline.fetcher.sec_titles = lambda: (_ for _ in ()).throw(FilingUnavailable("sec_contact_missing", "no contact"))
+    seen = {}
+    pipeline.extractor.extract_reverse = lambda company, hits, **kw: seen.update(hits=hits) or type(
+        "Found", (), {"edges": [], "rejected": 0, "cached": False})()
+    pipeline.reverse(service.analyse(PortfolioRequest(holdings=HOLDINGS)).exposures[0], cache_only=False)
+    assert seen["hits"] == [("CIK:9990000077", "CIK:9990000077", other)]
