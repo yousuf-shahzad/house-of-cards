@@ -1,0 +1,344 @@
+{
+  "ticker": "NKE",
+  "company_key": "CIK:0000320187",
+  "company_name": "NIKE, Inc.",
+  "filing_accession": "0000320187-26-000088",
+  "filing_form": "10-K",
+  "filing_filed": "2026-07-15",
+  "filing_url": "https://www.sec.gov/Archives/edgar/data/320187/000032018726000088/nke-20260531.htm",
+  "prompt_version": "hoc-v2-extract-1",
+  "judge_prompt_version": "hoc-v3-judge-1",
+  "model": "gemini-3.8-flash",
+  "edges": [
+    {
+      "edge_id": "edge_d3ccd3a1052a",
+      "source_company_key": "CIK:0000320187",
+      "source_company_name": "NIKE, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "customer",
+      "target_name": "Unnamed Customer",
+      "target_kind": "unnamed_customer",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "three largest customers outside of the United States accounted for approximately 16% of total non-U.S. sales",
+      "evidence_quote": "During fiscal 2026, NIKE's three largest customers outside of the United States accounted for approximately 16% of total non-U.S. sales.",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000320187",
+        "form": "10-K",
+        "accession": "0000320187-26-000088",
+        "filed": "2026-07-15",
+        "url": "https://www.sec.gov/Archives/edgar/data/320187/000032018726000088/nke-20260531.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Customer at 10-20% of revenue ('three largest customers outside of the United States accounted for approximately 16% of total non-U.S. sales')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The quote explicitly confirms that NIKE has customers outside the US, specifically referencing its three largest customers accounting for ~16% of total non-U.S. sales.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_926669cd3219",
+      "source_company_key": "CIK:0000320187",
+      "source_company_name": "NIKE, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "contract_manufacturer",
+      "target_name": "Vietnam",
+      "target_kind": "country",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "manufactured approximately 52% of total NIKE Brand footwear",
+      "evidence_quote": "For fiscal 2026, factories in Vietnam, Indonesia and China manufactured approximately 52%, 27% and 16% of total NIKE Brand footwear, respectively.",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000320187",
+        "form": "10-K",
+        "accession": "0000320187-26-000088",
+        "filed": "2026-07-15",
+        "url": "https://www.sec.gov/Archives/edgar/data/320187/000032018726000088/nke-20260531.htm"
+      },
+      "importance": {
+        "score": 0.85,
+        "tier": "critical",
+        "reasons": [
+          "Contract manufacturer relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_16083f2ddd43",
+      "source_company_key": "CIK:0000320187",
+      "source_company_name": "NIKE, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "contract_manufacturer",
+      "target_name": "Indonesia",
+      "target_kind": "country",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "manufactured approximately 27% of total NIKE Brand footwear",
+      "evidence_quote": "For fiscal 2026, factories in Vietnam, Indonesia and China manufactured approximately 52%, 27% and 16% of total NIKE Brand footwear, respectively.",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000320187",
+        "form": "10-K",
+        "accession": "0000320187-26-000088",
+        "filed": "2026-07-15",
+        "url": "https://www.sec.gov/Archives/edgar/data/320187/000032018726000088/nke-20260531.htm"
+      },
+      "importance": {
+        "score": 0.85,
+        "tier": "critical",
+        "reasons": [
+          "Contract manufacturer relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_913e2fc9494d",
+      "source_company_key": "CIK:0000320187",
+      "source_company_name": "NIKE, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "contract_manufacturer",
+      "target_name": "China",
+      "target_kind": "country",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "manufactured approximately 16% of total NIKE Brand footwear",
+      "evidence_quote": "For fiscal 2026, factories in Vietnam, Indonesia and China manufactured approximately 52%, 27% and 16% of total NIKE Brand footwear, respectively.",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000320187",
+        "form": "10-K",
+        "accession": "0000320187-26-000088",
+        "filed": "2026-07-15",
+        "url": "https://www.sec.gov/Archives/edgar/data/320187/000032018726000088/nke-20260531.htm"
+      },
+      "importance": {
+        "score": 0.85,
+        "tier": "critical",
+        "reasons": [
+          "Contract manufacturer relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_927668d52015",
+      "source_company_key": "CIK:0000320187",
+      "source_company_name": "NIKE, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "contract_manufacturer",
+      "target_name": "Cambodia",
+      "target_kind": "country",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "manufactured approximately 15% of total NIKE Brand apparel",
+      "evidence_quote": "For fiscal 2026, factories in Vietnam, Cambodia and China manufactured approximately 34%, 15% and 12% of total NIKE Brand apparel, respectively.",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000320187",
+        "form": "10-K",
+        "accession": "0000320187-26-000088",
+        "filed": "2026-07-15",
+        "url": "https://www.sec.gov/Archives/edgar/data/320187/000032018726000088/nke-20260531.htm"
+      },
+      "importance": {
+        "score": 0.85,
+        "tier": "critical",
+        "reasons": [
+          "Contract manufacturer relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_db8132253be5",
+      "source_company_key": "CIK:0000320187",
+      "source_company_name": "NIKE, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "supplier",
+      "target_name": "Air Manufacturing Innovation",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "supplier of NIKE Air-Sole and other cushioning components",
+      "evidence_quote": "During fiscal 2026, Air Manufacturing Innovation, a wholly-owned subsidiary, with facilities near Beaverton, Oregon, in Dong Nai City, Vietnam, and St. Charles, Missouri, as well as contract manufacturers in China and Vietnam, were our suppliers of NIKE Air-Sole and other cushioning components used in footwear.",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000320187",
+        "form": "10-K",
+        "accession": "0000320187-26-000088",
+        "filed": "2026-07-15",
+        "url": "https://www.sec.gov/Archives/edgar/data/320187/000032018726000088/nke-20260531.htm"
+      },
+      "importance": {
+        "score": 0.95,
+        "tier": "critical",
+        "reasons": [
+          "Supplier relationship",
+          "Named as the sole source ('Sole')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_aea9ac9efebe",
+      "source_company_key": "CIK:0000320187",
+      "source_company_name": "NIKE, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Dong Nai City, Vietnam",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Air Manufacturing Innovation facility",
+      "evidence_quote": "During fiscal 2026, Air Manufacturing Innovation, a wholly-owned subsidiary, with facilities near Beaverton, Oregon, in Dong Nai City, Vietnam, and St. Charles, Missouri, as well as contract manufacturers in China and Vietnam, were our suppliers of NIKE Air-Sole and other cushioning components used in footwear.",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000320187",
+        "form": "10-K",
+        "accession": "0000320187-26-000088",
+        "filed": "2026-07-15",
+        "url": "https://www.sec.gov/Archives/edgar/data/320187/000032018726000088/nke-20260531.htm"
+      },
+      "importance": {
+        "score": 0.95,
+        "tier": "critical",
+        "reasons": [
+          "Production facility ('Manufacturing')",
+          "Named as the sole source ('Sole')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_2f3ebb25d868",
+      "source_company_key": "CIK:0000320187",
+      "source_company_name": "NIKE, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "St. Charles, Missouri",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Air Manufacturing Innovation facility",
+      "evidence_quote": "During fiscal 2026, Air Manufacturing Innovation, a wholly-owned subsidiary, with facilities near Beaverton, Oregon, in Dong Nai City, Vietnam, and St. Charles, Missouri, as well as contract manufacturers in China and Vietnam, were our suppliers of NIKE Air-Sole and other cushioning components used in footwear.",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000320187",
+        "form": "10-K",
+        "accession": "0000320187-26-000088",
+        "filed": "2026-07-15",
+        "url": "https://www.sec.gov/Archives/edgar/data/320187/000032018726000088/nke-20260531.htm"
+      },
+      "importance": {
+        "score": 0.95,
+        "tier": "critical",
+        "reasons": [
+          "Production facility ('Manufacturing')",
+          "Named as the sole source ('Sole')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_55810b619d12",
+      "source_company_key": "CIK:0000320187",
+      "source_company_name": "NIKE, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "supplier",
+      "target_name": "Sojitz Corporation of America",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "performed import-export financing services",
+      "evidence_quote": "Since 1972, Sojitz Corporation of America (\"Sojitz America\"), a large Japanese trading company and the sole owner of our redeemable preferred stock, has performed import-export financing services for us.",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0000320187",
+        "form": "10-K",
+        "accession": "0000320187-26-000088",
+        "filed": "2026-07-15",
+        "url": "https://www.sec.gov/Archives/edgar/data/320187/000032018726000088/nke-20260531.htm"
+      },
+      "importance": {
+        "score": 0.95,
+        "tier": "critical",
+        "reasons": [
+          "Supplier relationship",
+          "Named as the sole source ('sole')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    }
+  ],
+  "vint_rejected_edges": [],
+  "quote_rejected_count": 0
+}
