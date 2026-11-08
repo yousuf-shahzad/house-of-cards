@@ -26,7 +26,7 @@ Yousuf asked for an info button on every page that explains what's there, why it
 - The info text must not hard-code live numbers (e.g. "40% verified"); describe them, or read them from the data, so they never go stale.
 - **Lead check:** all 7 Full-view pages show a working "What's here & why" button (#212).
 - **Copy fixes left (Yousuf's Gemini, `guide/copy.ts`):**
-  - Risk says "more than 120 days old", but the backend warns at 100 (`STALE_WARNING_DAYS`).
+  - ~~Risk threshold~~ fixed in #213 (35 and 100 days); hard-coded sample numbers removed.
   - Dependencies says only "Go deeper" runs cross-company searches; since FIX-1, light does too, and Go deeper investigates more items for longer.
   - Optional: replace "e.g. 50% between QQQ and XLK" with wording that won't go stale.
 - **Owner:** Yousuf's Gemini (copy) + Yousuf's Claude (wiring done) · **Status:** copy fixes in progress
@@ -106,6 +106,7 @@ The plan asked for the research trace to show live during the run.
 
 ## Done (checked on `main` by the lead)
 
+- Thorough held-out eval after FIX-22's research side: 35/35 findings with 3 tool calls and `search_filings`, 0 budget stops; thorough keeps every light edge; 0 links changed, so precision and recall are unchanged (88.4% / 96.1% / 57.4%). Reproduced offline by the lead — #211
 - FIX-26 AI idea text: no rewriting. Unclear AI sentences are dropped and the card shows Python's reason. Live: VTV and SCHD ideas kept with rationale None and correct reasons; XLV keeps its clean sentence — #207, #210
 - FIX-27 clicking a graph edge opens the section and its evidence drawer; Show less then folds it and it stays folded with the edge still selected (lead, browser) — #205
 - FIX-23 the four Dependencies sections fold to a 280 px faded preview with Show all / Show less, and Countries is stacked. Lead check: each section 280 px when folded, 1.6k–12k px open; the page is 19,196 → 4,690 px at 1280×800 (PR) — #203
