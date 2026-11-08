@@ -30,6 +30,7 @@ import {
   type ResearchJob,
 } from "@/api/types";
 import { useAnalysis } from "./analysis";
+import { edgeSelectionPatch, restartedJob } from "./dependencies-state-logic";
 import { targetNodeIdForEdge } from "./pages/dependencies/graph";
 
 export const POLL_INTERVAL_MS = 1200;
@@ -519,6 +520,7 @@ export function triggerDependenciesRun(
 
   setStoreState({
     status: "starting",
+    job: restartedJob(storeState.job), // FIX-48: no 100% flash before the new job's first poll
     depsKey: analysedKey,
     topN,
     depth,
@@ -573,10 +575,7 @@ function useDependenciesInternal(): DependenciesContextValue {
   );
 
   const selectEdge = useCallback((edgeId: string | null, openDrawer = true) => {
-    setStoreState({
-      selectedEdgeId: edgeId,
-      drawerOpen: edgeId !== null ? openDrawer : false,
-    });
+    setStoreState(edgeSelectionPatch(edgeId, openDrawer)); // FIX-48: an edge click clears the selected node
   }, []);
 
   const selectNode = useCallback((nodeId: string | null, openDrawer = false) => {
