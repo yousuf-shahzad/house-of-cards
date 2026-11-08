@@ -2354,7 +2354,7 @@ function DependenciesPageContent() {
             } counterparties (${
               graph?.edges.length ?? 0
             } verified edges). Click any line or circle to inspect its verbatim SEC filing quote.`}
-            forceExpand={Boolean(selectedEdgeId || selectedNodeId)}
+            expandKey={selectedEdgeId ?? selectedNodeId}
             headerActions={
               <div className="flex max-w-full flex-wrap items-center gap-2">
                 {graph && graph.totalTargetsBeforeLimit > DEFAULT_TARGET_LIMIT && (

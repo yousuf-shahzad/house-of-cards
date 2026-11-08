@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   monotonicProgressPct,
   pickMostOverlappingPair,
+  shouldExpandOnKeyChange,
   splitFirstSentence,
 } from "./sentence.ts";
 
@@ -103,4 +104,31 @@ test("monotonicProgressPct never decreases for the same running job_id and reset
   state = monotonicProgressPct(state.jobId, state.pct, "job_2", 10, state.status, "running");
   assert.equal(state.jobId, "job_2");
   assert.equal(state.pct, 10);
+});
+
+test("shouldExpandOnKeyChange expands only when expandKey changes to a non-null selection (FIX-27)", () => {
+  // Initial mount with null or pre-existing selection in app-level store does not force-expand
+  let step = shouldExpandOnKeyChange(null, null);
+  assert.equal(step.shouldExpand, false);
+  step = shouldExpandOnKeyChange("NODE_NVDA", "NODE_NVDA");
+  assert.equal(step.shouldExpand, false);
+
+  // Selecting a node or edge unfolds the Graph section
+  step = shouldExpandOnKeyChange(null, "NODE_NVDA");
+  assert.equal(step.shouldExpand, true);
+  assert.equal(step.prevKey, "NODE_NVDA");
+
+  // Clicking "Show less" while NODE_NVDA is still selected must NOT re-expand
+  step = shouldExpandOnKeyChange(step.prevKey, "NODE_NVDA");
+  assert.equal(step.shouldExpand, false);
+
+  // Selecting a different node or edge unfolds again
+  step = shouldExpandOnKeyChange(step.prevKey, "EDGE_NVDA_TSMC");
+  assert.equal(step.shouldExpand, true);
+  assert.equal(step.prevKey, "EDGE_NVDA_TSMC");
+
+  // Clearing selection does not expand
+  step = shouldExpandOnKeyChange(step.prevKey, null);
+  assert.equal(step.shouldExpand, false);
+  assert.equal(step.prevKey, null);
 });

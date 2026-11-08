@@ -4,8 +4,8 @@
 // - Toggle button exposes `aria-expanded` and `aria-controls`.
 // - Tabbing/focusing into the hidden/preview body automatically unfolds the section.
 // - Remembers each section's state per viewer in `localStorage`, wrapped in `try/catch`.
-// - Supports `forceExpand` so selecting an edge elsewhere (e.g. from an insight card)
-//   expands the Graph section automatically.
+// - Supports `expandKey` so selecting a new edge or node elsewhere (e.g. from an insight card)
+//   expands the Graph section on selection change without persisting forced opens or blocking "Show less".
 
 import {
   useCallback,
@@ -19,6 +19,7 @@ import {
 import { RiArrowDownSLine, RiArrowUpSLine } from "@remixicon/react";
 
 import { Button } from "@/components/base/buttons/button";
+import { shouldExpandOnKeyChange } from "../guide/sentence";
 
 export function readStoredCollapsibleState(
   storageKey: string,
@@ -71,8 +72,8 @@ export type CollapsibleSectionProps = {
   previewHeight?: number;
   /** Collapsed by default (`false`). */
   defaultExpanded?: boolean;
-  /** When true (e.g. an edge was selected from an insight card), automatically unfolds the section. */
-  forceExpand?: boolean;
+  /** When this key changes to a non-null value (e.g. `selectedEdgeId ?? selectedNodeId`), unfolds the section without persisting or blocking subsequent "Show less" clicks. */
+  expandKey?: string | null;
   children: ReactNode;
 };
 
@@ -87,13 +88,14 @@ export function CollapsibleSection({
   subHeader,
   previewHeight = 280,
   defaultExpanded = false,
-  forceExpand = false,
+  expandKey = null,
   children,
 }: CollapsibleSectionProps) {
   const reactId = useId();
   const contentId = `dep-collapsible-${storageKey.replace(/[^a-zA-Z0-9_-]/g, "-")}-${reactId.replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const contentRef = useRef<HTMLDivElement | null>(null);
   const pointerDownRef = useRef(false);
+  const prevExpandKeyRef = useRef<string | null>(expandKey ?? null);
 
   const [expanded, setExpanded] = useState<boolean>(() =>
     readStoredCollapsibleState(storageKey, defaultExpanded),
@@ -108,10 +110,15 @@ export function CollapsibleSection({
   );
 
   useEffect(() => {
-    if (forceExpand && !expanded) {
-      updateExpanded(true);
+    const { prevKey, shouldExpand } = shouldExpandOnKeyChange(
+      prevExpandKeyRef.current,
+      expandKey,
+    );
+    prevExpandKeyRef.current = prevKey;
+    if (shouldExpand) {
+      setExpanded(true);
     }
-  }, [forceExpand, expanded, updateExpanded]);
+  }, [expandKey]);
 
   const handleFocusCapture = useCallback(
     (ev: FocusEvent<HTMLDivElement>) => {
