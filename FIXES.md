@@ -29,6 +29,11 @@ The thorough run dropped 3 verified links that the light run had found: Nvidia's
 - Fix: thorough starts from the light results and goes further. Add a test that thorough keeps every light edge that wasn't rejected.
 - **Owner:** Kendrick's Gemini · **Status:** in progress (same branch as FIX-1)
 
+### FIX-14 · high · Research agents add duplicate "unnamed customer" links
+Seen by Bekarys's Gemini on NKE: the agent added a new link "Three largest customers outside of the United States" on the same quote as the existing "Unnamed Customer" link. It got a different ID, so it was counted twice. A group of customers is also not one customer.
+- Fix: when merging an agent's new links, skip an `unnamed_customer` link whose source, link type and normalised quote already match an existing link. Treat groups like "three largest customers" as not a link.
+- **Owner:** Kendrick's Gemini (fold into A1-fix) · **Status:** assigned
+
 ### FIX-3 · high · Simple page 4–5 AI text is too long
 - Fix:
   - Show `plain_title` + `plain_text`, with the full text under "Read more".
