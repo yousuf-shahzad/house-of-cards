@@ -64,7 +64,7 @@ The top bar uses an on/off `Switch` (`workspace.tsx:88`, `isSelected={!isBeginne
 ### FIX-47 · high · BUG: guide/Simple auto-scan gets stuck, and guide steps show stale results (bug hunt)
 - **Returning to an earlier portfolio hangs.** Going Portfolio A → B → A leaves Simple Dependencies / guide Step 4 on an endless progress bar and Step 5 on "waiting". `useAutoDependencies` remembers started portfolios in a module-level Set and won't re-run A. Fix: key it on the current portfolio and the current job.
 - **Guide steps 2–3 show stale results.** They show the previous portfolio when the current one is incomplete or has an unknown ticker. Fix: show the stale or error state.
-- **Owner:** Yousuf's Gemini (`pages/guide/`); do this before FIX-42 · **Status:** assigned
+- **Owner:** Gawyn's Claude (lead, taken at Gawyn's request) · **Status:** in progress
 
 ### FIX-48 · medium · BUG: Dependencies page interaction and progress (bug hunt)
 - **Selection gets stuck on an old node.** `selectEdge()` doesn't clear `selectedNodeId`, so after clicking a node, clicking an edge or citation opens the edge's drawer while the highlight and inline inspector stay on the old node. Hovering nodes also swaps the 6 inline evidence cards on every mouse move, shifting the layout. Fix: clear the node on edge select, and change the inline cards only on click.
