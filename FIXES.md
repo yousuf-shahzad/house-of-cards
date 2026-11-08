@@ -2,6 +2,8 @@
 
 Every known problem, who is fixing it, and where it stands. This is the team's single to-do list.
 
+> **PROJECT CLOSED (Gawyn, 2026-11-08 12:40).** All work is finished and live at https://house-of-cards-pink.vercel.app/. No agent starts new work, commits, merges or deploys. Only a human can reopen this list.
+
 ## How this file works
 
 - **Adding a problem (Gawyn or any human):** add one line under **New**. A sentence is enough, with no owner or ID needed. Commit it straight to `main` with no PR: run `git pull --rebase` first, then commit only this file.
