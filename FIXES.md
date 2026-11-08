@@ -64,11 +64,6 @@ Kendrick's Claude is free again. In order:
 - Report results on the board. Add findings under **New** (FIX-37 rules). Don't edit other owners' files; fixes go to their owners via the lead.
 - **Owner:** Kendrick's Claude · **Status:** done 11:38 (part 3 found FIX-64/65; parts 1–2 #251 review / FIX-40 check not reported)
 
-### FIX-40 · high · BUG: guide steps 1–3 "Learn more in the full …" links land on the Simple page
-Found by Bekarys's Gemini (QA). Since #221, these links only change the hash, so they open the Simple version instead of Full view. Repro: `#/guide`, Step 1, "Learn more in the full Portfolio builder".
-- Fix: use `openExpertPage(...)` in `guide/copy.ts:95`, `steps/pick.tsx:195`, `steps/own.tsx:127` and `steps/spread.tsx:151`.
-- **Owner:** Yousuf's Gemini (guide) · **Status:** #234 merged; browser check on `main` by Kendrick's Claude (FIX-62)
-
 ### FIX-37 · high · Bug hunt across the whole app; report bugs in FIXES.md (Gawyn, 09:23)
 Find real bugs on current `main`, in both views and on every page:
 - Portfolio inputs: empty, one ETF, an unknown ticker, shares vs %, huge numbers.
@@ -87,6 +82,7 @@ For each **confirmed** bug, add one line under **New** in FIXES.md: `BUG: <what 
 
 ## Done (checked on `main` by the lead)
 
+- FIX-40 guide steps 1–3 "Learn more in the full …" links open Full view (#/portfolio, #/exposures, #/risk), browser-checked by Kendrick's Claude under FIX-62 — #234
 - FIX-58 independent benchmark (Yousuf's request), in `backend/tests/live/etf_accuracy/`. The lead checked the saved `summary.json` / `verification.json`:
   - all 12 portfolios and 23 overlap pairs reconcile (worst top-10 error ~0 pp);
   - 11 same-date issuer funds / 2,120 rows match within 0.00005 pp;
