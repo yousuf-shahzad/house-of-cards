@@ -191,4 +191,12 @@ test("formatFindingOneLiner produces one concise plain-English line per finding 
     plainCounterpartyText("2 verified customer disclosures did not name the counterparty in the filing."),
     "2 verified customer disclosures did not name the partner in the filing.",
   );
+  assert.equal(
+    plainCounterpartyText("Counterparty remains an external private or non-portfolio entity."),
+    "Partner remains an external private or non-portfolio entity.",
+  );
+  assert.equal(
+    plainCounterpartyText("Counterparties were not named. Counterparty identities remain undisclosed."),
+    "Suppliers & partners were not named. Supplier or partner names remain undisclosed.",
+  );
 });

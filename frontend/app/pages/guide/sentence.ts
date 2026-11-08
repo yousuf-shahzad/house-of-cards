@@ -109,15 +109,28 @@ const TAG_RELATION_LABELS: Record<string, string> = {
   counterparty: "link to",
 };
 
+function matchFirstLetterCase(match: string, lowerReplacement: string): string {
+  const first = match.charAt(0);
+  if (first && first === first.toUpperCase() && first !== first.toLowerCase()) {
+    return lowerReplacement.charAt(0).toUpperCase() + lowerReplacement.slice(1);
+  }
+  return lowerReplacement;
+}
+
 /**
  * FIX-61: Replaces technical "counterparty" / "counterparties" wording with
- * plain-English "supplier or partner names" / "suppliers & partners" / "partner".
+ * plain-English "supplier or partner names" / "suppliers & partners" / "partner",
+ * preserving the initial capital letter at the start of a sentence.
  */
 export function plainCounterpartyText(text: string): string {
   return text
-    .replace(/\bcounterparty identities\b/gi, "supplier or partner names")
-    .replace(/\bcounterparties\b/gi, "suppliers & partners")
-    .replace(/\bcounterparty\b/gi, "partner");
+    .replace(/\bcounterparty identities\b/gi, (m) =>
+      matchFirstLetterCase(m, "supplier or partner names"),
+    )
+    .replace(/\bcounterparties\b/gi, (m) =>
+      matchFirstLetterCase(m, "suppliers & partners"),
+    )
+    .replace(/\bcounterparty\b/gi, (m) => matchFirstLetterCase(m, "partner"));
 }
 
 function cleanEntityName(raw: string): string {

@@ -733,7 +733,7 @@ function ResearchFindingCard({
                       {step.query}
                     </code>
                   )}
-                  <span>— {step.summary}</span>
+                  <span>— {plainCounterpartyText(step.summary)}</span>
                 </div>
                 {step.filing && (
                   <a
