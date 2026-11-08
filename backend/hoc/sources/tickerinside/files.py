@@ -5,9 +5,11 @@ from __future__ import annotations
 import re
 import threading
 from datetime import timedelta
+from functools import lru_cache
 from typing import Any
 
 from hoc.contract import SourceParseError, SourceUnavailable, TickerNotFound
+from hoc.identity.resolver import DEPOSITARY_RECEIPT_SYMBOLS, load_aliases
 
 BASE_URL = "https://tickerinside.com/api/v1"
 TTL = timedelta(hours=24)
@@ -34,10 +36,35 @@ def longest(*names: str | None) -> str | None:
     return max((n for n in names if n), key=len, default=None)
 
 
-def country_of(symbol: str) -> str | None:
-    """'2330.TW' -> 'TW'. US class suffixes are one letter ('BRK.B'), so they never match."""
+@lru_cache(maxsize=1)
+def _cross_listed_identifiers() -> frozenset[str]:
+    """Curated aliases with an overseas listing must never default to US."""
+    aliases = load_aliases().by_identifier
+    overseas = {alias[0] for identifier, alias in aliases.items()
+                if re.fullmatch(r"[^.]+\.[A-Z]{2}", identifier)}
+    return frozenset(identifier for identifier, alias in aliases.items() if alias[0] in overseas)
+
+
+def country_of(symbol: str, identifiers: dict | None = None, name: str | None = None) -> str | None:
+    """Listing-country fallback; US needs exchange evidence and must not be a receipt.
+
+    Names and curated overseas aliases catch ADRs even when asset_type is merely 'stock'
+    (e.g. TSM), and foreign registry shares such as ASML. A CIK or US ISIN isn't US evidence.
+    """
     match = re.fullmatch(r"[^.]+\.([A-Z]{2})", symbol)
-    return match.group(1) if match else None
+    if match:
+        return match.group(1)
+    identifiers = identifiers or {}
+    description = " ".join(str(value or "") for value in
+                           (name, identifiers.get("name"), identifiers.get("asset_type")))
+    if symbol in DEPOSITARY_RECEIPT_SYMBOLS or symbol in _cross_listed_identifiers() or re.search(
+        r"\b(?:ADR|ADS|GDR|deposit[ao]ry|registry shares)\b", description, re.IGNORECASE
+    ):
+        return None
+    exchange = str(identifiers.get("exchange") or "").strip().casefold()
+    if exchange in {"nasdaq", "nyse", "nyse arca", "nyse american", "cboe bzx", "txse"}:
+        return "US"
+    return None
 
 
 class ReferenceFiles:
