@@ -39,12 +39,12 @@ Gawyn: remove the option to switch to percent on simple screen 1, and make the p
 - Fix:
   - Add a `DraftEditor` option that hides the Shares | % switch and shows % as plain text (not an input). Use it in `guide/steps/pick.tsx` only; the full view keeps both.
   - If a sample's prices can't be fetched, load it as shares anyway (or show a short "prices unavailable, try again" message), not as pinned % rows the user can't edit.
-- **Owner:** Yousuf's Claude (owns `app/ui/draft-editor.tsx`; lead-approved one-line change in `pick.tsx`) · **Status:** in progress (branch `28-fix-15-shares-only`)
+- **Owner:** Yousuf's Claude (taken over from Yousuf's second Claude session; owns `app/ui/draft-editor.tsx`; lead-approved one-line change in `pick.tsx`) · **Status:** in progress (branch `28-fix-15-shares-only`, PR next)
 
 ### FIX-16 · high · Simple screen 2 shows the first ETF pair, not the most overlapping one
 "Do your ETFs own the same companies?" uses `analysis.overlap.pairs[0]`, but the API returns pairs in input order. For the sample it shows IVV/QQQ (48.82%) when QQQ/XLK overlap most (50.11%).
 - Fix: pick the pair with the highest `weighted_overlap`; add a test.
-- **Owner:** Yousuf's Gemini (`guide/steps/own.tsx`) · **Status:** assigned
+- **Owner:** Yousuf's Gemini (`guide/steps/own.tsx`) · **Status:** in progress (branch `28-fix-16-18-overlap-monotonic-progress`)
 
 ### FIX-17 · high · Suggest specific changes on screen 5 and in Try a change (both views)
 Gawyn wants concrete ideas such as "add this ETF to help fix this diversification issue", which the user can pick to load into Try a change, in the simple view and the full view.
@@ -58,14 +58,17 @@ Gawyn wants concrete ideas such as "add this ETF to help fix this diversificatio
 - **Frontend:**
   - **Screen 5:** idea cards ("Add RSP: largest industry 51% → 41%") with a "Try this" button that opens Try a change with the idea loaded. The ETF is added as whole shares worth its share of your portfolio.
   - **Try a change** (guide and Compare page): an "Ideas" list at the top that loads an idea in one click.
-- **Owner:** Yousuf's Codex (backend + contract; shape approved) + Yousuf's Claude (vite proxy + `api.changeIdeas`) + Bekarys's Claude (frontend; can start on the fixture) · **Status:** in progress (branch `28-fix-17-change-ideas`)
+- **Owner:**
+  - Yousuf's Codex: backend + contract. Shape approved. It merges the contract + fixture as a small PR first.
+  - Bekarys's Claude: frontend, plus the vite proxy and `api.changeIdeas`, moved from Yousuf's Claude, who reviews.
+- **Status:** in progress (branch `28-fix-17-change-ideas`, issue #171)
 
 ### FIX-18 · high · The progress bar can go down
 `steps_total` grows when the research phase starts (16 → about 50), so the bar drops from about 100% to about 30%. It also changes as agents finish.
 - **Fix:**
   - **Backend:** set `steps_total` to its full estimate from the start, and only ever lower it.
   - **Frontend:** never show a lower % than already shown for the same job, on simple screen 4 and the Dependencies page.
-- **Owner:** Bekarys's Claude (`hoc/jobs.py`) + Yousuf's Gemini (both pages) · **Status:** assigned
+- **Owner:** Bekarys's Claude (`hoc/jobs.py`) + Yousuf's Gemini (both pages) · **Status:** backend merged (#172, lead checking); frontend in progress (branch `28-fix-16-18-overlap-monotonic-progress`)
 
 ### FIX-6 · high · Pitch deck numbers are wrong
 `PITCH_DECK.md` has these errors:
@@ -75,32 +78,33 @@ Gawyn wants concrete ideas such as "add this ETF to help fix this diversificatio
 Fix:
 - Lead with the held-out results from `docs/hoc/EVAL.md`: blind precision 88.4% [83.2, 92.5], pooled 96.1%, core recall 57.4%, direction 100%, and 1 of 79 hard negatives wrongly flagged.
 - Add the research agents and beginner mode once FIX-1 lands.
-- **Owner:** Gawyn's Gemini (alongside docs PR #132) · **Status:** assigned
+- **Owner:** Gawyn's Gemini · **Status:** merged (#167), lead checking; the line about the research agents follows FIX-1
 
 ### FIX-7 · medium · README and demo docs are out of date
 - Fix: PR #132 needs the current numbers and the v3.1 features (shares default, simple view, "Try a change", research agents).
-- **Owner:** Gawyn's Gemini · **Status:** in progress (PR #132)
+- **Owner:** Gawyn's Gemini · **Status:** in progress. Finish PR #132 now without the agentic eval numbers, then a small follow-up for FIX-8's numbers.
 
 ### FIX-8 · medium · The evaluation doesn't show the effect of the research agents
 - Fix: after FIX-1 and FIX-2 merge, run `uv run hoc eval --live` with light agents. EVAL.md then reports precision and recall before vs after the agents, with confidence intervals. Do no tuning on the 10 held-out companies.
-- **Owner:** Bekarys's Gemini (A3) · **Status:** waiting for FIX-1 and FIX-2
+- Also add an agentic acceptance check to `hoc eval`. From a result it reports tool calls per finding, `search_filings` use, whether thorough contains light, and duplicate `unnamed_customer` links, so FIX-1, FIX-2 and FIX-14 are judged by numbers.
+- **Owner:** Bekarys's Gemini (A3) · **Status:** acceptance check now; live eval when FIX-1, FIX-2 and FIX-14 merge (branch `28-fix-8-eval-agentic`)
 
 ### FIX-9 · medium · Final QA of both views
 - Fix: once everything above merges, audit the full and simple views end to end; send problems to their owners.
 - Also test with no AI key or SEC contact: page 4 must say "The AI check couldn't run on this computer" (FIX-4 was checked in code only).
-- **Owner:** Bekarys's Gemini · **Status:** waiting
+- **Owner:** Bekarys's Gemini · **Status:** in progress. QA what's already merged now, and re-check each new merge.
 
 ### FIX-10 · low · One AI summary title doesn't match its text
 The title says "Heavy reliance on two chip makers", but its text names only TSMC.
 - Fix: the plain title must name only what its text supports.
-- **Owner:** Gawyn's Gemini (orchestrator) · **Status:** open
+- **Owner:** Gawyn's Gemini (orchestrator) · **Status:** merged (#173), lead checking live
 
 ### FIX-11 · low · Research findings appear only when the scan ends
 The plan asked for the research trace to show live during the run.
 - Fix:
   - The job exposes findings as each agent finishes.
   - The Dependencies page and simple page 4 show them.
-- **Owner:** Bekarys's Claude (job; adds `DependencyJob.research`, lead-approved) + Yousuf's Gemini (pages) · **Status:** pages merged (#170); job part starts after FIX-1
+- **Owner:** Bekarys's Claude (job; adds `DependencyJob.research`, lead-approved) + Yousuf's Gemini (pages) · **Status:** pages merged (#170); job part starts now if A1-fix keeps the `research_company` return type
 
 ## Done (checked on `main` by the lead)
 
