@@ -44,6 +44,7 @@ from hoc.contract import (
     VerifiedEdge,
 )
 from hoc.contract.dependencies import FilingRef, Insights, JobStatus, MetricFact
+from hoc.research.loop import RESEARCH_DEPTH_PRESETS
 
 log = logging.getLogger("hoc.jobs")
 
@@ -55,6 +56,9 @@ SUBMIT_WAIT_SECONDS = 1.5
 RESEARCH_BUDGET_SECONDS = {"light": 60.0, "thorough": 180.0}
 """v3.1 A2: a company's research agent not started this long after reading ended is skipped (it says so).
 Reading (fetch + extract + reverse links) is never cut; an agent that has started finishes its own steps."""
+RESEARCH_STEPS_ESTIMATE = {depth: items * steps for depth, (items, steps) in RESEARCH_DEPTH_PRESETS.items()}
+"""FIX-18: agent steps reserved per company when the job starts (the depth's items x steps), so steps_total
+starts at its full estimate and only ever falls; an agent reporting fewer lowers its share, never more."""
 REVERSE_BUDGET_SECONDS = 100.0
 """Reverse-link steps not started this long after the job began are skipped (the company says so), so a
 cold click still finishes in about 2 minutes. Forward extraction always runs first and is never cut."""
@@ -423,8 +427,11 @@ class DependencyJobs:
                 job.finished_at = time.monotonic()
 
     def _step(self, job: _Job, part: str, done: int, total: int) -> None:
+        """FIX-18: the bar never goes back. A part's total only falls from its first value, and done only rises."""
         with self._lock:
-            job.steps[part] = (done, max(total, done))
+            prev_done, cap = job.steps.get(part, (0, total))
+            total = min(total, cap)
+            job.steps[part] = (min(max(done, prev_done), total), total)
 
     def _set_company(self, job: _Job, index: int, **changes) -> None:
         with self._lock:
@@ -433,6 +440,10 @@ class DependencyJobs:
     def _run(self, job: _Job) -> None:
         self._set(job, status="running", phase="reading")
         self._step(job, "read", 0, len(job.top))
+        if getattr(self.pipeline, "research_company", None):  # reserve every agent's steps up front (FIX-18)
+            for company in job.top:
+                self._step(job, f"research:{company.company_key}", 0,
+                           RESEARCH_STEPS_ESTIMATE.get(job.request.depth, 0))
         self._step(job, "synth", 0, 1)
         try:
             started = time.monotonic()
@@ -482,11 +493,12 @@ class DependencyJobs:
         findings, whether any agent actually ran). Without the optional hook it is a no-op."""
         research = getattr(self.pipeline, "research_company", None)
         targets = [i for i, (fwd, _, _) in enumerate(forwards) if research and fwd is not None and extractions[i]]
+        for i, company in enumerate(job.top):  # companies with no agent give back their reserved steps
+            if i not in targets:
+                self._step(job, f"research:{company.company_key}", 0, 0)
         if not targets:
             return extractions, [], False
         self._set(job, phase="researching")
-        for i in targets:  # one placeholder step per agent until it reports its own total
-            self._step(job, f"research:{job.top[i].company_key}", 0, 1)
         deadline = time.monotonic() + RESEARCH_BUDGET_SECONDS[job.request.depth]
         futures = {i: self._workers.submit(self._research, job, i, job.top[i], extractions[i], deadline)
                    for i in targets}
@@ -533,8 +545,8 @@ class DependencyJobs:
                 log.exception("research failed for %s", company.company_key)
                 note = "Double-check skipped: it failed for this company."
         with self._lock:
-            _, total = job.steps.get(part, (0, 1))
-            job.steps[part] = (max(total, 1), max(total, 1))  # finished or skipped: never leaves the bar short
+            _, total = job.steps.get(part, (0, 0))
+            job.steps[part] = (total, total)  # finished or skipped: its share is complete
         changes = {"status": current.status}
         if note:
             changes["message"] = f"{current.message or ''} {note}".strip()

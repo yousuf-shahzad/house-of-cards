@@ -49,12 +49,15 @@ class AgenticPipeline:
         self.research_error = research_error
         self.steps = steps
         self.research_calls: list[dict] = []
+        self.observe = None  # called while reading and after each agent step (FIX-18 test)
 
     def filing(self, company):
         return FilingRef(company_key=company.company_key, form="10-K", accession=f"0000-{company.company_key}",
                          filed=date(2026, 2, 1), url="https://example.invalid/filing")
 
     def extract(self, company, filing, *, cache_only):
+        if self.observe:
+            self.observe()
         return Extraction(edges=[edge(company, filing, f"keep-{company.company_key}"),
                                  edge(company, filing, f"drop-{company.company_key}", "ZZ Rival")], cached=True)
 
@@ -67,6 +70,8 @@ class AgenticPipeline:
             raise self.research_error
         for step in range(1, self.steps + 1):
             progress(step, self.steps)
+            if self.observe:
+                self.observe()
         new = edge(company, filing, f"new-{company.company_key}", "ZZ Second Source")
         finding = ResearchFinding(finding_id=f"f-{company.company_key}", kind="single_source", subject="ZZ Foundry",
                                   question="Is ZZ Foundry the only foundry?", outcome="revised",
@@ -93,6 +98,25 @@ def jobs(make_service):
 
 def submit(service, depth="light", top_n=2, **kw):
     return service.submit_dependencies(DependencyRequest(holdings=HOLDINGS, top_n=top_n, depth=depth), **kw)
+
+
+@pytest.mark.parametrize("agent_steps", [3, 8])  # fewer than the light estimate (2 x 3 = 6), and more
+def test_progress_never_goes_backwards(jobs, agent_steps):
+    """FIX-18: steps_total starts at its full estimate (read + every agent's reserved steps + synth) and only
+    falls, so the bar's % never drops, whether an agent reports fewer steps than reserved or more."""
+    pipeline = AgenticPipeline(steps=agent_steps)
+    service = jobs(pipeline)
+    seen: list[tuple[int, int]] = []
+    pipeline.observe = lambda: seen.extend((j.steps_done, j.steps_total)
+                                           for j in map(service._jobs.get, list(service._jobs._jobs)))
+    job = submit(service)
+    seen.append((job.steps_done, job.steps_total))
+    assert seen[0][1] == 2 + 2 * 6 + 1  # reserved before any agent reported
+    totals = [total for _, total in seen]
+    assert totals == sorted(totals, reverse=True)
+    ratios = [done / total for done, total in seen]
+    assert ratios == sorted(ratios) and ratios[-1] == 1
+    assert job.steps_total == 2 + 2 * min(agent_steps, 6) + 1
 
 
 def test_light_run_merges_research_and_reports_progress(jobs):
