@@ -5,7 +5,7 @@
 | Parameter | Value |
 |---|---|
 | **Evaluation Mode** | `replay` |
-| **Git Commit** | `cc1d0bb` |
+| **Git Commit** | `ee1c795` |
 | **Extractor Prompt Version** | `hoc-v2-extract-1` |
 | **V-INT Judge Prompt Version** | `hoc-v3-judge-1` |
 | **Held-Out Companies Evaluated** | `10` |
@@ -42,7 +42,7 @@
 | **Importance-Tier Exact Agreement** | 68.3% [50.0%, 84.0%] (54/79) |
 
 ### 2.1 Key Findings & Error Analysis
-1. **V-INT on the held-out set vs. live portfolio run**: V-INT filtered `0` edges on the 10 held-out companies (`129 → 129`), so it had no measurable precision/recall delta on this corpus — the extractor prompt (`hoc-v2-extract-1`) and deterministic quote/generic-noun verifier already avoided all `27` competitor, `11` negated, `9` hypothetical, and `7` unrelated hard negatives, and the `hoc-v3-judge-1` Flash judge cleared 2 false-alarm `competitor_mention` rule flags on Skyworks' `Samsung` and `Tesla` customer edges. V-INT's practical value shows up on the live `us-core-tilt` portfolio run, where it catches and flags `1` overclaim.
+1. **V-INT on the held-out set vs. live portfolio run**: V-INT filtered `0` edges on the 10 held-out companies (`129 → 129`), so it had no measurable precision/recall delta on this corpus — the extractor prompt (`hoc-v2-extract-1`) and deterministic quote/generic-noun verifier already avoided all `27` competitor, `11` negated, `9` hypothetical, and `7` unrelated hard negatives, and the `hoc-v3-judge-1` Flash judge cleared 2 false-alarm `competitor_mention` rule flags on Skyworks' `Samsung` and `Tesla` customer edges. V-INT's practical value shows up on the live `us-core-tilt` portfolio run: with the tightened rules (PR #130), it correctly **rejects 1 edge** (`AMD` → `Sanmina` `contract_manufacturer` from *"we sold the ZT Manufacturing Business to Sanmina"*, a divestiture rather than supply) and **flags 1 tentative overclaim** (`Nvidia` → `OpenAI`).
 2. **Recall misses are concentrated in facility countries (`23/49`) and Pfizer alliances**: Of the `49` missed core relationships, `23` (`23/49`) are facility countries where a 10-K lists multiple countries in a single prose sentence (e.g., Boeing's 8 international locations in Item 2, GM's 4 non-US assembly countries, Pfizer's 8-country plant summary), and `18/49` come from Pfizer (`PFE`), whose three wholesaler customers (`McKesson`, `Cencora`, `Cardinal Health`) sit in a Note 17B table and whose drug co-development/commercialization alliances (`Astellas`, `BMS`, `Genmab`, `SMPS`, `Takeda`) are spread across product paragraphs in Item 1 (`1/19` core recall on `PFE`, vs. `65/96` = `67.7%` across the other 9 filers).
 3. **`supplier` precision is the weak edge type**: On `supplier` predictions (`n = 6`), blind precision is `16.7%` (`1/6`, where `Ford Otosan` matched a core `jv_partner`/`supplier` relationship) and pooled precision is `50.0%` (`3/6`, after `ARC Automotive` and `Delphi Automotive` were accepted in pooling). The 3 remaining `supplier` false positives are a wholly-owned subsidiary (`NKE` `Air Manufacturing Innovation`), a trade-finance/preferred-stock holder (`NKE` `Sojitz Corporation of America`), and an industry-wide NHTSA recall mention (`F` `Takata`). By contrast, `facility` (`68/68`), `key_input` (`18/18`), `jv_partner` (`14/14`), and `contract_manufacturer` (`5/5`) achieve `100.0%` pooled precision, and `customer` reaches `88.9%` (`16/18`).
 
