@@ -68,9 +68,10 @@ def edge(source=A, target="ZZ Foundry", *, edge_id="zz-edge", kind="foundry", **
     return result.model_copy(update=updates)
 
 
-def compare(before, after, cache, *, top_n=2, aliases=None):
+def compare(before, after, cache, *, top_n=2, aliases=None, company_statuses=None):
     return compare_portfolios(request(before, after, top_n), before, after, cache,
-                              aliases=aliases if aliases is not None else Aliases())
+                              aliases=aliases if aliases is not None else Aliases(),
+                              company_statuses=company_statuses)
 
 
 def test_reweighting_uses_each_portfolio_exposure_and_unions_duplicate_edges():
@@ -126,6 +127,73 @@ def test_one_sided_metrics_keep_null_and_sort_by_value():
     assert fractions[1].baseline == .7 and fractions[1].candidate is None
     assert all(d.delta is None for d in fractions)
     assert any("not treated as zero" in n for n in result.notes)
+
+
+def test_fraction_changes_precede_counts_with_magnitude_and_deterministic_ties(monkeypatch):
+    import hoc.portfolio.compare as module
+    from hoc.contract import MetricFact
+
+    before = analysis([(A, .6), (B, .4)])
+    after = analysis([(B, .7), (A, .3)], "ZZSCEN")
+    facts = [
+        ("dep.ZZOLD", "fraction", .8, None),
+        ("dep.ZZNEW", "fraction", None, .9),
+        ("dep.ZZFALL", "fraction", .6, .2),
+        ("facility.ZZRISE", "fraction", .1, .4),
+        ("critical.ZZSTILL", "fraction", .5, .5),
+        ("dep.ZZSTILL", "fraction", .5, .5),
+        ("dep.ZZFALL.companies", "count", 5, 2),
+        ("dep.ZZNEW.companies", "count", None, 2),
+        ("spof.count", "count", 1, 1),
+    ]
+
+    def metrics(companies, edges):
+        side = 2 if companies[0].company_key == A else 3
+        return [MetricFact(metric_id=row[0], label=row[0], unit=row[1], value=row[side])
+                for row in reversed(facts) if row[side] is not None]
+
+    monkeypatch.setattr(module, "compute_dependency_metrics", metrics)
+    result = compare(before, after, {A: [], B: []})
+    assert [d.metric_id for d in result.dependency_deltas] == [
+        "dep.ZZNEW", "dep.ZZOLD", "dep.ZZFALL", "facility.ZZRISE",
+        "critical.ZZSTILL", "dep.ZZSTILL", "dep.ZZFALL.companies",
+        "dep.ZZNEW.companies", "spof.count",
+    ]
+    assert result.dependency_deltas[0].baseline is None
+    assert result.dependency_deltas[0].delta is None
+    assert result.dependency_deltas[2].delta == pytest.approx(-.4)
+    assert result.dependency_deltas[6].delta == -3
+
+
+def test_known_no_sec_filing_is_named_separately_from_unknown_cache_misses():
+    before = analysis([(A, .6), (C, .4)])
+    after = analysis([(C, .5), (B, .3), (A, .2)], "ZZSCEN")
+    result = compare(before, after, {A: []}, top_n=3, company_statuses={C: "no_sec_filing"})
+    assert result.status == "partial"
+    assert [c.company_key for c in result.candidate_unanalysed] == [C, B]
+    assert any("ZZ Company 3 in the scenario has no SEC filing" in n for n in result.notes)
+    assert any("ZZ Company 3 in the current portfolio has no SEC filing" in n for n in result.notes)
+    assert any("1 scenario company" in n and "available SEC filings" in n for n in result.notes)
+    assert not any("current portfolio also has" in n for n in result.notes)
+
+
+def test_only_no_sec_filing_missing_does_not_promise_find_dependencies_will_fill_it():
+    before = analysis([(A, 1)])
+    after = analysis([(C, 1)], "ZZSCEN")
+    result = compare(before, after, {A: []}, company_statuses={C: "no_sec_filing"})
+    assert result.status == "partial" and result.candidate_unanalysed[0].company_key == C
+    assert any("has no SEC filing" in n for n in result.notes)
+    assert not any("Find dependencies" in n or "without a cached extraction" in n for n in result.notes)
+
+
+def test_unknown_filing_availability_is_not_inferred_from_company_key():
+    key = "ALIAS:ZZNONUS"
+    before = analysis([(A, 1)])
+    after = analysis([(key, 1)], "ZZSCEN")
+    result = compare(before, after, {A: []})
+    assert result.status == "partial"
+    assert not any("has no SEC filing" in n for n in result.notes)
+    assert any("available SEC filings" in n for n in result.notes)
 
 
 def test_alias_resolution_replaces_stale_cached_keys_and_respects_portfolio_priority():
