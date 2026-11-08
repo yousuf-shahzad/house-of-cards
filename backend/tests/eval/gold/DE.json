@@ -347,6 +347,54 @@
         "DE-B1"
       ],
       "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "DE-P1",
+      "edge_type": "customer",
+      "target_name": "The Home Depot",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "although the segment also builds turf products for sale by mass retailers, including The Home Depot and Lowe's.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "pooled",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [],
+      "notes": "Pooled (lead): The Home Depot is named as a mass-retail channel for Deere turf products. Prediction edge_e60d52406d66."
+    },
+    {
+      "id": "DE-P2",
+      "edge_type": "customer",
+      "target_name": "Lowe's",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "although the segment also builds turf products for sale by mass retailers, including The Home Depot and Lowe's.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "pooled",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [],
+      "notes": "Pooled (lead): Lowe's is named as a mass-retail channel for Deere turf products. Prediction edge_a31a7be471da."
+    },
+    {
+      "id": "DE-P3",
+      "edge_type": "key_input",
+      "target_name": "rare earth minerals",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "certain of our products, including motors, batteries, and other components, rely on rare earth minerals for their manufacturing, of which a significant majority are sourced from China.",
+      "importance": "high",
+      "tier": "extended",
+      "source": "pooled",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [],
+      "notes": "Pooled (lead): Rare earth minerals singled out as an input, a significant majority sourced from China. Prediction edge_448da3c0e5ef."
     }
   ],
   "negatives": [

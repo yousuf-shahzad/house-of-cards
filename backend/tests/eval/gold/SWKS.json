@@ -801,6 +801,22 @@
         "SWKS-38"
       ],
       "notes": "Item 1A; specifically identified raw materials/components used by manufacturing."
+    },
+    {
+      "id": "SWKS-P1",
+      "edge_type": "customer",
+      "target_name": "Unnamed Customer",
+      "target_kind": "unnamed_customer",
+      "direction": "target_depends_on_company",
+      "quote": "In each of fiscal 2025, fiscal 2024, and fiscal 2023, one customer accounted for greater than ten percent of our net revenue.",
+      "importance": "high",
+      "tier": "extended",
+      "source": "pooled",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [],
+      "notes": "Pooled (lead): One unnamed customer above 10% of net revenue (policy 2). Prediction edge_bc723b6898e2."
     }
   ],
   "negatives": [

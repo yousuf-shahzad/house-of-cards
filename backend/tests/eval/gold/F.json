@@ -560,6 +560,38 @@
         "F-1"
       ],
       "notes": "Item 1 Raw Materials; explicit purchased input, key_input base 0.6; no specific sole source attributed."
+    },
+    {
+      "id": "F-P1",
+      "edge_type": "supplier",
+      "target_name": "ARC Automotive",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "In addition, NHTSA is considering action related to 52 million vehicles containing inflators from ARC Automotive and Delphi Automotive in the United States. Ford has 2.5 million vehicles within this population.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "pooled",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [],
+      "notes": "Pooled (lead): Ford has 2.5 million vehicles with ARC inflators: a supplier relationship evidenced in the filing. Prediction edge_cf85a07ce5ef."
+    },
+    {
+      "id": "F-P2",
+      "edge_type": "supplier",
+      "target_name": "Delphi Automotive",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "In addition, NHTSA is considering action related to 52 million vehicles containing inflators from ARC Automotive and Delphi Automotive in the United States. Ford has 2.5 million vehicles within this population.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "pooled",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [],
+      "notes": "Pooled (lead): Ford has 2.5 million vehicles with Delphi inflators: a supplier relationship evidenced in the filing. Prediction edge_a7c38c5f5085."
     }
   ],
   "negatives": [

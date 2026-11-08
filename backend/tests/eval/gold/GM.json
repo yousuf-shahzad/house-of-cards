@@ -468,6 +468,38 @@
         "GM-B1"
       ],
       "notes": "Item 1; JV supplies battery cells; supplier base 0.5."
+    },
+    {
+      "id": "GM-P1",
+      "edge_type": "jv_partner",
+      "target_name": "SAIC General Motors Sales Co., Ltd.",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "Includes sales by the Automotive China Joint Ventures (Automotive China JVs): SAIC General Motors Sales Co., Ltd. (SGMS) and SAIC GM Wuling Automobile Co., Ltd. (SGMW).",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "pooled",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [],
+      "notes": "Pooled (lead): SGMS is one of GM's named Automotive China joint ventures. Prediction edge_d3d268649da2."
+    },
+    {
+      "id": "GM-P2",
+      "edge_type": "jv_partner",
+      "target_name": "SAIC GM Wuling Automobile Co., Ltd.",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "Includes sales by the Automotive China Joint Ventures (Automotive China JVs): SAIC General Motors Sales Co., Ltd. (SGMS) and SAIC GM Wuling Automobile Co., Ltd. (SGMW).",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "pooled",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [],
+      "notes": "Pooled (lead): SGMW is one of GM's named Automotive China joint ventures. Prediction edge_85f1bd72c86f."
     }
   ],
   "negatives": [
