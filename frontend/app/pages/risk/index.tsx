@@ -54,21 +54,7 @@ import {
   TableRow,
 } from "@/components/base/table/table";
 import { cx } from "@/utils/cx";
-
-const SECTOR_LABELS: Record<Sector, string> = {
-  information_technology: "Information Technology",
-  financials: "Financials",
-  health_care: "Health Care",
-  consumer_discretionary: "Consumer Discretionary",
-  communication_services: "Communication Services",
-  industrials: "Industrials",
-  consumer_staples: "Consumer Staples",
-  energy: "Energy",
-  utilities: "Utilities",
-  real_estate: "Real Estate",
-  materials: "Materials",
-  unknown: "Unknown / Unclassified",
-};
+import { SECTOR_LABELS, largestCountryShock, largestIndustryShock } from "./shocks";
 
 const SECTOR_COLORS: Record<Sector, ChipColor> = {
   information_technology: "blue",
@@ -360,6 +346,8 @@ export default function RiskPage() {
 
   const { concentration, coverage, sectors, etfs, attributions, warnings } = analysis;
   const hhiMeta = diversificationVerdict({ hhi: concentration.hhi, sectors });
+  const largestIndustry = largestIndustryShock(sectors);
+  const largestCountry = largestCountryShock(analysis.exposures);
   const selectedTopNWeight =
     topNMode === "top5"
       ? concentration.top5
@@ -960,13 +948,22 @@ export default function RiskPage() {
                 className="flex flex-col gap-2 rounded-2xl border border-separator-border bg-background-primary-default p-3.5"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Chip variant="subtle" color={SECTOR_COLORS[sec.sector] ?? "neutral"}>
                       {SECTOR_LABELS[sec.sector] ?? sec.sector}
                     </Chip>
                     <span className="text-caption-1-regular text-text-tertiary tabular-nums">
                       ({formatPct(shareOfCovered, 1)} of covered equity)
                     </span>
+                    {largestIndustry && sec.sector === largestIndustry.key && (
+                      <a
+                        href={largestIndustry.href}
+                        className="inline-flex items-center gap-1 rounded-lg border border-border-button-default bg-background-secondary-default px-2 py-0.5 text-caption-1-medium text-text-primary transition-colors hover:bg-background-primary-hover focus-visible:ring-2 focus-visible:ring-border-focus-ring outline-none"
+                      >
+                        <span>What if it fails?</span>
+                        <RiArrowRightUpLine className="size-3.5" aria-hidden />
+                      </a>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-3">
@@ -1031,6 +1028,38 @@ export default function RiskPage() {
             );
           })}
         </div>
+
+        {largestCountry && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-separator-border bg-background-primary-default p-3.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-body-2-medium text-text-secondary">Largest known country:</span>
+              <Chip variant="subtle" color="cyan">
+                {largestCountry.label} ({largestCountry.code})
+              </Chip>
+              <Pct
+                value={largestCountry.weight}
+                digits={2}
+                className="text-body-semibold text-text-primary"
+              />
+              <span className="text-caption-1-regular text-text-tertiary tabular-nums">
+                ({largestCountry.companyCount}{" "}
+                {largestCountry.companyCount === 1 ? "company" : "companies"}
+                {largestCountry.unknownWeight > 0
+                  ? `; country isn't reported for ${formatPct(largestCountry.unknownWeight, 1)} of the portfolio`
+                  : ""}
+                )
+              </span>
+            </div>
+
+            <a
+              href={largestCountry.href}
+              className="inline-flex items-center gap-1 rounded-lg border border-border-button-default bg-background-secondary-default px-2.5 py-1 text-caption-1-medium text-text-primary transition-colors hover:bg-background-primary-hover focus-visible:ring-2 focus-visible:ring-border-focus-ring outline-none"
+            >
+              <span>What if it fails?</span>
+              <RiArrowRightUpLine className="size-3.5" aria-hidden />
+            </a>
+          </div>
+        )}
       </section>
 
       {/* Section 4: ETF Sources, Disclosure Dates & Attribution Table */}
