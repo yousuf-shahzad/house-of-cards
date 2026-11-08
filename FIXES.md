@@ -19,10 +19,14 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
-### FIX-26 · low · AI idea text can show a number without saying what it is
+### FIX-26 · medium · AI idea text can show a number without saying what it is (reopened: the #202 rewrite garbles text)
 Live: the VTV idea's rationale reads "...reduces reliance on 12.41%". The placeholder rendered TSMC's dependency value without its name.
 - Fix: the rationale checker rejects (or the renderer rewrites) a dependency placeholder that isn't next to the company it describes, e.g. "12.41% reliance on Taiwan Semiconductor". Add a test.
-- **Owner:** Gawyn's Gemini (`hoc/graph/idea_proposer.py`) · **Status:** assigned
+- **Live after #202 (lead):** the rewrite inserts the metric's label, not the company name, and does it even when the sentence already names the subject:
+  - VTV: "reduces 12.41% reliance on Portfolio exposure that depends on OpenAI"
+  - SCHD: "dilutes the 8.13% Portfolio exposure that depends on graphics processing units reliance on chip hardware"
+- **New fix:** don't rewrite. If a `dep.*` placeholder isn't next to its subject's display name (the company or input name, e.g. "OpenAI", never the label), drop the rationale (`None`). The card then shows Python's reason, which is always correct. Add tests with both live sentences.
+- **Owner:** Gawyn's Gemini (`hoc/graph/idea_proposer.py`) · **Status:** assigned (reopened)
 
 ### FIX-23 · high · Dependencies page is overloaded and scrolls too long (Gawyn, 07:40)
 Make these four sections collapsible:
