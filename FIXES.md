@@ -31,6 +31,19 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
+### FIX-33 · high · Importance scoring bugs from the FIX-30 audit (issue #216, A + C + reverse links)
+Reproduced offline by Codex:
+- **(A) The wrong customer's share.** `_customer_base_score` takes the largest % anywhere in the quote. With qualifier "8% of revenue" and quote "ZZ represented 8%…; Another Company represented 22%", it scores 0.90 / critical and cites 22%. Fix: use only a share grounded to this target (the qualifier, or the % in the clause naming the target); otherwise leave the amount unknown.
+- **(C) Offices scored as factories.** "office facilities" matches the production regex and scores 0.70 / high. Fix: office/headquarters is 0.30 unless there's real production evidence; generic "facilities" isn't evidence.
+- **Reverse links.** A supplier saying "Nvidia is 30% of our sales" shows the supplier depends on Nvidia, not how much Nvidia depends on that supplier. Fix: don't let a reverse customer edge's revenue share raise the buyer's `critical.*`; cap it at medium unless the buyer's own filing supports more.
+- **Then:** the lead re-checks `critical.*` numbers live. Docs that quote "critically dependent … 12.39%" may change, and Gawyn's Gemini updates them.
+- **Owner:** Gawyn's Gemini (`hoc/graph/importance.py`, `metrics.py`) · **Status:** assigned
+
+### FIX-34 · high · An unsupported "sole source" flag can make an ordinary supplier critical (issue #216, B)
+`extractor.verify_and_build_edges` copies the model's raw `sole_source=True`. `verify_quote` checks only the quote and name, so "We buy components from ZZ alongside several other vendors" with `sole_source=True` passes with no flags and becomes 0.95 / critical.
+- Fix: ground `sole_source`, and any revenue-share qualifier, in the target-specific quote (sole/single/only source wording near the target) before it can raise importance. If it's unsupported, keep the ordinary supplier link, drop the flag, and add a rules flag. Add tests from the issue.
+- **Owner:** Kendrick's Gemini (`hoc/ai/extractor.py`, `hoc/ai/interpretation.py`) · **Status:** assigned
+
 ### FIX-32 · low · Beginner wording polish from Kendrick's Gemini's review of #214
 - `guide/sentence.ts` `formatFindingOneLiner`: accept both "->" and "→", and map the trailing tag ("(jv_partner)" → "partnership with", customer → "sales to", default → "reliance on"). Drop "single-source". Then "Nvidia -> OpenAI (jv_partner)" reads "Checked: Nvidia's partnership with OpenAI — still unclear".
 - `dependencies/index.tsx` ClaimCard: when collapsed, hide the cited-metric chips too, so a folded card is just the title, one sentence and "Full detail".
@@ -50,7 +63,7 @@ From Codex's FIX-30 audit:
   - Walkthrough tips are optional and can be dismissed. No 5-step funnel; you can go anywhere.
   - Needs `workspace.tsx`, `experience.tsx` and `onboarding/welcome-dialog.tsx`.
   - **On hold until Gawyn decides,** because it replaces the 5-step guide Gawyn chose.
-- **Owner:** Yousuf's Codex · **Status:** audit in progress; dashboard waiting for Gawyn
+- **Owner:** Yousuf's Codex · **Status:** audit done (issue #216, split into FIX-31, FIX-33, FIX-34); walkthrough waiting for Gawyn
 
 ### FIX-22 · medium · Research time budgets are too tight
 In the FIX-1 live check, 4 of 23 light findings stopped after one tool call ("step budget expired"), and 15 of 45 thorough findings were skipped ("time budget reached").
