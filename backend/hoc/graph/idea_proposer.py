@@ -30,7 +30,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
-from hoc.ai.client import GeminiClient, GeminiError, GeminiQuotaError
+import httpx
+
+from hoc.ai.client import GeminiClient, GeminiQuotaError
 from hoc.config import DEFAULT_EXTRACTOR_MODEL, DEFAULT_ORCHESTRATOR_MODEL, Settings
 from hoc.contract import EtfHoldings, PortfolioItem, Sector
 from hoc.contract.api import AnalysisResponse, CompanyExposure, EtfReport
@@ -806,6 +808,18 @@ def verify_raw_proposals(
     return verified, rejected
 
 
+def _is_timeout_exception(exc: BaseException | None) -> bool:
+    """Return True only when `exc` (or its cause/context chain) is `TimeoutError` or `httpx.TimeoutException`."""
+    seen: set[int] = set()
+    cur = exc
+    while cur is not None and id(cur) not in seen:
+        seen.add(id(cur))
+        if isinstance(cur, (TimeoutError, httpx.TimeoutException)):
+            return True
+        cur = cur.__cause__ or cur.__context__
+    return False
+
+
 class IdeaProposer:
     """Proposes ETF additions/swaps with Gemini 4 Argon (Flash fallback) and caches on disk."""
 
@@ -957,6 +971,7 @@ class IdeaProposer:
         *,
         timeout_s: float = 90.0,
     ) -> tuple[dict[str, Any], str]:
+        _ = timeout_s
         client = self._ai_client
         if client is None and self._http_client is not None:
             client = GeminiClient(
@@ -965,7 +980,6 @@ class IdeaProposer:
                 api_key=self._resolve_api_key(),
                 extractor_model=self._fallback_model,
                 orchestrator_model=self._model,
-                timeout=timeout_s,
             )
         if client is None:
             raise RuntimeError("No AI client or HTTP client configured")
@@ -1128,11 +1142,7 @@ class IdeaProposer:
                     last_exc = fb_exc
 
         if raw_payload is None:
-            is_timeout = isinstance(last_exc, TimeoutError) or (
-                last_exc is not None and "timeout" in str(last_exc).lower()
-            )
-            if isinstance(last_exc, GeminiError) and "timeout" in str(last_exc).lower():
-                is_timeout = True
+            is_timeout = _is_timeout_exception(last_exc)
             return IdeaProposerResult(
                 ai_status="timeout" if is_timeout else "failed",
                 model=used_model,
