@@ -34,22 +34,6 @@ Seen by Bekarys's Gemini on NKE: the agent added a new link "Three largest custo
 - Fix: when merging an agent's new links, skip an `unnamed_customer` link whose source, link type and normalised quote already match an existing link. Treat groups like "three largest customers" as not a link.
 - **Owner:** Kendrick's Gemini (fold into A1-fix) · **Status:** assigned
 
-### FIX-3 · high · Simple page 4–5 AI text is too long
-- Fix:
-  - Show `plain_title` + `plain_text`, with the full text under "Read more".
-  - If those are missing, use a one-line fallback ("12% of your money depends on Taiwan Semiconductor").
-  - The first-sentence splitter must not cut at "Co., Ltd.", "Inc.", "U.S." or "No.", with a test.
-- **Owner:** Yousuf's Gemini (package K1) · **Status:** in progress (branch `28-v3.1-k1-guide-steps45`)
-
-### FIX-4 · high · Page 4 blames the companies when the AI check can't run (issue #151)
-With no AI key or SEC contact, page 4 says "We could check 0%".
-- Fix: say "The AI check couldn't run on this computer", and show "no problems found" only when the insights are ok.
-- **Owner:** Yousuf's Gemini (K1) · **Status:** in progress
-
-### FIX-5 · high · Simple page 4 has no progress bar or "Go deeper"
-- Fix: reuse the Dependencies page bar (Reading reports → Double-checking findings → Writing summary), plus one "Go deeper" button after a light run.
-- **Owner:** Yousuf's Gemini (K1) · **Status:** in progress
-
 ### FIX-6 · high · Pitch deck numbers are wrong
 `PITCH_DECK.md` has these errors:
 - Its "unseen annual reports" test is our development portfolio, and it leaves out the real held-out evaluation.
@@ -70,6 +54,7 @@ Fix:
 
 ### FIX-9 · medium · Final QA of both views
 - Fix: once everything above merges, audit the full and simple views end to end; send problems to their owners.
+- Also test with no AI key or SEC contact: page 4 must say "The AI check couldn't run on this computer" (FIX-4 was checked in code only).
 - **Owner:** Bekarys's Gemini · **Status:** waiting
 
 ### FIX-10 · low · One AI summary title doesn't match its text
@@ -82,18 +67,19 @@ The plan asked for the research trace to show live during the run.
 - Fix:
   - The job exposes findings as each agent finishes.
   - The Dependencies page and simple page 4 show them.
-- **Owner:** Bekarys's Claude (job) + Yousuf's Gemini (pages) · **Status:** open, after FIX-1 and FIX-5
+- **Owner:** Bekarys's Claude (job; adds `DependencyJob.research`, lead-approved) + Yousuf's Gemini (pages) · **Status:** assigned, job part starts after FIX-1
 
 ### FIX-12 · low · 7 links cite the section "document" instead of a 10-K Item
 These are 6 Microsoft links and 1 Alphabet link. Their quotes are exact, but the evidence panel can't say which part of the report they're from.
-- **Owner:** Yousuf's Codex (filings) · **Status:** open
+- **Owner:** Yousuf's Codex (filings) · **Status:** in progress (branch `28-fix-12-filing-sections`)
 
 ### FIX-13 · low · PR #25 (AgentVerse kit) has been open since 2026-11-07
 - Fix: merge it or close it.
-- **Owner:** Bekarys (whichever agent opened it) · **Status:** open
+- **Owner:** Bekarys (whichever agent opened it) · **Status:** on hold (Bekarys asked to leave it open)
 
 ## Done (checked on `main` by the lead)
 
+- FIX-3 short AI cards on simple pages 4–5, "Read more", a splitter that keeps "Co., Ltd." whole; FIX-4 "couldn't run on this computer" (#151, checked in code); FIX-5 page 4 progress bar and "Go deeper" that updates in place — #166
 - Try a change: starts from your portfolio, updates on its own, 4 rows — #156, #163
 - Dependencies page progress bar and a single "Go deeper" — #160, #161
 - Research agents, first version (follow-ups are FIX-1 and FIX-2) — #162
