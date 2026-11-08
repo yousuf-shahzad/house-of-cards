@@ -30,18 +30,20 @@ runs, so **read the numbers off the screen**, not this page.
 - **1:10, enter shares, not percentages (Portfolio):** Switch to **Shares**: IVV **120**, QQQ **50**, and pin EEM
   at **20%**. Valued at the latest exchange closes: **$121,446.60**, IVV **58.39%**, QQQ **21.61%**, EEM **20%**.
   Unpinned rows rescale around the pinned one; the analysis updates on every page.
-- **1:35, go one level deeper (Dependencies):** Load the US core example again and open **Dependencies**. Find
-  dependencies read the latest 10-K/20-F of the top 15 companies (14 had one; Samsung has no SEC filing) plus
-  other companies' filings that name them: **139 verified links from 22 filings**.
-- **1:55, the single point of failure:** **12.39%** of the portfolio depends on **TSMC**, through 4 companies, and
-  **9.42%** on Samsung, which has no SEC filing of its own and shows up only because other companies' filings
-  name it (Qualcomm's 10-K calls it a foundry, a supplier and a customer). "TSMC" and "Taiwan Semiconductor
-  Manufacturing Company Limited" are one node because names are matched exactly, never by the AI.
-- **2:15, prove it:** click a TSMC edge. The evidence drawer shows the **verbatim quote**, the section, the form, the
-  filing date and the SEC link. Every quote is checked word for word against the filing; the audit bar counts what
-  was rejected.
-- **2:35, the AI synthesis:** read one **critical flaw** and one **diversification idea**. Every number in them is a
+The Dependencies page reads top to bottom: audit bar, AI synthesis, key numbers, graph, facilities.
+
+- **1:35, go one level deeper (Dependencies, audit bar):** Load the US core example again and open
+  **Dependencies**. Find dependencies read the latest 10-K/20-F of the top 15 companies (14 had one; Samsung has
+  no SEC filing) plus other companies' filings that name them: **139 verified links from 22 filings**. Every quote
+  was checked word for word against its filing; the audit bar counts what was rejected.
+- **1:55, the AI synthesis:** read one **critical flaw** and one **diversification idea**. Every number in them is a
   Python metric; a claim with any other number was dropped (the audit bar shows how many).
+- **2:15, the single point of failure (key numbers):** **12.39%** of the portfolio depends on **TSMC**, through
+  4 companies, and **9.42%** on Samsung, which has no SEC filing of its own and shows up only because other
+  companies' filings name it (Qualcomm's 10-K calls it a foundry, a supplier and a customer). "TSMC" and "Taiwan
+  Semiconductor Manufacturing Company Limited" are one node because names are matched exactly, never by the AI.
+- **2:35, prove it (graph):** click a TSMC edge. The evidence drawer shows the **verbatim quote**, the section, the
+  form, the filing date and the SEC link. Scroll on to facilities by country if time allows.
 - **2:50, close with the limits:** filings cover about **45%** of the portfolio, big customers are usually unnamed,
   and annual reports can be a year old. House of Cards says so on screen instead of guessing.
 
