@@ -1,0 +1,1348 @@
+{
+  "exported_at": "2026-11-08T09:47:00Z",
+  "endpoint_analysis": "/api/analysis",
+  "endpoint_dependencies": "/api/dependencies",
+  "request": {
+    "holdings": [
+      {
+        "ticker": "QQQ",
+        "allocation": 0.5
+      },
+      {
+        "ticker": "XLK",
+        "allocation": 0.5
+      }
+    ],
+    "top_n": 15
+  },
+  "app_overlap": {
+    "etf_a": "QQQ",
+    "etf_b": "XLK",
+    "shared_securities": 35,
+    "shared_companies": 35,
+    "weighted_overlap": 0.501063,
+    "weighted_overlap_securities": 0.501063,
+    "top_shared": [
+      {
+        "company_key": "CIK:0001045810",
+        "company_name": "Nvidia",
+        "weight_a": 0.075968,
+        "weight_b": 0.147598,
+        "min_weight": 0.075968
+      },
+      {
+        "company_key": "CIK:0000320193",
+        "company_name": "Apple Inc.",
+        "weight_a": 0.066676,
+        "weight_b": 0.168695,
+        "min_weight": 0.066676
+      },
+      {
+        "company_key": "CIK:0000789019",
+        "company_name": "Microsoft",
+        "weight_a": 0.043473,
+        "weight_b": 0.133655,
+        "min_weight": 0.043473
+      },
+      {
+        "company_key": "CIK:0000002488",
+        "company_name": "Advanced Micro Devices",
+        "weight_a": 0.041026,
+        "weight_b": 0.040137,
+        "min_weight": 0.040137
+      },
+      {
+        "company_key": "CIK:0000723125",
+        "company_name": "Micron Technology",
+        "weight_a": 0.05638,
+        "weight_b": 0.03303,
+        "min_weight": 0.03303
+      },
+      {
+        "company_key": "CIK:0001730168",
+        "company_name": "Broadcom",
+        "weight_a": 0.028099,
+        "weight_b": 0.046582,
+        "min_weight": 0.028099
+      },
+      {
+        "company_key": "CIK:0000858877",
+        "company_name": "Cisco",
+        "weight_a": 0.020052,
+        "weight_b": 0.025655,
+        "min_weight": 0.020052
+      },
+      {
+        "company_key": "CIK:0000050863",
+        "company_name": "Intel",
+        "weight_a": 0.030395,
+        "weight_b": 0.017655,
+        "min_weight": 0.017655
+      },
+      {
+        "company_key": "CIK:0000006951",
+        "company_name": "Applied Materials",
+        "weight_a": 0.024862,
+        "weight_b": 0.017236,
+        "min_weight": 0.017236
+      },
+      {
+        "company_key": "CIK:0000707549",
+        "company_name": "Lam Research",
+        "weight_a": 0.023471,
+        "weight_b": 0.015759,
+        "min_weight": 0.015759
+      }
+    ]
+  },
+  "app_etfs": [
+    {
+      "ticker": "QQQ",
+      "name": "Invesco QQQ Trust",
+      "source": "tickerinside",
+      "source_layer": "sec_nport",
+      "as_of": "2026-06-30",
+      "filing_url": "https://www.sec.gov/Archives/edgar/data/1067839/000106783926000030/",
+      "holdings_count": 102,
+      "company_count": 101,
+      "holdings_weight": 0.99927
+    },
+    {
+      "ticker": "XLK",
+      "name": "Technology Select Sector SPDR Fund",
+      "source": "tickerinside",
+      "source_layer": "issuer",
+      "as_of": "2026-11-05",
+      "filing_url": null,
+      "holdings_count": 76,
+      "company_count": 76,
+      "holdings_weight": 0.999408
+    }
+  ],
+  "app_analysed_companies": [
+    {
+      "company_key": "CIK:0000320193",
+      "company_name": "Apple Inc.",
+      "exposure": 0.1176855,
+      "status": "cached",
+      "extraction_quality": "sections",
+      "filing": {
+        "company_key": "CIK:0000320193",
+        "form": "10-K",
+        "accession": "0000320193-26-000026",
+        "filed": "2026-11-03",
+        "url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm"
+      },
+      "verified_edges": 12,
+      "rejected_edges": 0,
+      "message": null
+    },
+    {
+      "company_key": "CIK:0001045810",
+      "company_name": "Nvidia",
+      "exposure": 0.111783,
+      "status": "cached",
+      "extraction_quality": "sections",
+      "filing": {
+        "company_key": "CIK:0001045810",
+        "form": "10-K",
+        "accession": "0001045810-26-000021",
+        "filed": "2026-02-25",
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm"
+      },
+      "verified_edges": 12,
+      "rejected_edges": 4,
+      "message": null
+    },
+    {
+      "company_key": "CIK:0000789019",
+      "company_name": "Microsoft",
+      "exposure": 0.088564,
+      "status": "cached",
+      "extraction_quality": "sections",
+      "filing": {
+        "company_key": "CIK:0000789019",
+        "form": "10-K",
+        "accession": "0001193125-26-323660",
+        "filed": "2026-07-29",
+        "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"
+      },
+      "verified_edges": 8,
+      "rejected_edges": 1,
+      "message": null
+    },
+    {
+      "company_key": "CIK:0000723125",
+      "company_name": "Micron Technology",
+      "exposure": 0.044705,
+      "status": "cached",
+      "extraction_quality": "sections",
+      "filing": {
+        "company_key": "CIK:0000723125",
+        "form": "10-K",
+        "accession": "0000723125-26-000023",
+        "filed": "2026-10-09",
+        "url": "https://www.sec.gov/Archives/edgar/data/723125/000072312526000023/mu-20260903.htm"
+      },
+      "verified_edges": 14,
+      "rejected_edges": 0,
+      "message": null
+    },
+    {
+      "company_key": "CIK:0000002488",
+      "company_name": "Advanced Micro Devices",
+      "exposure": 0.0405815,
+      "status": "cached",
+      "extraction_quality": "sections",
+      "filing": {
+        "company_key": "CIK:0000002488",
+        "form": "10-K",
+        "accession": "0000002488-26-000018",
+        "filed": "2026-02-04",
+        "url": "https://www.sec.gov/Archives/edgar/data/2488/000000248826000018/amd-20251227.htm"
+      },
+      "verified_edges": 12,
+      "rejected_edges": 1,
+      "message": null
+    },
+    {
+      "company_key": "CIK:0001730168",
+      "company_name": "Broadcom",
+      "exposure": 0.0373405,
+      "status": "cached",
+      "extraction_quality": "sections",
+      "filing": {
+        "company_key": "CIK:0001730168",
+        "form": "10-K",
+        "accession": "0001730168-25-000121",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/1730168/000173016825000121/avgo-20251102.htm"
+      },
+      "verified_edges": 6,
+      "rejected_edges": 1,
+      "message": null
+    },
+    {
+      "company_key": "CIK:0001652044",
+      "company_name": "Alphabet Inc.",
+      "exposure": 0.0314485,
+      "status": "cached",
+      "extraction_quality": "sections",
+      "filing": {
+        "company_key": "CIK:0001652044",
+        "form": "10-K",
+        "accession": "0001652044-26-000018",
+        "filed": "2026-02-05",
+        "url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204426000018/goog-20251231.htm"
+      },
+      "verified_edges": 1,
+      "rejected_edges": 1,
+      "message": null
+    },
+    {
+      "company_key": "CIK:0000050863",
+      "company_name": "Intel",
+      "exposure": 0.024025,
+      "status": "cached",
+      "extraction_quality": "fallback",
+      "filing": {
+        "company_key": "CIK:0000050863",
+        "form": "10-K",
+        "accession": "0000050863-26-000011",
+        "filed": "2026-01-23",
+        "url": "https://www.sec.gov/Archives/edgar/data/50863/000005086326000011/intc-20251227.htm"
+      },
+      "verified_edges": 11,
+      "rejected_edges": 2,
+      "message": null
+    },
+    {
+      "company_key": "CIK:0000858877",
+      "company_name": "Cisco",
+      "exposure": 0.0228535,
+      "status": "cached",
+      "extraction_quality": "sections",
+      "filing": {
+        "company_key": "CIK:0000858877",
+        "form": "10-K",
+        "accession": "0000858877-26-000132",
+        "filed": "2026-09-02",
+        "url": "https://www.sec.gov/Archives/edgar/data/858877/000085887726000132/csco-20260725.htm"
+      },
+      "verified_edges": 3,
+      "rejected_edges": 0,
+      "message": null
+    },
+    {
+      "company_key": "CIK:0000006951",
+      "company_name": "Applied Materials",
+      "exposure": 0.021049,
+      "status": "cached",
+      "extraction_quality": "sections",
+      "filing": {
+        "company_key": "CIK:0000006951",
+        "form": "10-K",
+        "accession": "0001628280-25-056742",
+        "filed": "2025-12-12",
+        "url": "https://www.sec.gov/Archives/edgar/data/6951/000162828025056742/amat-20251026.htm"
+      },
+      "verified_edges": 10,
+      "rejected_edges": 0,
+      "message": null
+    },
+    {
+      "company_key": "CIK:0001018724",
+      "company_name": "Amazon",
+      "exposure": 0.020112,
+      "status": "cached",
+      "extraction_quality": "sections",
+      "filing": {
+        "company_key": "CIK:0001018724",
+        "form": "10-K",
+        "accession": "0001018724-26-000004",
+        "filed": "2026-02-06",
+        "url": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000004/amzn-20251231.htm"
+      },
+      "verified_edges": 3,
+      "rejected_edges": 0,
+      "message": null
+    },
+    {
+      "company_key": "CIK:0000707549",
+      "company_name": "Lam Research",
+      "exposure": 0.019615,
+      "status": "cached",
+      "extraction_quality": "sections",
+      "filing": {
+        "company_key": "CIK:0000707549",
+        "form": "10-K",
+        "accession": "0000707549-26-000037",
+        "filed": "2026-08-07",
+        "url": "https://www.sec.gov/Archives/edgar/data/707549/000070754926000037/lrcx-20260628.htm"
+      },
+      "verified_edges": 9,
+      "rejected_edges": 1,
+      "message": null
+    },
+    {
+      "company_key": "CIK:0001321655",
+      "company_name": "Palantir Technologies",
+      "exposure": 0.0179255,
+      "status": "cached",
+      "extraction_quality": "sections",
+      "filing": {
+        "company_key": "CIK:0001321655",
+        "form": "10-K",
+        "accession": "0001321655-26-000011",
+        "filed": "2026-02-17",
+        "url": "https://www.sec.gov/Archives/edgar/data/1321655/000132165526000011/pltr-20251231.htm"
+      },
+      "verified_edges": 4,
+      "rejected_edges": 1,
+      "message": null
+    },
+    {
+      "company_key": "CIK:0001318605",
+      "company_name": "Tesla, Inc.",
+      "exposure": 0.0164815,
+      "status": "cached",
+      "extraction_quality": "sections",
+      "filing": {
+        "company_key": "CIK:0001318605",
+        "form": "10-K",
+        "accession": "0001628280-26-003952",
+        "filed": "2026-01-29",
+        "url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828026003952/tsla-20251231.htm"
+      },
+      "verified_edges": 12,
+      "rejected_edges": 0,
+      "message": null
+    },
+    {
+      "company_key": "CIK:0001327567",
+      "company_name": "Palo Alto Networks",
+      "exposure": 0.014746,
+      "status": "cached",
+      "extraction_quality": "sections",
+      "filing": {
+        "company_key": "CIK:0001327567",
+        "form": "10-K",
+        "accession": "0001327567-26-000023",
+        "filed": "2026-09-10",
+        "url": "https://www.sec.gov/Archives/edgar/data/1327567/000132756726000023/panw-20260731.htm"
+      },
+      "verified_edges": 6,
+      "rejected_edges": 0,
+      "message": null
+    }
+  ],
+  "app_company_edges": [
+    {
+      "edge_id": "edge_653d4051e741",
+      "source_company_key": "CIK:0000320193",
+      "source_company_name": "Apple Inc.",
+      "edge_type": "jv_partner",
+      "target_name": "Google LLC",
+      "target_key": "CIK:0001652044",
+      "sole_source": false,
+      "qualifier": "licensing arrangements to offer search services",
+      "importance": {
+        "score": 0.4,
+        "tier": "medium",
+        "reasons": [
+          "Joint-venture partner relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0000320193",
+        "form": "10-K",
+        "accession": "0000320193-26-000026",
+        "filed": "2026-11-03",
+        "url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm"
+      }
+    },
+    {
+      "edge_id": "edge_9a12535f8c84",
+      "source_company_key": "CIK:0001045810",
+      "source_company_name": "Nvidia",
+      "edge_type": "foundry",
+      "target_name": "Taiwan Semiconductor Manufacturing Company Limited",
+      "target_key": "ALIAS:TSMC",
+      "sole_source": false,
+      "qualifier": "semiconductor wafers",
+      "importance": {
+        "score": 0.9,
+        "tier": "critical",
+        "reasons": [
+          "Foundry relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0001045810",
+        "form": "10-K",
+        "accession": "0001045810-26-000021",
+        "filed": "2026-02-25",
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm"
+      }
+    },
+    {
+      "edge_id": "edge_c332d7abd590",
+      "source_company_key": "CIK:0001045810",
+      "source_company_name": "Nvidia",
+      "edge_type": "foundry",
+      "target_name": "Samsung Electronics Co., Ltd.",
+      "target_key": "ALIAS:SAMSUNG_ELEC",
+      "sole_source": false,
+      "qualifier": "semiconductor wafers",
+      "importance": {
+        "score": 0.9,
+        "tier": "critical",
+        "reasons": [
+          "Foundry relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0001045810",
+        "form": "10-K",
+        "accession": "0001045810-26-000021",
+        "filed": "2026-02-25",
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm"
+      }
+    },
+    {
+      "edge_id": "edge_21caa3f2ca88",
+      "source_company_key": "CIK:0001045810",
+      "source_company_name": "Nvidia",
+      "edge_type": "supplier",
+      "target_name": "SK Hynix Inc.",
+      "target_key": "SYM:000660.KR",
+      "sole_source": false,
+      "qualifier": "memory supplier",
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Supplier relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0001045810",
+        "form": "10-K",
+        "accession": "0001045810-26-000021",
+        "filed": "2026-02-25",
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm"
+      }
+    },
+    {
+      "edge_id": "edge_2ec349d0b585",
+      "source_company_key": "CIK:0001045810",
+      "source_company_name": "Nvidia",
+      "edge_type": "supplier",
+      "target_name": "Micron Technology, Inc.",
+      "target_key": "CIK:0000723125",
+      "sole_source": false,
+      "qualifier": "memory supplier",
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Supplier relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0001045810",
+        "form": "10-K",
+        "accession": "0001045810-26-000021",
+        "filed": "2026-02-25",
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm"
+      }
+    },
+    {
+      "edge_id": "edge_57737c5ecd08",
+      "source_company_key": "CIK:0001045810",
+      "source_company_name": "Nvidia",
+      "edge_type": "supplier",
+      "target_name": "Samsung",
+      "target_key": "ALIAS:SAMSUNG_ELEC",
+      "sole_source": false,
+      "qualifier": "memory supplier",
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Supplier relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0001045810",
+        "form": "10-K",
+        "accession": "0001045810-26-000021",
+        "filed": "2026-02-25",
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm"
+      }
+    },
+    {
+      "edge_id": "edge_df766e3e8a15",
+      "source_company_key": "CIK:0001045810",
+      "source_company_name": "Nvidia",
+      "edge_type": "contract_manufacturer",
+      "target_name": "Hon Hai Precision Industry Co., Ltd.",
+      "target_key": "SYM:2317.TW",
+      "sole_source": false,
+      "qualifier": "assembly, testing and packaging of final products",
+      "importance": {
+        "score": 0.85,
+        "tier": "critical",
+        "reasons": [
+          "Contract manufacturer relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0001045810",
+        "form": "10-K",
+        "accession": "0001045810-26-000021",
+        "filed": "2026-02-25",
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm"
+      }
+    },
+    {
+      "edge_id": "edge_42f24b42cd8c",
+      "source_company_key": "CIK:0001045810",
+      "source_company_name": "Nvidia",
+      "edge_type": "contract_manufacturer",
+      "target_name": "Wistron Corporation",
+      "target_key": "SYM:3231.TW",
+      "sole_source": false,
+      "qualifier": "assembly, testing and packaging of final products",
+      "importance": {
+        "score": 0.85,
+        "tier": "critical",
+        "reasons": [
+          "Contract manufacturer relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0001045810",
+        "form": "10-K",
+        "accession": "0001045810-26-000021",
+        "filed": "2026-02-25",
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm"
+      }
+    },
+    {
+      "edge_id": "edge_8aacd4b84782",
+      "source_company_key": "CIK:0001045810",
+      "source_company_name": "Nvidia",
+      "edge_type": "contract_manufacturer",
+      "target_name": "Fabrinet",
+      "target_key": null,
+      "sole_source": false,
+      "qualifier": "assembly, testing and packaging of final products",
+      "importance": {
+        "score": 0.85,
+        "tier": "critical",
+        "reasons": [
+          "Contract manufacturer relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0001045810",
+        "form": "10-K",
+        "accession": "0001045810-26-000021",
+        "filed": "2026-02-25",
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm"
+      }
+    },
+    {
+      "edge_id": "edge_4e46e8f388b1",
+      "source_company_key": "CIK:0001045810",
+      "source_company_name": "Nvidia",
+      "edge_type": "supplier",
+      "target_name": "Groq, Inc.",
+      "target_key": null,
+      "sole_source": false,
+      "qualifier": "intellectual property license arrangement",
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Supplier relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0001045810",
+        "form": "10-K",
+        "accession": "0001045810-26-000021",
+        "filed": "2026-02-25",
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm"
+      }
+    },
+    {
+      "edge_id": "edge_54d78b8c43ba",
+      "source_company_key": "CIK:0001045810",
+      "source_company_name": "Nvidia",
+      "edge_type": "jv_partner",
+      "target_name": "OpenAI",
+      "target_key": null,
+      "sole_source": false,
+      "qualifier": "investment and partnership agreement",
+      "importance": {
+        "score": 0.4,
+        "tier": "medium",
+        "reasons": [
+          "Joint-venture partner relationship",
+          "Capped at medium: interpretation flagged"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0001045810",
+        "form": "10-K",
+        "accession": "0001045810-26-000021",
+        "filed": "2026-02-25",
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm"
+      }
+    },
+    {
+      "edge_id": "edge_8de7146b6a16",
+      "source_company_key": "CIK:0000789019",
+      "source_company_name": "Microsoft",
+      "edge_type": "jv_partner",
+      "target_name": "OpenAI",
+      "target_key": null,
+      "sole_source": false,
+      "qualifier": "long-term strategic partnership",
+      "importance": {
+        "score": 0.4,
+        "tier": "medium",
+        "reasons": [
+          "Joint-venture partner relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0000789019",
+        "form": "10-K",
+        "accession": "0001193125-26-323660",
+        "filed": "2026-07-29",
+        "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"
+      }
+    },
+    {
+      "edge_id": "edge_c056dd85c132",
+      "source_company_key": "CIK:0000723125",
+      "source_company_name": "Micron Technology",
+      "edge_type": "supplier",
+      "target_name": "Powerchip Semiconductor Manufacturing Corporation",
+      "target_key": null,
+      "sole_source": false,
+      "qualifier": "Vendor for wafer fabrication facility acquisition in Tongluo, Miaoli County, Taiwan",
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Supplier relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0000723125",
+        "form": "10-K",
+        "accession": "0000723125-26-000023",
+        "filed": "2026-10-09",
+        "url": "https://www.sec.gov/Archives/edgar/data/723125/000072312526000023/mu-20260903.htm"
+      }
+    },
+    {
+      "edge_id": "edge_6695eaf60fd8",
+      "source_company_key": "CIK:0000002488",
+      "source_company_name": "Advanced Micro Devices",
+      "edge_type": "customer",
+      "target_name": "OpenAI OpCo, LLC",
+      "target_key": null,
+      "sole_source": false,
+      "qualifier": "product purchase agreement to deploy 6 gigawatts of AMD GPUs",
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Customer relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0000002488",
+        "form": "10-K",
+        "accession": "0000002488-26-000018",
+        "filed": "2026-02-04",
+        "url": "https://www.sec.gov/Archives/edgar/data/2488/000000248826000018/amd-20251227.htm"
+      }
+    },
+    {
+      "edge_id": "edge_7ab194ddf17a",
+      "source_company_key": "CIK:0000002488",
+      "source_company_name": "Advanced Micro Devices",
+      "edge_type": "customer",
+      "target_name": "Sony",
+      "target_key": null,
+      "sole_source": false,
+      "qualifier": "semi-custom SoC products for game consoles",
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Customer relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0000002488",
+        "form": "10-K",
+        "accession": "0000002488-26-000018",
+        "filed": "2026-02-04",
+        "url": "https://www.sec.gov/Archives/edgar/data/2488/000000248826000018/amd-20251227.htm"
+      }
+    },
+    {
+      "edge_id": "edge_8ab497c9da24",
+      "source_company_key": "CIK:0000002488",
+      "source_company_name": "Advanced Micro Devices",
+      "edge_type": "customer",
+      "target_name": "Microsoft",
+      "target_key": "CIK:0000789019",
+      "sole_source": false,
+      "qualifier": "semi-custom SoC products for game consoles",
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Customer relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0000002488",
+        "form": "10-K",
+        "accession": "0000002488-26-000018",
+        "filed": "2026-02-04",
+        "url": "https://www.sec.gov/Archives/edgar/data/2488/000000248826000018/amd-20251227.htm"
+      }
+    },
+    {
+      "edge_id": "edge_f029373a7954",
+      "source_company_key": "CIK:0000002488",
+      "source_company_name": "Advanced Micro Devices",
+      "edge_type": "customer",
+      "target_name": "Valve",
+      "target_key": null,
+      "sole_source": false,
+      "qualifier": "semi-custom SoC products for Steam Machine PC",
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Customer relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0000002488",
+        "form": "10-K",
+        "accession": "0000002488-26-000018",
+        "filed": "2026-02-04",
+        "url": "https://www.sec.gov/Archives/edgar/data/2488/000000248826000018/amd-20251227.htm"
+      }
+    },
+    {
+      "edge_id": "edge_bb9f0d5c77d2",
+      "source_company_key": "CIK:0000002488",
+      "source_company_name": "Advanced Micro Devices",
+      "edge_type": "foundry",
+      "target_name": "Taiwan Semiconductor Manufacturing Company Limited",
+      "target_key": "ALIAS:TSMC",
+      "sole_source": false,
+      "qualifier": "production of wafers for HPC, FPGA and adaptive SoC products",
+      "importance": {
+        "score": 0.9,
+        "tier": "critical",
+        "reasons": [
+          "Foundry relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0000002488",
+        "form": "10-K",
+        "accession": "0000002488-26-000018",
+        "filed": "2026-02-04",
+        "url": "https://www.sec.gov/Archives/edgar/data/2488/000000248826000018/amd-20251227.htm"
+      }
+    },
+    {
+      "edge_id": "edge_4d48b6b676e5",
+      "source_company_key": "CIK:0000002488",
+      "source_company_name": "Advanced Micro Devices",
+      "edge_type": "foundry",
+      "target_name": "GLOBALFOUNDRIES Inc.",
+      "target_key": null,
+      "sole_source": false,
+      "qualifier": "wafer purchases for HPC products at 12 nm and 14 nm technology nodes",
+      "importance": {
+        "score": 0.9,
+        "tier": "critical",
+        "reasons": [
+          "Foundry relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0000002488",
+        "form": "10-K",
+        "accession": "0000002488-26-000018",
+        "filed": "2026-02-04",
+        "url": "https://www.sec.gov/Archives/edgar/data/2488/000000248826000018/amd-20251227.htm"
+      }
+    },
+    {
+      "edge_id": "edge_9dbeacce7d8d",
+      "source_company_key": "CIK:0000002488",
+      "source_company_name": "Advanced Micro Devices",
+      "edge_type": "foundry",
+      "target_name": "United Microelectronics Corporation",
+      "target_key": "SYM:2303.TW",
+      "sole_source": false,
+      "qualifier": "production of ICs in the form of programmable logic devices",
+      "importance": {
+        "score": 0.9,
+        "tier": "critical",
+        "reasons": [
+          "Foundry relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0000002488",
+        "form": "10-K",
+        "accession": "0000002488-26-000018",
+        "filed": "2026-02-04",
+        "url": "https://www.sec.gov/Archives/edgar/data/2488/000000248826000018/amd-20251227.htm"
+      }
+    },
+    {
+      "edge_id": "edge_9043454ba8ca",
+      "source_company_key": "CIK:0000002488",
+      "source_company_name": "Advanced Micro Devices",
+      "edge_type": "foundry",
+      "target_name": "Samsung Electronics Co., Ltd.",
+      "target_key": "ALIAS:SAMSUNG_ELEC",
+      "sole_source": false,
+      "qualifier": "production of ICs in the form of programmable logic devices",
+      "importance": {
+        "score": 0.9,
+        "tier": "critical",
+        "reasons": [
+          "Foundry relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0000002488",
+        "form": "10-K",
+        "accession": "0000002488-26-000018",
+        "filed": "2026-02-04",
+        "url": "https://www.sec.gov/Archives/edgar/data/2488/000000248826000018/amd-20251227.htm"
+      }
+    },
+    {
+      "edge_id": "edge_e3d90563ca13",
+      "source_company_key": "CIK:0000002488",
+      "source_company_name": "Advanced Micro Devices",
+      "edge_type": "jv_partner",
+      "target_name": "Tongfu Microelectronics Co., Ltd.",
+      "target_key": null,
+      "sole_source": false,
+      "qualifier": "party to two ATMP joint ventures",
+      "importance": {
+        "score": 0.4,
+        "tier": "medium",
+        "reasons": [
+          "Joint-venture partner relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0000002488",
+        "form": "10-K",
+        "accession": "0000002488-26-000018",
+        "filed": "2026-02-04",
+        "url": "https://www.sec.gov/Archives/edgar/data/2488/000000248826000018/amd-20251227.htm"
+      }
+    },
+    {
+      "edge_id": "edge_bf63aa6c904b",
+      "source_company_key": "CIK:0000002488",
+      "source_company_name": "Advanced Micro Devices",
+      "edge_type": "contract_manufacturer",
+      "target_name": "Siliconware Precision Industries Ltd.",
+      "target_key": null,
+      "sole_source": false,
+      "qualifier": "provides ATMP services",
+      "importance": {
+        "score": 0.85,
+        "tier": "critical",
+        "reasons": [
+          "Contract manufacturer relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0000002488",
+        "form": "10-K",
+        "accession": "0000002488-26-000018",
+        "filed": "2026-02-04",
+        "url": "https://www.sec.gov/Archives/edgar/data/2488/000000248826000018/amd-20251227.htm"
+      }
+    },
+    {
+      "edge_id": "edge_7694d16724c5",
+      "source_company_key": "CIK:0000002488",
+      "source_company_name": "Advanced Micro Devices",
+      "edge_type": "contract_manufacturer",
+      "target_name": "King Yuan Electronics Company",
+      "target_key": "SYM:2449.TW",
+      "sole_source": false,
+      "qualifier": "provides ATMP services",
+      "importance": {
+        "score": 0.85,
+        "tier": "critical",
+        "reasons": [
+          "Contract manufacturer relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0000002488",
+        "form": "10-K",
+        "accession": "0000002488-26-000018",
+        "filed": "2026-02-04",
+        "url": "https://www.sec.gov/Archives/edgar/data/2488/000000248826000018/amd-20251227.htm"
+      }
+    },
+    {
+      "edge_id": "edge_dc32efdbf6e4",
+      "source_company_key": "CIK:0000002488",
+      "source_company_name": "Advanced Micro Devices",
+      "edge_type": "jv_partner",
+      "target_name": "Higon Information Technology Co., Ltd.",
+      "target_key": null,
+      "sole_source": false,
+      "qualifier": "equity interests in two joint ventures",
+      "importance": {
+        "score": 0.4,
+        "tier": "medium",
+        "reasons": [
+          "Joint-venture partner relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0000002488",
+        "form": "10-K",
+        "accession": "0000002488-26-000018",
+        "filed": "2026-02-04",
+        "url": "https://www.sec.gov/Archives/edgar/data/2488/000000248826000018/amd-20251227.htm"
+      }
+    },
+    {
+      "edge_id": "edge_e4fad7fe20b1",
+      "source_company_key": "CIK:0001730168",
+      "source_company_name": "Broadcom",
+      "edge_type": "foundry",
+      "target_name": "TSMC",
+      "target_key": "ALIAS:TSMC",
+      "sole_source": false,
+      "qualifier": "produced approximately 95% of the wafers manufactured by our CMs",
+      "importance": {
+        "score": 0.9,
+        "tier": "critical",
+        "reasons": [
+          "Foundry relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0001730168",
+        "form": "10-K",
+        "accession": "0001730168-25-000121",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/1730168/000173016825000121/avgo-20251102.htm"
+      }
+    },
+    {
+      "edge_id": "edge_5938c3aede36",
+      "source_company_key": "CIK:0000050863",
+      "source_company_name": "Intel",
+      "edge_type": "foundry",
+      "target_name": "TSMC",
+      "target_key": "ALIAS:TSMC",
+      "sole_source": false,
+      "qualifier": "external foundry for tiles or entire product",
+      "importance": {
+        "score": 0.9,
+        "tier": "critical",
+        "reasons": [
+          "Foundry relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0000050863",
+        "form": "10-K",
+        "accession": "0000050863-26-000011",
+        "filed": "2026-01-23",
+        "url": "https://www.sec.gov/Archives/edgar/data/50863/000005086326000011/intc-20251227.htm"
+      }
+    },
+    {
+      "edge_id": "edge_51575039836a",
+      "source_company_key": "CIK:0000050863",
+      "source_company_name": "Intel",
+      "edge_type": "supplier",
+      "target_name": "ASML",
+      "target_key": "ALIAS:ASML",
+      "sole_source": true,
+      "qualifier": "EUV lithography tools",
+      "importance": {
+        "score": 0.95,
+        "tier": "critical",
+        "reasons": [
+          "Supplier relationship",
+          "Named as the sole source ('sole-source')"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0000050863",
+        "form": "10-K",
+        "accession": "0000050863-26-000011",
+        "filed": "2026-01-23",
+        "url": "https://www.sec.gov/Archives/edgar/data/50863/000005086326000011/intc-20251227.htm"
+      }
+    },
+    {
+      "edge_id": "edge_0fd0418294ee",
+      "source_company_key": "CIK:0000050863",
+      "source_company_name": "Intel",
+      "edge_type": "jv_partner",
+      "target_name": "UMC",
+      "target_key": "SYM:2303.TW",
+      "sole_source": false,
+      "qualifier": "strategic collaboration to develop a 12 nm process platform",
+      "importance": {
+        "score": 0.4,
+        "tier": "medium",
+        "reasons": [
+          "Joint-venture partner relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0000050863",
+        "form": "10-K",
+        "accession": "0000050863-26-000011",
+        "filed": "2026-01-23",
+        "url": "https://www.sec.gov/Archives/edgar/data/50863/000005086326000011/intc-20251227.htm"
+      }
+    },
+    {
+      "edge_id": "edge_af690e02c740",
+      "source_company_key": "CIK:0000707549",
+      "source_company_name": "Lam Research",
+      "edge_type": "customer",
+      "target_name": "Micron Technology, Inc.",
+      "target_key": "CIK:0000723125",
+      "sole_source": false,
+      "qualifier": "significant customer",
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Customer relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0000707549",
+        "form": "10-K",
+        "accession": "0000707549-26-000037",
+        "filed": "2026-08-07",
+        "url": "https://www.sec.gov/Archives/edgar/data/707549/000070754926000037/lrcx-20260628.htm"
+      }
+    },
+    {
+      "edge_id": "edge_202fe3ae90ca",
+      "source_company_key": "CIK:0000707549",
+      "source_company_name": "Lam Research",
+      "edge_type": "customer",
+      "target_name": "Samsung Electronics Company, Ltd.",
+      "target_key": "ALIAS:SAMSUNG_ELEC",
+      "sole_source": false,
+      "qualifier": "significant customer",
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Customer relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0000707549",
+        "form": "10-K",
+        "accession": "0000707549-26-000037",
+        "filed": "2026-08-07",
+        "url": "https://www.sec.gov/Archives/edgar/data/707549/000070754926000037/lrcx-20260628.htm"
+      }
+    },
+    {
+      "edge_id": "edge_72317154f636",
+      "source_company_key": "CIK:0000707549",
+      "source_company_name": "Lam Research",
+      "edge_type": "customer",
+      "target_name": "SK hynix Inc.",
+      "target_key": null,
+      "sole_source": false,
+      "qualifier": "significant customer",
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Customer relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0000707549",
+        "form": "10-K",
+        "accession": "0000707549-26-000037",
+        "filed": "2026-08-07",
+        "url": "https://www.sec.gov/Archives/edgar/data/707549/000070754926000037/lrcx-20260628.htm"
+      }
+    },
+    {
+      "edge_id": "edge_e270e3151acd",
+      "source_company_key": "CIK:0000707549",
+      "source_company_name": "Lam Research",
+      "edge_type": "customer",
+      "target_name": "Taiwan Semiconductor Manufacturing Company",
+      "target_key": "ALIAS:TSMC",
+      "sole_source": false,
+      "qualifier": "significant customer",
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Customer relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0000707549",
+        "form": "10-K",
+        "accession": "0000707549-26-000037",
+        "filed": "2026-08-07",
+        "url": "https://www.sec.gov/Archives/edgar/data/707549/000070754926000037/lrcx-20260628.htm"
+      }
+    },
+    {
+      "edge_id": "edge_7731c67c67b8",
+      "source_company_key": "CIK:0001321655",
+      "source_company_name": "Palantir Technologies",
+      "edge_type": "jv_partner",
+      "target_name": "SOMPO Holdings, Inc.",
+      "target_key": null,
+      "sole_source": false,
+      "qualifier": "jointly controlled entity in Japan created in November 2019",
+      "importance": {
+        "score": 0.4,
+        "tier": "medium",
+        "reasons": [
+          "Joint-venture partner relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0001321655",
+        "form": "10-K",
+        "accession": "0001321655-26-000011",
+        "filed": "2026-02-17",
+        "url": "https://www.sec.gov/Archives/edgar/data/1321655/000132165526000011/pltr-20251231.htm"
+      }
+    },
+    {
+      "edge_id": "edge_f2114f56f3c7",
+      "source_company_key": "CIK:0001321655",
+      "source_company_name": "Palantir Technologies",
+      "edge_type": "jv_partner",
+      "target_name": "HD Hyundai Co. Ltd.",
+      "target_key": null,
+      "sole_source": false,
+      "qualifier": "jointly-owned entity in South Korea created in December 2022",
+      "importance": {
+        "score": 0.4,
+        "tier": "medium",
+        "reasons": [
+          "Joint-venture partner relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0001321655",
+        "form": "10-K",
+        "accession": "0001321655-26-000011",
+        "filed": "2026-02-17",
+        "url": "https://www.sec.gov/Archives/edgar/data/1321655/000132165526000011/pltr-20251231.htm"
+      }
+    },
+    {
+      "edge_id": "edge_0df0c4e04c59",
+      "source_company_key": "CIK:0001321655",
+      "source_company_name": "Palantir Technologies",
+      "edge_type": "customer",
+      "target_name": "U.S. Army",
+      "target_key": null,
+      "sole_source": false,
+      "qualifier": "contracted to develop and deliver Tactical Intelligence Targeting Access Node ground station system",
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Customer relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0001321655",
+        "form": "10-K",
+        "accession": "0001321655-26-000011",
+        "filed": "2026-02-17",
+        "url": "https://www.sec.gov/Archives/edgar/data/1321655/000132165526000011/pltr-20251231.htm"
+      }
+    },
+    {
+      "edge_id": "edge_58a0d74f97b6",
+      "source_company_key": "CIK:0001318605",
+      "source_company_name": "Tesla, Inc.",
+      "edge_type": "supplier",
+      "target_name": "Panasonic",
+      "target_key": null,
+      "sole_source": false,
+      "qualifier": "lithium-ion battery cells supplier",
+      "importance": {
+        "score": 0.65,
+        "tier": "high",
+        "reasons": [
+          "Supplier relationship",
+          "Limited supply alternatives ('limited number of')",
+          "Dependency cue ('rely on')"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0001318605",
+        "form": "10-K",
+        "accession": "0001628280-26-003952",
+        "filed": "2026-01-29",
+        "url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828026003952/tsla-20251231.htm"
+      }
+    },
+    {
+      "edge_id": "edge_14b47573f36a",
+      "source_company_key": "CIK:0001318605",
+      "source_company_name": "Tesla, Inc.",
+      "edge_type": "supplier",
+      "target_name": "Contemporary Amperex Technology Co. Limited (CATL)",
+      "target_key": null,
+      "sole_source": false,
+      "qualifier": "lithium-ion battery cells supplier",
+      "importance": {
+        "score": 0.65,
+        "tier": "high",
+        "reasons": [
+          "Supplier relationship",
+          "Limited supply alternatives ('limited number of')",
+          "Dependency cue ('rely on')"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0001318605",
+        "form": "10-K",
+        "accession": "0001628280-26-003952",
+        "filed": "2026-01-29",
+        "url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828026003952/tsla-20251231.htm"
+      }
+    },
+    {
+      "edge_id": "edge_d191e00a9d96",
+      "source_company_key": "CIK:0001327567",
+      "source_company_name": "Palo Alto Networks",
+      "edge_type": "contract_manufacturer",
+      "target_name": "Flextronics International, Ltd.",
+      "target_key": null,
+      "sole_source": false,
+      "qualifier": "EMS provider",
+      "importance": {
+        "score": 0.85,
+        "tier": "critical",
+        "reasons": [
+          "Contract manufacturer relationship"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0001327567",
+        "form": "10-K",
+        "accession": "0001327567-26-000023",
+        "filed": "2026-09-10",
+        "url": "https://www.sec.gov/Archives/edgar/data/1327567/000132756726000023/panw-20260731.htm"
+      }
+    },
+    {
+      "edge_id": "edge_2c872501ec83",
+      "source_company_key": "CIK:0001327567",
+      "source_company_name": "Palo Alto Networks",
+      "edge_type": "contract_manufacturer",
+      "target_name": "Flex",
+      "target_key": "CIK:0000866374",
+      "sole_source": false,
+      "qualifier": "EMS provider",
+      "importance": {
+        "score": 0.9,
+        "tier": "critical",
+        "reasons": [
+          "Contract manufacturer relationship",
+          "Dependency cue ('depend on')"
+        ]
+      },
+      "filing": {
+        "company_key": "CIK:0001327567",
+        "form": "10-K",
+        "accession": "0001327567-26-000023",
+        "filed": "2026-09-10",
+        "url": "https://www.sec.gov/Archives/edgar/data/1327567/000132756726000023/panw-20260731.htm"
+      }
+    }
+  ]
+}
