@@ -10,6 +10,7 @@ from types import SimpleNamespace
 import pytest
 
 from hoc.config import Settings
+from hoc.contract import CompanyUnavailable
 from hoc.core.http import FakeHttpClient
 from hoc.filings.fetch import ARCHIVE_URL, SUBMISSIONS_URL, TICKERS_URL, FilingFetcher, FilingUnavailable
 
@@ -87,6 +88,7 @@ def test_no_sec_contact_means_no_request():
     with pytest.raises(FilingUnavailable) as exc:
         FilingFetcher(http, Settings()).latest(CIK)
     assert exc.value.status == "sec_contact_missing" and http.requests == []
+    assert isinstance(exc.value, CompanyUnavailable) and exc.value.message.startswith("Set HOC_SEC_CONTACT")
 
 
 def test_sec_errors_become_error_status():

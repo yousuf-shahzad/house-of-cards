@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Literal
 
-from hoc.contract import SourceError
+from hoc.contract import CompanyUnavailable, SourceError
 
 from .sections import section_map
 from .text import html_to_text, normalise
@@ -33,10 +33,11 @@ METADATA_TTL = timedelta(hours=24)
 SOURCE = "sec_filings"
 
 
-class FilingUnavailable(Exception):
+class FilingUnavailable(CompanyUnavailable):
+    """A CompanyUnavailable from the filings layer, so the job runner catches one type from filings and ai."""
+
     def __init__(self, status: FilingStatus, message: str) -> None:
-        super().__init__(message)
-        self.status = status
+        super().__init__(status, message)
 
 
 @dataclass(frozen=True)
