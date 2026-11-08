@@ -284,7 +284,7 @@ class EtfService:
                         rules.ai_status = "not_used"
                         rules.notes.append("AI ideas are busy; showing checked rules ideas.")
                         return rules
-                    job = self._idea_ai_pool.submit(self._compute_ai_ideas, request.model_copy(deep=True),
+                    job = self._idea_ai_pool.submit(self._run_ai_ideas, key, request.model_copy(deep=True),
                                                    context, rules.model_copy(deep=True), issues, cached_result)
                     entry = (now, job)
                     self._idea_ai_jobs[key] = entry
@@ -302,6 +302,18 @@ class EtfService:
             log.warning("AI change idea verification failed", exc_info=True)
             rules.ai_status = "failed"
             return rules
+
+    def _run_ai_ideas(self, key, *args):
+        try:
+            return self._compute_ai_ideas(*args)
+        finally:
+            # A slow Argon call gets the whole memo interval after it finishes.
+            # Submission holds this lock until its future is stored, so even an
+            # immediately completed task can safely update the matching entry.
+            with self._locks_guard:
+                entry = self._idea_ai_jobs.get(key)
+                if entry is not None:
+                    self._idea_ai_jobs[key] = (_clock(), entry[1])
 
     def _compute_ai_ideas(self, request, context, rules, issues, cached_result):
         """Load the universe and propose off the HTTP path, then measure on cached edges."""

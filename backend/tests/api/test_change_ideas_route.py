@@ -283,3 +283,25 @@ def test_disk_proposals_replay_across_service_restart_without_key(make_service, 
     replay = second.change_ideas(request)
     assert replay.ai_status == 'ok' and replay.ideas[0].proposed_by == 'ai'
     assert replay.ideas == original.ideas and model.calls == 1
+
+
+def test_ai_memo_interval_starts_when_slow_work_finishes(ideas_service, monkeypatch):
+    service, _, _ = ideas_service
+    proposer = DelayedIdeaProposer(status='timeout')
+    enable_ai(service, monkeypatch, proposer)
+    clock = [100.0]
+    monkeypatch.setattr('hoc.service._clock', lambda: clock[0])
+    request = ChangeIdeasRequest(holdings=BASELINE)
+    try:
+        service.change_ideas(request)
+        assert proposer.entered.wait(2)
+        clock[0] = 200.0
+        assert service.change_ideas(request).ai_status == 'pending'
+        clock[0] = 201.0
+    finally:
+        proposer.release.set()
+    wait_for_ai(service)
+    assert next(iter(service._idea_ai_jobs.values()))[0] == 201.0
+    clock[0] = 250.0
+    assert service.change_ideas(request).ai_status == 'timeout'
+    assert proposer.calls == 1
