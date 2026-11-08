@@ -327,3 +327,41 @@ def test_a_reverse_filer_that_is_a_holding_gets_its_portfolio_name(setup, make_s
     reverse_edges = [e for e in edges if e["edge_id"].startswith("rev-")]
     assert reverse_edges and all(e["source_company_name"] != "ZZ SEC TITLE INC" for e in reverse_edges)
     assert {e["source_company_name"] for e in reverse_edges} == {c.company_name for c in top}
+
+
+class InsightsRecorder(FakePipeline):
+    """Records the cache_only flag of every insights call; insights stay metrics_only like a cache-only miss."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.insights_calls: list[bool] = []
+
+    def insights(self, analysis, edges, *, cache_only):
+        self.insights_calls.append(cache_only)
+        return super().insights(analysis, edges, cache_only=cache_only)
+
+
+def test_a_click_upgrades_an_all_cached_warm_up_with_metrics_only_insights(setup):
+    _, service, pipeline = setup(InsightsRecorder())
+    request = DependencyRequest(holdings=HOLDINGS, top_n=2)
+    warm = service.submit_dependencies(request, cache_only=True)
+    assert {c.status for c in warm.companies} == {"cached"} and warm.result.insights.status == "metrics_only"
+    clicked = service.submit_dependencies(request)
+    assert clicked.job_id == warm.job_id
+    assert pipeline.insights_calls == [True, False]  # the click re-ran the orchestrator live
+
+
+def test_a_click_joining_a_running_warm_up_finishes_it_live(setup, monkeypatch):
+    monkeypatch.setattr("hoc.jobs.SUBMIT_WAIT_SECONDS", 0.0)
+    gate = threading.Event()
+    _, service, pipeline = setup(InsightsRecorder(gate=gate), inline=False)
+    request = DependencyRequest(holdings=HOLDINGS, top_n=2)
+    warm = service.submit_dependencies(request, cache_only=True, wait=0)
+    clicked = service.submit_dependencies(request, wait=0)
+    assert clicked.job_id == warm.job_id and clicked.status in ("queued", "running")
+    gate.set()
+    deadline = time.monotonic() + 10
+    while service.dependency_job(warm.job_id).status != "done":
+        assert time.monotonic() < deadline
+        time.sleep(0.02)
+    assert pipeline.insights_calls == [False]  # one job, finished with the live orchestrator

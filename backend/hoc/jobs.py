@@ -288,6 +288,8 @@ class DependencyJobs:
             self._evict()
             job = self._jobs.get(job_id)
             start = job is None or self._replace(job, cache_only)
+            if not start and job.cache_only and not cache_only and job.status in ("queued", "running"):
+                job.cache_only = False  # a real click joined the warm-up replay: finish it live
             if start:
                 job = _Job(job_id=job_id, request=request, analysis=analysis, top=top, cache_only=cache_only,
                            companies=[CompanyRunStatus(company_key=c.company_key, company_name=c.company_name,
@@ -320,12 +322,17 @@ class DependencyJobs:
 
     @staticmethod
     def _replace(job: _Job, cache_only: bool) -> bool:
-        """Rerun a failed job, and let a real click upgrade a finished cache-only (warm-up) replay that
-        missed some companies."""
+        """Rerun a failed job, and let a real click upgrade a finished cache-only (warm-up) replay that missed
+        some companies OR has no live insights (metrics_only / missing_api_key: e.g. every company was cached
+        but the orchestrator cache missed after a metrics or prompt change). Cached companies replay fast."""
         if job.status == "error":
             return True
-        return (job.cache_only and not cache_only and job.status == "done"
-                and any(c.status not in ("cached", "done") for c in job.companies))
+        if not (job.cache_only and not cache_only and job.status == "done"):
+            return False
+        missed = any(c.status not in ("cached", "done") for c in job.companies)
+        no_live_insights = job.result is not None and job.result.insights.status in ("metrics_only",
+                                                                                      "missing_api_key")
+        return missed or no_live_insights
 
     def _evict(self) -> None:
         cutoff = time.monotonic() - JOB_RETENTION_SECONDS
