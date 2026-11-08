@@ -509,6 +509,68 @@ def test_v31_plain_title_and_plain_text_verification_and_null_fallback(tmp_path:
     assert "58.00%" in s1.text
 
 
+def test_fix10_plain_title_must_be_supported_by_plain_text(tmp_path: Path) -> None:
+    """FIX-10: plain_title must not claim counts ('two chip makers') or entities not in plain_text."""
+    analysis = _sample_analysis()
+    edges = _sample_edges()
+
+    def fake_llm(*, model: str, **_: Any) -> dict[str, Any]:
+        return {
+            "flaws": [
+                # 1. Title says "two chip makers" while plain_text names only ZZ Epsilon Semiconductor -> plain_title dropped
+                {
+                    "title": "Critical foundry bottleneck at ZZ Epsilon Semiconductor",
+                    "text": "{{metric:dep.ALIAS:ZZEPSILON}} depends on ZZ Epsilon Semiconductor.",
+                    "plain_title": "Heavy reliance on two chip makers",
+                    "plain_text": "{{metric:dep.ALIAS:ZZEPSILON}} of your money depends on ZZ Epsilon Semiconductor.",
+                    "severity": "critical",
+                    "cited_metric_ids": ["dep.ALIAS:ZZEPSILON"],
+                    "cited_edge_ids": ["e-alp-foundry-eps"],
+                    "entities": ["ZZ Epsilon Semiconductor", "ZZ Alpha Corp"],
+                },
+                # 2. Title names Taiwan while plain_text mentions only ZZ Epsilon Semiconductor -> plain_title dropped
+                {
+                    "title": "Foundry and Taiwan assembly concentration",
+                    "text": (
+                        "{{metric:dep.ALIAS:ZZEPSILON}} depends on ZZ Epsilon Semiconductor and "
+                        "{{metric:facility.TW}} relies on Taiwan."
+                    ),
+                    "plain_title": "Factories clustered in Taiwan",
+                    "plain_text": "{{metric:dep.ALIAS:ZZEPSILON}} of your money depends on ZZ Epsilon Semiconductor.",
+                    "severity": "warning",
+                    "cited_metric_ids": ["dep.ALIAS:ZZEPSILON", "facility.TW"],
+                    "cited_edge_ids": ["e-alp-foundry-eps", "e-alp-facility-tw"],
+                    "entities": ["ZZ Epsilon Semiconductor", "Taiwan"],
+                },
+            ],
+            "suggestions": [
+                # 3. Title names Taiwan and plain_text also names Taiwan -> both kept
+                {
+                    "title": "Balance Taiwan assembly footprint",
+                    "text": "{{metric:facility.TW}} relies on final assembly in Taiwan.",
+                    "plain_title": "Spread factories beyond Taiwan",
+                    "plain_text": "{{metric:facility.TW}} of your money relies on factories in Taiwan.",
+                    "severity": "info",
+                    "cited_metric_ids": ["facility.TW"],
+                    "cited_edge_ids": ["e-alp-facility-tw"],
+                    "entities": ["Taiwan"],
+                },
+            ],
+        }
+
+    orch = DependencyOrchestrator(ai_client=fake_llm, cache_dir=tmp_path)
+    _, res = orch.insights(analysis, edges)
+    assert res.status == "ok"
+    assert len(res.flaws) == 2
+    assert res.flaws[0].plain_title is None
+    assert res.flaws[0].plain_text == "58.00% of your money depends on ZZ Epsilon Semiconductor."
+    assert res.flaws[1].plain_title is None
+    assert res.flaws[1].plain_text == "58.00% of your money depends on ZZ Epsilon Semiconductor."
+    assert len(res.suggestions) == 1
+    assert res.suggestions[0].plain_title == "Spread factories beyond Taiwan"
+    assert res.suggestions[0].plain_text == "34.00% of your money relies on factories in Taiwan."
+
+
 def test_fake_gemini_client_default_orchestrator_response_integration(
     tmp_path: Path,
 ) -> None:
