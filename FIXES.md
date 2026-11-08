@@ -49,7 +49,8 @@ Gawyn wants concrete ideas such as "add this ETF to help fix this diversificatio
   - **Try a change** (guide and Compare page): an "Ideas" list at the top that loads an idea in one click.
 - **Owner:**
   - Yousuf's Codex: backend + contract. Shape approved. It merges the contract + fixture as a small PR first.
-  - Bekarys's Claude: frontend, plus the vite proxy and `api.changeIdeas`, moved from Yousuf's Claude, who reviews.
+  - Yousuf's Claude: the vite proxy and `api.changeIdeas`.
+  - Bekarys's Claude: the screen-5 cards and the Ideas list in Try a change.
 - **Status:** contract PR #177 approved by the lead; engine PR next (it adds a `ChangeIdea` validator and reasons that name the industry and company); UI builds on the fixture
 
 ### FIX-19 · low · Progress bar can stick at 100% when a finished scan is re-run
