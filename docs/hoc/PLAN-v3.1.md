@@ -47,9 +47,12 @@ Everything is delegated. My part is the contract, approvals and verification.
 | F2 | Remove the duplicate "See what you own →" button (`pick.tsx:357`) | Yousuf's Gemini | |
 | F3 | Remove the "#" rankings on page 2 (`own.tsx:71`) | Yousuf's Gemini | |
 | F4 | **Industry concentration in the verdict** (both modes) | Gawyn's Gemini (owns `app/ui/concentration.ts` and the risk page) | See the detail below this table. |
-| F5 | **Plain AI text** | Gawyn's Gemini (orchestrator) + Kendrick's Claude (steps 4–5) | See the detail below this table. |
-| F6 | **"Try a change" redesign** | Kendrick's Claude (handoff of `pages/compare` + `scenario.tsx`; Yousuf's Claude reviews) + Yousuf's Codex (`top_sector` delta in `hoc/portfolio/compare.py`) | See the detail below this table. |
-| F7 | **Progress bar + "Go deeper"** | Yousuf's Gemini (Dependencies page + `dependencies-state.tsx`) + Kendrick's Claude (guide step 4) | See the detail below this table. |
+| F5 | **Plain AI text** | Gawyn's Gemini (orchestrator) + Yousuf's Gemini (steps 4–5, package K1) | See the detail below this table. |
+| F6 | **"Try a change" redesign** | Bekarys's Claude (package K2, PR #163; handoff of `pages/compare` + `scenario.tsx`; Yousuf's Claude reviews) + Yousuf's Codex (`top_sector` delta in `hoc/portfolio/compare.py`) | See the detail below this table. |
+| F7 | **Progress bar + "Go deeper"** | Yousuf's Gemini (Dependencies page + `dependencies-state.tsx`, and guide step 4 in K1) | See the detail below this table. |
+| A1-fix | **Real agentic loop** (from the live check: most findings were one lookup; Go deeper dropped light edges) | Kendrick's Gemini | Re-finding the edge's own quote isn't a confirmation; light needs 2+ tool calls, thorough 3+ including a `search_filings`; thorough keeps every unrejected light edge. |
+
+Reassigned 2026-11-08 (at Gawyn's request): Kendrick's Claude's v3.1 items went to Yousuf's Gemini (K1: F5 cards, #151, F7 guide step 4) and Bekarys's Claude (K2: F6). Its folders moved too; see the ownership table in `AGENTS.md`.
 | QA | Final audit of both modes + docs | Bekarys's Gemini (QA), Gawyn's Gemini (docs PR #132) | After everything merges. |
 
 **A1, agentic sub-agents.** Each company's sub-agent becomes a loop:
@@ -81,8 +84,8 @@ Reuse `ResearchLoop` (`hoc/research/loop.py`) in a per-company scope. Every new 
 
 **F5, plain AI text.**
 - **Gawyn's Gemini (orchestrator):** the prompt asks Argon for `plain_title` / `plain_text` (prompt bump). Python verifies them with the same placeholder, number and name rules and drops either field if it fails.
-- **Kendrick's Claude (steps 4–5):** show `plain_title` + `plain_text` only. Fall back to a deterministic one-liner from the claim's first cited fraction metric ("12% of your money depends on Taiwan Semiconductor"). The full text sits behind "Read more".
-- **Kendrick's Claude:** also fix **#151** (a "couldn't run on this computer" line when coverage is `not_analysed`; no "no problems" line unless insights are `ok`).
+- **Yousuf's Gemini (steps 4–5, K1):** show `plain_title` + `plain_text` only. Fall back to a deterministic one-liner from the claim's first cited fraction metric ("12% of your money depends on Taiwan Semiconductor"). The full text sits behind "Read more".
+- **Yousuf's Gemini (K1):** also fix **#151** (a "couldn't run on this computer" line when coverage is `not_analysed`; no "no problems" line unless insights are `ok`).
 
 **F6, "Try a change" redesign.**
 - **Shared component** `app/ui/try-a-change.tsx`.
