@@ -129,7 +129,7 @@ def normalise_etf(raw: RawEtfHoldings, reference: ReferenceProvider, aliases: Al
         excluded_weight=wsum(e.weight for e in excluded),
         unmatched_weight=wsum(h.weight for h in holdings if h.identity_status == "unmatched"),
         sector_weights=sector_weights, sector_basis=sector_basis, raw_line_count=len(raw.holdings),
-        warnings=[Notice(code="source_warning", message=w) for w in raw.warnings],
+        warnings=[Notice(code="source_warning", message=w) for w in raw.warnings], price=raw.price,
         normaliser_version=NORMALISER_VERSION,
     )
 
