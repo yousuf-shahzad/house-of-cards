@@ -134,12 +134,37 @@ def _dependencies(comparison: CompareResponse) -> list[MetricDelta]:
 
 
 def _sector_data_preserved(before: AnalysisResponse, after: AnalysisResponse) -> bool:
-    """Missing industry labels must not create an apparent diversification gain."""
+    """Allow less sector data only if the largest industry improves in the worst case."""
     def known_share(analysis):
         covered = analysis.coverage.covered_weight
         return analysis.coverage.sector_known_weight / covered if covered > 0 else 0
 
-    return known_share(after) + EPSILON >= known_share(before)
+    lost_share = known_share(before) - known_share(after)
+    if lost_share <= EPSILON:
+        return True
+    # Keep the same covered-company denominator as the coverage check. Charge all
+    # newly unknown exposure to the candidate's largest industry, never to zero.
+    newly_unknown = lost_share * after.coverage.covered_weight
+    largest_before = max((s.weight for s in before.sectors if s.sector != Sector.unknown), default=0)
+    largest_after = max((s.weight for s in after.sectors if s.sector != Sector.unknown), default=0)
+    return largest_before - largest_after - newly_unknown > WORSENING_TOLERANCE + EPSILON
+
+
+def _sector_coverage_rejection(scenario: IdeaScenario) -> str:
+    """Explain the actual gap without calling a fully labelled ETF unavailable."""
+    ticker = scenario.ticker
+    report = next((etf for etf in scenario.analysis.etfs if etf.ticker == ticker), None)
+    if report is None or report.sector_basis == "none":
+        detail = f"{ticker}'s industry breakdown isn't available"
+    elif any(part.etf_ticker == ticker and part.contribution > EPSILON
+             for sector in scenario.analysis.sectors if sector.sector == Sector.unknown
+             for part in sector.by_etf):
+        detail = f"{ticker}'s industry breakdown is incomplete"
+    else:
+        detail = (f"{ticker}'s industry breakdown is available, but this change leaves existing holdings "
+                  "with missing industry labels as a larger share of covered company exposure")
+    return (f"{detail}. Counting the newly missing industry labels toward the largest industry, "
+            f"its share would not fall by more than {WORSENING_TOLERANCE * 100:g} percentage points.")
 
 
 def baseline_idea_metrics(request: ChangeIdeasRequest, baseline: AnalysisResponse,
@@ -318,7 +343,7 @@ def rank_change_ideas(
                 reject(_explain_rejection(error))
                 continue
             if not _sector_data_preserved(baseline, scenario.analysis):
-                reject("sector_coverage_decreased")
+                reject(_sector_coverage_rejection(scenario))
                 continue
             if (concentration["top_sector"].baseline > 0
                     and concentration["top_sector"].delta > WORSENING_TOLERANCE + EPSILON):

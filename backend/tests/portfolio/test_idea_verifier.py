@@ -3,13 +3,14 @@ from dataclasses import replace
 
 import pytest
 
-from hoc.contract import Sector
+from hoc.contract import PortfolioItem, PortfolioRequest, Sector
 from hoc.graph.idea_proposer import (
     EtfUniverseEntry,
     IdeaProposerResult,
     RawIdeaProposal,
     build_portfolio_issues,
 )
+from hoc.portfolio.analyse import analyse
 from hoc.portfolio.ideas import (
     baseline_idea_metrics,
     build_proposal_scenarios,
@@ -146,6 +147,64 @@ def test_unknown_candidate_industries_never_create_a_verified_gain():
     proposal = proposal_for(request, baseline, loaded)
     result = verify(request, baseline, loaded, scenarios, [proposal])
     assert not result.ideas and any('missing industry' in r.reason for r in result.rejected_proposals)
+    assert "ZZADD's industry breakdown isn't available" in result.rejected_proposals[0].reason
+
+
+@pytest.mark.parametrize('action,source', [('add', None), ('swap', 'ZZBASE')])
+def test_ai_uses_fund_reported_industries_when_holding_labels_are_unavailable(action, source):
+    candidate = fund('ZZADD', [.01] * 100, [Sector.unknown]).model_copy(update={
+        'sector_basis': 'fund_reported', 'sector_weights': {Sector.financials: 1.0}})
+    request, baseline, loaded, scenarios = setup(candidates=[candidate])
+    proposal = proposal_for(request, baseline, loaded, action=action, swap_from=source)
+    result = verify(request, baseline, loaded, scenarios, [proposal])
+    assert not result.rejected_proposals
+    assert result.ideas[0].proposed_by == 'ai'
+    assert result.ideas[0].addresses == 'top_sector'
+    delta = next(d for d in result.ideas[0].concentration_deltas if d.name == 'top_sector')
+    assert (delta.baseline, delta.candidate) == pytest.approx((.51, .408))
+
+
+@pytest.mark.parametrize('action,source', [('add', None), ('swap', 'ZZBASE')])
+def test_partial_industries_can_pass_only_with_a_worst_case_gain(action, source):
+    candidate = fund('ZZADD', [.98, .02], [Sector.financials, Sector.unknown])
+    request, baseline, loaded, scenarios = setup(candidates=[candidate])
+    proposal = proposal_for(request, baseline, loaded, action=action, swap_from=source)
+    result = verify(request, baseline, loaded, scenarios, [proposal])
+    assert not result.rejected_proposals
+    assert result.ideas[0].proposed_by == 'ai'
+    delta = next(d for d in result.ideas[0].concentration_deltas if d.name == 'top_sector')
+    assert delta.baseline - delta.candidate - .2 * .02 > .005
+
+
+@pytest.mark.parametrize('technology,unknown', [(.50, .02), (.48, .01), (.479, .01)])
+def test_partial_industries_reject_a_gain_that_fails_the_worst_case_margin(technology, unknown):
+    candidate = fund('ZZADD', [technology, 1-technology-unknown, unknown],
+                     [Sector.information_technology, Sector.health_care, Sector.unknown])
+    request, baseline, loaded, scenarios = setup(candidates=[candidate])
+    result = verify(request, baseline, loaded, scenarios, [proposal_for(request, baseline, loaded)])
+    assert not result.ideas
+    assert "ZZADD's industry breakdown is incomplete" in result.rejected_proposals[0].reason
+    assert '0.5 percentage points' in result.rejected_proposals[0].reason
+
+
+def test_complete_candidate_does_not_get_an_unavailable_breakdown_explanation():
+    candidate = fund('ZZADD', [.00995] * 100, [Sector.unknown]).model_copy(update={
+        'sector_basis': 'fund_reported', 'sector_weights': {
+            Sector.information_technology: .50745, Sector.health_care: .48755}})
+    request, _, loaded, _ = setup(candidates=[candidate])
+    loaded['ZZUNKNOWN'] = fund('ZZUNKNOWN', [.01] * 100, [Sector.unknown])
+    request.holdings = [PortfolioItem(ticker='ZZBASE', allocation=.6),
+                        PortfolioItem(ticker='ZZUNKNOWN', allocation=.4)]
+    baseline = analyse(PortfolioRequest(holdings=request.holdings), loaded, {},
+                       today=candidate.as_of, generated_at=candidate.retrieved_at)
+    proposal = proposal_for(request, baseline, loaded, action='swap', swap_from='ZZBASE',
+                            issue_id='top10', addresses='top10', metric_id=None,
+                            rationale_template='Consider a broader company mix.')
+    result = verify(request, baseline, loaded, [], [proposal])
+    assert not result.ideas
+    reason = result.rejected_proposals[0].reason
+    assert "ZZADD's industry breakdown is available" in reason
+    assert 'existing holdings with missing industry labels' in reason
 
 
 def test_every_ai_proposal_is_accounted_for_in_selected_or_rejected_results():
