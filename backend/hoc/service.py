@@ -11,12 +11,14 @@ import logging
 import threading
 import time
 from collections.abc import Sequence
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor, TimeoutError
 from datetime import UTC, datetime
 
 from hoc import __version__
 from hoc.contract import (
     AnalysisResponse,
+    ChangeIdeasRequest,
+    ChangeIdeasResponse,
     CompareRequest,
     CompareResponse,
     DependencyJob,
@@ -53,6 +55,7 @@ from hoc.jobs import (
 from hoc.normalise.pipeline import normalise_etf
 from hoc.portfolio.analyse import analyse
 from hoc.portfolio.compare import compare_portfolios, read_cached_extractions
+from hoc.portfolio.ideas import IDEA_TICKERS, build_idea_scenarios, rank_change_ideas
 from hoc.portfolio.validation import validate_request
 from hoc.portfolio.valuation import value_portfolio
 
@@ -60,6 +63,9 @@ MAX_WORKERS = 8
 MEMO_TTL_SECONDS = 24 * 3600
 """How long a loaded ETF is reused in memory: the source TTL, so a long-running API picks up new disclosures."""
 log = logging.getLogger("hoc.service")
+IDEAS_WAIT_SECONDS = 9.0
+IDEAS_TTL_SECONDS = 60.0
+IDEAS_MAX_KEYS = 32
 
 
 def _clock() -> float:
@@ -88,6 +94,8 @@ class EtfService:
         self.research_runner = NotWiredResearch()
         """A-RES behind hoc.jobs.ResearchRunner; set before the first research request."""
         self._research: ResearchJobs | None = None
+        self._ideas_pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="hoc-ideas")
+        self._ideas: dict[tuple, tuple[float, Future]] = {}
 
     @classmethod
     def from_settings(cls, settings) -> EtfService:
@@ -148,6 +156,68 @@ class EtfService:
                                       DEFAULT_ORCHESTRATOR_MODEL)))
         cached = read_cached_extractions(self.settings.cache_dir, keys, models=models, prompt_version=PROMPT_VERSION)
         return compare_portfolios(request, baseline, candidate, cached, aliases=self.aliases)
+
+    def change_ideas(self, request: ChangeIdeasRequest) -> ChangeIdeasResponse:
+        """Bound the HTTP wait, share in-flight work and cache each holdings key for one minute.
+
+        Loading source holdings may outlast the wait; a later call reuses that work.
+        The fixed shortlist and two-worker pool bound concurrent idea computations.
+        No dependency job, filing fetch, researcher or model client is invoked.
+        """
+        validate_request(PortfolioRequest(holdings=request.holdings))
+        key = (tuple(sorted((h.ticker, h.allocation) for h in request.holdings)), request.top_n)
+        with self._locks_guard:
+            now = _clock()
+            self._ideas = {k: v for k, v in self._ideas.items()
+                           if not v[1].done() or now - v[0] < IDEAS_TTL_SECONDS}
+            entry = self._ideas.get(key)
+            if entry is None:
+                # Never let many distinct cold portfolios create an unbounded queue.
+                if len(self._ideas) >= IDEAS_MAX_KEYS:
+                    return ChangeIdeasResponse(status="partial", notes=[
+                        "Change ideas are busy; try again shortly. Skipped candidates: " + ", ".join(IDEA_TICKERS)])
+                future = self._ideas_pool.submit(self._compute_change_ideas, request.model_copy(deep=True))
+                self._ideas[key] = (now, future)
+            else:
+                future = entry[1]
+        try:
+            return future.result(timeout=IDEAS_WAIT_SECONDS).model_copy(deep=True)
+        except TimeoutError:
+            return ChangeIdeasResponse(status="partial", notes=[
+                "ETF data is still loading; try again shortly. Skipped candidates for this response: "
+                + ", ".join(IDEA_TICKERS)])
+        except Exception:
+            with self._locks_guard:
+                self._ideas.pop(key, None)
+            raise
+
+    def _compute_change_ideas(self, request: ChangeIdeasRequest) -> ChangeIdeasResponse:
+        from hoc.ai import PROMPT_VERSION
+        from hoc.config import DEFAULT_EXTRACTOR_MODEL, DEFAULT_ORCHESTRATOR_MODEL
+
+        baseline = self.analyse(PortfolioRequest(holdings=request.holdings))
+        current = {h.ticker for h in request.holdings}
+        # No candidate fetches when the current portfolio is incomplete or already full.
+        from hoc.contract import MAX_ETFS
+
+        candidates = ([t for t in IDEA_TICKERS if t not in current]
+                      if len(current) < MAX_ETFS and baseline.coverage.missing_allocation == 0 else [])
+        results = self._load_many([*current, *candidates])
+        loaded = {t: r for t, r in results.items() if isinstance(r, EtfHoldings)}
+        notes = []
+        for ticker in candidates:
+            etf = results[ticker]
+            if isinstance(etf, EtfFailure):
+                notes.append(f"Skipped {ticker}: {etf.message}")
+            elif etf.holdings_weight < 0.95:
+                notes.append(f"Skipped {ticker}: less than 95% of the fund has usable company holdings.")
+        scenarios = build_idea_scenarios(request, baseline, loaded, candidates)
+        keys = {c.company_key for a in [baseline, *(s.analysis for s in scenarios)]
+                for c in a.exposures[:request.top_n]}
+        models = tuple(dict.fromkeys((self.settings.gemini_extractor_model, DEFAULT_EXTRACTOR_MODEL,
+                                      DEFAULT_ORCHESTRATOR_MODEL)))
+        cached = read_cached_extractions(self.settings.cache_dir, keys, models=models, prompt_version=PROMPT_VERSION)
+        return rank_change_ideas(request, baseline, scenarios, cached, aliases=self.aliases, notes=notes)
 
     @property
     def dependency_jobs(self) -> DependencyJobs:

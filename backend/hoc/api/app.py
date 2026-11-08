@@ -164,7 +164,7 @@ def compare(service: Service, request: CompareRequest) -> CompareResponse:
              responses={k: ERRORS[k] for k in (422, 503)})
 def change_ideas(service: Service, request: ChangeIdeasRequest) -> ChangeIdeasResponse:
     """Test a fixed ETF shortlist at ten and twenty percent, using cached dependencies only."""
-    return ChangeIdeasResponse(status="partial", notes=["ETF change ideas are not available yet."])
+    return service.change_ideas(request)
 
 
 @router.post("/dependencies", response_model=DependencyJob, responses={
