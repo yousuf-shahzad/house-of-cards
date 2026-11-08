@@ -26,6 +26,8 @@ from hoc import __version__
 from hoc.config import Settings
 from hoc.contract import (
     AnalysisResponse,
+    ChangeIdeasRequest,
+    ChangeIdeasResponse,
     CompareRequest,
     CompareResponse,
     DependencyJob,
@@ -156,6 +158,13 @@ def compare(service: Service, request: CompareRequest) -> CompareResponse:
     """Before/after comparison of two portfolios. Cache-only: never fetches a filing or calls Gemini; status
     is 'partial' when some of the candidate's top companies have no cached extraction yet."""
     return service.compare(request)
+
+
+@router.post("/change-ideas", response_model=ChangeIdeasResponse,
+             responses={k: ERRORS[k] for k in (422, 503)})
+def change_ideas(service: Service, request: ChangeIdeasRequest) -> ChangeIdeasResponse:
+    """Test a fixed ETF shortlist at ten and twenty percent, using cached dependencies only."""
+    return ChangeIdeasResponse(status="partial", notes=["ETF change ideas are not available yet."])
 
 
 @router.post("/dependencies", response_model=DependencyJob, responses={

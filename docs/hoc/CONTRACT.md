@@ -225,3 +225,37 @@ All additive with defaults, so v3 payloads stay valid.
 
   The orchestrator verifies both with the same rules as `text`. A field that fails is set to null, and the claim itself is kept.
 - **`ConcentrationName`** gains `"top_sector"`: the largest industry's share of the portfolio.
+
+## 10. Concrete ETF change ideas (FIX-17)
+
+`POST /api/change-ideas` takes `ChangeIdeasRequest{holdings, top_n=15}` and returns
+`ChangeIdeasResponse{status, ideas, notes}`. Models live in `hoc/contract/ideas.py`, mirrored in
+`frontend/api/types.ts`; `synthetic-change-ideas.json` is a labelled, invented fixture.
+
+- The fixed shortlist is RSP, IWD, IEFA, IWM, XLV, XLP and XLU. Already-held ETFs are skipped.
+  Each available fund is tested at `add_fraction` 0.1 and 0.2. Existing allocations are scaled
+  proportionally to the remainder; `holdings` is the complete scenario. Whole-share rounding in
+  the UI can change the result and must be compared again.
+- ETF holdings load through existing sources. Dependencies use one shared verified extraction
+  cache snapshot; there are no AI calls, filing fetches or dependency jobs. Absent metrics remain null.
+- Rank improvements to the largest industry when its portfolio share is at least 40% and usable
+  sector data covers at least 95% of company exposure; otherwise the largest cached `dep.*` fraction;
+  otherwise top-ten concentration, with effective company count as tie-break/fallback.
+  Industry ranking requires usable sector data on both sides. Unknown dependencies never imply improvement.
+- Return at most three distinct ETFs, taking the best tested fraction for each. Non-improving,
+  unavailable and funds with less than 95% company holdings are omitted. Skipped source candidates
+  are named in notes. No new ETF is suggested at the ten-ETF limit or with missing current ETF holdings.
+- Each `ChangeIdea` contains `idea_id`, `ticker`, `etf_name`, `add_fraction`, `addresses`
+  (`top_sector|dependency|top10|effective_n`), `metric_id` (`dep.<key>` for dependency, else null),
+  `title` (one to eight words, no digits), `reason` (one Python-rendered sentence with before/after
+  values), full `holdings`, `concentration_deltas`, and `biggest_dependency_delta` (largest absolute
+  comparable `dep.*` fraction change, else null). It also preserves compare's `status`,
+  `candidate_unanalysed` and `notes`; dependency results can be partial even when concentration improves.
+- Response status is partial when a candidate is unavailable, current holdings are missing,
+  or a returned idea has unknown dependencies. Results share in-flight work and are memoised per
+  holdings/top-N key for one minute. The HTTP call waits at most nine seconds; if loading takes
+  longer it returns partial, empty ideas and skipped-candidate notes, and a retry reuses that work.
+  Errors for invalid portfolios/unknown current tickers/unavailable current sources match analysis (422/503).
+
+  When `addresses` is `dependency`, `biggest_dependency_delta` is the addressed baseline dependency
+  (`metric_id`), so the card's label and numbers agree; for other issues it is the largest comparable change.
