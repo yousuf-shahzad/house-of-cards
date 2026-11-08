@@ -2330,6 +2330,225 @@
         "title": "PriceQuote",
         "type": "object"
       },
+      "ResearchFinding": {
+        "additionalProperties": false,
+        "properties": {
+          "confirmed_edge_ids": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Confirmed Edge Ids",
+            "type": "array"
+          },
+          "explanation": {
+            "title": "Explanation",
+            "type": "string"
+          },
+          "finding_id": {
+            "title": "Finding Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "flagged_edge",
+              "undisclosed_customer",
+              "single_source",
+              "no_disclosures",
+              "unresolved_counterparty"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "new_edges": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/VerifiedEdge"
+            },
+            "title": "New Edges",
+            "type": "array"
+          },
+          "outcome": {
+            "enum": [
+              "confirmed",
+              "revised",
+              "rejected",
+              "new_evidence",
+              "unresolved"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "rejected_edge_ids": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Rejected Edge Ids",
+            "type": "array"
+          },
+          "steps": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ResearchStep"
+            },
+            "title": "Steps",
+            "type": "array"
+          },
+          "subject": {
+            "title": "Subject",
+            "type": "string"
+          }
+        },
+        "required": [
+          "finding_id",
+          "kind",
+          "subject",
+          "question",
+          "outcome",
+          "explanation"
+        ],
+        "title": "ResearchFinding",
+        "type": "object"
+      },
+      "ResearchJob": {
+        "additionalProperties": false,
+        "description": "POST /api/dependencies/{job_id}/research returns this (202, or 200 if cached); poll\nGET /api/research/{research_id} until done or error. `result` is the dependency result with the\nfindings merged in (edges added/removed, metrics and insights recomputed).",
+        "properties": {
+          "dependency_job_id": {
+            "title": "Dependency Job Id",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ErrorBody"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "findings": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ResearchFinding"
+            },
+            "title": "Findings",
+            "type": "array"
+          },
+          "progress_done": {
+            "default": 0,
+            "title": "Progress Done",
+            "type": "integer"
+          },
+          "progress_total": {
+            "default": 0,
+            "title": "Progress Total",
+            "type": "integer"
+          },
+          "research_id": {
+            "title": "Research Id",
+            "type": "string"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DependencyResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "done",
+              "error"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "research_id",
+          "dependency_job_id",
+          "status"
+        ],
+        "title": "ResearchJob",
+        "type": "object"
+      },
+      "ResearchRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "max_items": {
+            "default": 6,
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Max Items",
+            "type": "integer"
+          }
+        },
+        "title": "ResearchRequest",
+        "type": "object"
+      },
+      "ResearchStep": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "search_filings",
+              "read_section",
+              "find_in_filing",
+              "conclude"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "filing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FilingRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "query": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "index",
+          "action",
+          "summary"
+        ],
+        "title": "ResearchStep",
+        "type": "object"
+      },
       "Sector": {
         "description": "GICS-style sectors. Every source label maps onto one of these (unmapped -> unknown).",
         "enum": [
@@ -3185,6 +3404,84 @@
         "summary": "Get Dependencies"
       }
     },
+    "/api/dependencies/{job_id}/research": {
+      "post": {
+        "description": "Investigate the uncertain findings of a finished dependency job (A-RES). Same ResearchJob body either way:\n200 when already finished (e.g. cached), else 202. 422 while the dependency job is still running.",
+        "operationId": "start_research_api_dependencies__job_id__research_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ResearchRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResearchJob"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResearchJob"
+                }
+              }
+            },
+            "description": "Queued or running: poll GET /api/research/{research_id}"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "JOB_NOT_FOUND"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "VALIDATION_ERROR, ALLOCATION_SUM_INVALID, DUPLICATE_TICKER, TOO_MANY_ETFS, UNKNOWN_TICKER"
+          }
+        },
+        "summary": "Start Research"
+      }
+    },
     "/api/etfs/{ticker}": {
       "get": {
         "operationId": "get_etf_api_etfs__ticker__get",
@@ -3315,6 +3612,56 @@
           }
         },
         "summary": "Health"
+      }
+    },
+    "/api/research/{research_id}": {
+      "get": {
+        "operationId": "get_research_api_research__research_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "research_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "title": "Research Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResearchJob"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "RESEARCH_NOT_FOUND"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Research"
       }
     },
     "/api/valuation": {

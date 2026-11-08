@@ -38,6 +38,8 @@ from hoc.contract import (
     HocError,
     PortfolioItem,
     PortfolioRequest,
+    ResearchJob,
+    ResearchRequest,
     SourceName,
     ValuationRequest,
     ValuationResponse,
@@ -170,6 +172,25 @@ def start_dependencies(service: Service, request: DependencyRequest, response: R
             responses={404: {"model": ErrorResponse, "description": "JOB_NOT_FOUND"}})
 def get_dependencies(service: Service, job_id: Annotated[str, Path(max_length=128)]) -> DependencyJob:
     return service.dependency_job(job_id)
+
+
+@router.post("/dependencies/{job_id}/research", response_model=ResearchJob, responses={
+    202: {"model": ResearchJob, "description": "Queued or running: poll GET /api/research/{research_id}"},
+    404: {"model": ErrorResponse, "description": "JOB_NOT_FOUND"},
+    422: ERRORS[422]})
+def start_research(service: Service, job_id: Annotated[str, Path(max_length=128)], response: Response,
+                   request: ResearchRequest | None = None) -> ResearchJob:
+    """Investigate the uncertain findings of a finished dependency job (A-RES). Same ResearchJob body either way:
+    200 when already finished (e.g. cached), else 202. 422 while the dependency job is still running."""
+    job = service.submit_research(job_id, request or ResearchRequest())
+    response.status_code = 200 if job.status in ("done", "error") else 202
+    return job
+
+
+@router.get("/research/{research_id}", response_model=ResearchJob,
+            responses={404: {"model": ErrorResponse, "description": "RESEARCH_NOT_FOUND"}})
+def get_research(service: Service, research_id: Annotated[str, Path(max_length=128)]) -> ResearchJob:
+    return service.research_job(research_id)
 
 
 def _error(status: int, body: ErrorResponse) -> JSONResponse:
