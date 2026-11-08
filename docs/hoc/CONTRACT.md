@@ -112,6 +112,8 @@ Errors always have one shape: `{"error": {"code", "message", "details"}}`.
 | `UNKNOWN_TICKER` | 422 | a requested ETF was not found by any source (`details.tickers`, `attempts`) |
 | `ETF_NOT_FOUND` | 404 | `GET /api/etfs/{ticker}` for an unknown ETF |
 | `SOURCES_UNAVAILABLE` | 503 | nothing could be loaded (network down, offline with empty cache) |
+| `NOT_FOUND` | 404 | no such route, e.g. `GET /api/nope`, or a backend older than the route (FIX-57) |
+| `METHOD_NOT_ALLOWED` | 405 | a known route with the wrong method, e.g. `GET /api/analysis`; the `Allow` header lists the right ones (FIX-57) |
 
 Some ETFs failing for availability reasons is **not** an error: 200 with those ETFs `unavailable` and their
 allocation in `coverage.missing_allocation`.

@@ -52,7 +52,10 @@ export type ErrorCode =
   | "JOB_NOT_FOUND"
   | "RESEARCH_NOT_FOUND"
   | "SOURCES_UNAVAILABLE"
-  | "INTERNAL_ERROR";
+  | "INTERNAL_ERROR"
+  /** FIX-57: an unknown /api route, or a known route with the wrong method. */
+  | "NOT_FOUND"
+  | "METHOD_NOT_ALLOWED";
 
 /** Contract constants (backend/hoc/contract/units.py). */
 export const MAX_ETFS = 10;

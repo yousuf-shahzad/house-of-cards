@@ -18,9 +18,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, FastAPI, Path, Query, Request, Response
 from fastapi.encoders import jsonable_encoder
+from fastapi.exception_handlers import http_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from hoc import __version__
 from hoc.config import Settings
@@ -244,6 +246,20 @@ def create_app(service_factory: Callable[[], EtfService] | None = None,
         body = ErrorBody(code="VALIDATION_ERROR", message="Request did not match the schema",
                          details={"errors": jsonable_encoder(exc.errors())})
         return _error(422, ErrorResponse(error=body))
+
+    @app.exception_handler(StarletteHTTPException)
+    async def _http_error(request: Request, exc: StarletteHTTPException):
+        """FIX-57: an unknown route (404) or a wrong method (405) gets the one error envelope, not FastAPI's
+        {"detail": ...}. Other HTTP exceptions keep FastAPI's default handling."""
+        codes = {404: ("NOT_FOUND", "There is no such API route."),
+                 405: ("METHOD_NOT_ALLOWED", "This API route doesn't accept that method.")}
+        if exc.status_code not in codes:
+            return await http_exception_handler(request, exc)
+        code, message = codes[exc.status_code]
+        body = ErrorBody(code=code, message=message, details={"path": request.url.path, "method": request.method})
+        response = _error(exc.status_code, ErrorResponse(error=body))
+        response.headers.update(exc.headers or {})  # keeps Allow on 405
+        return response
 
     @app.exception_handler(Exception)
     def _unexpected(_: Request, exc: Exception) -> JSONResponse:

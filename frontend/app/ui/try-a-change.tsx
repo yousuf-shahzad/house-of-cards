@@ -622,7 +622,7 @@ export function TryAChange({ editorTitle = "Your new mix" }: { editorTitle?: str
               : "Finish the changed portfolio above and the comparison updates by itself."}
           </p>
         )}
-        {compareStatus === "error" && error && error.status === 404 && error.code === "HTTP_ERROR" ? (
+        {compareStatus === "error" && error && error.status === 404 && (error.code === "HTTP_ERROR" || error.code === "NOT_FOUND") ? (
           // FastAPI's own 404 (no error body): the running backend predates POST /api/compare.
           <p role="alert" className="text-body-regular text-text-error-primary">
             This backend doesn't have comparisons yet. Update and restart it, then try again.

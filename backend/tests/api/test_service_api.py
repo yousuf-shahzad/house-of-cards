@@ -323,3 +323,20 @@ def test_expired_memo_survives_a_failed_refresh(make_service, monkeypatch):
     now[0] += service_module.MEMO_TTL_SECONDS + 1
     assert service.load_etf("ZZAAA") is first  # stale holdings, still dated by their own as_of
     assert source.calls == ["ZZAAA", "ZZAAA"]
+
+
+# ---------- FIX-57: every error uses the one envelope ----------
+
+
+def test_unknown_route_and_wrong_method_use_the_error_envelope(make_service):
+    service, _ = make_service()
+    api = client(service)
+    missing = api.get("/api/nope")
+    assert missing.status_code == 404
+    assert missing.json() == {"error": {"code": "NOT_FOUND", "message": "There is no such API route.",
+                                        "details": {"path": "/api/nope", "method": "GET"}}}
+    wrong = api.get("/api/analysis")
+    assert wrong.status_code == 405
+    assert wrong.json()["error"]["code"] == "METHOD_NOT_ALLOWED"
+    assert "POST" in wrong.headers["allow"]
+    assert api.get("/api/dependencies/nope").json()["error"]["code"] == "JOB_NOT_FOUND"  # route 404s keep theirs
