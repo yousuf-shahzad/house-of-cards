@@ -275,6 +275,8 @@ function HeadlineRow({ row }: { row: Headline }) {
 // ---------- FIX-17: change ideas ----------
 
 const IDEAS_RETRY_MS = 5000;
+const AI_POLL_MS = 3000;
+const AI_POLL_LIMIT_MS = 90_000;
 /** Finished answers per portfolio key, shared by step 5 and Try a change (the backend memoises too). */
 const ideasCache = new Map<string, ChangeIdeasResponse>();
 
@@ -293,25 +295,37 @@ function useChangeIdeas(): { ideas: IdeasState | null; retry: () => void } {
       return;
     }
     const controller = new AbortController();
+    const started = Date.now();
     let timer: number | undefined;
     let retried = false;
+    let shown = false;
     const load = () => {
-      setState({ key, status: "loading", response: null });
+      if (!shown) setState({ key, status: "loading", response: null });
       api
         .changeIdeas(inputs, undefined, controller.signal)
         .then((response) => {
           // A cold backend answers "partial" with no ideas while the candidate ETFs load: ask once more.
-          if (response.status === "partial" && response.ideas.length === 0 && !retried) {
+          if (response.status === "partial" && response.ideas.length === 0 && !retried && !shown) {
             retried = true;
             timer = window.setTimeout(load, IDEAS_RETRY_MS);
             return;
           }
-          if (response.status === "ok") ideasCache.set(key, response);
-          setState({ key, status: "ready", response });
+          // The AI proposer runs in the background (about 45 s): show the rules' ideas now and ask again
+          // every few seconds, then swap in the checked AI ideas when they're ready.
+          const pending = response.ai_status === "pending" && Date.now() - started < AI_POLL_LIMIT_MS;
+          if (response.status === "ok" && response.ai_status !== "pending") ideasCache.set(key, response);
+          shown = true;
+          setState({ key, status: "ready", response: pending ? response : { ...response, ai_status: response.ai_status === "pending" ? "timeout" : response.ai_status } });
+          if (pending) timer = window.setTimeout(load, AI_POLL_MS);
         })
         .catch((cause: unknown) => {
           if (cause instanceof DOMException && cause.name === "AbortError") return;
-          setState({ key, status: "error", response: null });
+          // A failed poll while the AI was still checking keeps the cards already on screen.
+          setState((prev) =>
+            shown && prev?.key === key && prev.response
+              ? { ...prev, response: { ...prev.response, ai_status: "failed" } }
+              : { key, status: "error", response: null },
+          );
         });
     };
     load();
@@ -324,8 +338,9 @@ function useChangeIdeas(): { ideas: IdeasState | null; retry: () => void } {
   return { ideas: inputs && state?.key === key ? state : null, retry };
 }
 
-/** Loads an idea into Try a change: your shares plus whole shares of the new ETF worth f / (1 - f) of your
- * portfolio, which gives it the idea's share. Falls back to the idea's own percentages when prices aren't usable. */
+/** Loads an idea into Try a change. An add keeps your shares and buys whole shares of the new ETF worth
+ * f / (1 - f) of your portfolio, which gives it the idea's share. A swap sells f of the portfolio's value from
+ * `swap_from` and buys the new ETF with it. Falls back to the idea's own percentages when prices aren't usable. */
 function useLoadIdea(): (idea: ChangeIdea) => Promise<void> {
   const { draft: current } = useAnalysis();
   const { scenario } = useScenario();
@@ -337,13 +352,23 @@ function useLoadIdea(): (idea: ChangeIdea) => Promise<void> {
           const quote = (await api.valuation([{ ticker: idea.ticker, shares: 1, overridePct: null }])).rows[0]?.price;
           const currency = valued.rows.find((row) => row.price)?.price?.currency;
           if (quote && quote.price > 0 && quote.currency === currency) {
-            const value = (valued.total_value * idea.add_fraction) / (1 - idea.add_fraction);
-            const shares = Math.max(1, Math.round(value / quote.price));
-            scenario.copyFrom(
-              [...current.rows, { id: "", ticker: idea.ticker, allocationPct: null, shares, pinned: false }],
-              "shares",
-            );
-            return;
+            const swap = idea.action === "swap" && idea.swap_from ? idea.swap_from.toUpperCase() : null;
+            const moved = valued.total_value * idea.add_fraction;
+            const value = swap ? moved : moved / (1 - idea.add_fraction);
+            const added = { id: "", ticker: idea.ticker, allocationPct: null, shares: Math.max(1, Math.round(value / quote.price)), pinned: false };
+            const source = swap ? valued.rows.find((row) => row.ticker.toUpperCase() === swap) : null;
+            if (!swap) {
+              scenario.copyFrom([...current.rows, added], "shares");
+              return;
+            }
+            if (source?.price && source.value !== null && source.value >= moved * 0.99) {
+              const left = Math.max(0, Math.round((source.value - moved) / source.price.price));
+              const rows = current.rows
+                .map((row) => (row.ticker.trim().toUpperCase() === swap ? { ...row, shares: left } : row))
+                .filter((row) => row.shares !== 0);
+              scenario.copyFrom([...rows, added], "shares");
+              return;
+            }
           }
         } catch {
           // No price: use the idea's percentages below.
@@ -374,7 +399,31 @@ function ideaHeadline(idea: ChangeIdea): string {
       what = `${label} ${formatPct(delta.baseline, 1)} → ${formatPct(delta.candidate, 1)}`;
     }
   }
-  return what ? `Add ${idea.ticker}: ${what}` : `Add ${idea.ticker}`;
+  const verb = idea.action === "swap" && idea.swap_from ? `Swap ${idea.swap_from} for ${idea.ticker}` : `Add ${idea.ticker}`;
+  return what ? `${verb}: ${what}` : verb;
+}
+
+/** "AI suggested 5 ideas; we kept 2", with each rejection's reason under a toggle.
+ * The ideas the AI proposed are the kept AI cards plus the rejected proposals. */
+function AiCheckSummary({ response }: { response: ChangeIdeasResponse }) {
+  const rejected = response.rejected_proposals ?? [];
+  const kept = response.ideas.filter((idea) => idea.proposed_by === "ai").length;
+  if (response.ai_status !== "ok" || kept + rejected.length === 0) return null;
+  const proposed = kept + rejected.length;
+  const summary = `AI suggested ${proposed} ${proposed === 1 ? "idea" : "ideas"}; we kept ${kept}.`;
+  if (rejected.length === 0) return <p className="text-body-2-regular text-text-secondary">{summary}</p>;
+  return (
+    <details className="text-body-2-regular text-text-secondary">
+      <summary className="cursor-pointer">{summary} Why the others were dropped</summary>
+      <ul className="flex flex-col gap-1 pt-2">
+        {rejected.map((proposal, index) => (
+          <li key={`${proposal.ticker}-${proposal.action}-${index}`}>
+            {proposal.action === "swap" ? "Swap to" : "Add"} {proposal.ticker}: {proposal.reason}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
 }
 
 /** Up to three ETF ideas with "Try this". `onTried` runs after an idea is loaded into Try a change. */
@@ -395,9 +444,9 @@ export function ChangeIdeas({ heading = "Ideas to try", onTried }: { heading?: s
     <section className="flex flex-col gap-3" aria-label={heading} aria-busy={ideas.status === "loading"}>
       <h2 className="text-headline-small text-text-primary">{heading}</h2>
       {ideas.status === "loading" && (
-        <p className="flex items-center gap-2 text-body-2-regular text-text-secondary">
+        <div className="flex items-center gap-2 text-body-2-regular text-text-secondary">
           <Spinner size="sm" aria-label="Looking for ideas" /> Looking for ETFs that would spread your money more…
-        </p>
+        </div>
       )}
       {ideas.status === "error" && (
         <p className="text-body-2-regular text-text-secondary">
@@ -418,6 +467,12 @@ export function ChangeIdeas({ heading = "Ideas to try", onTried }: { heading?: s
           </Button>
         </div>
       )}
+      {ideas.response && <AiCheckSummary response={ideas.response} />}
+      {ideas.response?.ai_status === "pending" && (
+        <div className="flex items-center gap-2 text-body-2-regular text-text-secondary">
+          <Spinner size="sm" aria-label="AI is checking more ideas" /> AI is checking more ideas…
+        </div>
+      )}
       {list.length > 0 && (
         <ul className="grid grid-cols-1 gap-3 md:grid-cols-3">
           {list.map((idea) => (
@@ -425,12 +480,22 @@ export function ChangeIdeas({ heading = "Ideas to try", onTried }: { heading?: s
               key={idea.idea_id}
               className="flex flex-col gap-2 rounded-2xl border border-separator-border bg-background-primary-default p-4"
             >
+              {idea.proposed_by && (
+                <div>
+                  <Chip variant="caption" color={idea.proposed_by === "ai" ? "lime" : "neutral"}>
+                    {idea.proposed_by === "ai" ? "AI idea, checked with your numbers" : "Idea from our rules"}
+                  </Chip>
+                </div>
+              )}
               <span className="text-body-semibold text-text-primary" style={tabular}>
                 {ideaHeadline(idea)}
               </span>
-              <span className="text-body-2-regular text-text-secondary">{idea.reason}</span>
+              <span className="text-body-2-regular text-text-secondary">{idea.rationale || idea.reason}</span>
               <span className="text-caption-1-regular text-text-tertiary" style={tabular}>
-                {idea.etf_name}, {formatPct(idea.add_fraction, 0)} of the new mix
+                {idea.etf_name},{" "}
+                {idea.action === "swap" && idea.swap_from
+                  ? `${formatPct(idea.add_fraction, 0)} of your portfolio moved from ${idea.swap_from}`
+                  : `${formatPct(idea.add_fraction, 0)} of the new mix`}
               </span>
               <div className="mt-auto pt-1">
                 <Button variant="secondary" size="small" disabled={loading !== null} onClick={() => tryIdea(idea)}>
