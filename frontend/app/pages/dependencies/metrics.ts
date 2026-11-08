@@ -50,12 +50,26 @@ const CATEGORY: Record<MetricKind, string> = {
   other: "Metric",
 };
 
-const SUMMARY_TEXT: Record<string, string> = {
+/** Text after the number; counts give [singular, plural] so "1 facility link" reads right. */
+const SUMMARY_TEXT: Record<string, string | [string, string]> = {
   "summary.analysed_weight": "of your portfolio is in companies with at least one verified dependency",
-  "summary.verified_edges": "verified links found in company filings",
-  "spof.count": "suppliers shared by several of your companies, or their only source",
-  "facility.unplaced.count": "facility links that name a region, not one country (left out of the country chart)",
+  "summary.verified_edges": ["verified link found in company filings", "verified links found in company filings"],
+  "spof.count": [
+    "supplier shared by several of your companies, or their only source",
+    "suppliers shared by several of your companies, or their only source",
+  ],
+  "facility.unplaced.count": [
+    "facility link names a region, not one country (left out of the country chart)",
+    "facility links name a region, not one country (left out of the country chart)",
+  ],
 };
+
+function summaryText(metric: MetricFact): string | null {
+  const text = SUMMARY_TEXT[metric.metric_id];
+  if (text === undefined) return null;
+  if (typeof text === "string") return text;
+  return Math.round(metric.value) === 1 ? text[0] : text[1];
+}
 
 const COMPANIES_SUFFIX = ".companies";
 const UNNAMED_CUSTOMERS = "Undisclosed major customers";
@@ -144,7 +158,7 @@ export function buildMetricCards(metrics: readonly MetricFact[]): MetricCard[] {
 export function buildSummaryFacts(metrics: readonly MetricFact[]): SummaryFact[] {
   return metrics
     .filter((m) => metricKind(m.metric_id) === "summary")
-    .map((m) => ({ metric: m, text: SUMMARY_TEXT[m.metric_id] ?? m.label }));
+    .map((m) => ({ metric: m, text: summaryText(m) ?? m.label }));
 }
 
 /** A short human name for a cited metric, e.g. "Depends on TSMC" or "Companies with key sites in China". */
@@ -159,7 +173,10 @@ export function metricCitationLabel(metric: MetricFact): string {
     if (kind === "customer") return `Companies naming ${subject} as a major customer`;
     return `Companies relying on ${subject}`;
   }
-  if (kind === "summary") return SUMMARY_TEXT[id] ? capitalise(SUMMARY_TEXT[id]) : metric.label;
+  if (kind === "summary") {
+    const text = summaryText(metric);
+    return text ? capitalise(text) : metric.label;
+  }
   if (kind === "other") return metric.label;
   if (unnamedCustomer) return UNNAMED_CUSTOMERS;
   if (kind === "customer") return `Major customer: ${subject}`;
