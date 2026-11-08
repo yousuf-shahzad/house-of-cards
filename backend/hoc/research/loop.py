@@ -2,14 +2,16 @@
 
 Owner: Kendrick's Gemini (`@kendricklow2008 (Gemini)`).
 Rules (docs/hoc/PLAN-v3.md §6 & docs/hoc/CONTRACT.md §8):
-- Python selects up to `max_items` (default 6) uncertain items ranked by `importance * exposure`
-  across 5 `ResearchItemKind`s (`flagged_edge`, `undisclosed_customer`, `single_source`,
-  `no_disclosures`, `unresolved_counterparty`).
+- Python selects up to `max_items` (default 6) uncertain items ranked strictly by `importance * exposure`
+  (ties broken by `item_id`) across 5 `ResearchItemKind`s (`flagged_edge`, `undisclosed_customer`,
+  `single_source`, `no_disclosures`, `unresolved_counterparty`).
 - For each item, Gemini runs a bounded multi-step loop (at most `MAX_RESEARCH_STEPS = 4` steps)
   choosing one structured `ResearchAction` per step (`search_filings`, `read_section`,
   `find_in_filing`, `conclude`), and Python executes the filing tools against `FilingFetcher`.
 - Every proposed edge in `ResearchFinding.new_edges` must pass `verify_quote` (against `Filing.text`),
   `verify_company_interpretations` (V-INT), and `attach_edge_importance` (R-IMP).
+- `_finalize_finding` never marks an edge `confirmed` on its own: interpretation status comes only from
+  `verify_edge_interpretation` / `verify_company_interpretations`. Unresolved or unclear edges stay `flagged`.
 - Every `ResearchFinding.explanation` carries NO numbers except inside `"..."` quotes of verified evidence.
 - Findings merge into a new `DependencyResult` (`merge_research_findings`) that updates `edges`,
   `companies`, `counts`, `metrics`, `insights`, and `coverage`.
@@ -19,10 +21,14 @@ Rules (docs/hoc/PLAN-v3.md §6 & docs/hoc/CONTRACT.md §8):
 
 from __future__ import annotations
 
+import hashlib
+import json
 import logging
 import re
 import time
 from collections.abc import Callable, Mapping, Sequence
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeoutError
 from dataclasses import dataclass
 from typing import Any
 
@@ -34,7 +40,11 @@ from hoc.ai.client import (
     GeminiMissingKeyError,
 )
 from hoc.ai.extractor import EXTRACTION_SCHEMA, verify_and_build_edges
-from hoc.ai.interpretation import check_interpretation_rules, verify_company_interpretations
+from hoc.ai.interpretation import (
+    check_interpretation_rules,
+    verify_company_interpretations,
+    verify_edge_interpretation,
+)
 from hoc.ai.verifier import normalise_for_verify, verify_quote
 from hoc.contract import (
     AnalysisResponse,
@@ -51,6 +61,7 @@ from hoc.contract import (
     VerifiedEdge,
 )
 from hoc.contract.dependencies import ResearchAction, ResearchItemKind, ResearchOutcome
+from hoc.core.cache import DiskCache
 from hoc.core.http import HttpClient
 from hoc.filings.fetch import Filing, FilingFetcher
 from hoc.filings.names import NameResolver
@@ -63,7 +74,9 @@ from hoc.identity.resolver import Aliases, clean_company_name, load_aliases
 log = logging.getLogger(__name__)
 
 RESEARCH_PROMPT_VERSION = "hoc-v3-research-1"
+RESEARCH_CACHE_NAMESPACE = "research"
 MAX_RESEARCH_STEPS = 4
+DEFAULT_CALL_TIMEOUT_SECONDS = 45.0
 DEFAULT_ITEM_TIMEOUT_SECONDS = 25.0
 DEFAULT_TOTAL_TIMEOUT_SECONDS = 90.0
 
@@ -140,6 +153,27 @@ _DIGIT_TOKEN_RE = re.compile(
     r"\$?\b\d+(?:[.,]\d+)*(?:\s*%|\s*(?:billion|million|thousand|trillion|bps|pts|x|st|nd|rd|th))?\b",
     re.IGNORECASE,
 )
+_PERCENT_NUMBER_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(?:%|percent\b)", re.IGNORECASE)
+_WORD_GE_10_PERCENT_RE = re.compile(
+    r"\b(ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|"
+    r"twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred)\s+percent\b",
+    re.IGNORECASE,
+)
+
+
+def _call_with_timeout(fn: Callable[[], Any], timeout_s: float) -> Any:
+    """Run `fn()` in a single-worker pool bounded by `timeout_s` wall-clock seconds."""
+    if timeout_s <= 0:
+        raise FuturesTimeoutError("Research budget exhausted before call")
+    pool = ThreadPoolExecutor(max_workers=1)
+    future = pool.submit(fn)
+    try:
+        return future.result(timeout=timeout_s)
+    except FuturesTimeoutError:
+        future.cancel()
+        raise
+    finally:
+        pool.shutdown(wait=False, cancel_futures=True)
 
 
 @dataclass(frozen=True)
@@ -170,13 +204,28 @@ def _extract_cik_from_key(company_key: str | None) -> str | None:
     return None
 
 
+def _has_material_customer_share(edge: VerifiedEdge) -> bool:
+    """Return True iff the edge's qualifier or verified quote states >= 10% customer revenue share."""
+    combined = f"{edge.qualifier or ''} {edge.evidence_quote or ''}"
+    for match in _PERCENT_NUMBER_RE.finditer(combined):
+        try:
+            if float(match.group(1)) >= 10.0:
+                return True
+        except ValueError:
+            continue
+    return bool(_WORD_GE_10_PERCENT_RE.search(combined))
+
+
 def _is_unnamed_customer_edge(edge: VerifiedEdge) -> bool:
+    is_unnamed = False
     if edge.target_kind == "unnamed_customer":
-        return True
-    if edge.edge_type != "customer":
+        is_unnamed = True
+    elif edge.edge_type == "customer":
+        lower_name = edge.target_name.lower()
+        is_unnamed = any(tok in lower_name for tok in _UNNAMED_CUSTOMER_PATTERNS)
+    if not is_unnamed:
         return False
-    lower_name = edge.target_name.lower()
-    return any(tok in lower_name for tok in _UNNAMED_CUSTOMER_PATTERNS)
+    return _has_material_customer_share(edge)
 
 
 def select_research_items(
@@ -185,7 +234,7 @@ def select_research_items(
     *,
     max_items: int = 6,
 ) -> list[ResearchItem]:
-    """Deterministically select and rank up to `max_items` research items by `importance * exposure`."""
+    """Deterministically select and rank up to `max_items` research items strictly by `importance * exposure`."""
     if max_items <= 0:
         return []
 
@@ -239,7 +288,7 @@ def select_research_items(
                     subject_name=subj_name,
                     subject_label=f"{subj_name} -> {edge.target_name} ({edge.edge_type})",
                     question=f"Does {subj_name}'s filing context confirm or contradict the {edge.edge_type} link to {edge.target_name}?",
-                    priority_score=round((imp.score + 0.30) * exp, 8),
+                    priority_score=round(imp.score * exp, 8),
                     edge=edge,
                     target_name=edge.target_name,
                     cik=cik,
@@ -248,7 +297,7 @@ def select_research_items(
             )
             used_primary_edge_ids.add(edge.edge_id)
 
-    # 2. Undisclosed customers (`target_kind == "unnamed_customer"` or unnamed customer cue)
+    # 2. Undisclosed customers (`target_kind == "unnamed_customer"` or unnamed customer cue with >=10% share)
     for edge in result.edges:
         if edge.edge_id in used_primary_edge_ids:
             continue
@@ -265,7 +314,7 @@ def select_research_items(
                     subject_name=subj_name,
                     subject_label=f"{subj_name}'s undisclosed customer ({edge.target_name})",
                     question=f"Do {subj_name}'s or peer SEC filings name or corroborate {edge.target_name}?",
-                    priority_score=round((imp.score + 0.25) * exp, 8),
+                    priority_score=round(imp.score * exp, 8),
                     edge=edge,
                     target_name=edge.target_name,
                     cik=cik,
@@ -293,7 +342,7 @@ def select_research_items(
                     subject_name=subj_name,
                     subject_label=f"{subj_name} counterparty {edge.target_name}",
                     question=f"Can counterparty {edge.target_name} in {subj_name}'s filing be verified and resolved?",
-                    priority_score=round((imp.score + 0.15) * exp, 8),
+                    priority_score=round(imp.score * exp, 8),
                     edge=edge,
                     target_name=edge.target_name,
                     cik=cik,
@@ -320,7 +369,7 @@ def select_research_items(
                     subject_name=comp.company_name,
                     subject_label=f"{comp.company_name} (no verified disclosures)",
                     question=f"Does {comp.company_name}'s annual report or peer filings contain verifiable dependency disclosures?",
-                    priority_score=round(0.80 * exp, 8),
+                    priority_score=round(1.0 * exp, 8),
                     company_status=comp,
                     target_name=None,
                     cik=cik,
@@ -357,44 +406,11 @@ def select_research_items(
             )
 
     candidates.sort(key=lambda item: (-item.priority_score, item.item_id))
-
-    # Diversity pass: take the top-ranked item from each available kind first, then fill by priority_score
-    selected: list[ResearchItem] = []
-    selected_ids: set[str] = set()
-    seen_kinds: set[ResearchItemKind] = set()
-
-    for cand in candidates:
-        if len(selected) >= max_items:
-            break
-        if cand.item_kind not in seen_kinds:
-            seen_kinds.add(cand.item_kind)
-            selected.append(cand)
-            selected_ids.add(cand.item_id)
-
-    seen_subjects: set[str] = {item.subject_key for item in selected}
-    for cand in candidates:
-        if len(selected) >= max_items:
-            break
-        if cand.item_id in selected_ids:
-            continue
-        if cand.subject_key not in seen_subjects:
-            seen_subjects.add(cand.subject_key)
-            selected.append(cand)
-            selected_ids.add(cand.item_id)
-
-    for cand in candidates:
-        if len(selected) >= max_items:
-            break
-        if cand.item_id not in selected_ids:
-            selected.append(cand)
-            selected_ids.add(cand.item_id)
-
-    selected.sort(key=lambda item: (-item.priority_score, item.item_id))
-    return selected[:max_items]
+    return candidates[:max_items]
 
 
 def strip_unquoted_numbers(explanation: str, verified_quotes: Sequence[str] = ()) -> str:
-    """Ensure `explanation` contains NO digits outside `"..."` quotes of verified evidence."""
+    """Ensure `explanation` contains NO digits outside exact `"..."` spans of verified evidence."""
     if not explanation or not explanation.strip():
         return "Verified filing context reviewed."
 
@@ -411,7 +427,7 @@ def strip_unquoted_numbers(explanation: str, verified_quotes: Sequence[str] = ()
         norm_inner = normalise_for_verify(inner).casefold()
         if not norm_inner:
             return False
-        return any(norm_inner in vq or vq in norm_inner for vq in norm_verified)
+        return any(norm_inner in vq for vq in norm_verified)
 
     parts = _QUOTED_SEGMENT_RE.split(explanation.strip())
     cleaned_parts: list[str] = []
@@ -483,20 +499,26 @@ def merge_research_findings(
             continue
         updated = edge
         if edge.edge_id in confirmed_ids:
-            prev_flags = list(edge.interpretation.flags) if edge.interpretation is not None else []
-            prev_method = edge.interpretation.method if edge.interpretation is not None else "rules"
-            prev_model = edge.interpretation.model if edge.interpretation is not None else None
-            updated = updated.model_copy(
-                update={
-                    "interpretation": EdgeInterpretation(
-                        status="confirmed",
-                        method=prev_method,
-                        flags=prev_flags,
-                        reason="Confirmed by multi-step filing verification.",
-                        model=prev_model,
-                    )
-                }
-            )
+            # Never upgrade an edge to confirmed if deterministic V-INT rules still flag its quote
+            rule_flags, _, _ = check_interpretation_rules(edge, edge.evidence_quote)
+            if not rule_flags:
+                prev_method = (
+                    edge.interpretation.method
+                    if edge.interpretation is not None
+                    else "rules"
+                )
+                prev_model = edge.interpretation.model if edge.interpretation is not None else None
+                updated = updated.model_copy(
+                    update={
+                        "interpretation": EdgeInterpretation(
+                            status="confirmed",
+                            method=prev_method,
+                            flags=[],
+                            reason="Confirmed by V-INT during multi-step filing verification.",
+                            model=prev_model,
+                        )
+                    }
+                )
         if updated.target_key is None and resolver is not None and updated.target_kind == "company":
             resolved_key = resolver(updated.target_name)
             if resolved_key:
@@ -510,16 +532,15 @@ def merge_research_findings(
         merged_by_id[updated.edge_id] = updated
 
     for new_edge in added_edges:
+        # B2: Missing interpretation is never defaulted to confirmed (treat as unverified -> don't merge)
+        if new_edge.interpretation is None or new_edge.interpretation.status == "rejected":
+            continue
+        rule_flags, _, _ = check_interpretation_rules(new_edge, new_edge.evidence_quote)
+        if rule_flags and new_edge.interpretation.method == "rules":
+            continue
         target_key = new_edge.target_key
         if target_key is None and resolver is not None and new_edge.target_kind == "company":
             target_key = resolver(new_edge.target_name)
-        interp = new_edge.interpretation or EdgeInterpretation(
-            status="confirmed",
-            method="rules",
-            flags=[],
-            reason=None,
-            model=None,
-        )
         prepared = new_edge.model_copy(
             update={
                 "target_key": target_key,
@@ -528,7 +549,6 @@ def merge_research_findings(
                 ),
                 "source_in_portfolio": new_edge.source_company_key in portfolio_keys,
                 "target_in_portfolio": target_key is not None and target_key in portfolio_keys,
-                "interpretation": interp,
             }
         )
         prepared = prepared.model_copy(update={"importance": score_edge_importance(prepared)})
@@ -578,50 +598,58 @@ def merge_research_findings(
         {
             e.target_name.casefold()
             for e in merged_edges
-            if e.target_key is None and e.target_kind == "company"
+            if e.target_kind == "company" and e.target_key is None
         }
     )
+    prev_interp_rejected = getattr(result.counts, "interpretation_rejected", 0)
     updated_counts = DependencyCounts(
         companies_requested=result.counts.companies_requested,
         companies_analysed=analysed,
-        companies_skipped=max(0, result.counts.companies_requested - analysed),
+        companies_skipped=result.counts.companies_skipped,
         verified_edges=len(merged_edges),
         rejected_edges=result.counts.rejected_edges,
-        interpretation_rejected=result.counts.interpretation_rejected + len(rejected_ids),
+        interpretation_rejected=prev_interp_rejected + len(rejected_ids),
         unresolved_counterparties=unresolved_count,
     )
 
-    return DependencyResult(
-        as_of_date=result.as_of_date,
-        request=result.request,
-        companies=updated_companies,
-        edges=merged_edges,
-        metrics=metrics,
-        insights=insights,
-        counts=updated_counts,
-        attributions=result.attributions,
-        coverage=coverage,
+    return result.model_copy(
+        update={
+            "companies": updated_companies,
+            "edges": merged_edges,
+            "metrics": metrics,
+            "insights": insights,
+            "counts": updated_counts,
+            "coverage": coverage,
+        }
     )
 
 
+def _research_cache_key(result: DependencyResult, max_items: int, prompt_version: str) -> str:
+    payload = result.model_dump_json()
+    digest = hashlib.sha256(f"{payload}|{max_items}|{prompt_version}".encode()).hexdigest()
+    return f"{digest}:{max_items}:{prompt_version}"
+
+
 class ResearchLoop:
-    """Bounded multi-step agentic research runner implementing `hoc.jobs.ResearchRunner`."""
+    """Bounded multi-step agentic research runner (`hoc.jobs.ResearchRunner`)."""
 
     prompt_version: str = RESEARCH_PROMPT_VERSION
 
     def __init__(
         self,
-        client: GeminiClient | Any,
-        fetcher: FilingFetcher | None = None,
         *,
+        client: Any,
+        fetcher: FilingFetcher | None = None,
         edgar: Any = None,
         orchestrator: Any = None,
         cache: ExtractionCache | None = None,
+        disk_cache: DiskCache | None = None,
         aliases: Aliases | None = None,
         filings_by_key: Mapping[str, Filing] | None = None,
         filings_by_cik: Mapping[str, Filing] | None = None,
         model: str | None = None,
         max_steps: int = MAX_RESEARCH_STEPS,
+        call_timeout_s: float = DEFAULT_CALL_TIMEOUT_SECONDS,
         item_timeout_s: float = DEFAULT_ITEM_TIMEOUT_SECONDS,
         total_timeout_s: float = DEFAULT_TOTAL_TIMEOUT_SECONDS,
     ) -> None:
@@ -630,6 +658,10 @@ class ResearchLoop:
         self.edgar = edgar
         self.orchestrator = orchestrator
         self.cache = cache
+        self._disk_cache: DiskCache | None = (
+            disk_cache or getattr(cache, "disk_cache", None) or getattr(cache, "cache", None)
+        )
+        self._replay_cache: dict[str, tuple[list[ResearchFinding], DependencyResult]] = {}
         self.aliases = aliases
         self._filings_by_key: dict[str, Filing] = dict(filings_by_key or {})
         self._filings_by_cik: dict[str, Filing] = {
@@ -640,30 +672,70 @@ class ResearchLoop:
                 self._filings_by_cik.setdefault(str(filing.cik).zfill(10), filing)
         self.model = model or getattr(client, "extractor_model", DEFAULT_EXTRACTOR_MODEL)
         self.max_steps = max(1, min(int(max_steps), MAX_RESEARCH_STEPS))
-        self.item_timeout_s = max(1.0, float(item_timeout_s))
-        self.total_timeout_s = max(5.0, float(total_timeout_s))
+        self.call_timeout_s = max(0.001, float(call_timeout_s))
+        self.item_timeout_s = max(0.001, float(item_timeout_s))
+        self.total_timeout_s = max(0.001, float(total_timeout_s))
 
     @classmethod
-    def from_settings(cls, http: HttpClient, settings: Any = None) -> ResearchLoop:
+    def from_settings(cls, http: HttpClient, settings: Any) -> ResearchLoop:
         """Construct a production `ResearchLoop` from `HttpClient` and `Settings`."""
-        from hoc.config import get_settings
-        from hoc.graph import Orchestrator
+        from hoc.graph import DependencyOrchestrator
 
-        cfg = settings if settings is not None else get_settings()
-        client = GeminiClient(http, cfg)
-        cache = ExtractionCache(cfg.cache_dir)
-        fetcher = FilingFetcher(http, cfg)
-        edgar = None
+        disk_cache = DiskCache(settings.cache_dir)
+        client = GeminiClient(http, settings)
+        cache = ExtractionCache(disk_cache)
+        fetcher = FilingFetcher(http, settings)
         aliases = load_aliases()
-        orchestrator = Orchestrator(http, cfg)
+        orchestrator = DependencyOrchestrator(http=http, settings=settings)
         return cls(
             client=client,
             fetcher=fetcher,
-            edgar=edgar,
+            edgar=None,
             orchestrator=orchestrator,
             cache=cache,
+            disk_cache=disk_cache,
             aliases=aliases,
         )
+
+    def _get_cached_run(self, cache_key: str) -> tuple[list[ResearchFinding], DependencyResult] | None:
+        if cache_key in self._replay_cache:
+            cached_findings, cached_result = self._replay_cache[cache_key]
+            return list(cached_findings), cached_result
+        if self._disk_cache is not None:
+            entry = self._disk_cache.get(RESEARCH_CACHE_NAMESPACE, cache_key)
+            if entry is not None:
+                try:
+                    data = json.loads(entry.body.decode("utf-8"))
+                    findings = [ResearchFinding.model_validate(f) for f in data.get("findings", [])]
+                    merged = DependencyResult.model_validate(data["result"])
+                    self._replay_cache[cache_key] = (findings, merged)
+                    return list(findings), merged
+                except Exception:  # noqa: BLE001
+                    log.warning("Failed to deserialize cached research result for %s", cache_key)
+        return None
+
+    def _put_cached_run(
+        self,
+        cache_key: str,
+        findings: list[ResearchFinding],
+        merged: DependencyResult,
+    ) -> None:
+        self._replay_cache[cache_key] = (list(findings), merged)
+        if self._disk_cache is not None:
+            try:
+                payload = {
+                    "findings": [f.model_dump(mode="json") for f in findings],
+                    "result": merged.model_dump(mode="json"),
+                }
+                body = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+                self._disk_cache.put(
+                    RESEARCH_CACHE_NAMESPACE,
+                    cache_key,
+                    body,
+                    {"prompt_version": self.prompt_version},
+                )
+            except Exception:  # noqa: BLE001
+                log.warning("Failed to write research result to disk cache for %s", cache_key)
 
     def run(
         self,
@@ -676,6 +748,20 @@ class ResearchLoop:
         on_finding: Callable[[ResearchFinding], None] | None = None,
     ) -> tuple[list[ResearchFinding], DependencyResult]:
         """Run the bounded research loop on up to `max_items` uncertain items and return `(findings, merged_result)`."""
+        cache_key = _research_cache_key(result, max_items, self.prompt_version)
+        cached_pair = self._get_cached_run(cache_key)
+        if cached_pair is not None:
+            cached_findings, cached_merged = cached_pair
+            total = len(cached_findings)
+            if progress is not None:
+                progress(0, total, [])
+            for idx, finding in enumerate(cached_findings, start=1):
+                if on_finding is not None:
+                    on_finding(finding)
+                if progress is not None:
+                    progress(idx, total, list(cached_findings[:idx]))
+            return cached_findings, cached_merged
+
         items = select_research_items(result, analysis, max_items=max_items)
         total = len(items)
         findings: list[ResearchFinding] = []
@@ -685,6 +771,41 @@ class ResearchLoop:
         aliases = self.aliases if self.aliases is not None else load_aliases()
         resolver = NameResolver(analysis.exposures, aliases).resolve
         top_keys = {c.company_key for c in analysis.exposures if c.exposure > 0}
+
+        # F1 / Repro 6: on a cache_only miss, items stay 'unresolved'; never fabricate a completed investigation.
+        if cache_only:
+            for idx, item in enumerate(items, start=1):
+                finding = ResearchFinding(
+                    finding_id=item.item_id,
+                    kind=item.item_kind,
+                    subject=item.subject_label,
+                    question=item.question,
+                    outcome="unresolved",
+                    explanation="No cached research result was found in cache_only mode.",
+                    steps=[
+                        ResearchStep(
+                            index=1,
+                            action="conclude",
+                            query=item.target_name or item.subject_name,
+                            summary="Skipped live investigation because cache_only mode was requested.",
+                            filing=item.filing_ref,
+                        )
+                    ],
+                )
+                findings.append(finding)
+                if on_finding is not None:
+                    on_finding(finding)
+                if progress is not None:
+                    progress(idx, total, list(findings))
+            merged = merge_research_findings(
+                result,
+                analysis,
+                findings,
+                orchestrator=self.orchestrator,
+                resolver=resolver,
+                cache_only=True,
+            )
+            return findings, merged
 
         started = time.monotonic()
         for idx, item in enumerate(items, start=1):
@@ -716,6 +837,7 @@ class ResearchLoop:
                         resolver=resolver,
                         top_keys=top_keys,
                         cache_only=cache_only,
+                        run_started=started,
                     )
                 except Exception as exc:  # noqa: BLE001
                     log.warning("research item %s failed: %s", item.item_id, exc)
@@ -751,9 +873,15 @@ class ResearchLoop:
             resolver=resolver,
             cache_only=cache_only,
         )
+        self._put_cached_run(cache_key, findings, merged)
         return findings, merged
 
     # ---------- per-item investigation ----------
+
+    def _remaining_budget(self, *, run_started: float, item_started: float) -> float:
+        rem_total = self.total_timeout_s - (time.monotonic() - run_started)
+        rem_item = self.item_timeout_s - (time.monotonic() - item_started)
+        return min(self.call_timeout_s, rem_total, rem_item)
 
     def _investigate_item(
         self,
@@ -764,7 +892,9 @@ class ResearchLoop:
         resolver: Callable[[str], str | None],
         top_keys: set[str],
         cache_only: bool,
+        run_started: float,
     ) -> ResearchFinding:
+        item_started = time.monotonic()
         filing = self._load_filing_for_item(item, analysis)
         cik = (
             (filing.cik if filing is not None else None)
@@ -785,11 +915,13 @@ class ResearchLoop:
         has_key = bool(getattr(self.client, "has_api_key", True))
         can_call_gemini = has_key and not cache_only
 
-        item_started = time.monotonic()
         concluded_payload: Mapping[str, Any] | None = None
+        timed_out_or_failed = False
 
         for step_idx in range(1, self.max_steps + 1):
-            if time.monotonic() - item_started > self.item_timeout_s:
+            budget = self._remaining_budget(run_started=run_started, item_started=item_started)
+            if budget <= 0:
+                timed_out_or_failed = True
                 break
 
             step_decision: Mapping[str, Any] | None = None
@@ -801,15 +933,22 @@ class ResearchLoop:
                     observations=observations,
                 )
                 try:
-                    raw_resp, _ = self.client.generate_json(
-                        prompt,
-                        RESEARCH_STEP_SCHEMA,
-                        model=self.model,
-                        system_instruction=RESEARCH_SYSTEM_PROMPT,
-                        thinking_level="low",
+                    raw_resp, _ = _call_with_timeout(
+                        lambda p=prompt: self.client.generate_json(
+                            p,
+                            RESEARCH_STEP_SCHEMA,
+                            model=self.model,
+                            system_instruction=RESEARCH_SYSTEM_PROMPT,
+                            thinking_level="low",
+                        ),
+                        budget,
                     )
                     if isinstance(raw_resp, Mapping):
                         step_decision = raw_resp
+                except FuturesTimeoutError:
+                    log.info("Gemini research step %d timed out after %.3fs", step_idx, budget)
+                    timed_out_or_failed = True
+                    break
                 except (GeminiError, GeminiMissingKeyError, SourceError, ValueError) as exc:
                     log.info("Gemini research step %d fell back to deterministic tool execution: %s", step_idx, exc)
                     can_call_gemini = False
@@ -821,6 +960,7 @@ class ResearchLoop:
                     step_idx=step_idx,
                     verified_quotes=verified_quotes,
                     observations=observations,
+                    has_api_key=has_key,
                 )
 
             action_raw = str(step_decision.get("action", "conclude")).strip()
@@ -829,36 +969,6 @@ class ResearchLoop:
                 if action_raw in ("search_filings", "read_section", "find_in_filing", "conclude")
                 else "conclude"
             )
-
-            if action == "conclude" and not steps:
-                fallback_step = self._deterministic_step_decision(
-                    item=item,
-                    cik=cik,
-                    step_idx=1,
-                    verified_quotes=verified_quotes,
-                    observations=observations,
-                )
-                first_action = str(fallback_step.get("action", "find_in_filing"))
-                if first_action != "conclude":
-                    self._execute_tool_step(
-                        action=first_action,  # type: ignore[arg-type]
-                        decision=fallback_step,
-                        item=item,
-                        cik=cik,
-                        filing=filing,
-                        filing_ref=filing_ref,
-                        result=result,
-                        analysis=analysis,
-                        cache_only=cache_only,
-                        steps=steps,
-                        observations=observations,
-                        verified_quotes=verified_quotes,
-                    )
-                    if len(steps) >= self.max_steps:
-                        concluded_payload = step_decision
-                        break
-                    if not can_call_gemini:
-                        continue
 
             if action == "conclude":
                 concluded_payload = step_decision
@@ -879,6 +989,15 @@ class ResearchLoop:
                 verified_quotes=verified_quotes,
             )
 
+        if timed_out_or_failed and concluded_payload is None:
+            concluded_payload = {
+                "action": "conclude",
+                "query": item.target_name or item.subject_name,
+                "outcome": "unresolved",
+                "explanation": "Research step budget expired before completing verification.",
+                "candidate_edges": [],
+            }
+
         return self._finalize_finding(
             item=item,
             cik=cik,
@@ -892,6 +1011,8 @@ class ResearchLoop:
             steps=steps,
             verified_quotes=verified_quotes,
             concluded_payload=concluded_payload,
+            run_started=run_started,
+            item_started=item_started,
         )
 
     @staticmethod
@@ -1028,7 +1149,10 @@ class ResearchLoop:
         steps: list[ResearchStep],
         verified_quotes: list[str],
         concluded_payload: Mapping[str, Any] | None,
+        run_started: float,
+        item_started: float,
     ) -> ResearchFinding:
+        has_key = bool(getattr(self.client, "has_api_key", True))
         if concluded_payload is None:
             concluded_payload = self._deterministic_step_decision(
                 item=item,
@@ -1036,6 +1160,7 @@ class ResearchLoop:
                 step_idx=self.max_steps,
                 verified_quotes=verified_quotes,
                 observations=[f'OBSERVED_QUOTE: "{q}"' for q in verified_quotes],
+                has_api_key=has_key,
             )
 
         raw_outcome = str(concluded_payload.get("outcome") or "unresolved").strip()
@@ -1067,31 +1192,32 @@ class ResearchLoop:
                 resolve_target_key=resolver,
             )
             if built_edges:
-                interp_res = verify_company_interpretations(
-                    built_edges,
-                    filing.text,
-                    client=self.client,
-                    cache=self.cache,
-                    cache_only=cache_only,
-                )
-                verified_new_edges = attach_edge_importance(interp_res.edges)
-                for ve in verified_new_edges:
-                    if ve.evidence_quote not in verified_quotes:
-                        verified_quotes.append(ve.evidence_quote)
-
-        if not verified_new_edges and item.item_kind in ("no_disclosures", "undisclosed_customer"):
-            recovered = self._recover_edges_from_filing(
-                item=item,
-                filing=filing,
-                filing_ref=filing_ref,
-                resolver=resolver,
-                top_keys=top_keys,
-            )
-            if recovered:
-                verified_new_edges = attach_edge_importance(recovered)
-                for ve in verified_new_edges:
-                    if ve.evidence_quote not in verified_quotes:
-                        verified_quotes.append(ve.evidence_quote)
+                budget = self._remaining_budget(run_started=run_started, item_started=item_started)
+                if budget > 0:
+                    try:
+                        interp_res = _call_with_timeout(
+                            lambda: verify_company_interpretations(
+                                [e.model_copy(update={"interpretation": None}) for e in built_edges],
+                                filing.text,
+                                client=self.client,
+                                cache=self.cache,
+                                cache_only=cache_only,
+                                sample_rate=1.0,
+                            ),
+                            budget,
+                        )
+                        # B2: Only keep edges with a confirmed interpretation from V-INT
+                        confirmed_built = [
+                            e
+                            for e in interp_res.edges
+                            if e.interpretation is not None and e.interpretation.status == "confirmed"
+                        ]
+                        verified_new_edges = attach_edge_importance(confirmed_built)
+                        for ve in verified_new_edges:
+                            if ve.evidence_quote not in verified_quotes:
+                                verified_quotes.append(ve.evidence_quote)
+                    except FuturesTimeoutError:
+                        log.info("V-INT on candidate_edges timed out")
 
         confirmed_edge_ids: list[str] = []
         rejected_edge_ids: list[str] = []
@@ -1099,55 +1225,91 @@ class ResearchLoop:
         if item.item_kind == "flagged_edge" and item.edge is not None:
             edge = item.edge
             doc_text = filing.text if filing is not None else edge.evidence_quote
-            active_flags, _, _ = check_interpretation_rules(edge, doc_text)
+            budget = self._remaining_budget(run_started=run_started, item_started=item_started)
+            vint_interp: EdgeInterpretation | None = None
+            if budget > 0:
+                try:
+                    vint_interp = _call_with_timeout(
+                        lambda: verify_edge_interpretation(
+                            edge.model_copy(update={"interpretation": None}),
+                            doc_text,
+                            client=self.client,
+                            cache=self.cache,
+                            cache_only=cache_only,
+                        ),
+                        budget,
+                    )
+                except FuturesTimeoutError:
+                    vint_interp = None
 
-            if outcome == "rejected" or any(
-                f in active_flags for f in ("competitor_mention", "negated", "direction_mismatch", "generic_reference")
-            ):
+            # B1: _finalize_finding must never mark an edge confirmed itself.
+            # Interpretation status comes only from verify_edge_interpretation / verify_company_interpretations.
+            # Unresolved/unclear stays flagged.
+            if outcome == "unresolved" or vint_interp is None:
+                outcome = "unresolved"
+                if not raw_explanation:
+                    raw_explanation = (
+                        f'Filing context for "{edge.evidence_quote}" remains ambiguous or unresolved.'
+                    )
+            elif vint_interp.status == "rejected" or outcome == "rejected":
                 outcome = "rejected"
                 rejected_edge_ids = [edge.edge_id]
                 if not raw_explanation:
                     raw_explanation = (
                         f'Filing context "{edge.evidence_quote}" does not support an active supply dependency.'
                     )
-            else:
+            elif vint_interp.status == "confirmed" and outcome in ("confirmed", "revised"):
                 outcome = "confirmed"
                 confirmed_edge_ids = [edge.edge_id]
                 if not raw_explanation:
                     raw_explanation = (
                         f'Verified filing context "{edge.evidence_quote}" confirms the operational dependency.'
                     )
+            else:
+                outcome = "unresolved"
+                if not raw_explanation:
+                    raw_explanation = (
+                        f'Filing context "{edge.evidence_quote}" remains flagged after verification.'
+                    )
 
         elif item.item_kind == "single_source" and item.edge is not None:
             edge = item.edge
+            edge_is_confirmed = edge.interpretation is not None and edge.interpretation.status == "confirmed"
             if verified_new_edges:
                 outcome = "new_evidence"
-                confirmed_edge_ids = [edge.edge_id]
-            elif verified_quotes:
+                if edge_is_confirmed:
+                    confirmed_edge_ids = [edge.edge_id]
+            elif verified_quotes and outcome in ("confirmed", "revised") and edge_is_confirmed:
                 outcome = "confirmed"
                 confirmed_edge_ids = [edge.edge_id]
                 if not raw_explanation:
                     raw_explanation = (
                         f'Verified sole-source disclosure "{verified_quotes[0]}" in the annual report.'
                     )
+            else:
+                outcome = "unresolved"
 
         elif item.item_kind == "unresolved_counterparty" and item.edge is not None:
             edge = item.edge
+            edge_is_confirmed = edge.interpretation is not None and edge.interpretation.status == "confirmed"
             resolved_key = resolver(edge.target_name)
-            if resolved_key is not None:
+            if resolved_key is not None and outcome != "unresolved":
                 outcome = "revised"
-                confirmed_edge_ids = [edge.edge_id]
+                if edge_is_confirmed:
+                    confirmed_edge_ids = [edge.edge_id]
                 if not raw_explanation:
                     raw_explanation = (
                         f'Resolved counterparty identity for "{edge.evidence_quote}" against portfolio records.'
                     )
-            elif verified_quotes:
+            elif verified_quotes and outcome in ("confirmed", "revised") and edge_is_confirmed:
                 outcome = "confirmed"
                 confirmed_edge_ids = [edge.edge_id]
                 if not raw_explanation:
                     raw_explanation = (
                         f'Verified external counterparty disclosure "{verified_quotes[0]}" in the filing.'
                     )
+            else:
+                outcome = "unresolved"
 
         elif item.item_kind in ("no_disclosures", "undisclosed_customer"):
             if verified_new_edges:
@@ -1156,8 +1318,14 @@ class ResearchLoop:
                     raw_explanation = (
                         f'Extracted verified dependency disclosure "{verified_new_edges[0].evidence_quote}".'
                     )
-            elif item.edge is not None and verified_quotes:
-                outcome = "confirmed" if outcome not in ("confirmed", "revised") else outcome
+            elif (
+                item.edge is not None
+                and verified_quotes
+                and outcome in ("confirmed", "revised")
+                and item.edge.interpretation is not None
+                and item.edge.interpretation.status == "confirmed"
+            ):
+                outcome = "confirmed"
                 confirmed_edge_ids = [item.edge.edge_id]
                 if not raw_explanation:
                     raw_explanation = (
@@ -1234,7 +1402,11 @@ class ResearchLoop:
         if self.fetcher is None:
             return None
         try:
-            filing = self.fetcher.latest(norm_cik) if hasattr(self.fetcher, "latest") else self.fetcher.fetch_latest_annual(norm_cik)
+            filing = (
+                self.fetcher.latest(norm_cik)
+                if hasattr(self.fetcher, "latest")
+                else self.fetcher.fetch_latest_annual(norm_cik)
+            )
             self._filings_by_cik[norm_cik] = filing
             return filing
         except (CompanyUnavailable, SourceError, ValueError):
@@ -1415,63 +1587,6 @@ class ResearchLoop:
 
         return spans, peer_names
 
-    def _recover_edges_from_filing(
-        self,
-        *,
-        item: ResearchItem,
-        filing: Filing | None,
-        filing_ref: FilingRef | None,
-        resolver: Callable[[str], str | None],
-        top_keys: set[str],
-    ) -> list[VerifiedEdge]:
-        if filing is None or not filing.text or filing_ref is None:
-            return []
-        known_targets = [
-            ("Taiwan Semiconductor Manufacturing", "foundry", "company", True, "Item 1"),
-            ("TSMC", "foundry", "company", True, "Item 1"),
-            ("Samsung Electronics", "supplier", "company", False, "Item 1"),
-            ("Foxconn", "contract_manufacturer", "company", False, "Item 1"),
-            ("Hon Hai", "contract_manufacturer", "company", False, "Item 1"),
-            ("ZZFAB", "foundry", "company", True, "Item 1"),
-            ("ZZSUP", "supplier", "company", True, "Item 1"),
-        ]
-        sentences = [
-            s.strip()
-            for s in re.split(r"(?<=[.!?])\s+|\n+", filing.text)
-            if 20 <= len(s.strip()) <= 320
-        ]
-        candidate_dicts: list[dict[str, Any]] = []
-        for target, edge_type, kind, sole, section in known_targets:
-            for sent in sentences:
-                if target.lower() in sent.lower():
-                    candidate_dicts.append(
-                        {
-                            "edge_type": edge_type,
-                            "target_name": target,
-                            "target_kind": kind,
-                            "sole_source": sole,
-                            "qualifier": "recovered by research loop",
-                            "section": section,
-                            "evidence_quote": sent,
-                        }
-                    )
-                    break
-        if not candidate_dicts:
-            return []
-        sections_map = section_map(filing.text, filing.form)[0]
-        edges, _ = verify_and_build_edges(
-            candidate_dicts,
-            source_company_key=item.subject_key,
-            source_company_name=item.subject_name,
-            source_in_portfolio=item.subject_key in top_keys,
-            canonical_text=filing.text,
-            filing_ref=filing_ref,
-            sections=sections_map,
-            portfolio_company_keys=top_keys,
-            resolve_target_key=resolver,
-        )
-        return edges
-
     @staticmethod
     def _build_step_prompt(
         *,
@@ -1519,6 +1634,7 @@ class ResearchLoop:
         step_idx: int,
         verified_quotes: Sequence[str],
         observations: Sequence[str],
+        has_api_key: bool = True,
     ) -> dict[str, Any]:
         if step_idx == 1:
             if item.item_kind in ("undisclosed_customer", "single_source"):
@@ -1549,6 +1665,17 @@ class ResearchLoop:
                 "section": "1",
                 "outcome": "unresolved",
                 "explanation": "",
+                "candidate_edges": [],
+            }
+
+        if not has_api_key:
+            return {
+                "action": "conclude",
+                "query": "",
+                "cik": cik,
+                "section": "1",
+                "outcome": "unresolved",
+                "explanation": "Gemini API key is not configured for live research synthesis.",
                 "candidate_edges": [],
             }
 

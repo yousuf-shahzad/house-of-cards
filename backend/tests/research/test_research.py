@@ -416,3 +416,177 @@ def test_research_loop_rejects_contradicted_flagged_edge_and_handles_failure() -
     assert "edge_neg_flagged" in findings[0].rejected_edge_ids
     assert all(e.edge_id != "edge_neg_flagged" for e in merged.edges)
     assert merged.counts.interpretation_rejected == custom_result.counts.interpretation_rejected + 1
+
+
+def _one_edge(edge: VerifiedEdge) -> tuple[AnalysisResponse, DependencyResult]:
+    analysis, result = _sample_analysis_and_result()
+    company = result.companies[0].model_copy(update={"verified_edges": 1})
+    return analysis, result.model_copy(update={"edges": [edge], "companies": [company]})
+
+
+def test_hypothetical_cannot_be_promoted() -> None:
+    from hoc.ai.interpretation import verify_edge_interpretation
+
+    for force_unresolved in (False, True):
+        quote = "If demand increases, we could consider ZZFAB as a potential foundry."
+        edge = _make_edge(
+            edge_id="hypothetical",
+            quote=quote,
+            interp_status="flagged",
+            interp_flags=["hypothetical"],
+        )
+        analysis, result = _one_edge(edge)
+        filing = _sample_filing(text="ITEM 1. BUSINESS\n" + quote)
+        verdict = verify_edge_interpretation(edge, filing.text, cache_only=True)
+        assert verdict.status == "flagged"
+        assert "hypothetical" in verdict.flags
+        client = FakeGeminiClient()
+        if force_unresolved:
+            client.add_response(
+                "",
+                {
+                    "action": "conclude",
+                    "query": "",
+                    "cik": filing.cik,
+                    "section": "",
+                    "outcome": "unresolved",
+                    "explanation": "Evidence is hypothetical.",
+                    "candidate_edges": [],
+                },
+            )
+        findings, merged = ResearchLoop(
+            client=client,
+            filings_by_key={edge.source_company_key: filing},
+        ).run(result, analysis, max_items=1, cache_only=False)
+        assert len(findings) == 1
+        assert findings[0].outcome == "unresolved"
+        assert edge.edge_id not in findings[0].confirmed_edge_ids
+        kept = next(e for e in merged.edges if e.edge_id == edge.edge_id)
+        assert kept.interpretation is not None
+        assert kept.interpretation.status == "flagged"
+
+
+def test_cache_only_competitor_cannot_become_dependency() -> None:
+    analysis, result = _sample_analysis_and_result()
+    company = result.companies[0].model_copy(update={"verified_edges": 0})
+    result = result.model_copy(update={"edges": [], "companies": [company]})
+    filing = _sample_filing(
+        text="ITEM 1. BUSINESS\nOur primary competitors include TSMC and other semiconductor manufacturers."
+    )
+    client = FakeGeminiClient(has_api_key=False)
+    findings, merged = ResearchLoop(
+        client=client,
+        filings_by_key={company.company_key: filing},
+    ).run(result, analysis, max_items=1, cache_only=True)
+    assert client.calls == []
+    assert len(findings) == 1
+    assert findings[0].outcome == "unresolved"
+    assert findings[0].new_edges == []
+    assert merged.edges == []
+
+
+def test_verified_quote_cannot_launder_adjacent_invented_digits() -> None:
+    quote = "We rely exclusively on ZZFAB for advanced wafer fabrication of our core processor line."
+    cleaned = strip_unquoted_numbers(f'Claim: "{quote} 99% invented"', [quote])
+    assert not re.search(r"\d", cleaned)
+    numeric = "Sales to Customer A accounted for 22% of our consolidated revenue."
+    assert f'"{numeric}"' in strip_unquoted_numbers(f'Claim 99: "{numeric}"', [numeric])
+
+
+def test_unnamed_customer_below_ten_percent_is_not_selected() -> None:
+    quote = "Sales to Customer A accounted for 5% of our consolidated revenue."
+    edge = _make_edge(
+        edge_id="small_customer",
+        target_name="Customer A",
+        target_key=None,
+        target_kind="unnamed_customer",
+        edge_type="customer",
+        sole_source=False,
+        quote=quote,
+        tier="low",
+        score=0.1,
+    ).model_copy(update={"qualifier": "5% of consolidated revenue"})
+    analysis, result = _one_edge(edge)
+    items = select_research_items(result, analysis, max_items=6)
+    assert not any(i.item_kind == "undisclosed_customer" for i in items)
+
+
+def test_selection_uses_raw_importance_times_exposure() -> None:
+    low = _make_edge(edge_id="low_flagged", interp_status="flagged", score=0.55, tier="medium")
+    high = _make_edge(edge_id="high_confirmed", target_name="ZZSUP", score=0.8, tier="high")
+    analysis, result = _one_edge(low)
+    result = result.model_copy(update={"edges": [low, high]})
+    items = select_research_items(result, analysis, max_items=1)
+    assert len(items) == 1
+    assert items[0].edge is not None
+    assert items[0].edge.edge_id == high.edge_id
+
+
+def test_slow_gemini_call_obeys_wall_clock_budget() -> None:
+    import time
+
+    class SlowClient(FakeGeminiClient):
+        def generate_json(self, *args, **kwargs):
+            time.sleep(0.5)
+            return super().generate_json(*args, **kwargs)
+
+    edge = _make_edge(edge_id="slow_flagged", interp_status="flagged")
+    analysis, result = _one_edge(edge)
+    runner = ResearchLoop(client=SlowClient(), filings_by_key={edge.source_company_key: _sample_filing()})
+    runner.item_timeout_s, runner.total_timeout_s = 0.05, 0.1
+    started = time.monotonic()
+    findings, _ = runner.run(result, analysis, max_items=1, cache_only=False)
+    elapsed = time.monotonic() - started
+    assert elapsed < 0.3, f"A blocking Gemini call escaped the budget: {elapsed:.3f}s"
+    assert len(findings) == 1
+    assert findings[0].outcome == "unresolved"
+
+
+def test_research_replays_across_runner_instances_and_invalidates_prompt(tmp_path) -> None:
+    from hoc.ai.cache import ExtractionCache
+    from hoc.core.cache import DiskCache
+
+    edge = _make_edge(edge_id="valid_flagged", interp_status="flagged")
+    analysis, result = _one_edge(edge)
+    client = FakeGeminiClient()
+    online = ResearchLoop(
+        client=client,
+        cache=ExtractionCache(DiskCache(tmp_path)),
+        filings_by_key={edge.source_company_key: _sample_filing()},
+    )
+    findings, merged = online.run(result, analysis, max_items=1, cache_only=False)
+    assert client.calls
+    assert any(f.outcome != "unresolved" for f in findings)
+    offline_client = FakeGeminiClient(has_api_key=False)
+    replay = ResearchLoop(client=offline_client, cache=ExtractionCache(DiskCache(tmp_path)))
+    replayed, replayed_result = replay.run(result, analysis, max_items=1, cache_only=True)
+    assert offline_client.calls == []
+    assert [f.model_dump() for f in replayed] == [f.model_dump() for f in findings]
+    assert replayed_result.model_dump() == merged.model_dump()
+    replay.prompt_version += "-changed"
+    missed, _ = replay.run(result, analysis, max_items=1, cache_only=True)
+    assert len(missed) == 1
+    assert missed[0].outcome == "unresolved"
+    assert offline_client.calls == []
+
+
+def test_from_settings_wires_etf_service_and_research_runner_offline(tmp_path) -> None:
+    """EtfService.from_settings and AgenticResearchRunner.from_settings construct cleanly with zero network calls."""
+    from hoc.config import Settings
+    from hoc.core.cache import DiskCache
+    from hoc.core.http import CachedHttpClient
+    from hoc.graph import DependencyOrchestrator
+    from hoc.service import EtfService
+
+    settings = Settings(cache_dir=tmp_path)
+    http = CachedHttpClient(settings, DiskCache(settings.cache_dir))
+
+    runner = AgenticResearchRunner.from_settings(http, settings)
+    assert isinstance(runner, ResearchLoop)
+    assert isinstance(runner.orchestrator, DependencyOrchestrator)
+    assert runner.cache is not None
+    assert runner.fetcher is not None
+
+    service = EtfService.from_settings(settings)
+    assert isinstance(service.research_runner, ResearchLoop)
+    assert isinstance(service.research_runner.orchestrator, DependencyOrchestrator)
