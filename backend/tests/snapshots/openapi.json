@@ -1120,6 +1120,14 @@
             "title": "Progress Total",
             "type": "integer"
           },
+          "research": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ResearchFinding"
+            },
+            "title": "Research",
+            "type": "array"
+          },
           "result": {
             "anyOf": [
               {

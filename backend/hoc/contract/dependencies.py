@@ -284,6 +284,9 @@ class DependencyJob(_Model):
     companies: list[CompanyRunStatus] = []
     result: DependencyResult | None = None
     error: ErrorBody | None = None
+    research: list[ResearchFinding] = []
+    """FIX-11: findings from each company's agent as soon as that agent finishes, so a page can show them while
+    the job runs. When the job is done, `result.research` is the authoritative, merged list."""
 
 
 # ---------- v3 A-RES: agentic research loop ----------

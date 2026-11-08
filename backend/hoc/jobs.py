@@ -323,6 +323,8 @@ class _Job:
     phase: str = "queued"
     steps: dict[str, tuple[int, int]] = field(default_factory=dict)
     """v3.1 progress parts: 'read' (companies read, of N), 'research:<key>' (agent steps), 'synth' (0/1 or 1/1)."""
+    research: list[ResearchFinding] = field(default_factory=list)
+    """FIX-11: each company's findings, added as soon as its agent finishes (shown while the job runs)."""
     result: DependencyResult | None = None
     error: ErrorBody | None = None
     finished_at: float | None = None
@@ -380,7 +382,7 @@ class DependencyJobs:
                 progress_done=sum(c.status in FINISHED for c in job.companies),
                 progress_total=len(job.companies), result=job.result, error=job.error,
                 phase=job.phase, steps_done=sum(d for d, _ in job.steps.values()),
-                steps_total=sum(n for _, n in job.steps.values()),
+                steps_total=sum(n for _, n in job.steps.values()), research=list(job.research),
             )
 
     # ---------- internals ----------
@@ -553,6 +555,8 @@ class DependencyJobs:
         self._set_company(job, index, **changes)
         if found is None:
             return None
+        with self._lock:  # FIX-11: visible to pollers now, not only when the whole job ends
+            job.research.extend(found.findings)
         rejected = set(found.rejected_edge_ids)
         edges = [e for e in found.edges if e.edge_id not in rejected]
         return list(found.findings), edges, len(rejected), getattr(found, "interpretation_rejected", 0)

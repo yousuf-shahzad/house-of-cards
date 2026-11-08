@@ -216,6 +216,7 @@ All additive with defaults, so v3 payloads stay valid.
   - `phase`: queued → reading (fetch + extract) → researching (the agentic loop) → synthesising (metrics + insights) → done;
   - `steps_done` / `steps_total`: progress across all phases, with `0 <= steps_done <= steps_total`.
   - `CompanyStatus` gains `"researching"`.
+  - `research` (FIX-11): the findings of each company's agent, added as soon as that agent finishes, so a page can show them while the job runs. Once the job is done, `result.research` is the merged list to use.
 - **`DependencyResult` research fields:**
   - `research: list[ResearchFinding]` holds the findings from the run's own agentic loop. Every finding obeys the §8 research rules: steps numbered 1..n ending in `conclude`, `new_edges` verified and present in `edges`, and no `rejected_edge_ids` left in the result.
   - `research_depth` is `"none"`, `"light"` or `"thorough"`.

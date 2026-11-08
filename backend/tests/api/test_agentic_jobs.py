@@ -210,3 +210,16 @@ def test_live_pipeline_uses_the_runner_entry_point_only_when_it_exists(make_serv
                                      analysis=analysis) == "ok"
     assert seen["depth"] == "thorough" and seen["cache_only"] and seen["analysis"] is analysis
     assert seen["resolve_target_key"](first.company_name) == first.company_key
+
+
+def test_findings_are_visible_while_the_job_runs(jobs):
+    """FIX-11: job.research grows as each company's agent finishes, before the job is done."""
+    pipeline = AgenticPipeline()
+    service = jobs(pipeline)
+    seen: list[list[str]] = []
+    pipeline.observe = lambda: seen.extend([f.finding_id for f in j.research]
+                                           for j in map(service._jobs.get, list(service._jobs._jobs)))
+    job = submit(service)
+    keys = [c.company_key for c in job.companies]
+    assert [] in seen and [f"f-{keys[0]}"] in seen  # nothing yet, then the first agent's findings mid-run
+    assert [f.finding_id for f in job.research] == [f.finding_id for f in job.result.research]
