@@ -31,6 +31,8 @@ from hoc.contract import (
     HealthResponse,
     PortfolioRequest,
     PriceQuote,
+    ResearchJob,
+    ResearchRequest,
     SourceError,
     SourceName,
     SourcesUnavailableError,
@@ -40,7 +42,14 @@ from hoc.contract import (
     ValuationResponse,
 )
 from hoc.examples import EXAMPLES
-from hoc.jobs import SUBMIT_WAIT_SECONDS, DependencyJobs, LivePipeline, NotWiredPipeline
+from hoc.jobs import (
+    SUBMIT_WAIT_SECONDS,
+    DependencyJobs,
+    LivePipeline,
+    NotWiredPipeline,
+    NotWiredResearch,
+    ResearchJobs,
+)
 from hoc.normalise.pipeline import normalise_etf
 from hoc.portfolio.analyse import analyse
 from hoc.portfolio.compare import compare_portfolios, read_cached_extractions
@@ -76,6 +85,9 @@ class EtfService:
         self.dependency_pipeline = NotWiredPipeline()
         """G-DOC + G-AI + G-ORCH behind hoc.jobs.DependencyPipeline; set before the first dependency request."""
         self._jobs: DependencyJobs | None = None
+        self.research_runner = NotWiredResearch()
+        """A-RES behind hoc.jobs.ResearchRunner; set before the first research request."""
+        self._research: ResearchJobs | None = None
 
     @classmethod
     def from_settings(cls, settings) -> EtfService:
@@ -149,6 +161,24 @@ class EtfService:
     def dependency_job(self, job_id: str) -> DependencyJob:
         """Raises JobNotFoundError (404)."""
         return self.dependency_jobs.get(job_id)
+
+    @property
+    def research_jobs(self) -> ResearchJobs:
+        jobs = self.dependency_jobs
+        with self._locks_guard:
+            if self._research is None:
+                self._research = ResearchJobs(jobs, self.research_runner)
+            return self._research
+
+    def submit_research(self, dependency_job_id: str, request: ResearchRequest, *,
+                        wait: float = SUBMIT_WAIT_SECONDS) -> ResearchJob:
+        """Start or join research on a finished dependency job. Raises JobNotFoundError (404) or
+        PortfolioValidationError (422 while the dependency job is unfinished)."""
+        return self.research_jobs.submit(dependency_job_id, request, wait=wait)
+
+    def research_job(self, research_id: str) -> ResearchJob:
+        """Raises ResearchNotFoundError (404)."""
+        return self.research_jobs.get(research_id)
 
     def health(self) -> HealthResponse:
         return HealthResponse(version=__version__, offline=self.settings.offline, sources=self.registry.names)
