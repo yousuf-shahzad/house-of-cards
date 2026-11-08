@@ -76,7 +76,11 @@ Survivors are measured with cache-only compare on one company set (FIX-20). Pyth
 - **Swaps:** they move shares from the source ETF.
 - **Polling:** while `ai_status` is `pending`, show the rules ideas with "AI is checking more ideas…". Re-request about every 3 s, for up to about 90 s, and swap in the AI ideas when they arrive.
 - **Live check (lead):** sample portfolio. Every shown idea improves its named issue by the shown amount; the AI and fallback paths both work, including with no key.
-- **Owners:** Gawyn's Gemini (proposer) + Yousuf's Codex (verifier, contract, FIX-20 first) + Bekarys's Claude (UI) · **Status:** assigned; the rules-only version is merged (#177–#179)
+- **Owners:** Gawyn's Gemini (proposer) + Yousuf's Codex (verifier, contract) + Bekarys's Claude (UI)
+- **Status:**
+  - Merged: rules version (#177–#181), AI contract (#185), proposer (#194, plus name and sector checks).
+  - Engine PR #192 is approved and blocked only on the proposer's "Consider" false positive (Gawyn's Gemini).
+  - UI PR #186 is in review.
 
 ### FIX-8 · medium · The evaluation doesn't show the effect of the research agents
 - Fix: after FIX-1 and FIX-2 merge, run `uv run hoc eval --live` with light agents. EVAL.md then reports precision and recall before vs after the agents, with confidence intervals. Do no tuning on the 10 held-out companies.
