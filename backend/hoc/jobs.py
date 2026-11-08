@@ -35,6 +35,7 @@ from hoc.contract import (
     ErrorBody,
     JobNotFoundError,
     PortfolioRequest,
+    SourceError,
     VerifiedEdge,
 )
 from hoc.contract.dependencies import FilingRef, Insights, JobStatus, MetricFact
@@ -117,6 +118,7 @@ class LivePipeline:
         self.orchestrator = orchestrator
         self.resolve_target_key = resolve_target_key
         self.reverse_limit = reverse_limit
+        self._titles_by_cik: dict[str, str] | None = None
         """Other filers' documents searched per company (HOC_DEPS_REVERSE_LIMIT; 0 = reverse links off)."""
         self.prompt_version = f"{extractor.prompt_version}+{orchestrator.prompt_version}"
         self._filings: dict[str, object] = {}
@@ -157,12 +159,31 @@ class LivePipeline:
         if self.reverse_limit <= 0:
             return Extraction(edges=[])
         own_cik = company.company_key.removeprefix("CIK:") if company.company_key.startswith("CIK:") else None
-        filings = self.fetcher.names_in_other_filings(company.company_name, exclude_cik=own_cik,
+        filings = self.fetcher.names_in_other_filings(search_name(company.company_name), exclude_cik=own_cik,
                                                       limit=self.reverse_limit)
-        found = self.extractor.extract_reverse(company, filings, cache_only=cache_only,
+        titles = self._filer_titles()
+        hits = []
+        for filing in filings:
+            cik = str(filing.cik).zfill(10)
+            hits.append((f"CIK:{cik}", titles.get(cik) or f"CIK:{cik}", filing))  # job swaps in portfolio names
+        found = self.extractor.extract_reverse(company, hits, cache_only=cache_only,
                                                top_n_company_keys={company.company_key},
                                                resolve_target_key=self.resolver_for([company]))
         return Extraction(edges=list(found.edges), rejected=found.rejected, cached=found.cached)
+
+    def _filer_titles(self) -> dict[str, str]:
+        """10-digit CIK -> SEC company title (one cached SEC request per process); {} if unavailable."""
+        with self._lock:
+            if self._titles_by_cik is None:
+                try:
+                    titles = self.fetcher.sec_titles()
+                except (CompanyUnavailable, SourceError, ValueError):  # cosmetic: fall back to the CIK
+                    log.warning("SEC titles unavailable; reverse-link filers show their CIK")
+                    titles = {}
+                self._titles_by_cik = {}
+                for title, cik in titles.items():
+                    self._titles_by_cik.setdefault(cik, title)
+            return self._titles_by_cik
 
     def resolver_for(self, portfolio: Sequence[CompanyExposure]) -> Callable[[str], str | None]:
         """G-DOC's deterministic name -> company_key resolver for one job's portfolio (exact match only)."""
@@ -197,11 +218,25 @@ def job_id_for(request: DependencyRequest, companies: Sequence[CompanyExposure],
     return hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
 
 
+def search_name(name: str) -> str:
+    """The phrase to search other filings for: the display name without trailing legal forms, original wording
+    kept ('Taiwan Semiconductor Manufacturing Co., Ltd.' -> 'Taiwan Semiconductor Manufacturing', 'AT&T Inc.' ->
+    'AT&T'). Annual reports rarely repeat the suffix, so the exact phrase with it finds almost nothing."""
+    from hoc.filings.names import LEGAL_FORMS
+    from hoc.identity.resolver import clean_company_name
+
+    words = clean_company_name(name).split()
+    while len(words) > 1 and words[-1].strip(".,").casefold() in LEGAL_FORMS:
+        words.pop()
+    return " ".join(words).rstrip(",") or name
+
+
 def _resolve_and_flag(analysis: AnalysisResponse, edges: list[VerifiedEdge],
                       resolve: Callable[[str], str | None] | None = None) -> list[VerifiedEdge]:
     """Against this job's own portfolio (extractions are cached across portfolios): fill a missing company
     target_key with the deterministic resolver, then set source/target_in_portfolio. The LLM never picks a key."""
-    keys = {c.company_key for c in analysis.exposures}
+    names = {c.company_key: c.company_name for c in analysis.exposures}
+    keys = set(names)
     flagged = []
     for edge in edges:
         target_key = edge.target_key
@@ -209,6 +244,7 @@ def _resolve_and_flag(analysis: AnalysisResponse, edges: list[VerifiedEdge],
             target_key = resolve(edge.target_name)
         flagged.append(edge.model_copy(update={
             "target_key": target_key,
+            "source_company_name": names.get(edge.source_company_key, edge.source_company_name),
             "source_in_portfolio": edge.source_company_key in keys,
             "target_in_portfolio": target_key is not None and target_key in keys,
         }))
