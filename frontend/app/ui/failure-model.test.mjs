@@ -146,3 +146,25 @@ test("both sides start from the same amount, so the comparison is on equal pots"
   assert.equal(lossDifference(base.loss, biggerOwnPot.loss).tone, "worse");
   assert.equal(lossDifference(base.loss, cand.loss).tone, "better");
 });
+
+test("options under 0.05% are hidden, since the picker would show them as 0.0%", () => {
+  const { options, unknownWeight } = countryOptions({
+    exposures: [
+      company("A", "energy", "US", 0.9),
+      company("B", "energy", "CO", 0.0002),
+      company("C", "energy", "CZ", 0.0001),
+      company("D", "energy", "EG", 0.00049),
+      company("E", "energy", "TW", 0.0005),
+    ],
+  });
+  assert.deepEqual(options.map((o) => o.key), ["US", "TW"]);
+  assert.equal(unknownWeight, 0);
+  const sectors = sectorOptions({
+    sectors: [
+      { sector: "energy", weight: 0.9 },
+      { sector: "utilities", weight: 0.0003 },
+    ],
+    exposures: [],
+  });
+  assert.deepEqual(sectors.map((o) => o.key), ["energy"]);
+});

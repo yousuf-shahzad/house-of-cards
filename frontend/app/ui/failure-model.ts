@@ -6,6 +6,9 @@ import type { AnalysisResponse, Sector, ValuationResponse } from "@/api/types";
 /** % mode has no money, so the simulator shows losses per this many dollars. */
 export const NOTIONAL_DOLLARS = 10_000;
 
+/** Options below this weight would read "0.0%" in the picker, so they are left out. */
+export const MIN_OPTION_WEIGHT = 0.0005;
+
 export interface SimulatorOption {
   key: string;
   label: string;
@@ -42,7 +45,7 @@ export function sectorOptions(analysis: Pick<AnalysisResponse, "sectors" | "expo
     for (const c of analysis.exposures) totals.set(c.sector, (totals.get(c.sector) ?? 0) + c.exposure);
   }
   return [...totals]
-    .filter(([sector, weight]) => sector !== "unknown" && weight > 0)
+    .filter(([sector, weight]) => sector !== "unknown" && weight >= MIN_OPTION_WEIGHT)
     .map(([sector, weight]) => ({ key: sector, label: SECTOR_LABELS[sector] ?? sector, weight }))
     .sort(byWeight);
 }
@@ -75,7 +78,10 @@ export function countryOptions(analysis: Pick<AnalysisResponse, "exposures"> | n
     if (code) totals.set(code, (totals.get(code) ?? 0) + c.exposure);
     else unknownWeight += c.exposure;
   }
-  const options = [...totals].map(([code, weight]) => ({ key: code, label: countryName(code), weight })).sort(byWeight);
+  const options = [...totals]
+    .filter(([, weight]) => weight >= MIN_OPTION_WEIGHT)
+    .map(([code, weight]) => ({ key: code, label: countryName(code), weight }))
+    .sort(byWeight);
   return { options, unknownWeight };
 }
 

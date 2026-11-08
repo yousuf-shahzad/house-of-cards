@@ -128,12 +128,31 @@ export function FailureSimulator() {
     // requestKey captures every input that changes the request.
   }, [requestKey, retryTick]);
 
-  // Bring the simulator into view once per link, as soon as it can render.
+  // Bring the simulator into view once per link. The workspace scrolls to the top on every hash change and
+  // the cards above it are still loading, so wait for the first result, then re-check while the layout settles.
+  // Any scroll, tap or key from the user ends it.
+  const scrollTimers = useRef<number[]>([]);
+  const stopScrolling = useRef<() => void>(() => {});
   useEffect(() => {
-    if (!hashShock || !baselineReady || scrolledFor.current === hashShock) return;
+    if (!hashShock || status !== "ready" || scrolledFor.current === hashShock) return;
     scrolledFor.current = hashShock;
-    sectionRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
-  }, [hashShock, baselineReady]);
+    stopScrolling.current();
+    const events = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
+    const stop = () => {
+      scrollTimers.current.forEach((t) => window.clearTimeout(t));
+      scrollTimers.current = [];
+      events.forEach((name) => window.removeEventListener(name, stop));
+    };
+    stopScrolling.current = stop;
+    events.forEach((name) => window.addEventListener(name, stop, { passive: true }));
+    const bringIntoView = () => {
+      const top = sectionRef.current?.getBoundingClientRect().top;
+      if (top !== undefined && Math.abs(top) > 24) sectionRef.current?.scrollIntoView({ block: "start" });
+    };
+    scrollTimers.current = [0, 300, 800, 1600].map((ms) => window.setTimeout(bringIntoView, ms));
+    scrollTimers.current.push(window.setTimeout(stop, 1700));
+  }, [hashShock, status]);
+  useEffect(() => () => stopScrolling.current(), []);
 
   if (!baselineReady || !analysis) return null;
 
