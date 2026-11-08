@@ -30,7 +30,7 @@ This is a proof of concept, not investment advice, and it does not trade or simu
   2. **What you really own** (top 5 companies as plain sentences + the highest-overlap ETF pair, e.g. `QQQ` and `XLK` at `50.11%`),
   3. **How spread out is it?** (combined company + industry verdict chip via `diversificationVerdict` — e.g. **"Concentrated in one industry"** when the top industry is $\ge 40\%$ — top-10 share, effective equal holdings, top 3 industries),
   4. **Hidden risks** (monotonic phased progress bar *"Reading reports → Double-checking findings → Writing summary"* + **Go deeper** option, top supplier dependency, top non-US factory country, checked portfolio share, and concise `plain_title`/`plain_text` AI flaws with **Read more**),
-  5. **What could you do?** (concise `plain_title`/`plain_text` AI suggestions, concrete one-click **Change ideas** *(coming)*, real-time **Try a change** inside the guide, **See everything** -> `#/dependencies`, or **Start over**).
+  5. **What could you do?** (concise `plain_title`/`plain_text` AI suggestions, concrete one-click **Change ideas**, real-time **Try a change** inside the guide, **See everything** -> `#/dependencies`, or **Start over**).
   Choosing **"I'm experienced: show everything"** opens the full dashboard, and a **Simple view / Full view**
   switch in the top bar toggles between both views at any time while keeping your portfolio and current step.
 - **Portfolio builder**: add or remove ETFs (defaults to **shares**, with a `%` toggle), set allocations, or load
@@ -59,11 +59,11 @@ This is a proof of concept, not investment advice, and it does not trade or simu
   agentic research loop across SEC filings to follow up on flagged edges, unnamed customers, single-source
   bottlenecks, and zero-disclosure holdings.
 - **Compare / Try a change** (v3/v3.1): edit a candidate **Scenario** (defaults to **shares**, seeded from your
-  current portfolio, with concrete one-click **Change ideas** *(coming)*) in real time (~500 ms auto-compare with no
+  current portfolio, with concrete one-click **Change ideas**) in real time (~500 ms auto-compare with no
   Compare button, both on `#/compare` and inside the guided view's **Try a change** screen) to see four headline
   before/after rows — biggest dependency change, top industry share (`top_sector`), top-10 concentration, and
   effective equal holdings — plus full deltas under **More details** (e.g. swapping 15 pts of QQQ + 15 pts of XLK
-  into 30% VTV cuts TSMC dependency from **12.39% to 4.69%, -7.71 pts**, and top-10 concentration from **37.14% to
+  into 30% VTV cuts TSMC dependency from **12.39% to 6.30%, -6.10 pts**, and top-10 concentration from **37.14% to
   24.98%**), using cached verified extractions with zero Gemini calls.
 
 Every number comes from deterministic Python on the backend. The only LLM use is the Dependencies page,

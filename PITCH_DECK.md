@@ -54,8 +54,8 @@ Suppose you split your savings across four popular funds:
 > **Gradual Expansion:** Moving from *which stocks you own* to *who those companies depend on to survive*, powered by per-company **agentic sub-agents**.
 
 ### The Next Question
-Even when you own **different** companies—like **Apple**, **Nvidia**, **AMD**, and **Broadcom**—are they truly independent?
-- **No:** None of them own the factories that make their most advanced computer chips. They all rely on a single manufacturing partner in Taiwan: **TSMC**.
+Even when you own **different** companies—like **Nvidia (`6.89%`)**, **Broadcom (`2.28%`)**, **AMD (`2.04%`)**, and **Intel (`1.19%`)**—are they truly independent?
+- **No:** They all rely on a single manufacturing partner in Taiwan for advanced computer chips: **TSMC (`12.39%` combined portfolio exposure)**.
 - If one factory hub halts production, all four stocks fall together.
 
 ### How Our Per-Company Agentic Sub-Agents Uncover This Automatically
@@ -64,15 +64,16 @@ The truth about who supplies whom is buried inside **200-page legal annual repor
 ```
 Your Top 15 Companies ──► Official Annual Reports ──► Per-Company Gemini Sub-Agents ──► Supply-Chain Map
                            (22 reports fetched         (Initial extraction + multi-step  • 12.39% of your portfolio
-                            automatically from          tool investigation across         depends on TSMC (via 4 companies)
-                            public SEC records)         filings; Light or "Go deeper")  • 9.42% depends on Samsung
+                            automatically from          tool investigation across         depends on TSMC (Nvidia 6.89%
+                            public SEC records)         filings; Light or "Go deeper")    + Broadcom 2.28% + AMD 2.04% + Intel 1.19%)
+                                                                                         • 9.42% depends on Samsung
 ```
 
 - **Multi-Step Agentic Investigation (`Light` + `"Go deeper"`):** After initial extraction, a dedicated **per-company Gemini 3.8 Flash sub-agent** investigates each company's open risk items (missing customer concentration, unnamed `>=10%` customers, and rule-flagged claims) using `find_in_filing`, `read_section`, and cross-company `search_filings`—and users can click **"Go deeper"** for a thorough multi-step pass.
 - **Smart Two-Way Search:** Samsung doesn't file a US annual report of its own. A normal tool would miss it completely. Our tool searches *other* companies' reports that mention Samsung by name (like Qualcomm and Nvidia), revealing that **9.42% of your portfolio depends on Samsung**.
 
 ### Speaker Cue (50s)
-*"Now here is the deeper problem. Even when you own different companies—Apple, Nvidia, AMD, Broadcom—they all rely on the exact same chip factories. Click 'Find Dependencies', and our Gemini pipeline reads 22 official SEC reports and launches per-company agentic sub-agents that search across filings to double-check flagged claims and uncover missing customer disclosures. They reveal that 12.39% of your entire portfolio depends on TSMC—and 9.42% depends on Samsung, which we catch even though Samsung doesn't file a US report, because other companies' reports name it as their supplier."*
+*"Now here is the deeper problem. Even when you own different companies—Nvidia, Broadcom, AMD, and Intel—they all rely on the exact same chip factories. Click 'Find Dependencies', and our Gemini pipeline reads 22 official SEC reports and launches per-company agentic sub-agents that search across filings to double-check flagged claims and uncover missing customer disclosures. They reveal that 12.39% of your entire portfolio depends on TSMC across Nvidia, Broadcom, AMD, and Intel—and 9.42% depends on Samsung, which we catch even though Samsung doesn't file a US report, because other companies' reports name it as their supplier."*
 
 ---
 
@@ -133,7 +134,7 @@ HOC_OFFLINE=1 uv run python -m hoc.cli analyse --example us-core-tilt
 ### What House of Cards Does Not Claim to Do (Shown Live on Screen)
 - **Only Sees Public Disclosures (40% Verified Portfolio Weight):** Companies only reveal so much in public filings. For instance, Apple and Microsoft do not name their individual component suppliers in their annual reports (`16.7%` filed with no named suppliers/customers), and big customers are often listed anonymously (*"Customer A — 22% of revenue"*). Our Coverage Panel shows that **40.0%** of the portfolio has verified supplier/customer disclosures (`56.7%` analysed total) and never guesses the rest.
 - **Reports Are Snapshots in Time:** Annual reports come out once a year, and some fund disclosures come out quarterly. Every link and fund row displays its **exact publication date** so you never mistake old data for live news.
-- **Visibility, Not Trading Advice:** House of Cards is an X-ray for your portfolio—including an interactive **"Try a change"** side-by-side comparison—it never trades your money and never gives buy or sell advice.
+- **Visibility, Not Trading Advice:** House of Cards is an X-ray for your portfolio—including an interactive **"Try a change"** side-by-side comparison and verified **Change ideas** (e.g., swapping `XLK` and part of `QQQ` into `30% VTV` cuts TSMC dependency from **12.39% → 6.30%, −6.10 pts**, and adding `+20% XLU` dilutes it from **12.39% → 9.92%, −2.48 pts**)—it never trades your money and never gives buy or sell advice.
 
 ### 10-Second Judge Recap
 | Question | Our Answer |
