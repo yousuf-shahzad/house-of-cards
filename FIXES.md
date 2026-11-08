@@ -29,14 +29,24 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 ## New
 
 <!-- Add new problems below this line, one per line. -->
-- BUG: Full-view Exposures (`#/exposures`) and Risk (`#/risk`) show an endless spinning "Updating…" loader when the portfolio is edited into an incomplete/invalid state (`stale === true` while `status !== "loading"`), and on an analysis error (e.g. `UNKNOWN_TICKER`) display both the spinning "Updating…" banner and the red error banner simultaneously — repro: load the sample portfolio, go to `#/portfolio`, switch to `%` and change `IVV` to `10%` (total `70%`, invalid) or change an ETF to `ZZZZ`, then open `#/exposures` or `#/risk` in Full view — where: `frontend/app/pages/exposures/index.tsx:781`, `frontend/app/pages/risk/index.tsx:381` (Kendrick's Gemini)
-- BUG: Full-view Dependencies (`#/dependencies`) hides portfolio analysis errors (e.g. `UNKNOWN_TICKER`) once an earlier analysis exists, shows no stale warning before a scan is run when the portfolio becomes invalid (`result === null` while `analysisStale === true`), and leaves "Find dependencies" / "Re-evaluate dependencies" / "Go deeper" enabled when `draft.inputs` is `null` so clicking them silently no-ops — repro: load the sample portfolio, edit an ETF to `ZZZZ` or make `%` not sum to `100%` on `#/portfolio`, then open `#/dependencies` in Full view and click "Find dependencies" / "Re-evaluate dependencies" — where: `frontend/app/pages/dependencies/index.tsx:1681,1805-1859`, `frontend/app/dependencies-state.tsx:182` (Kendrick's Gemini)
-- BUG: Clicking "Run again", "Re-evaluate dependencies", or "Try again" on Full-view Dependencies (`#/dependencies`) hardcodes `DEFAULT_TOP_N` (`15`) instead of `effectiveTopN`, silently dropping a "Scan top 30" scan back to top 15 — repro: on `#/dependencies` run "Scan top 30" in the coverage panel, then click "Run again" (or edit the portfolio and click "Re-evaluate dependencies") — where: `frontend/app/pages/dependencies/index.tsx:1821,1854,1918` (Kendrick's Gemini)
-- BUG: Simple-mode Compare (`#/compare` in Simple view) and Guide Step 5 ("Try your own change") render the full "Enter as: Shares | %" switch, `%` inputs, and pin controls inside `TryAChange` because `DraftEditor` is not passed `sharesOnly={isBeginner}`, and unknown tickers in the Scenario editor are never highlighted with `flaggedIds` — repro: in Simple view open `#/compare` (or `#/guide` Step 5 -> "Try your own change") and inspect the "Your new mix" editor, or enter `ZZZZ` at `20%` in `%` mode — where: `frontend/app/ui/try-a-change.tsx:551-558` (Kendrick's Gemini)
-- BUG: Full-view Portfolio (`#/portfolio`) keeps showing the "See what you really own ->" button when the portfolio becomes stale/incomplete (`status === "ready"` without checking `!stale`), and `useAnalysis` keeps `status === "error"` / old `UNKNOWN_TICKER` message on screen even after the user clears or deletes the invalid ticker row (while `inputs === null`) — repro: load the sample portfolio on `#/portfolio`, click "Add ETF" (leaving a blank row) and observe "See what you really own" stays visible next to "Enter a ticker for every ETF"; or enter `ZZZZ` `100%` in `%` mode, then clear the `ZZZZ` ticker box and observe "We couldn't find ZZZZ" remains — where: `frontend/app/pages/portfolio/index.tsx:64,72`, `frontend/app/analysis.tsx:52-75` (Kendrick's Gemini)
 
 
 ## Open
+
+### FIX-54 · high · BUG: Full-view pages spin forever or show an old result when the portfolio is invalid (bug hunt batch 2)
+- **(a) Exposures** (`exposures/index.tsx:781`) checks `stale || status === "loading"`, so an invalid edit shows an endless "Updating" spinner, and UNKNOWN_TICKER shows the spinner and the error together. Fix: spinner only while loading; show the error, or "finish your portfolio", for error/invalid. **Owner:** Yousuf's Codex, together with its FIX-43 Exposures edits.
+- **(b) Risk** (`risk/index.tsx:381`) has the same pattern. **Owner:** Gawyn's Gemini.
+- **(c) Portfolio + analysis state:** `portfolio/index.tsx:64` shows "See what you really own" while stale (it checks `status === "ready"` without `!stale`), and `analysis.tsx` keeps `status === "error"` after the bad ticker is cleared (`inputs` is null). Fix both. **Owner:** Gawyn's Claude (lead, at Gawyn's request).
+- **Status:** assigned
+
+### FIX-55 · high · BUG: Full Dependencies ignores stale/error state and drops the top 30 back to 15 (bug hunt batch 2)
+- **Stale/error blind spot:** once an analysis exists, the page hides `analysisStatus === "error"` and shows no stale warning when `result === null`. Find dependencies, Re-evaluate and Go deeper stay enabled when `draft.inputs` is null, so clicking them silently does nothing. Fix: show the state and disable the buttons with a reason.
+- **Top 30 drops to 15:** Run again, Re-evaluate and Try again hard-code `runDependencies(DEFAULT_TOP_N)` (lines ~1821, 1854, 1918), so a top-30 scan drops back to 15. Fix: use the current `effectiveTopN`.
+- **Owner:** Yousuf's Gemini (`pages/dependencies/`), together with FIX-52/FIX-48 · **Status:** assigned
+
+### FIX-56 · medium · BUG: Simple-mode Try a change shows Full-mode controls (bug hunt batch 2)
+`TryAChange` (`try-a-change.tsx` ~551–558) doesn't pass `sharesOnly={isBeginner}` or `flaggedIds` to `DraftEditor`, so Simple `#/compare` and guide Step 5 show the % switch and pins, and don't flag unknown tickers.
+- **Owner:** Yousuf's Codex (`app/ui/try-a-change.tsx`) · **Status:** assigned
 
 ### FIX-52 · high · Reorder the Dependencies page: the important actions and AI synthesis first (Gawyn, 09:57)
 Today the order is: header (Find dependencies, Go deeper) → progress → coverage panel (holding "Scan top 30") → audit bar → AI synthesis → research panel (holding "Investigate gaps") → key numbers → graph → countries.
