@@ -4,14 +4,24 @@ import { lazy, type ComponentType, type LazyExoticComponent } from "react";
 import {
   RiArrowLeftRightLine,
   RiBarChartHorizontalLine,
+  RiCompass3Line,
   RiGridLine,
   RiLinksLine,
   RiNodeTree,
   RiPieChartLine,
   RiShieldCheckLine,
 } from "@remixicon/react";
+import { PageStub } from "./ui/page-stub";
 
-export type PageKey = "portfolio" | "exposures" | "overlap" | "network" | "dependencies" | "compare" | "risk";
+export type PageKey =
+  | "portfolio"
+  | "exposures"
+  | "overlap"
+  | "network"
+  | "dependencies"
+  | "compare"
+  | "risk"
+  | "guide";
 
 export type PageDefinition = {
   key: PageKey;
@@ -21,7 +31,15 @@ export type PageDefinition = {
   title: string;
   description: string;
   Component: LazyExoticComponent<ComponentType>;
+  hiddenFromNav?: boolean;
 };
+
+const guideModules = import.meta.glob<{ default: ComponentType }>("./pages/guide/index.tsx");
+const GuideFallback: ComponentType = () => <PageStub what="Guided view" />;
+export const GuidePageComponent: LazyExoticComponent<ComponentType> = lazy(async () => {
+  const loader = guideModules["./pages/guide/index.tsx"];
+  return loader ? loader() : { default: GuideFallback };
+});
 
 export const pages: readonly PageDefinition[] = [
   {
@@ -86,6 +104,16 @@ export const pages: readonly PageDefinition[] = [
     title: "Risk and data",
     description: "Concentration, sectors, data coverage and disclosure dates.",
     Component: lazy(() => import("./pages/risk")),
+  },
+  {
+    key: "guide",
+    label: "Guided view",
+    href: "#/guide",
+    icon: RiCompass3Line,
+    title: "Guided portfolio check",
+    description: "A five-step walkthrough of what you really own and where your hidden risks sit.",
+    Component: GuidePageComponent,
+    hiddenFromNav: true,
   },
 ];
 
