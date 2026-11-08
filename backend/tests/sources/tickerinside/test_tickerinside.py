@@ -195,3 +195,30 @@ def test_sector_fetches_are_bounded_and_shared_across_parallel_etfs(monkeypatch)
     sector_urls = [url for _, url in http.requests if "/sec/" in url]
     assert sorted(sector_urls) == sorted(set(sector_urls)) and len(sector_urls) == 20
     assert peak <= reference_module.SECTOR_WORKERS + 1  # 4 workers + at most one bulk-file read
+
+
+PRICED = {**FUND, "last_close": 164.74, "last_close_date": "2026-11-06", "currency": "USD"}
+
+
+def test_price_parsed_and_passed_through_normalise():
+    http, settings = client(PRICED), Settings()
+    raw = TickerInsideAdapter(http, settings).fetch("ZZTI")
+    assert (raw.price.price, raw.price.currency, raw.price.as_of, raw.price.kind, raw.price.source) == (
+        164.74, "USD", date(2026, 11, 6), "close", "tickerinside")
+    assert raw.price.attribution == CITE and raw.warnings == []
+    assert normalise_etf(raw, TickerInsideReference(http, settings), Aliases()).price == raw.price
+
+
+def test_quote_reads_only_the_fund_file():
+    http = client(PRICED)
+    quote = TickerInsideAdapter(http, Settings()).quote("zzti")
+    assert quote.price == 164.74 and [url for _, url in http.requests] == [f"{BASE}/fund/zzti.json"]
+    assert TickerInsideAdapter(client(), Settings()).quote("ZZTI") is None  # no price published
+
+
+@pytest.mark.parametrize("bad", [{"last_close": "n/a"}, {"last_close": 0}, {"last_close": "nan"},
+                                 {"last_close_date": "yesterday"}, {"currency": None}, {"currency": "usdollar"}])
+def test_malformed_price_is_dropped_with_a_warning(bad):
+    raw = TickerInsideAdapter(client({**PRICED, **bad}), Settings()).fetch("ZZTI")
+    assert raw.price is None and len(raw.holdings) == 6
+    assert any("price data is malformed" in w for w in raw.warnings)
