@@ -33,7 +33,7 @@ import type {
 } from "@/api/types";
 import { useAnalysis } from "@/app/analysis";
 import { AsOfBadge } from "@/app/ui/as-of-badge";
-import { hhiRating } from "@/app/ui/concentration";
+import { diversificationVerdict } from "@/app/ui/concentration";
 import { EtfChip } from "@/app/ui/etf-chip";
 import { etfVisual } from "@/app/ui/etf-color";
 import { Pct, formatPct } from "@/app/ui/pct";
@@ -359,7 +359,7 @@ export default function RiskPage() {
   }
 
   const { concentration, coverage, sectors, etfs, attributions, warnings } = analysis;
-  const hhiMeta = hhiRating(concentration.hhi);
+  const hhiMeta = diversificationVerdict({ hhi: concentration.hhi, sectors });
   const selectedTopNWeight =
     topNMode === "top5"
       ? concentration.top5

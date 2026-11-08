@@ -25,6 +25,7 @@ from hoc.contract import (
     MetricDelta,
     MetricFact,
     PortfolioRequest,
+    Sector,
     UnanalysedCompany,
     VerifiedEdge,
     wsum,
@@ -103,6 +104,8 @@ def _concentration_value(analysis: AnalysisResponse, name: str) -> float:
         return analysis.concentration.effective_companies
     if name == "largest_company":
         return max((c.exposure for c in analysis.exposures), default=0.0)
+    if name == "top_sector":
+        return max((s.weight for s in analysis.sectors if s.sector != Sector.unknown), default=0.0)
     return getattr(analysis.concentration, name)
 
 
@@ -176,7 +179,7 @@ def compare_portfolios(
         d.candidate if d.candidate is not None else d.baseline
     )), d.metric_id))
     concentration_deltas = []
-    for name in ("top5", "top10", "top20", "effective_n", "largest_company"):
+    for name in ("top5", "top10", "top20", "effective_n", "largest_company", "top_sector"):
         old_value = _concentration_value(baseline, name)
         new_value = _concentration_value(candidate, name)
         concentration_deltas.append(ConcentrationDelta(

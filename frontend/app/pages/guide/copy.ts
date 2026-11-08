@@ -1,8 +1,11 @@
 // Beginner mode copy and plain-English helpers (B-GUIDE).
 // Keep all language simple and accessible for first-time ETF investors.
 
-import type { Sector } from "@/api/types";
-import { hhiRating, type ConcentrationRating } from "@/app/ui/concentration";
+import type { Sector, SectorExposure } from "@/api/types";
+import {
+  diversificationVerdict,
+  type DiversificationVerdict,
+} from "@/app/ui/concentration";
 
 export interface GuideStepMeta {
   step: 1 | 2 | 3 | 4 | 5;
@@ -81,24 +84,11 @@ export function plainSectorName(sector: Sector): string {
   return PLAIN_SECTOR_LABELS[sector] ?? "Other";
 }
 
-export function concentrationVerdict(indexValue: number): ConcentrationRating & { summary: string } {
-  const rating = hhiRating(indexValue);
-  if (rating.label === "Highly concentrated") {
-    return {
-      ...rating,
-      summary: "A small handful of big companies drives most of this portfolio.",
-    };
-  }
-  if (rating.label === "Moderately concentrated") {
-    return {
-      ...rating,
-      summary: "Your largest holdings carry meaningful weight, though no single stock dominates alone.",
-    };
-  }
-  return {
-    ...rating,
-    summary: "Your money is spread across many companies without extreme single-company weight.",
-  };
+export function concentrationVerdict(
+  indexValue: number,
+  sectors: readonly SectorExposure[] = [],
+): DiversificationVerdict {
+  return diversificationVerdict({ hhi: indexValue, sectors });
 }
 
 /** Switches from Simple view (#/guide) to Full view on the target route. */
