@@ -41,7 +41,7 @@ Found by the lead in the FIX-17 live check. Compare (Try a change and change ide
 - **The XLK → VTV swap in README, DEMO and the pitch deck:** shows "12.39% → 4.69%". With a 30-company window it is 12.89% → 6.30%.
 - Fix: measure both sides on the same company set, the union of both portfolios' top-N companies, so a company counts on both sides at its own weight. Unanalysed companies stay "not checked yet". Add a test where a dependent company drops out of one side's top N.
 - Then update the 12.39% → 4.69% figure everywhere it's quoted (README, DEMO, PITCH_DECK).
-- **Owner:** Yousuf's Codex (`portfolio/compare.py`, `portfolio/ideas.py`), then Gawyn's Gemini (docs numbers) · **Status:** assigned
+- **Owner:** Yousuf's Codex (`portfolio/compare.py`, `portfolio/ideas.py`), then Gawyn's Gemini (docs numbers) · **Status:** PR #183 approved after the lead's live A/B (+20% XLU: 9.92%, exact dilution; swap: 12.39% → 6.30%); then the docs change to "12.39% → 6.30% (−6.10 pts)"
 
 ### FIX-17 · high · Change ideas: AI proposes, Python verifies (Gawyn, 07:08)
 Gawyn wants concrete ideas ("add this ETF to help fix this diversification issue") on screen 5 and in Try a change, in both views. **The AI proposes the changes and Python verifies them**, the same pattern as the AI summaries.
