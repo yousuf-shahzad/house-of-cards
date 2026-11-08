@@ -19,14 +19,10 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
-### FIX-24 · high · AI change ideas never run: the proposer crashes before calling Argon
-Found by the lead in the FIX-17 live check (main 362bb3c). `IdeaProposer._call_ai_client` builds `GeminiClient(..., timeout=timeout_s)`, but `GeminiClient.__init__` has no `timeout` parameter, so every real call raises `TypeError` within 0.0 s. Because the message contains the word "timeout", the proposer then reports `ai_status: "timeout"`. Users only ever see rules ideas, and the unit tests pass because they use a fake AI client.
-- **Fix:**
-  - Drop the `timeout=` argument; `CachedHttpClient` already sets long per-host timeouts for Argon.
-  - Classify `ai_status` by exception type (`TimeoutError` / `httpx.TimeoutException` → timeout, everything else → failed), not by matching "timeout" in the message.
-  - Add a test that builds the real `GeminiClient` through the proposer with a fake HTTP client (no network), so a signature mismatch fails CI.
-- **Check (lead):** a live sample request goes pending → ok with `proposed_by: "ai"` ideas.
-- **Owner:** Gawyn's Gemini (`hoc/graph/idea_proposer.py`) · **Status:** assigned
+### FIX-25 · low · AI swaps into XLV or VTV are rejected for "missing industry labels"
+In the live FIX-17 check, Argon proposed swaps into XLV (a health-care sector fund) and VTV. The verifier rejected both with "New missing industry labels cannot count as a diversification gain". XLV should have a clear industry breakdown.
+- Fix: check whether these ETFs' sectors load (or fall back to the fund-reported breakdown, as `analysis.sectors` does). If they're genuinely unknown, say so in the rejection reason ("XLV's industry breakdown isn't available").
+- **Owner:** Yousuf's Codex · **Status:** assigned
 
 ### FIX-23 · high · Dependencies page is overloaded and scrolls too long (Gawyn, 07:40)
 Make these four sections collapsible:
@@ -111,7 +107,10 @@ Survivors are measured with cache-only compare on one company set (FIX-20). Pyth
 - **Owners:** Gawyn's Gemini (proposer) + Yousuf's Codex (verifier, contract) + Bekarys's Claude (UI)
 - **Status:**
   - Merged: rules version (#177–#181), AI contract (#185), proposer (#194, plus name and sector checks; "Consider" fixed in #197).
-  - Engine merged (#192). Live: rules ideas are correct (Technology 51.1% → 40.9% with XLU, re-checked through compare), but the AI path never runs (FIX-24).
+  - Engine merged (#192); FIX-24 fix merged (#199).
+  - **Live AI path PASS (lead, main 6e3c825):** rules ideas show first ("pending"), then after about 36 s 2 Argon ideas replace them. Add SCHD: GPU dependency 8.1% → 6.5%. Add RSP: top 10 37.2% → 30.1%. Both match an independent compare. 3 proposals were rejected, with reasons.
+  - **No-key path PASS:** `missing_api_key`, rules ideas.
+  - **Left:** UI PR #186 (final wording fix), then merge.
   - UI PR #186 is in review.
 
 ### FIX-9 · medium · Final QA of both views
@@ -128,6 +127,7 @@ The plan asked for the research trace to show live during the run.
 
 ## Done (checked on `main` by the lead)
 
+- FIX-24 the idea proposer reaches Argon (the invalid timeout argument is gone; timeouts classified by type) — #199
 - FIX-21 docs: swap 12.39% → 6.30% (−6.10 pts), XLU 9.92%, slide 3 companies Nvidia/Broadcom/AMD/Intel, and the honest held-out agent result (+0.0 pp, no accuracy claims) — #195, #198
 - FIX-8 before/after eval on the 10 held-out 10-Ks (light agents): precision 88.4% blind / 96.1% pooled and core recall 57.4%, all unchanged (+0.0 pp); 18 findings, 0 links added or removed; agentic check PASS (18/18 make 2+ tool calls, 0 circular). Reproduced offline by the lead — #196
 - FIX-1, FIX-2, FIX-14 real research loop. Light: 17/23 findings make 2+ tool calls (was 3/25). Thorough: 27/45 use `search_filings` (was 0). Thorough keeps every light edge. 0 duplicate or group customer links — #189
