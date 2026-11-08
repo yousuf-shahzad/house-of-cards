@@ -653,6 +653,8 @@ export interface DependencyJob {
   companies: CompanyRunStatus[];
   result: DependencyResult | null;
   error: ErrorResponse["error"] | null;
+  /** FIX-11: findings from each company's agent as soon as it finishes (while running); `result.research` once done. */
+  research: ResearchFinding[];
 }
 
 // ---------- v3 A-RES: research loop ----------

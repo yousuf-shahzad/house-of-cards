@@ -484,5 +484,6 @@
     ],
     "research_depth": "light"
   },
-  "error": null
+  "error": null,
+  "research": []
 }
