@@ -20,6 +20,7 @@ PORTFOLIO = [
     company("CIK:0000723125", "Micron Technology", "MU"),
     company("CIK:0000789019", "Microsoft", "MSFT"),
     company("SYM:2303.TW", "United Microelectronics Corp", "2303.TW"),
+    company("CIK:0001652044", "Alphabet Inc.", "GOOG", "GOOGL"),
 ]
 
 
@@ -33,6 +34,8 @@ PORTFOLIO = [
     ("MICROSOFT CORPORATION", "CIK:0000789019"),
     ("United Microelectronics Corporation", "SYM:2303.TW"),
     ("UMC", "SYM:2303.TW"),
+    ("Google LLC", "CIK:0001652044"),
+    ("Google", "CIK:0001652044"),
     ("contract manufacturers", None),
     ("Micron", None),  # no fuzzy/prefix matching
 ])
