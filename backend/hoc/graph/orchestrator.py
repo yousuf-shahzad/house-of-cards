@@ -44,7 +44,7 @@ from hoc.graph.metrics import (
 
 log = logging.getLogger("hoc.graph.orchestrator")
 
-ORCHESTRATOR_PROMPT_VERSION = "hoc-orch-v3.0"
+ORCHESTRATOR_PROMPT_VERSION = "hoc-orch-v3.1"
 prompt_version: str = ORCHESTRATOR_PROMPT_VERSION
 
 GEMINI_INTERACTIONS_URL = "https://generativelanguage.googleapis.com/v1beta/interactions"
@@ -63,6 +63,8 @@ ORCHESTRATOR_RESPONSE_SCHEMA: dict[str, Any] = {
                 "properties": {
                     "title": {"type": "string"},
                     "text": {"type": "string"},
+                    "plain_title": {"type": "string"},
+                    "plain_text": {"type": "string"},
                     "severity": {
                         "type": "string",
                         "enum": ["critical", "warning", "info"],
@@ -80,7 +82,15 @@ ORCHESTRATOR_RESPONSE_SCHEMA: dict[str, Any] = {
                         "items": {"type": "string"},
                     },
                 },
-                "required": ["title", "text", "severity", "cited_metric_ids", "cited_edge_ids"],
+                "required": [
+                    "title",
+                    "text",
+                    "plain_title",
+                    "plain_text",
+                    "severity",
+                    "cited_metric_ids",
+                    "cited_edge_ids",
+                ],
             },
         },
         "suggestions": {
@@ -90,6 +100,8 @@ ORCHESTRATOR_RESPONSE_SCHEMA: dict[str, Any] = {
                 "properties": {
                     "title": {"type": "string"},
                     "text": {"type": "string"},
+                    "plain_title": {"type": "string"},
+                    "plain_text": {"type": "string"},
                     "severity": {
                         "type": "string",
                         "enum": ["critical", "warning", "info"],
@@ -107,7 +119,14 @@ ORCHESTRATOR_RESPONSE_SCHEMA: dict[str, Any] = {
                         "items": {"type": "string"},
                     },
                 },
-                "required": ["title", "text", "cited_metric_ids", "cited_edge_ids"],
+                "required": [
+                    "title",
+                    "text",
+                    "plain_title",
+                    "plain_text",
+                    "cited_metric_ids",
+                    "cited_edge_ids",
+                ],
             },
         },
     },
@@ -118,11 +137,14 @@ ORCHESTRATOR_SYSTEM_INSTRUCTION = """You are the House of Cards dependency risk 
 You evaluate a portfolio's verified SEC 10-K/20-F supply-chain, facility, and customer dependency graph.
 
 STRICT GROUNDING RULES (claims violating any rule are automatically rejected by Python):
-1. ZERO INVENTED NUMBERS: Never write any literal number, percentage, or count in `title` or `text`.
+1. ZERO INVENTED NUMBERS: Never write any literal number, percentage, or count in `title`, `text`, `plain_title`, or `plain_text`.
    Every number MUST be written as a `{{metric:<metric_id>}}` placeholder using an exact `metric_id` from the provided `metrics` list (for example: `{{metric:dep.ALIAS:ZZEPSILON}}` or `{{metric:facility.TW}}`).
 2. REQUIRED CITATIONS: Every flaw and suggestion MUST list the `cited_metric_ids` it uses and the supporting `cited_edge_ids` from the provided `verified_edges` list.
 3. ENTITY LOCK: Mention ONLY company names, ETF tickers, countries, and inputs that appear in the provided portfolio holdings or verified edges. Never name outside tickers or companies.
 4. ADVISORY ONLY: Focus on structural diversification dimensions (foundry concentration, single-source bottlenecks, geographic facility clustering across ETFs). Never recommend buying, selling, or shorting specific securities.
+5. BEGINNER PLAIN FIELDS (`plain_title` and `plain_text`):
+   - `plain_title`: <= 8 words, simple everyday English, zero numbers and zero financial jargon (never write HHI, GICS, look-through, 10-K, 20-F, CIK, edges, tier names, or orchestrator).
+   - `plain_text`: <= 25 words, simple everyday English, at most 1 number and ONLY via a cited `{{metric:<metric_id>}}` placeholder (e.g. "{{metric:dep.ALIAS:TSMC}} of your money relies on TSMC to make chips for your companies.").
 """
 
 _PLACEHOLDER_RE = re.compile(r"\{\{metric:([A-Za-z0-9_:.\-]+)\}\}")
@@ -202,6 +224,67 @@ _FORBIDDEN_TRADE_VERBS_RE = re.compile(
     r"\b(?:buy|sell|short|liquidate)\s+(?:shares|units|stock|position)\b",
     re.IGNORECASE,
 )
+
+_FORBIDDEN_PLAIN_JARGON_RE = re.compile(
+    r"\b(?:HHI|GICS|look[- ]through|10-K|20-F|40-F|6-K|8-K|N-PORT|CIK|edges?|orchestrator|critical)\b",
+    re.IGNORECASE,
+)
+
+
+def _verify_and_render_plain_field(
+    raw_value: Any,
+    *,
+    max_words: int,
+    max_numbers: int,
+    cited_metric_ids: Sequence[str],
+    metrics_by_id: Mapping[str, MetricFact],
+    allowed_tickers: set[str],
+    allowed_entities: set[str],
+    resolve_mid: Any,
+    expand_fn: Any,
+) -> str | None:
+    """Verify and render `plain_title` or `plain_text`; return None if any check fails."""
+    if not isinstance(raw_value, str):
+        return None
+    cleaned = raw_value.strip()
+    if not cleaned:
+        return None
+
+    # 1. Placeholders must resolve to metrics cited on the claim
+    pids = [resolve_mid(m) for m in _PLACEHOLDER_RE.findall(cleaned)]
+    if len(pids) > max_numbers:
+        return None
+    cited_set = set(cited_metric_ids)
+    for mid in pids:
+        if mid not in metrics_by_id or mid not in cited_set:
+            return None
+
+    # 2. No literal numbers outside {{metric:<id>}} placeholders (and no SEC form digits in beginner text)
+    stripped = _PLACEHOLDER_RE.sub(" ", cleaned)
+    if re.search(r"\d", stripped):
+        return None
+
+    # 3. No forbidden beginner jargon or trade instructions
+    if _FORBIDDEN_PLAIN_JARGON_RE.search(stripped) or _FORBIDDEN_TRADE_VERBS_RE.search(stripped):
+        return None
+
+    # 4. Ticker & entity lock: uppercase 2..5 letter tokens must be in allowed_tickers,
+    #    and any proper-noun phrase that looks like an outside company is rejected.
+    for token in re.findall(r"\b[A-Z]{2,5}\b", stripped):
+        if token not in allowed_tickers:
+            return None
+
+    # 5. Expand placeholders and enforce word & rendered-number limits
+    rendered = re.sub(r"\s+", " ", _PLACEHOLDER_RE.sub(expand_fn, cleaned)).strip()
+    if not rendered or "{{metric:" in rendered:
+        return None
+    if len(rendered.split()) > max_words:
+        return None
+    rendered_numbers = re.findall(r"\d+(?:\.\d+)?%?", rendered)
+    if len(rendered_numbers) > max_numbers:
+        return None
+
+    return rendered
 
 
 class OrchestratorAiClient(Protocol):
@@ -433,6 +516,29 @@ def verify_and_render_claim(
     rendered_title = _PLACEHOLDER_RE.sub(_expand, raw_title)
     rendered_text = _PLACEHOLDER_RE.sub(_expand, raw_text)
 
+    rendered_plain_title = _verify_and_render_plain_field(
+        raw_claim.get("plain_title"),
+        max_words=8,
+        max_numbers=1,
+        cited_metric_ids=all_metric_ids,
+        metrics_by_id=metrics_by_id,
+        allowed_tickers=allowed_tickers,
+        allowed_entities=allowed_entities,
+        resolve_mid=_resolve_mid,
+        expand_fn=_expand,
+    )
+    rendered_plain_text = _verify_and_render_plain_field(
+        raw_claim.get("plain_text"),
+        max_words=25,
+        max_numbers=1,
+        cited_metric_ids=all_metric_ids,
+        metrics_by_id=metrics_by_id,
+        allowed_tickers=allowed_tickers,
+        allowed_entities=allowed_entities,
+        resolve_mid=_resolve_mid,
+        expand_fn=_expand,
+    )
+
     default_sev = "warning" if kind == "flaw" else "info"
     severity_raw = str(raw_claim.get("severity") or default_sev).lower()
     severity: ClaimSeverity = (
@@ -450,6 +556,8 @@ def verify_and_render_claim(
             text=rendered_text,
             cited_metric_ids=all_metric_ids,
             cited_edge_ids=raw_edge_ids,
+            plain_title=rendered_plain_title,
+            plain_text=rendered_plain_text,
         ),
         None,
     )
@@ -538,6 +646,11 @@ def build_deterministic_raw_claims(
                     f"holdings ({holders_str} in {etfs_str}) depends on {spof.target_name}"
                     f"{direct_note}."
                 ),
+                "plain_title": "Several holdings rely on one supplier",
+                "plain_text": (
+                    f"{{{{metric:{weight_mid}}}}} of your money depends on {spof.target_name} "
+                    f"across your biggest companies."
+                ),
                 "severity": severity,
                 "cited_metric_ids": metric_ids,
                 "cited_edge_ids": list(spof.supporting_edge_ids),
@@ -556,6 +669,11 @@ def build_deterministic_raw_claims(
                     f"Because {spof.target_name} underpins {{{{metric:{weight_mid}}}}} of the portfolio "
                     f"across {{{{metric:{comp_mid}}}}} holdings ({holders_str}), balancing toward sectors "
                     f"or funds with independent suppliers reduces single-counterparty risk."
+                ),
+                "plain_title": "Add funds with different suppliers",
+                "plain_text": (
+                    f"{{{{metric:{weight_mid}}}}} of your money depends on {spof.target_name}, "
+                    f"so shifting toward other industries can spread that risk."
                 ),
                 "severity": "warning" if severity == "critical" else "info",
                 "cited_metric_ids": [weight_mid, comp_mid],
@@ -578,6 +696,11 @@ def build_deterministic_raw_claims(
                     f"{{{{metric:{weight_mid}}}}} of your portfolio across {{{{metric:{comp_mid}}}}} "
                     f"companies ({holders_str}) relies on key facilities or assembly in {fac.country_name}."
                 ),
+                "plain_title": f"Key factories concentrated in {fac.country_name}",
+                "plain_text": (
+                    f"{{{{metric:{weight_mid}}}}} of your money is in companies with key factories "
+                    f"in {fac.country_name}."
+                ),
                 "severity": severity,
                 "cited_metric_ids": [weight_mid, comp_mid],
                 "cited_edge_ids": list(fac.supporting_edge_ids),
@@ -592,6 +715,11 @@ def build_deterministic_raw_claims(
                     f"{{{{metric:{weight_mid}}}}} of your portfolio relies on facilities in "
                     f"{fac.country_name} ({{{{metric:{comp_mid}}}}} holdings: {holders_str}); "
                     f"consider holdings with manufacturing diversified across other regions."
+                ),
+                "plain_title": "Spread factory locations across more countries",
+                "plain_text": (
+                    f"{{{{metric:{weight_mid}}}}} of your money relies on factories in "
+                    f"{fac.country_name}; broader funds can reduce single-country exposure."
                 ),
                 "severity": "warning",
                 "cited_metric_ids": [weight_mid, comp_mid],
@@ -612,6 +740,10 @@ def build_deterministic_raw_claims(
                 "text": (
                     f"{holders_str} ({{{{metric:{comp_mid}}}}} holding) discloses a verified supply-chain "
                     f"dependency on {top_sup.target_name} covering {{{{metric:{weight_mid}}}}} of the portfolio."
+                ),
+                "plain_title": "Key supplier behind your holdings",
+                "plain_text": (
+                    f"{{{{metric:{weight_mid}}}}} of your money relies on {top_sup.target_name}."
                 ),
                 "severity": "info",
                 "cited_metric_ids": [weight_mid, comp_mid],
@@ -691,8 +823,10 @@ def build_user_prompt(
     }
     return (
         "Analyse the following verified portfolio dependency graph and metrics.\n"
-        "Remember: NEVER write literal digits/numbers/percentages in `title` or `text` — "
-        "always write `{{metric:<metric_id>}}` placeholders.\n\n"
+        "Remember: NEVER write literal digits/numbers/percentages in `title`, `text`, `plain_title`, or `plain_text` — "
+        "always write `{{metric:<metric_id>}}` placeholders.\n"
+        "For every flaw and suggestion, also provide `plain_title` (<= 8 words, zero numbers, no jargon) and "
+        "`plain_text` (<= 25 words, at most 1 `{{metric:<metric_id>}}` placeholder, everyday English, no jargon).\n\n"
         + json.dumps(payload, indent=2)
     )
 
