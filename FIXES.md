@@ -78,6 +78,11 @@ For each **confirmed** bug, add one line under **New** in FIXES.md: `BUG: <what 
 
 ## Done (checked on `main` by the lead)
 
+- Hosting (Yousuf's request, issue #262):
+  - free Vercel deploy, auto-deploying from `main` to https://house-of-cards-pink.vercel.app/;
+  - private Blob cache with corrupt-entry guards; queued research jobs;
+  - secrets entered by the humans only.
+  - Yousuf's Codex; lead approved the pyproject/lock and cache seams (stand-in for Bekarys's Claude) — #274
 - FIX-68 Dependencies: only "Find dependencies" before the first scan; after it, "Scan 15 more" (top 30) beside Run again / Go deeper (lead, browser) — #279
 - FIX-67 the US now appears under Countries: US-exchange listings are inferred as US (receipts excluded), and reported countries win. Live: US 79.1% of IVV/QQQ/EEM, unknown 1.4%; a US failure is SPY's historical 12.8% (lead, curl after a restart). Yousuf's Codex — #280
 - FIX-64/65 Simple view: an unknown ticker no longer says "pin this row" (plain issue text keyed on the issue code; Full view unchanged), and the "details are missing" banner shows only for real gaps (not at 99.93%). Gawyn's Gemini; checked by the lead in the browser and the owner — #276
