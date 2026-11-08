@@ -29,11 +29,6 @@ Live: the VTV idea's rationale reads "...reduces reliance on 12.41%". The placeh
 - **After #204 (lead, live):** still inserts the label: VTV "...reduces reliance on Portfolio exposure that depends on OpenAI (12.41% today)"; SCHD unchanged and garbled.
 - **Owner:** Gawyn's Gemini (`hoc/graph/idea_proposer.py`) · **Status:** assigned (reopened)
 
-### FIX-27 · medium · The Graph section can't be folded again while anything is selected
-Found by Yousuf's Claude in review of #203. `forceExpand={Boolean(selectedEdgeId || selectedNodeId)}` re-expands right after "Show less", and a clicked node stays selected (app-level store; closing the drawer doesn't clear it).
-- Fix: expand when the selection changes (an `expandKey` effect without `expanded` in its deps), and don't save forced opens to localStorage. Test: select a node, Show less, and the section stays folded.
-- **Owner:** Yousuf's Gemini · **Status:** assigned
-
 ### FIX-22 · medium · Research time budgets are too tight
 In the FIX-1 live check, 4 of 23 light findings stopped after one tool call ("step budget expired"), and 15 of 45 thorough findings were skipped ("time budget reached").
 - Fix:
@@ -109,6 +104,7 @@ The plan asked for the research trace to show live during the run.
 
 ## Done (checked on `main` by the lead)
 
+- FIX-27 clicking a graph edge opens the section and its evidence drawer; Show less then folds it and it stays folded with the edge still selected (lead, browser) — #205
 - FIX-23 the four Dependencies sections fold to a 280 px faded preview with Show all / Show less, and Countries is stacked. Lead check: each section 280 px when folded, 1.6k–12k px open; the page is 19,196 → 4,690 px at 1280×800 (PR) — #203
 - FIX-25 AI swaps into XLV and VTV accepted under a worst-case industry check (live: XLK→XLV Technology 51.1% → 41.2%; QQQ→VTV → 41.8%; all 3 AI ideas match compare) — #201
 - FIX-24 the idea proposer reaches Argon (the invalid timeout argument is gone; timeouts classified by type) — #199
