@@ -36,6 +36,7 @@ import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recha
 
 import { api, ApiError } from "@/api/client";
 import {
+  DEFAULT_RESEARCH_ITEMS,
   DEFAULT_TOP_N,
   type CompanyRunStatus,
   type CompanyStatus,
@@ -706,7 +707,6 @@ function ResearchPanel({
   researchStatus,
   researchJob,
   researchError,
-  uncertainCandidatesCount,
   edgeById,
   selectEdge,
   onRunResearch,
@@ -714,7 +714,6 @@ function ResearchPanel({
   researchStatus: ResearchRunStatus;
   researchJob: ResearchJob | null;
   researchError: ApiError | null;
-  uncertainCandidatesCount: number;
   edgeById: ReadonlyMap<string, VerifiedEdge>;
   selectEdge: (edgeId: string, openDrawer: boolean) => void;
   onRunResearch: () => void;
@@ -738,9 +737,9 @@ function ResearchPanel({
               Investigate uncertain findings
             </h3>
             <Chip variant="caption" color="purple">
-              {`${uncertainCandidatesCount} candidate ${
-                uncertainCandidatesCount === 1 ? "item" : "items"
-              } in current run`}
+              {researchJob?.status === "done"
+                ? `${findings.length} investigated`
+                : `Investigates up to ${DEFAULT_RESEARCH_ITEMS} uncertain items`}
             </Chip>
             {researchJob?.result && (
               <Chip variant="caption" color="lime">
@@ -1487,25 +1486,6 @@ function DependenciesPageContent() {
     [result],
   );
 
-  const uncertainCandidatesCount = useMemo(() => {
-    if (!result) return 0;
-    const flagged = result.edges.filter((e) => e.interpretation?.status === "flagged").length;
-    const undisclosed = result.edges.filter((e) => e.target_kind === "unnamed_customer").length;
-    const singleSource = result.edges.filter(
-      (e) =>
-        e.sole_source ||
-        e.importance?.tier === "critical" ||
-        e.importance?.tier === "high",
-    ).length;
-    const zeroDisclosureCos = result.companies.filter(
-      (c) => (c.status === "done" || c.status === "cached") && c.verified_edges === 0,
-    ).length;
-    const unresolved = result.edges.filter(
-      (e) => e.target_key === null && e.target_kind === "company",
-    ).length;
-    return flagged + undisclosed + singleSource + zeroDisclosureCos + unresolved;
-  }, [result]);
-
   const inspectedEdges = useMemo<VerifiedEdge[]>(() => {
     if (!result) return [];
     if (activeNodeId) {
@@ -2132,7 +2112,6 @@ function DependenciesPageContent() {
             researchStatus={researchStatus}
             researchJob={researchJob}
             researchError={researchError}
-            uncertainCandidatesCount={uncertainCandidatesCount}
             edgeById={edgeById}
             selectEdge={selectEdge}
             onRunResearch={() => runResearch()}
