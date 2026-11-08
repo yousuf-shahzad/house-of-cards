@@ -26,6 +26,8 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 ## New
 
 <!-- Add new problems below this line, one per line. -->
+- [Kendrick's Claude] Simple Portfolio: an unknown ticker (sample, EEM→ZZZZ) shows "Price could not be loaded; pin this row to a percentage." under the row, and the same text on every Simple page's "Finish your portfolio" card (`simple/index.tsx:142` shows the valuation issue message). Simple view has no pin control (shares only, FIX-15/56), and the real problem is an unknown ticker, not a price. Suggest: in Simple, map `price_unavailable` / `no_price` / `invalid_price` / `non_usd_price` / `missing_shares` to plain text without "pin" (e.g. "We couldn't find ZZZZ. Check the ticker, or remove this row"); messages from `backend/hoc/portfolio/valuation.py:87-95`.
+- [Kendrick's Claude] Simple pages (Exposures, Overlap, Risk, Dependencies, Try a change) always show "Some holdings or company details are missing… Check data coverage", even for the sample at 99.93% coverage. The condition (`simple/index.tsx:148`) is covered < total by >0.0001%, so normally excluded cash/futures lines trigger it on essentially every real portfolio. Suggest: show it only for real gaps, e.g. missing/unexplained allocation or the backend's low_coverage gap (covered < 95%), not for excluded cash.
 
 
 ## Open
