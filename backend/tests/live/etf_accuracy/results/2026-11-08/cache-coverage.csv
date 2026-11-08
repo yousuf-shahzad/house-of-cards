@@ -1,0 +1,13 @@
+case,top_companies,top_company_weight_pct,cached_companies,cached_with_edges,portfolio_weight_with_cached_edges_pct
+default-us,15,43.35695,14,12,36.963815
+default-global,15,30.93232,15,13,25.708730000000003
+nontech-01,15,59.89,2,2,21.183200000000003
+nontech-02,15,65.8106,3,3,25.747500000000002
+nontech-03,15,83.88845,0,0,0.0
+nontech-04,15,69.02855,0,0,0.0
+nontech-05,15,73.9106,2,2,22.49235
+nontech-06,15,42.403800000000004,0,0,0.0
+nontech-07,15,70.9535,0,0,0.0
+nontech-08,15,69.09805,0,0,0.0
+nontech-09,15,42.952315,4,4,18.809635
+nontech-10,15,39.98235,2,2,6.2277

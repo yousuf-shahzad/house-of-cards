@@ -1,0 +1,277 @@
+[
+  {
+    "case": "default-us",
+    "group": "default",
+    "status": 200,
+    "tickers": "IVV/QQQ/XLK/EEM",
+    "companies": 1684,
+    "coverage_pct": 99.93043,
+    "manual_equity_total_pct": 99.93043,
+    "max_listing_error_pp": 0.0,
+    "max_company_arithmetic_error_pp": 0.0,
+    "top10_system_pct": 37.1353,
+    "top10_manual_same_entities_pct": 37.1353,
+    "hhi_system": 0.0200908102,
+    "hhi_manual_same_entities": 0.020090810200335946,
+    "excluded_index_contracts": {
+      "IVV": {},
+      "QQQ": {},
+      "XLK": {
+        "IXTZ6": -0.0105
+      },
+      "EEM": {}
+    },
+    "listing_discrepancies": []
+  },
+  {
+    "case": "default-global",
+    "group": "default",
+    "status": 200,
+    "tickers": "VTI/VXUS/QQQ",
+    "companies": 12150,
+    "coverage_pct": 99.49673999999999,
+    "manual_equity_total_pct": 99.49673999999999,
+    "max_listing_error_pp": 0.0,
+    "max_company_arithmetic_error_pp": 0.0,
+    "top10_system_pct": 26.14882,
+    "top10_manual_same_entities_pct": 26.14882,
+    "hhi_system": 0.0097804741,
+    "hhi_manual_same_entities": 0.00978047411615213,
+    "excluded_index_contracts": {
+      "VTI": {},
+      "VXUS": {},
+      "QQQ": {}
+    },
+    "listing_discrepancies": []
+  },
+  {
+    "case": "nontech-01",
+    "group": "nontech",
+    "status": 200,
+    "tickers": "XLF/VFH",
+    "companies": 424,
+    "coverage_pct": 98.40520000000001,
+    "manual_equity_total_pct": 98.40520000000001,
+    "max_listing_error_pp": 0.0,
+    "max_company_arithmetic_error_pp": 0.0,
+    "top10_system_pct": 51.3781,
+    "top10_manual_same_entities_pct": 51.3781,
+    "hhi_system": 0.0409694528,
+    "hhi_manual_same_entities": 0.040969452807724474,
+    "excluded_index_contracts": {
+      "XLF": {
+        "IXAZ6": 0.0009
+      },
+      "VFH": {}
+    },
+    "listing_discrepancies": []
+  },
+  {
+    "case": "nontech-02",
+    "group": "nontech",
+    "status": 200,
+    "tickers": "XLV/VHT",
+    "companies": 414,
+    "coverage_pct": 99.764,
+    "manual_equity_total_pct": 99.764,
+    "max_listing_error_pp": 0.0,
+    "max_company_arithmetic_error_pp": 0.0,
+    "top10_system_pct": 55.998749999999994,
+    "top10_manual_same_entities_pct": 55.998749999999994,
+    "hhi_system": 0.0490941629,
+    "hhi_manual_same_entities": 0.04909416292314744,
+    "excluded_index_contracts": {
+      "XLV": {
+        "IXCZ6": 0.0196
+      },
+      "VHT": {}
+    },
+    "listing_discrepancies": []
+  },
+  {
+    "case": "nontech-03",
+    "group": "nontech",
+    "status": 200,
+    "tickers": "XLE/VDE",
+    "companies": 111,
+    "coverage_pct": 99.72175,
+    "manual_equity_total_pct": 99.72175,
+    "max_listing_error_pp": 0.0,
+    "max_company_arithmetic_error_pp": 0.0,
+    "top10_system_pct": 72.12570000000001,
+    "top10_manual_same_entities_pct": 72.12570000000001,
+    "hhi_system": 0.0983348896,
+    "hhi_manual_same_entities": 0.09833488955881478,
+    "excluded_index_contracts": {
+      "XLE": {
+        "IXPZ6": -0.0093
+      },
+      "VDE": {}
+    },
+    "listing_discrepancies": []
+  },
+  {
+    "case": "nontech-04",
+    "group": "nontech",
+    "status": 200,
+    "tickers": "XLU/VPU",
+    "companies": 68,
+    "coverage_pct": 99.69059999999999,
+    "manual_equity_total_pct": 99.69059999999999,
+    "max_listing_error_pp": 0.0,
+    "max_company_arithmetic_error_pp": 0.0,
+    "top10_system_pct": 55.79065,
+    "top10_manual_same_entities_pct": 55.79065,
+    "hhi_system": 0.0468546503,
+    "hhi_manual_same_entities": 0.046854650349982055,
+    "excluded_index_contracts": {
+      "XLU": {
+        "IXSZ6": 0.0065
+      },
+      "VPU": {}
+    },
+    "listing_discrepancies": []
+  },
+  {
+    "case": "nontech-05",
+    "group": "nontech",
+    "status": 200,
+    "tickers": "XLP/VDC",
+    "companies": 103,
+    "coverage_pct": 99.78795000000001,
+    "manual_equity_total_pct": 99.78795000000001,
+    "max_listing_error_pp": 0.0,
+    "max_company_arithmetic_error_pp": 0.0,
+    "top10_system_pct": 62.6346,
+    "top10_manual_same_entities_pct": 62.6346,
+    "hhi_system": 0.0534246933,
+    "hhi_manual_same_entities": 0.05342469326818524,
+    "excluded_index_contracts": {
+      "XLP": {
+        "IXRZ6": 0.0051
+      },
+      "VDC": {}
+    },
+    "listing_discrepancies": []
+  },
+  {
+    "case": "nontech-06",
+    "group": "nontech",
+    "status": 200,
+    "tickers": "XLI/VIS",
+    "companies": 397,
+    "coverage_pct": 99.77265,
+    "manual_equity_total_pct": 99.77265,
+    "max_listing_error_pp": 0.0,
+    "max_company_arithmetic_error_pp": 0.0,
+    "top10_system_pct": 33.7428,
+    "top10_manual_same_entities_pct": 33.7428,
+    "hhi_system": 0.0190652838,
+    "hhi_manual_same_entities": 0.019065283774390485,
+    "excluded_index_contracts": {
+      "XLI": {
+        "IXIZ6": -0.0029
+      },
+      "VIS": {}
+    },
+    "listing_discrepancies": []
+  },
+  {
+    "case": "nontech-07",
+    "group": "nontech",
+    "status": 200,
+    "tickers": "XLB/VAW",
+    "companies": 110,
+    "coverage_pct": 99.791,
+    "manual_equity_total_pct": 99.791,
+    "max_listing_error_pp": 0.0,
+    "max_company_arithmetic_error_pp": 0.0,
+    "top10_system_pct": 57.550349999999995,
+    "top10_manual_same_entities_pct": 57.550349999999995,
+    "hhi_system": 0.0494098231,
+    "hhi_manual_same_entities": 0.04940982314570055,
+    "excluded_index_contracts": {
+      "XLB": {
+        "IXDZ6": 0.0053
+      },
+      "VAW": {}
+    },
+    "listing_discrepancies": []
+  },
+  {
+    "case": "nontech-08",
+    "group": "nontech",
+    "status": 200,
+    "tickers": "XLRE/VNQ",
+    "companies": 140,
+    "coverage_pct": 99.7876,
+    "manual_equity_total_pct": 99.7876,
+    "max_listing_error_pp": 0.0,
+    "max_company_arithmetic_error_pp": 0.0,
+    "top10_system_pct": 54.7605,
+    "top10_manual_same_entities_pct": 54.7605,
+    "hhi_system": 0.0412773842,
+    "hhi_manual_same_entities": 0.041277384218861214,
+    "excluded_index_contracts": {
+      "XLRE": {
+        "XARZ6": 0.0029
+      },
+      "VNQ": {}
+    },
+    "listing_discrepancies": []
+  },
+  {
+    "case": "nontech-09",
+    "group": "nontech",
+    "status": 200,
+    "tickers": "XLF/XLV/XLU",
+    "companies": 168,
+    "coverage_pct": 99.79637,
+    "manual_equity_total_pct": 99.79637,
+    "max_listing_error_pp": 0.0,
+    "max_company_arithmetic_error_pp": 0.0,
+    "top10_system_pct": 34.883065,
+    "top10_manual_same_entities_pct": 34.883065,
+    "hhi_system": 0.0186203025,
+    "hhi_manual_same_entities": 0.018620302517644575,
+    "excluded_index_contracts": {
+      "XLF": {
+        "IXAZ6": 0.0009
+      },
+      "XLV": {
+        "IXCZ6": 0.0196
+      },
+      "XLU": {
+        "IXSZ6": 0.0065
+      }
+    },
+    "listing_discrepancies": []
+  },
+  {
+    "case": "nontech-10",
+    "group": "nontech",
+    "status": 200,
+    "tickers": "XLE/XLP/XLI",
+    "companies": 137,
+    "coverage_pct": 99.86306,
+    "manual_equity_total_pct": 99.86306,
+    "max_listing_error_pp": 0.0,
+    "max_company_arithmetic_error_pp": 0.0,
+    "top10_system_pct": 32.41184,
+    "top10_manual_same_entities_pct": 32.411840000000005,
+    "hhi_system": 0.0190719626,
+    "hhi_manual_same_entities": 0.019071962644972802,
+    "excluded_index_contracts": {
+      "XLE": {
+        "IXPZ6": -0.0093
+      },
+      "XLP": {
+        "IXRZ6": 0.0051
+      },
+      "XLI": {
+        "IXIZ6": -0.0029
+      }
+    },
+    "listing_discrepancies": []
+  }
+]

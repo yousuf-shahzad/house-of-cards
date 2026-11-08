@@ -1,0 +1,1183 @@
+{
+  "generated_at": "2026-11-08T11:06:47.432559+00:00",
+  "baseline_commit": "9bdf21f88fff6f2b260cf76e1547a63915c34975",
+  "portfolio_count": 12,
+  "nontech_cases": 10,
+  "fund_count": 22,
+  "pair_count": 23,
+  "portfolio_checks": [
+    {
+      "case": "default-us",
+      "listing_pass": true,
+      "company_arithmetic_pass": true,
+      "top10_error_pp": 0.0,
+      "hhi_error": 3.3594654835766846e-13
+    },
+    {
+      "case": "default-global",
+      "listing_pass": true,
+      "company_arithmetic_pass": true,
+      "top10_error_pp": 0.0,
+      "hhi_error": 1.6152129980739893e-11
+    },
+    {
+      "case": "nontech-01",
+      "listing_pass": true,
+      "company_arithmetic_pass": true,
+      "top10_error_pp": 0.0,
+      "hhi_error": 7.724473838344181e-12
+    },
+    {
+      "case": "nontech-02",
+      "listing_pass": true,
+      "company_arithmetic_pass": true,
+      "top10_error_pp": 0.0,
+      "hhi_error": 2.314743535736241e-11
+    },
+    {
+      "case": "nontech-03",
+      "listing_pass": true,
+      "company_arithmetic_pass": true,
+      "top10_error_pp": 0.0,
+      "hhi_error": 4.1185221899553426e-11
+    },
+    {
+      "case": "nontech-04",
+      "listing_pass": true,
+      "company_arithmetic_pass": true,
+      "top10_error_pp": 0.0,
+      "hhi_error": 4.998205321848914e-11
+    },
+    {
+      "case": "nontech-05",
+      "listing_pass": true,
+      "company_arithmetic_pass": true,
+      "top10_error_pp": 0.0,
+      "hhi_error": 3.18147591604756e-11
+    },
+    {
+      "case": "nontech-06",
+      "listing_pass": true,
+      "company_arithmetic_pass": true,
+      "top10_error_pp": 0.0,
+      "hhi_error": 2.5609514509028486e-11
+    },
+    {
+      "case": "nontech-07",
+      "listing_pass": true,
+      "company_arithmetic_pass": true,
+      "top10_error_pp": 0.0,
+      "hhi_error": 4.5700547512961265e-11
+    },
+    {
+      "case": "nontech-08",
+      "listing_pass": true,
+      "company_arithmetic_pass": true,
+      "top10_error_pp": 0.0,
+      "hhi_error": 1.8861211203979877e-11
+    },
+    {
+      "case": "nontech-09",
+      "listing_pass": true,
+      "company_arithmetic_pass": true,
+      "top10_error_pp": 0.0,
+      "hhi_error": 1.76445733024444e-11
+    },
+    {
+      "case": "nontech-10",
+      "listing_pass": true,
+      "company_arithmetic_pass": true,
+      "top10_error_pp": 7.105427357601002e-15,
+      "hhi_error": 4.497280325921338e-11
+    }
+  ],
+  "cases": [
+    {
+      "id": "default-us",
+      "group": "default",
+      "label": "US core with tech tilt",
+      "weights": {
+        "IVV": 0.4,
+        "QQQ": 0.25,
+        "XLK": 0.15,
+        "EEM": 0.2
+      },
+      "pair_count": 6,
+      "overlap_min": 0.0,
+      "overlap_max": 50.106300000000005,
+      "rho_min": 0.6748421728653129,
+      "rho_max": 0.9722165024202677,
+      "top10_pct": 37.1353,
+      "hhi": 0.0200908102,
+      "effective_n": 49.774000652298234,
+      "coverage_pct": 99.93043,
+      "pairs": [
+        "IVV/QQQ",
+        "IVV/XLK",
+        "EEM/IVV",
+        "QQQ/XLK",
+        "EEM/QQQ",
+        "EEM/XLK"
+      ]
+    },
+    {
+      "id": "default-global",
+      "group": "default",
+      "label": "Global core with Nasdaq tilt",
+      "weights": {
+        "VTI": 0.5,
+        "VXUS": 0.3,
+        "QQQ": 0.2
+      },
+      "pair_count": 3,
+      "overlap_min": 0.1362,
+      "overlap_max": 48.1566,
+      "rho_min": 0.7015909522625093,
+      "rho_max": 0.9308254133629619,
+      "top10_pct": 26.14882,
+      "hhi": 0.0097804741,
+      "effective_n": 102.24453229726358,
+      "coverage_pct": 99.49673999999999,
+      "pairs": [
+        "VTI/VXUS",
+        "QQQ/VTI",
+        "QQQ/VXUS"
+      ]
+    },
+    {
+      "id": "nontech-01",
+      "group": "nontech",
+      "label": "Financials, large vs broad",
+      "weights": {
+        "XLF": 0.5,
+        "VFH": 0.5
+      },
+      "pair_count": 1,
+      "overlap_min": 82.4203,
+      "overlap_max": 82.4203,
+      "rho_min": 0.9934420505613218,
+      "rho_max": 0.9934420505613218,
+      "top10_pct": 51.3781,
+      "hhi": 0.0409694528,
+      "effective_n": 24.40842949213127,
+      "coverage_pct": 98.40520000000001,
+      "pairs": [
+        "VFH/XLF"
+      ]
+    },
+    {
+      "id": "nontech-02",
+      "group": "nontech",
+      "label": "Healthcare, large vs broad",
+      "weights": {
+        "XLV": 0.5,
+        "VHT": 0.5
+      },
+      "pair_count": 1,
+      "overlap_min": 85.3531,
+      "overlap_max": 85.3531,
+      "rho_min": 0.9909744177148794,
+      "rho_max": 0.9909744177148794,
+      "top10_pct": 55.998749999999994,
+      "hhi": 0.0490941629,
+      "effective_n": 20.369020285301573,
+      "coverage_pct": 99.764,
+      "pairs": [
+        "VHT/XLV"
+      ]
+    },
+    {
+      "id": "nontech-03",
+      "group": "nontech",
+      "label": "Energy, large vs broad",
+      "weights": {
+        "XLE": 0.5,
+        "VDE": 0.5
+      },
+      "pair_count": 1,
+      "overlap_min": 81.7365,
+      "overlap_max": 81.7365,
+      "rho_min": 0.9979650887961228,
+      "rho_max": 0.9979650887961228,
+      "top10_pct": 72.12570000000001,
+      "hhi": 0.0983348896,
+      "effective_n": 10.169330581116553,
+      "coverage_pct": 99.72175,
+      "pairs": [
+        "VDE/XLE"
+      ]
+    },
+    {
+      "id": "nontech-04",
+      "group": "nontech",
+      "label": "Utilities, large vs broad",
+      "weights": {
+        "XLU": 0.5,
+        "VPU": 0.5
+      },
+      "pair_count": 1,
+      "overlap_min": 88.6678,
+      "overlap_max": 88.6678,
+      "rho_min": 0.9975790027345613,
+      "rho_max": 0.9975790027345613,
+      "top10_pct": 55.79065,
+      "hhi": 0.0468546503,
+      "effective_n": 21.34259873026947,
+      "coverage_pct": 99.69059999999999,
+      "pairs": [
+        "VPU/XLU"
+      ]
+    },
+    {
+      "id": "nontech-05",
+      "group": "nontech",
+      "label": "Consumer staples, large vs broad",
+      "weights": {
+        "XLP": 0.5,
+        "VDC": 0.5
+      },
+      "pair_count": 1,
+      "overlap_min": 77.2218,
+      "overlap_max": 77.2218,
+      "rho_min": 0.9833517807893776,
+      "rho_max": 0.9833517807893776,
+      "top10_pct": 62.6346,
+      "hhi": 0.0534246933,
+      "effective_n": 18.717936187010363,
+      "coverage_pct": 99.78795000000001,
+      "pairs": [
+        "VDC/XLP"
+      ]
+    },
+    {
+      "id": "nontech-06",
+      "group": "nontech",
+      "label": "Industrials, large vs broad",
+      "weights": {
+        "XLI": 0.5,
+        "VIS": 0.5
+      },
+      "pair_count": 1,
+      "overlap_min": 78.3531,
+      "overlap_max": 78.3531,
+      "rho_min": 0.9914299390013389,
+      "rho_max": 0.9914299390013389,
+      "top10_pct": 33.7428,
+      "hhi": 0.0190652838,
+      "effective_n": 52.451356638079524,
+      "coverage_pct": 99.77265,
+      "pairs": [
+        "VIS/XLI"
+      ]
+    },
+    {
+      "id": "nontech-07",
+      "group": "nontech",
+      "label": "Materials, large vs broad",
+      "weights": {
+        "XLB": 0.5,
+        "VAW": 0.5
+      },
+      "pair_count": 1,
+      "overlap_min": 67.9741,
+      "overlap_max": 67.9741,
+      "rho_min": 0.9842400982770201,
+      "rho_max": 0.9842400982770201,
+      "top10_pct": 57.550349999999995,
+      "hhi": 0.0494098231,
+      "effective_n": 20.238890513250997,
+      "coverage_pct": 99.791,
+      "pairs": [
+        "VAW/XLB"
+      ]
+    },
+    {
+      "id": "nontech-08",
+      "group": "nontech",
+      "label": "Real estate, sector vs broad",
+      "weights": {
+        "XLRE": 0.5,
+        "VNQ": 0.5
+      },
+      "pair_count": 1,
+      "overlap_min": 61.4938,
+      "overlap_max": 61.4938,
+      "rho_min": 0.9917671532703246,
+      "rho_max": 0.9917671532703246,
+      "top10_pct": 54.7605,
+      "hhi": 0.0412773842,
+      "effective_n": 24.226341358132863,
+      "coverage_pct": 99.7876,
+      "pairs": [
+        "VNQ/XLRE"
+      ]
+    },
+    {
+      "id": "nontech-09",
+      "group": "nontech",
+      "label": "Financials, healthcare, utilities",
+      "weights": {
+        "XLF": 0.4,
+        "XLV": 0.35,
+        "XLU": 0.25
+      },
+      "pair_count": 3,
+      "overlap_min": 0.0,
+      "overlap_max": 0.0,
+      "rho_min": 0.2888529665408655,
+      "rho_max": 0.4313682127597653,
+      "top10_pct": 34.883065,
+      "hhi": 0.0186203025,
+      "effective_n": 53.70482031642611,
+      "coverage_pct": 99.79637,
+      "pairs": [
+        "XLF/XLV",
+        "XLF/XLU",
+        "XLU/XLV"
+      ]
+    },
+    {
+      "id": "nontech-10",
+      "group": "nontech",
+      "label": "Energy, staples, industrials",
+      "weights": {
+        "XLE": 0.3,
+        "XLP": 0.3,
+        "XLI": 0.4
+      },
+      "pair_count": 3,
+      "overlap_min": 0.0,
+      "overlap_max": 0.0,
+      "rho_min": 0.1765627897284514,
+      "rho_max": 0.3780909534653567,
+      "top10_pct": 32.41184,
+      "hhi": 0.0190719626,
+      "effective_n": 52.43298872660331,
+      "coverage_pct": 99.86306,
+      "pairs": [
+        "XLE/XLP",
+        "XLE/XLI",
+        "XLI/XLP"
+      ]
+    }
+  ],
+  "issuer_controls": [
+    {
+      "ticker": "EEM",
+      "ti_date": "2026-11-05",
+      "issuer_date": "2026-11-05",
+      "same_date": true,
+      "ti_rows": 1182,
+      "issuer_rows": 1182,
+      "max_abs_weight_difference_pp": 5.035843042784649e-05,
+      "sum_abs_difference_pp": 0.029065972336625244,
+      "url": "https://www.ishares.com/us/products/239637/ishares-msci-emerging-markets-etf/latest-holdings.csv",
+      "missing_from_issuer_count": 0,
+      "missing_from_ti_count": 0
+    },
+    {
+      "ticker": "IVV",
+      "ti_date": "2026-11-05",
+      "issuer_date": "2026-11-05",
+      "same_date": true,
+      "ti_rows": 503,
+      "issuer_rows": 504,
+      "max_abs_weight_difference_pp": 5.046080387478835e-05,
+      "sum_abs_difference_pp": 0.013102147297529305,
+      "url": "https://www.ishares.com/us/products/239726/ishares-core-s-p-500-etf/latest-holdings.csv",
+      "missing_from_issuer_count": 0,
+      "missing_from_ti_count": 1
+    },
+    {
+      "ticker": "VAW",
+      "ti_date": "2026-08-31",
+      "issuer_date": "2026-09-30",
+      "same_date": false,
+      "ti_rows": 110,
+      "issuer_rows": 110,
+      "max_abs_weight_difference_pp": 0.6297999999999995,
+      "sum_abs_difference_pp": 3.7208000000000006,
+      "url": "https://investor.vanguard.com/irr/funds/profile/VAW-AdditionalFundData",
+      "missing_from_issuer_count": 0,
+      "missing_from_ti_count": 0
+    },
+    {
+      "ticker": "VDC",
+      "ti_date": "2026-08-31",
+      "issuer_date": "2026-09-30",
+      "same_date": false,
+      "ti_rows": 103,
+      "issuer_rows": 103,
+      "max_abs_weight_difference_pp": 1.3229000000000006,
+      "sum_abs_difference_pp": 9.7769,
+      "url": "https://investor.vanguard.com/irr/funds/profile/VDC-AdditionalFundData",
+      "missing_from_issuer_count": 0,
+      "missing_from_ti_count": 0
+    },
+    {
+      "ticker": "VDE",
+      "ti_date": "2026-08-31",
+      "issuer_date": "2026-09-30",
+      "same_date": false,
+      "ti_rows": 111,
+      "issuer_rows": 111,
+      "max_abs_weight_difference_pp": 1.4819999999999993,
+      "sum_abs_difference_pp": 6.691699999999999,
+      "url": "https://investor.vanguard.com/irr/funds/profile/VDE-AdditionalFundData",
+      "missing_from_issuer_count": 1,
+      "missing_from_ti_count": 1
+    },
+    {
+      "ticker": "VFH",
+      "ti_date": "2026-08-31",
+      "issuer_date": "2026-09-30",
+      "same_date": false,
+      "ti_rows": 424,
+      "issuer_rows": 423,
+      "max_abs_weight_difference_pp": 2.6725000000000003,
+      "sum_abs_difference_pp": 7.2883000000000004,
+      "url": "https://investor.vanguard.com/irr/funds/profile/VFH-AdditionalFundData",
+      "missing_from_issuer_count": 1,
+      "missing_from_ti_count": 0
+    },
+    {
+      "ticker": "VHT",
+      "ti_date": "2026-08-31",
+      "issuer_date": "2026-09-30",
+      "same_date": false,
+      "ti_rows": 413,
+      "issuer_rows": 407,
+      "max_abs_weight_difference_pp": 0.3497,
+      "sum_abs_difference_pp": 5.9369,
+      "url": "https://investor.vanguard.com/irr/funds/profile/VHT-AdditionalFundData",
+      "missing_from_issuer_count": 7,
+      "missing_from_ti_count": 1
+    },
+    {
+      "ticker": "VIS",
+      "ti_date": "2026-08-31",
+      "issuer_date": "2026-09-30",
+      "same_date": false,
+      "ti_rows": 397,
+      "issuer_rows": 396,
+      "max_abs_weight_difference_pp": 0.3528000000000002,
+      "sum_abs_difference_pp": 6.760600000000001,
+      "url": "https://investor.vanguard.com/irr/funds/profile/VIS-AdditionalFundData",
+      "missing_from_issuer_count": 1,
+      "missing_from_ti_count": 0
+    },
+    {
+      "ticker": "VNQ",
+      "ti_date": "2026-07-31",
+      "issuer_date": "2026-09-30",
+      "same_date": false,
+      "ti_rows": 141,
+      "issuer_rows": 139,
+      "max_abs_weight_difference_pp": 1.3435000000000001,
+      "sum_abs_difference_pp": 7.016200000000005,
+      "url": "https://investor.vanguard.com/irr/funds/profile/VNQ-AdditionalFundData",
+      "missing_from_issuer_count": 2,
+      "missing_from_ti_count": 0
+    },
+    {
+      "ticker": "VPU",
+      "ti_date": "2026-08-31",
+      "issuer_date": "2026-09-30",
+      "same_date": false,
+      "ti_rows": 68,
+      "issuer_rows": 68,
+      "max_abs_weight_difference_pp": 0.36279999999999824,
+      "sum_abs_difference_pp": 2.3048999999999977,
+      "url": "https://investor.vanguard.com/irr/funds/profile/VPU-AdditionalFundData",
+      "missing_from_issuer_count": 0,
+      "missing_from_ti_count": 0
+    },
+    {
+      "ticker": "VTI",
+      "ti_date": "2026-06-30",
+      "issuer_date": "2026-09-30",
+      "same_date": false,
+      "ti_rows": 3483,
+      "issuer_rows": 3424,
+      "max_abs_weight_difference_pp": 1.3617000000000008,
+      "sum_abs_difference_pp": 17.1045,
+      "url": "https://investor.vanguard.com/irr/funds/profile/VTI-AdditionalFundData",
+      "missing_from_issuer_count": 123,
+      "missing_from_ti_count": 64
+    },
+    {
+      "ticker": "VXUS",
+      "ti_date": "2026-07-31",
+      "issuer_date": "2026-09-30",
+      "same_date": false,
+      "ti_rows": 8702,
+      "issuer_rows": 8529,
+      "max_abs_weight_difference_pp": 4.24,
+      "sum_abs_difference_pp": 178.2005,
+      "url": "https://investor.vanguard.com/irr/funds/profile/VXUS-AdditionalFundData",
+      "missing_from_issuer_count": 8564,
+      "missing_from_ti_count": 8391
+    },
+    {
+      "ticker": "XLB",
+      "ti_date": "2026-11-05",
+      "issuer_date": "2026-11-05",
+      "same_date": true,
+      "ti_rows": 24,
+      "issuer_rows": 24,
+      "max_abs_weight_difference_pp": 4.700000000013027e-05,
+      "sum_abs_difference_pp": 0.0006270000000019316,
+      "url": "https://www.ssga.com/us/en/individual/etfs/library-content/products/fund-data/etfs/us/holdings-daily-us-en-xlb.xlsx",
+      "missing_from_issuer_count": 0,
+      "missing_from_ti_count": 0
+    },
+    {
+      "ticker": "XLE",
+      "ti_date": "2026-11-05",
+      "issuer_date": "2026-11-05",
+      "same_date": true,
+      "ti_rows": 21,
+      "issuer_rows": 21,
+      "max_abs_weight_difference_pp": 5.000000000032756e-05,
+      "sum_abs_difference_pp": 0.0005320000000017533,
+      "url": "https://www.ssga.com/us/en/individual/etfs/library-content/products/fund-data/etfs/us/holdings-daily-us-en-xle.xlsx",
+      "missing_from_issuer_count": 0,
+      "missing_from_ti_count": 0
+    },
+    {
+      "ticker": "XLF",
+      "ti_date": "2026-11-05",
+      "issuer_date": "2026-11-05",
+      "same_date": true,
+      "ti_rows": 76,
+      "issuer_rows": 76,
+      "max_abs_weight_difference_pp": 4.899999999996574e-05,
+      "sum_abs_difference_pp": 0.0019350000000033368,
+      "url": "https://www.ssga.com/us/en/individual/etfs/library-content/products/fund-data/etfs/us/holdings-daily-us-en-xlf.xlsx",
+      "missing_from_issuer_count": 0,
+      "missing_from_ti_count": 0
+    },
+    {
+      "ticker": "XLI",
+      "ti_date": "2026-11-05",
+      "issuer_date": "2026-11-05",
+      "same_date": true,
+      "ti_rows": 83,
+      "issuer_rows": 83,
+      "max_abs_weight_difference_pp": 5.0000000000050004e-05,
+      "sum_abs_difference_pp": 0.0019120000000020232,
+      "url": "https://www.ssga.com/us/en/individual/etfs/library-content/products/fund-data/etfs/us/holdings-daily-us-en-xli.xlsx",
+      "missing_from_issuer_count": 0,
+      "missing_from_ti_count": 0
+    },
+    {
+      "ticker": "XLK",
+      "ti_date": "2026-11-05",
+      "issuer_date": "2026-11-05",
+      "same_date": true,
+      "ti_rows": 76,
+      "issuer_rows": 76,
+      "max_abs_weight_difference_pp": 5.000000000032756e-05,
+      "sum_abs_difference_pp": 0.0021370000000045103,
+      "url": "https://www.ssga.com/us/en/individual/etfs/library-content/products/fund-data/etfs/us/holdings-daily-us-en-xlk.xlsx",
+      "missing_from_issuer_count": 0,
+      "missing_from_ti_count": 0
+    },
+    {
+      "ticker": "XLP",
+      "ti_date": "2026-11-05",
+      "issuer_date": "2026-11-05",
+      "same_date": true,
+      "ti_rows": 33,
+      "issuer_rows": 33,
+      "max_abs_weight_difference_pp": 4.999999999988347e-05,
+      "sum_abs_difference_pp": 0.0006670000000044141,
+      "url": "https://www.ssga.com/us/en/individual/etfs/library-content/products/fund-data/etfs/us/holdings-daily-us-en-xlp.xlsx",
+      "missing_from_issuer_count": 0,
+      "missing_from_ti_count": 0
+    },
+    {
+      "ticker": "XLRE",
+      "ti_date": "2026-11-05",
+      "issuer_date": "2026-11-05",
+      "same_date": true,
+      "ti_rows": 30,
+      "issuer_rows": 30,
+      "max_abs_weight_difference_pp": 4.899999999974369e-05,
+      "sum_abs_difference_pp": 0.0006270000000004883,
+      "url": "https://www.ssga.com/us/en/individual/etfs/library-content/products/fund-data/etfs/us/holdings-daily-us-en-xlre.xlsx",
+      "missing_from_issuer_count": 0,
+      "missing_from_ti_count": 0
+    },
+    {
+      "ticker": "XLU",
+      "ti_date": "2026-11-05",
+      "issuer_date": "2026-11-05",
+      "same_date": true,
+      "ti_rows": 31,
+      "issuer_rows": 31,
+      "max_abs_weight_difference_pp": 4.8000000000048004e-05,
+      "sum_abs_difference_pp": 0.0007589999999970676,
+      "url": "https://www.ssga.com/us/en/individual/etfs/library-content/products/fund-data/etfs/us/holdings-daily-us-en-xlu.xlsx",
+      "missing_from_issuer_count": 0,
+      "missing_from_ti_count": 0
+    },
+    {
+      "ticker": "XLV",
+      "ti_date": "2026-11-05",
+      "issuer_date": "2026-11-05",
+      "same_date": true,
+      "ti_rows": 61,
+      "issuer_rows": 61,
+      "max_abs_weight_difference_pp": 4.899999999996574e-05,
+      "sum_abs_difference_pp": 0.0015979999999974296,
+      "url": "https://www.ssga.com/us/en/individual/etfs/library-content/products/fund-data/etfs/us/holdings-daily-us-en-xlv.xlsx",
+      "missing_from_issuer_count": 0,
+      "missing_from_ti_count": 0
+    }
+  ],
+  "matched_issuer_funds": 11,
+  "matched_issuer_rows": 2120,
+  "max_matched_issuer_weight_error_pp": 5.046080387478835e-05,
+  "max_listing_error_pp": 0.0,
+  "max_hhi_error": 4.998205321848914e-11,
+  "max_ti_rounding_overlap_pp": 0.046900000000007935,
+  "max_return_corr_delta": 0.0003070695421004688,
+  "max_ti_corr_rounding_delta": 0.004876708339827451,
+  "weeks": 156,
+  "return_start": "2023-11-17",
+  "return_end": "2026-11-06",
+  "cache_inventory": [
+    {
+      "case": "default-us",
+      "top_companies": 15,
+      "top_company_weight_pct": 43.35695,
+      "cached_companies": 14,
+      "cached_with_edges": 12,
+      "portfolio_weight_with_cached_edges_pct": 36.963815,
+      "missing_names": [
+        "Samsung Electronics Co., Ltd."
+      ]
+    },
+    {
+      "case": "default-global",
+      "top_companies": 15,
+      "top_company_weight_pct": 30.93232,
+      "cached_companies": 15,
+      "cached_with_edges": 13,
+      "portfolio_weight_with_cached_edges_pct": 25.708730000000003,
+      "missing_names": []
+    },
+    {
+      "case": "nontech-01",
+      "top_companies": 15,
+      "top_company_weight_pct": 59.89,
+      "cached_companies": 2,
+      "cached_with_edges": 2,
+      "portfolio_weight_with_cached_edges_pct": 21.183200000000003,
+      "missing_names": [
+        "Visa Inc.",
+        "Mastercard",
+        "Bank of America",
+        "Goldman Sachs",
+        "Wells Fargo",
+        "Morgan Stanley",
+        "Citigroup",
+        "American Express",
+        "BlackRock",
+        "Charles Schwab Corporation",
+        "S&P Global",
+        "Progressive Corporation",
+        "Capital One"
+      ]
+    },
+    {
+      "case": "nontech-02",
+      "top_companies": 15,
+      "top_company_weight_pct": 65.8106,
+      "cached_companies": 3,
+      "cached_with_edges": 3,
+      "portfolio_weight_with_cached_edges_pct": 25.747500000000002,
+      "missing_names": [
+        "AbbVie",
+        "Merck & Co.",
+        "UnitedHealth Group",
+        "Amgen",
+        "Thermo Fisher Scientific",
+        "Gilead Sciences",
+        "Abbott Laboratories",
+        "Pfizer",
+        "Intuitive Surgical",
+        "Danaher Corporation",
+        "Vertex Pharmaceuticals",
+        "Medtronic"
+      ]
+    },
+    {
+      "case": "nontech-03",
+      "top_companies": 15,
+      "top_company_weight_pct": 83.88845,
+      "cached_companies": 0,
+      "cached_with_edges": 0,
+      "portfolio_weight_with_cached_edges_pct": 0.0,
+      "missing_names": [
+        "ExxonMobil",
+        "Chevron Corporation",
+        "ConocoPhillips",
+        "Marathon Petroleum",
+        "Valero Energy",
+        "Phillips 66",
+        "Williams Companies",
+        "Schlumberger",
+        "EOG Resources",
+        "Kinder Morgan",
+        "Targa Resources",
+        "Oneok",
+        "Baker Hughes",
+        "Devon Energy",
+        "Occidental Petroleum"
+      ]
+    },
+    {
+      "case": "nontech-04",
+      "top_companies": 15,
+      "top_company_weight_pct": 69.02855,
+      "cached_companies": 0,
+      "cached_with_edges": 0,
+      "portfolio_weight_with_cached_edges_pct": 0.0,
+      "missing_names": [
+        "NextEra Energy",
+        "Southern Company",
+        "Duke Energy",
+        "Constellation Energy",
+        "American Electric Power",
+        "Dominion Energy",
+        "Sempra",
+        "Entergy",
+        "Xcel Energy",
+        "Exelon",
+        "Consolidated Edison",
+        "Vistra Corp.",
+        "WEC Energy Group",
+        "Public Service Enterprise Group",
+        "Ameren"
+      ]
+    },
+    {
+      "case": "nontech-05",
+      "top_companies": 15,
+      "top_company_weight_pct": 73.9106,
+      "cached_companies": 2,
+      "cached_with_edges": 2,
+      "portfolio_weight_with_cached_edges_pct": 22.49235,
+      "missing_names": [
+        "Procter & Gamble",
+        "Coca-Cola Company (The)",
+        "Philip Morris International",
+        "PepsiCo",
+        "Altria",
+        "Mondelez International",
+        "Colgate-Palmolive",
+        "Target Corporation",
+        "Monster Beverage",
+        "Kimberly-Clark",
+        "Keurig Dr Pepper",
+        "Kroger",
+        "Sysco"
+      ]
+    },
+    {
+      "case": "nontech-06",
+      "top_companies": 15,
+      "top_company_weight_pct": 42.403800000000004,
+      "cached_companies": 0,
+      "cached_with_edges": 0,
+      "portfolio_weight_with_cached_edges_pct": 0.0,
+      "missing_names": [
+        "GE Aerospace",
+        "Caterpillar Inc.",
+        "RTX Corporation",
+        "GE Vernova",
+        "Union Pacific Corporation",
+        "Deere & Company",
+        "Boeing",
+        "Eaton Corporation",
+        "Uber",
+        "Automatic Data Processing",
+        "Parker Hannifin",
+        "Lockheed Martin",
+        "3M",
+        "CSX Corporation",
+        "Trane Technologies"
+      ]
+    },
+    {
+      "case": "nontech-07",
+      "top_companies": 15,
+      "top_company_weight_pct": 70.9535,
+      "cached_companies": 0,
+      "cached_with_edges": 0,
+      "portfolio_weight_with_cached_edges_pct": 0.0,
+      "missing_names": [
+        "Linde plc",
+        "Newmont",
+        "Freeport-McMoRan",
+        "Sherwin-Williams",
+        "Ecolab",
+        "CRH plc",
+        "Air Products",
+        "Nucor",
+        "Vulcan Materials Company",
+        "Martin Marietta Materials",
+        "Steel Dynamics",
+        "PPG Industries",
+        "Smurfit Westrock",
+        "Dow Inc.",
+        "International Flavors & Fragrances"
+      ]
+    },
+    {
+      "case": "nontech-08",
+      "top_companies": 15,
+      "top_company_weight_pct": 69.09805,
+      "cached_companies": 0,
+      "cached_with_edges": 0,
+      "portfolio_weight_with_cached_edges_pct": 0.0,
+      "missing_names": [
+        "Welltower",
+        "Prologis",
+        "VRTPX",
+        "Equinix",
+        "American Tower",
+        "Simon Property Group",
+        "Public Storage",
+        "Digital Realty",
+        "Realty Income",
+        "Ventas",
+        "CBRE Group",
+        "Crown Castle",
+        "Vivmark Residential",
+        "Iron Mountain",
+        "Extra Space Storage"
+      ]
+    },
+    {
+      "case": "nontech-09",
+      "top_companies": 15,
+      "top_company_weight_pct": 42.952315,
+      "cached_companies": 4,
+      "cached_with_edges": 4,
+      "portfolio_weight_with_cached_edges_pct": 18.809635,
+      "missing_names": [
+        "Visa Inc.",
+        "NextEra Energy",
+        "AbbVie",
+        "Mastercard",
+        "Southern Company",
+        "Merck & Co.",
+        "Duke Energy",
+        "UnitedHealth Group",
+        "Bank of America",
+        "Constellation Energy",
+        "Thermo Fisher Scientific"
+      ]
+    },
+    {
+      "case": "nontech-10",
+      "top_companies": 15,
+      "top_company_weight_pct": 39.98235,
+      "cached_companies": 2,
+      "cached_with_edges": 2,
+      "portfolio_weight_with_cached_edges_pct": 6.2277,
+      "missing_names": [
+        "ExxonMobil",
+        "Chevron Corporation",
+        "GE Aerospace",
+        "Procter & Gamble",
+        "Coca-Cola Company (The)",
+        "ConocoPhillips",
+        "RTX Corporation",
+        "Caterpillar Inc.",
+        "Philip Morris International",
+        "GE Vernova",
+        "Altria",
+        "Union Pacific Corporation",
+        "Colgate-Palmolive"
+      ]
+    }
+  ],
+  "fund_dates": [
+    {
+      "ticker": "EEM",
+      "holdings_date": "2026-11-05",
+      "price_date": "2026-11-06",
+      "holdings_age_days": 3,
+      "source_layer": "issuer",
+      "issuer_date": "2026-11-05",
+      "technology_pct": 0
+    },
+    {
+      "ticker": "IVV",
+      "holdings_date": "2026-11-05",
+      "price_date": "2026-11-06",
+      "holdings_age_days": 3,
+      "source_layer": "issuer",
+      "issuer_date": "2026-11-05",
+      "technology_pct": 0
+    },
+    {
+      "ticker": "QQQ",
+      "holdings_date": "2026-06-30",
+      "price_date": "2026-11-06",
+      "holdings_age_days": 131,
+      "source_layer": "sec_nport",
+      "issuer_date": null,
+      "technology_pct": 0
+    },
+    {
+      "ticker": "VAW",
+      "holdings_date": "2026-08-31",
+      "price_date": "2026-11-06",
+      "holdings_age_days": 69,
+      "source_layer": "sec_nport",
+      "issuer_date": "2026-09-30",
+      "technology_pct": 0
+    },
+    {
+      "ticker": "VDC",
+      "holdings_date": "2026-08-31",
+      "price_date": "2026-11-06",
+      "holdings_age_days": 69,
+      "source_layer": "sec_nport",
+      "issuer_date": "2026-09-30",
+      "technology_pct": 0
+    },
+    {
+      "ticker": "VDE",
+      "holdings_date": "2026-08-31",
+      "price_date": "2026-11-06",
+      "holdings_age_days": 69,
+      "source_layer": "sec_nport",
+      "issuer_date": "2026-09-30",
+      "technology_pct": 0
+    },
+    {
+      "ticker": "VFH",
+      "holdings_date": "2026-08-31",
+      "price_date": "2026-11-06",
+      "holdings_age_days": 69,
+      "source_layer": "sec_nport",
+      "issuer_date": "2026-09-30",
+      "technology_pct": 0
+    },
+    {
+      "ticker": "VHT",
+      "holdings_date": "2026-08-31",
+      "price_date": "2026-11-06",
+      "holdings_age_days": 69,
+      "source_layer": "sec_nport",
+      "issuer_date": "2026-09-30",
+      "technology_pct": 0
+    },
+    {
+      "ticker": "VIS",
+      "holdings_date": "2026-08-31",
+      "price_date": "2026-11-06",
+      "holdings_age_days": 69,
+      "source_layer": "sec_nport",
+      "issuer_date": "2026-09-30",
+      "technology_pct": 0
+    },
+    {
+      "ticker": "VNQ",
+      "holdings_date": "2026-07-31",
+      "price_date": "2026-11-06",
+      "holdings_age_days": 100,
+      "source_layer": "sec_nport",
+      "issuer_date": "2026-09-30",
+      "technology_pct": 0
+    },
+    {
+      "ticker": "VPU",
+      "holdings_date": "2026-08-31",
+      "price_date": "2026-11-06",
+      "holdings_age_days": 69,
+      "source_layer": "sec_nport",
+      "issuer_date": "2026-09-30",
+      "technology_pct": 0
+    },
+    {
+      "ticker": "VTI",
+      "holdings_date": "2026-06-30",
+      "price_date": "2026-11-06",
+      "holdings_age_days": 131,
+      "source_layer": "sec_nport",
+      "issuer_date": "2026-09-30",
+      "technology_pct": 0
+    },
+    {
+      "ticker": "VXUS",
+      "holdings_date": "2026-07-31",
+      "price_date": "2026-11-06",
+      "holdings_age_days": 100,
+      "source_layer": "sec_nport",
+      "issuer_date": "2026-09-30",
+      "technology_pct": 0
+    },
+    {
+      "ticker": "XLB",
+      "holdings_date": "2026-11-05",
+      "price_date": "2026-11-06",
+      "holdings_age_days": 3,
+      "source_layer": "issuer",
+      "issuer_date": "2026-11-05",
+      "technology_pct": 0
+    },
+    {
+      "ticker": "XLE",
+      "holdings_date": "2026-11-05",
+      "price_date": "2026-11-06",
+      "holdings_age_days": 3,
+      "source_layer": "issuer",
+      "issuer_date": "2026-11-05",
+      "technology_pct": 0
+    },
+    {
+      "ticker": "XLF",
+      "holdings_date": "2026-11-05",
+      "price_date": "2026-11-06",
+      "holdings_age_days": 3,
+      "source_layer": "issuer",
+      "issuer_date": "2026-11-05",
+      "technology_pct": 0
+    },
+    {
+      "ticker": "XLI",
+      "holdings_date": "2026-11-05",
+      "price_date": "2026-11-06",
+      "holdings_age_days": 3,
+      "source_layer": "issuer",
+      "issuer_date": "2026-11-05",
+      "technology_pct": 0
+    },
+    {
+      "ticker": "XLK",
+      "holdings_date": "2026-11-05",
+      "price_date": "2026-11-06",
+      "holdings_age_days": 3,
+      "source_layer": "issuer",
+      "issuer_date": "2026-11-05",
+      "technology_pct": 0
+    },
+    {
+      "ticker": "XLP",
+      "holdings_date": "2026-11-05",
+      "price_date": "2026-11-06",
+      "holdings_age_days": 3,
+      "source_layer": "issuer",
+      "issuer_date": "2026-11-05",
+      "technology_pct": 0
+    },
+    {
+      "ticker": "XLRE",
+      "holdings_date": "2026-11-05",
+      "price_date": "2026-11-06",
+      "holdings_age_days": 3,
+      "source_layer": "issuer",
+      "issuer_date": "2026-11-05",
+      "technology_pct": 0
+    },
+    {
+      "ticker": "XLU",
+      "holdings_date": "2026-11-05",
+      "price_date": "2026-11-06",
+      "holdings_age_days": 3,
+      "source_layer": "issuer",
+      "issuer_date": "2026-11-05",
+      "technology_pct": 0
+    },
+    {
+      "ticker": "XLV",
+      "holdings_date": "2026-11-05",
+      "price_date": "2026-11-06",
+      "holdings_age_days": 3,
+      "source_layer": "issuer",
+      "issuer_date": "2026-11-05",
+      "technology_pct": 0
+    }
+  ],
+  "worked_financials": [
+    {
+      "symbol": "JPM",
+      "xlf_weight_pct": 11.0634,
+      "vfh_weight_pct": 10.4679,
+      "manual_portfolio_pct": 10.76565,
+      "app_company_pct": 10.76565,
+      "overlap_contribution_pct": 10.4679
+    },
+    {
+      "symbol": "BRK.B",
+      "xlf_weight_pct": 13.1511,
+      "vfh_weight_pct": 7.684,
+      "manual_portfolio_pct": 10.41755,
+      "app_company_pct": 10.41755,
+      "overlap_contribution_pct": 7.684
+    },
+    {
+      "symbol": "V",
+      "xlf_weight_pct": 8.8849,
+      "vfh_weight_pct": 4.3975,
+      "manual_portfolio_pct": 6.6411999999999995,
+      "app_company_pct": 6.6411999999999995,
+      "overlap_contribution_pct": 4.3975
+    },
+    {
+      "symbol": "MA",
+      "xlf_weight_pct": 6.5438,
+      "vfh_weight_pct": 5.2897,
+      "manual_portfolio_pct": 5.91675,
+      "app_company_pct": 5.9167499999999995,
+      "overlap_contribution_pct": 5.2897
+    },
+    {
+      "symbol": "BAC",
+      "xlf_weight_pct": 3.9925,
+      "vfh_weight_pct": 4.6092,
+      "manual_portfolio_pct": 4.3008500000000005,
+      "app_company_pct": 4.30085,
+      "overlap_contribution_pct": 3.9925
+    }
+  ],
+  "cross_listing_bridge": [
+    {
+      "company": "ASML Holding N.V.",
+      "symbols": [
+        "ASML",
+        "ASML.NL"
+      ],
+      "qqq_weight_pct": 0.7896000000000001,
+      "vxus_weight_pct": 1.4472,
+      "added_overlap_pp": 0.7896000000000001
+    },
+    {
+      "company": "Ferrovial SE",
+      "symbols": [
+        "FER",
+        "FER.ES"
+      ],
+      "qqq_weight_pct": 0.21380000000000002,
+      "vxus_weight_pct": 0.0678,
+      "added_overlap_pp": 0.0678
+    }
+  ],
+  "scope_notes": [
+    "No production code or model was tuned on these portfolios.",
+    "Manual company arithmetic is conditional on the app's symbol-to-company memberships; it is not an independent audit of every identity.",
+    "Raw index-futures rows are explicitly excluded from the equity oracle, consistent with the app contract; source weights are not renormalised.",
+    "HHI is normalised to covered company holdings; company exposures and overlap are not renormalised.",
+    "Direct issuer comparisons use CUSIP/security identifiers for cross-fund matching; native tickers alone are not globally unique.",
+    "SSGA cash and unkeyed money-market rows are excluded, rather than falsely joining '-' to '-'.",
+    "Vanguard issuer files have a different holdings vintage from TickerInside. Their differences are descriptive, not app arithmetic failures.",
+    "No fresh LLM inference or new gold annotation was run on the 10 portfolios. Recorded extraction evaluation and cache availability are separate evidence."
+  ]
+}

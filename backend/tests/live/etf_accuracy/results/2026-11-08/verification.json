@@ -1,0 +1,12 @@
+{
+  "baseline": "9bdf21f",
+  "backend_pytest": {
+    "passed": 152,
+    "skipped": 1,
+    "log": "........................................................................ [ 47%]\n.................................................s...................... [ 94%]\n.........                                                                [100%]\n152 passed, 1 skipped in 4.73s"
+  },
+  "analysis_assertions": "passed",
+  "pdf_pages": 13,
+  "pdf_visual_review": "all pages rendered and inspected; text bounds checked",
+  "scope": "No new live LLM extraction or gold annotation on ETF cohort."
+}
