@@ -220,15 +220,18 @@ relationships, and **79 hard negatives** (competitor lists, negated claims, hypo
 Run the evaluation harness from `backend/`:
 
 ```bash
-# Offline (deterministic verifier + V-INT rules + R-IMP against cached/fixture predictions; zero API calls)
-cd backend && uv run hoc eval
-# or: uv run python -m hoc.cli eval
+# Offline replay (default: deterministic verifier + V-INT + R-IMP against recorded predictions; zero API calls)
+cd backend && uv run python -m hoc.cli eval
 
-# Live (runs Gemini extractor + V-INT Flash judge on the 10 held-out 10-Ks and writes docs/hoc/eval/RESULTS.md)
-cd backend && uv run hoc eval --live
+# Live (runs Gemini extractor + V-INT Flash judge on the 10 held-out 10-Ks and updates docs/hoc/EVAL.md)
+cd backend && uv run python -m hoc.cli eval --live
 ```
 
-- **Benchmark results (`docs/hoc/eval/RESULTS.md`):** `TODO (pending E-RUN --live report: precision, core recall, quote-verification survival rate, and hard-negative rejection rate before vs after V-INT)`.
+- **Benchmark results ([`docs/hoc/EVAL.md`](docs/hoc/EVAL.md)):**
+  - **Micro precision:** **88.4% [83.0%, 92.9%]** blind (114/129) and **96.1%** after blind pooled adjudication (124/129; 10 of 14 unmatched predictions confirmed verbatim in the filings as extended relationships).
+  - **Core recall (`tier='core'`):** **57.4% [35.3%, 76.0%]** (66/115 core relationships; misses are mainly multi-site facility countries, 23/49, and Pfizer co-development alliances).
+  - **Hard-negative false-positive rate:** **1.3%** (1/79 across 27 competitor, 11 negated, 9 hypothetical, 7 unrelated, and 25 generic passages), **100.0% direction accuracy**, and **100.0% facility-country accuracy** (39/39).
+  - **Honest V-INT note:** On the 10 held-out filings, the extractor + verbatim quote check already rejected 78/79 hard negatives so V-INT filtered 0 additional edges there; on the live `us-core-tilt` portfolio run, V-INT's 20% judge sample caught and flagged 1 real tentative overclaim (`Nvidia -> OpenAI`). Supplier precision is the weakest relationship type.
 
 The unit tests cover weighted exposure, duplicate and overlapping holdings, share-class merging, allocation
 validation, weighted overlap, incomplete and missing data, the source adapters' parsing, relationship
