@@ -46,6 +46,9 @@ WORKERS = 4
 JOB_RETENTION_SECONDS = 3600
 """Finished jobs are forgotten after an hour; their per-company results stay in the disk caches."""
 SUBMIT_WAIT_SECONDS = 1.5
+REVERSE_BUDGET_SECONDS = 100.0
+"""Reverse-link steps not started this long after the job began are skipped (the company says so), so a
+cold click still finishes in about 2 minutes. Forward extraction always runs first and is never cut."""
 """POST waits this long, so an all-cached run comes back finished (HTTP 200) instead of 202."""
 FINISHED = frozenset({"cached", "done", "no_sec_filing", "unsupported_form", "sec_contact_missing",
                       "missing_api_key", "error"})
@@ -107,11 +110,14 @@ class LivePipeline:
     One instance per service, so the fetcher's per-accession memo and the extraction/orchestrator disk caches
     are shared by every job."""
 
-    def __init__(self, fetcher, extractor, orchestrator, *, resolve_target_key=None) -> None:
+    def __init__(self, fetcher, extractor, orchestrator, *, resolve_target_key=None,
+                 reverse_limit: int = 3) -> None:
         self.fetcher = fetcher
         self.extractor = extractor
         self.orchestrator = orchestrator
         self.resolve_target_key = resolve_target_key
+        self.reverse_limit = reverse_limit
+        """Other filers' documents searched per company (HOC_DEPS_REVERSE_LIMIT; 0 = reverse links off)."""
         self.prompt_version = f"{extractor.prompt_version}+{orchestrator.prompt_version}"
         self._filings: dict[str, object] = {}
         self._lock = threading.Lock()
@@ -124,7 +130,8 @@ class LivePipeline:
         from hoc.graph import DependencyOrchestrator
 
         extractor = DependencyExtractor(GeminiClient(http, settings), ExtractionCache(DiskCache(settings.cache_dir)))
-        return cls(FilingFetcher(http, settings), extractor, DependencyOrchestrator(http=http, settings=settings))
+        return cls(FilingFetcher(http, settings), extractor, DependencyOrchestrator(http=http, settings=settings),
+                   reverse_limit=settings.deps_reverse_limit)
 
     def filing(self, company: CompanyExposure) -> FilingRef:
         filing = self.fetcher.for_company(company)  # raises FilingUnavailable, a CompanyUnavailable
@@ -145,10 +152,13 @@ class LivePipeline:
         return self.orchestrator.insights(analysis, edges, cache_only=cache_only)
 
     def reverse(self, company: CompanyExposure, *, cache_only: bool) -> Extraction:
-        """Who names this company: other filers' latest 10-K/20-F (at most 10), kept only when the edge's target
+        """Who names this company: other filers' latest 10-K/20-F (at most reverse_limit), kept only when the edge's target
         resolves to this very company. Uses the company's display name; its own CIK is excluded."""
+        if self.reverse_limit <= 0:
+            return Extraction(edges=[])
         own_cik = company.company_key.removeprefix("CIK:") if company.company_key.startswith("CIK:") else None
-        filings = self.fetcher.names_in_other_filings(company.company_name, exclude_cik=own_cik)
+        filings = self.fetcher.names_in_other_filings(company.company_name, exclude_cik=own_cik,
+                                                      limit=self.reverse_limit)
         found = self.extractor.extract_reverse(company, filings, cache_only=cache_only,
                                                top_n_company_keys={company.company_key},
                                                resolve_target_key=self.resolver_for([company]))
@@ -300,8 +310,13 @@ class DependencyJobs:
     def _run(self, job: _Job) -> None:
         self._set(job, status="running")
         try:
-            futures = [self._workers.submit(self._company, job, i, c) for i, c in enumerate(job.top)]
-            extractions = [f.result() for f in futures]
+            started = time.monotonic()
+            forwards = [f.result() for f in [self._workers.submit(self._forward, job, i, c)
+                                             for i, c in enumerate(job.top)]]
+            reverses = [f.result() for f in [self._workers.submit(self._reverse, job, i, c, started)
+                                             for i, c in enumerate(job.top)]]
+            extractions = [self._finish(job, i, fwd, rev)
+                           for i, (fwd, rev) in enumerate(zip(forwards, reverses, strict=True))]
             resolver_for = getattr(self.pipeline, "resolver_for", None)
             edges = _resolve_and_flag(job.analysis,
                                       list({e.edge_id: e for x in extractions if x for e in x.edges}.values()),
@@ -326,46 +341,50 @@ class DependencyJobs:
             self._set(job, status="error", error=ErrorBody(
                 code="INTERNAL_ERROR", message="Dependency analysis failed", details={"type": type(exc).__name__}))
 
-    def _company(self, job: _Job, index: int, company: CompanyExposure) -> Extraction | None:
-        """Forward (the company's own filing), then reverse links (other filers naming it), which run even
-        when the company has no SEC filing of its own (TSMC, Samsung). The final status is set once both end."""
-        forward: Extraction | None = None
-        status, message = None, None
+    def _forward(self, job: _Job, index: int, company: CompanyExposure):
+        """The company's own filing. Returns (Extraction | None, status, message); never raises."""
         try:
             self._set_company(job, index, status="fetching")
             filing = self.pipeline.filing(company)
             self._set_company(job, index, status="extracting", filing=filing)
             forward = self.pipeline.extract(company, filing, cache_only=job.cache_only)
         except CompanyUnavailable as exc:
-            status, message = exc.status, exc.message
+            return None, exc.status, exc.message
         except Exception as exc:  # one company's failure never sinks the others
             log.exception("dependency step failed for %s", company.company_key)
-            status, message = "error", f"Unexpected error ({type(exc).__name__})"
-        if forward is not None:
-            status = "cached" if forward.cached else "done"
-        reverse = self._reverse(job, index, company)
+            return None, "error", f"Unexpected error ({type(exc).__name__})"
+        return forward, "cached" if forward.cached else "done", None
+
+    def _reverse(self, job: _Job, index: int, company: CompanyExposure, started: float):
+        """Other filers naming this company (optional pipeline step), once every forward step has finished.
+        Returns (Extraction | None, note | None). Its failures never change the company's status."""
+        reverse = getattr(self.pipeline, "reverse", None)
+        if reverse is None:
+            return None, None
+        if time.monotonic() - started > REVERSE_BUDGET_SECONDS:
+            return None, "Reverse links skipped: the run's time budget was used up."
+        self._set_company(job, index, status="extracting")
+        try:
+            return reverse(company, cache_only=job.cache_only), None
+        except CompanyUnavailable as exc:
+            log.info("reverse links skipped for %s: %s", company.company_key, exc.message)
+        except Exception:
+            log.exception("reverse links failed for %s", company.company_key)
+        return None, None
+
+    def _finish(self, job: _Job, index: int, forward_step, reverse_step) -> Extraction | None:
+        """Merge both steps and set the company's final status once (so progress never runs ahead)."""
+        forward, status, message = forward_step
+        reverse, note = reverse_step
         edges = [*(forward.edges if forward else []), *(reverse.edges if reverse else [])]
         rejected = (forward.rejected if forward else 0) + (reverse.rejected if reverse else 0)
         if forward is None and reverse and reverse.edges:
-            message = f"{message} {len(reverse.edges)} link(s) found in other companies' filings.".strip()
+            message = f"{message or ''} {len(reverse.edges)} link(s) found in other companies' filings.".strip()
+        if note:
+            message = f"{message or ''} {note}".strip()
         self._set_company(job, index, status=status, message=message, verified_edges=len(edges),
                           rejected_edges=rejected, extraction_quality=forward.quality if forward else None)
         if forward is None and not edges:
             return None
         return Extraction(edges=edges, rejected=rejected, quality=forward.quality if forward else None,
                           cached=bool(forward and forward.cached))
-
-    def _reverse(self, job: _Job, index: int, company: CompanyExposure) -> Extraction | None:
-        """Optional pipeline step; its failures (no key, no SEC contact, search down) never change the
-        company's status, which the forward step already reports honestly."""
-        reverse = getattr(self.pipeline, "reverse", None)
-        if reverse is None:
-            return None
-        self._set_company(job, index, status="extracting")
-        try:
-            return reverse(company, cache_only=job.cache_only)
-        except CompanyUnavailable as exc:
-            log.info("reverse links skipped for %s: %s", company.company_key, exc.message)
-        except Exception:
-            log.exception("reverse links failed for %s", company.company_key)
-        return None
