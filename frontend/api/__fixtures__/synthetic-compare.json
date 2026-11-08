@@ -1,0 +1,82 @@
+{
+  "_comment": "Synthetic CompareResponse (v3 X-API): baseline ZZAAA 60% / ZZBBB 40% vs candidate ZZAAA 30% / ZZBBB 40% / ZZCCC 30%. Fictional.",
+  "status": "partial",
+  "baseline_top_n_weight": 0.668,
+  "candidate_top_n_weight": 0.61,
+  "dependency_deltas": [
+    {
+      "metric_id": "dep.ALIAS:ZZEPSILON",
+      "label": "Portfolio exposure that depends on ZZ Epsilon Semiconductor",
+      "unit": "fraction",
+      "baseline": 0.58,
+      "candidate": 0.41,
+      "delta": -0.17
+    },
+    {
+      "metric_id": "critical.ALIAS:ZZEPSILON",
+      "label": "Portfolio exposure critically dependent on ZZ Epsilon Semiconductor",
+      "unit": "fraction",
+      "baseline": 0.58,
+      "candidate": 0.41,
+      "delta": -0.17
+    },
+    {
+      "metric_id": "facility.TW",
+      "label": "Portfolio exposure with key facilities in Taiwan",
+      "unit": "fraction",
+      "baseline": 0.34,
+      "candidate": 0.2,
+      "delta": -0.14
+    },
+    {
+      "metric_id": "facility.MX",
+      "label": "Portfolio exposure with key facilities in Mexico",
+      "unit": "fraction",
+      "baseline": null,
+      "candidate": 0.06,
+      "delta": null
+    }
+  ],
+  "concentration_deltas": [
+    {
+      "name": "top5",
+      "baseline": 0.71,
+      "candidate": 0.6,
+      "delta": -0.11
+    },
+    {
+      "name": "top10",
+      "baseline": 0.86,
+      "candidate": 0.78,
+      "delta": -0.08
+    },
+    {
+      "name": "top20",
+      "baseline": 0.97,
+      "candidate": 0.93,
+      "delta": -0.04
+    },
+    {
+      "name": "effective_n",
+      "baseline": 6.1,
+      "candidate": 9.4,
+      "delta": 3.3
+    },
+    {
+      "name": "largest_company",
+      "baseline": 0.34,
+      "candidate": 0.24,
+      "delta": -0.1
+    }
+  ],
+  "candidate_unanalysed": [
+    {
+      "company_key": "CIK:9990000004",
+      "company_name": "ZZ Delta Foods",
+      "exposure": 0.12
+    }
+  ],
+  "notes": [
+    "Dependencies for 1 new company are unknown until you run Find dependencies on this scenario."
+  ]
+}

@@ -445,6 +445,121 @@
         "title": "Coverage",
         "type": "object"
       },
+      "CoverageBucket": {
+        "additionalProperties": false,
+        "properties": {
+          "companies": {
+            "title": "Companies",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "verified",
+              "no_disclosures",
+              "no_sec_filing",
+              "not_analysed",
+              "outside_top_n"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "kind",
+          "weight",
+          "companies",
+          "label"
+        ],
+        "title": "CoverageBucket",
+        "type": "object"
+      },
+      "CoverageGap": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "outside_top_n",
+              "unnamed_customers",
+              "non_sec_counterparties",
+              "old_filings",
+              "region_only_facilities"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "weight": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weight"
+          }
+        },
+        "required": [
+          "kind",
+          "message"
+        ],
+        "title": "CoverageGap",
+        "type": "object"
+      },
+      "CoverageReport": {
+        "additionalProperties": false,
+        "description": "v3 C-COV: what is known, unknown and possibly missing about this portfolio's dependencies.",
+        "properties": {
+          "buckets": {
+            "items": {
+              "$ref": "#/components/schemas/CoverageBucket"
+            },
+            "title": "Buckets",
+            "type": "array"
+          },
+          "by_etf": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/EtfCoverage"
+            },
+            "title": "By Etf",
+            "type": "array"
+          },
+          "gaps": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CoverageGap"
+            },
+            "title": "Gaps",
+            "type": "array"
+          },
+          "largest_unanalysed": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/UnanalysedCompany"
+            },
+            "title": "Largest Unanalysed",
+            "type": "array"
+          }
+        },
+        "required": [
+          "buckets"
+        ],
+        "title": "CoverageReport",
+        "type": "object"
+      },
       "DataGap": {
         "additionalProperties": false,
         "properties": {
@@ -529,6 +644,11 @@
           },
           "companies_skipped": {
             "title": "Companies Skipped",
+            "type": "integer"
+          },
+          "interpretation_rejected": {
+            "default": 0,
+            "title": "Interpretation Rejected",
             "type": "integer"
           },
           "rejected_edges": {
@@ -671,6 +791,16 @@
           "counts": {
             "$ref": "#/components/schemas/DependencyCounts"
           },
+          "coverage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CoverageReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "edges": {
             "items": {
               "$ref": "#/components/schemas/VerifiedEdge"
@@ -704,6 +834,110 @@
         "title": "DependencyResult",
         "type": "object"
       },
+      "EdgeImportance": {
+        "additionalProperties": false,
+        "description": "v3 R-IMP: how much this relationship matters, scored deterministically in Python.",
+        "properties": {
+          "reasons": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "score": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Score",
+            "type": "number"
+          },
+          "tier": {
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ],
+            "title": "Tier",
+            "type": "string"
+          }
+        },
+        "required": [
+          "score",
+          "tier"
+        ],
+        "title": "EdgeImportance",
+        "type": "object"
+      },
+      "EdgeInterpretation": {
+        "additionalProperties": false,
+        "description": "v3 V-INT: does the verified quote really mean this relationship? Edges with status 'rejected'\nnever appear in DependencyResult.edges (they are counted in counts.interpretation_rejected).",
+        "properties": {
+          "flags": {
+            "default": [],
+            "items": {
+              "enum": [
+                "competitor_mention",
+                "negated",
+                "hypothetical",
+                "direction_mismatch",
+                "generic_reference",
+                "subject_mismatch",
+                "judge_unclear"
+              ],
+              "type": "string"
+            },
+            "title": "Flags",
+            "type": "array"
+          },
+          "method": {
+            "enum": [
+              "rules",
+              "rules+model"
+            ],
+            "title": "Method",
+            "type": "string"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "status": {
+            "enum": [
+              "confirmed",
+              "flagged",
+              "rejected"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "method"
+        ],
+        "title": "EdgeInterpretation",
+        "type": "object"
+      },
       "ErrorBody": {
         "additionalProperties": false,
         "properties": {
@@ -716,6 +950,7 @@
               "UNKNOWN_TICKER",
               "ETF_NOT_FOUND",
               "JOB_NOT_FOUND",
+              "RESEARCH_NOT_FOUND",
               "SOURCES_UNAVAILABLE",
               "INTERNAL_ERROR"
             ],
@@ -751,6 +986,25 @@
           "error"
         ],
         "title": "ErrorResponse",
+        "type": "object"
+      },
+      "EtfCoverage": {
+        "additionalProperties": false,
+        "properties": {
+          "ticker": {
+            "title": "Ticker",
+            "type": "string"
+          },
+          "verified_weight": {
+            "title": "Verified Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "ticker",
+          "verified_weight"
+        ],
+        "title": "EtfCoverage",
         "type": "object"
       },
       "EtfReport": {
@@ -2074,6 +2328,30 @@
         "title": "TopShared",
         "type": "object"
       },
+      "UnanalysedCompany": {
+        "additionalProperties": false,
+        "properties": {
+          "company_key": {
+            "title": "Company Key",
+            "type": "string"
+          },
+          "company_name": {
+            "title": "Company Name",
+            "type": "string"
+          },
+          "exposure": {
+            "title": "Exposure",
+            "type": "number"
+          }
+        },
+        "required": [
+          "company_key",
+          "company_name",
+          "exposure"
+        ],
+        "title": "UnanalysedCompany",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -2395,6 +2673,26 @@
           },
           "filing": {
             "$ref": "#/components/schemas/FilingRef"
+          },
+          "importance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EdgeImportance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "interpretation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EdgeInterpretation"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "qualifier": {
             "anyOf": [

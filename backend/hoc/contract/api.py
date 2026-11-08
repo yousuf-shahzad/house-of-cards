@@ -299,6 +299,7 @@ ErrorCode = Literal[
     "UNKNOWN_TICKER",
     "ETF_NOT_FOUND",
     "JOB_NOT_FOUND",
+    "RESEARCH_NOT_FOUND",
     "SOURCES_UNAVAILABLE",
     "INTERNAL_ERROR",
 ]

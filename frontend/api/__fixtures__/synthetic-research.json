@@ -1,0 +1,575 @@
+{
+  "_comment": "Synthetic ResearchJob (v3 A-RES), generated from hoc.contract models. ZZ* companies are fictional.",
+  "research_id": "r-synthetic-1",
+  "dependency_job_id": "synthetic-job-0001",
+  "status": "done",
+  "progress_done": 3,
+  "progress_total": 3,
+  "findings": [
+    {
+      "finding_id": "f-1",
+      "kind": "single_source",
+      "subject": "ZZ Alpha Corp's sole-source foundry",
+      "question": "Is ZZ Epsilon Semiconductor really ZZ Alpha Corp's only foundry?",
+      "outcome": "confirmed",
+      "explanation": "ZZ Alpha Corp's risk factors repeat that ZZ Epsilon is its sole foundry.",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "sole source",
+          "summary": "2 verified passages in ZZ Alpha Corp's 10-K, Item 1A",
+          "filing": {
+            "company_key": "CIK:9990000001",
+            "form": "10-K",
+            "accession": "9990000001-26-000001",
+            "filed": "2026-10-30",
+            "url": "https://example.invalid/synthetic/zzalp-10k"
+          }
+        },
+        {
+          "index": 2,
+          "action": "conclude",
+          "query": null,
+          "summary": "Confirmed by 2 verified passages",
+          "filing": null
+        }
+      ],
+      "confirmed_edge_ids": [
+        "e-alp-foundry-eps"
+      ],
+      "rejected_edge_ids": [],
+      "new_edges": []
+    },
+    {
+      "finding_id": "f-2",
+      "kind": "undisclosed_customer",
+      "subject": "ZZ Beta Holdings' largest customer",
+      "question": "Which company is ZZ Beta Holdings' unnamed customer?",
+      "outcome": "unresolved",
+      "explanation": "No other filing names the customer, so it stays unnamed.",
+      "steps": [
+        {
+          "index": 1,
+          "action": "search_filings",
+          "query": "\"ZZ Beta Holdings\" supplier",
+          "summary": "found 0 filings",
+          "filing": null
+        },
+        {
+          "index": 2,
+          "action": "conclude",
+          "query": null,
+          "summary": "No evidence found",
+          "filing": null
+        }
+      ],
+      "confirmed_edge_ids": [],
+      "rejected_edge_ids": [],
+      "new_edges": []
+    },
+    {
+      "finding_id": "f-3",
+      "kind": "single_source",
+      "subject": "Who else relies on ZZ Epsilon Semiconductor",
+      "question": "Do other filers depend on ZZ Epsilon Semiconductor?",
+      "outcome": "new_evidence",
+      "explanation": "ZZ Gamma Devices states that ZZ Epsilon makes substantially all of its wafers.",
+      "steps": [
+        {
+          "index": 1,
+          "action": "search_filings",
+          "query": "\"ZZ Epsilon Semiconductor\"",
+          "summary": "found 1 filing",
+          "filing": null
+        },
+        {
+          "index": 2,
+          "action": "find_in_filing",
+          "query": "ZZ Epsilon Semiconductor",
+          "summary": "1 verified passage in ZZ Gamma Devices' 10-K, Item 1A",
+          "filing": {
+            "company_key": "CIK:9990000006",
+            "form": "10-K",
+            "accession": "9990000006-26-000001",
+            "filed": "2026-03-02",
+            "url": "https://www.sec.gov/Archives/edgar/data/9990000006/999000000626000001/zzg-10k.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "conclude",
+          "query": null,
+          "summary": "1 new verified edge",
+          "filing": null
+        }
+      ],
+      "confirmed_edge_ids": [],
+      "rejected_edge_ids": [],
+      "new_edges": [
+        {
+          "edge_id": "e-gam-foundry-eps",
+          "source_company_key": "CIK:9990000006",
+          "source_company_name": "ZZ Gamma Devices",
+          "source_in_portfolio": false,
+          "edge_type": "foundry",
+          "target_name": "ZZ Epsilon Semiconductor",
+          "target_kind": "company",
+          "target_key": "ALIAS:ZZEPSILON",
+          "target_in_portfolio": true,
+          "sole_source": false,
+          "qualifier": null,
+          "evidence_quote": "Substantially all of our wafers are manufactured by ZZ Epsilon Semiconductor.",
+          "section": "1A",
+          "filing": {
+            "company_key": "CIK:9990000006",
+            "form": "10-K",
+            "accession": "9990000006-26-000001",
+            "filed": "2026-03-02",
+            "url": "https://www.sec.gov/Archives/edgar/data/9990000006/999000000626000001/zzg-10k.htm"
+          },
+          "importance": {
+            "score": 0.95,
+            "tier": "critical",
+            "reasons": [
+              "Foundry relationship",
+              "Supplies substantially all ('substantially all')"
+            ]
+          },
+          "interpretation": {
+            "status": "confirmed",
+            "method": "rules",
+            "flags": [],
+            "reason": null,
+            "model": null
+          }
+        }
+      ]
+    }
+  ],
+  "result": {
+    "as_of_date": "2026-11-08",
+    "request": {
+      "holdings": [
+        {
+          "ticker": "ZZAAA",
+          "allocation": 0.6
+        },
+        {
+          "ticker": "ZZBBB",
+          "allocation": 0.4
+        }
+      ],
+      "top_n": 15
+    },
+    "companies": [
+      {
+        "company_key": "CIK:9990000001",
+        "company_name": "ZZ Alpha Corp",
+        "exposure": 0.34,
+        "status": "done",
+        "extraction_quality": "sections",
+        "filing": {
+          "company_key": "CIK:9990000001",
+          "form": "10-K",
+          "accession": "9990000001-26-000001",
+          "filed": "2026-10-30",
+          "url": "https://example.invalid/synthetic/zzalp-10k"
+        },
+        "verified_edges": 2,
+        "rejected_edges": 1,
+        "message": null
+      },
+      {
+        "company_key": "CIK:9990000002",
+        "company_name": "ZZ Beta Holdings",
+        "exposure": 0.24,
+        "status": "cached",
+        "extraction_quality": "sections",
+        "filing": {
+          "company_key": "CIK:9990000002",
+          "form": "10-K",
+          "accession": "9990000002-26-000001",
+          "filed": "2026-02-20",
+          "url": "https://example.invalid/synthetic/zzbet-10k"
+        },
+        "verified_edges": 2,
+        "rejected_edges": 1,
+        "message": null
+      },
+      {
+        "company_key": "ALIAS:ZZEPSILON",
+        "company_name": "ZZ Epsilon Semiconductor",
+        "exposure": 0.088,
+        "status": "no_sec_filing",
+        "extraction_quality": null,
+        "filing": null,
+        "verified_edges": 0,
+        "rejected_edges": 0,
+        "message": "No SEC 10-K/20-F; appears only in other filers' quotes."
+      }
+    ],
+    "edges": [
+      {
+        "edge_id": "e-alp-foundry-eps",
+        "source_company_key": "CIK:9990000001",
+        "source_company_name": "ZZ Alpha Corp",
+        "source_in_portfolio": true,
+        "edge_type": "foundry",
+        "target_name": "ZZ Epsilon Semiconductor",
+        "target_kind": "company",
+        "target_key": "ALIAS:ZZEPSILON",
+        "target_in_portfolio": true,
+        "sole_source": true,
+        "qualifier": null,
+        "evidence_quote": "We rely on ZZ Epsilon Semiconductor as the sole foundry for our processors.",
+        "section": "Item 1A",
+        "filing": {
+          "company_key": "CIK:9990000001",
+          "form": "10-K",
+          "accession": "9990000001-26-000001",
+          "filed": "2026-10-30",
+          "url": "https://example.invalid/synthetic/zzalp-10k"
+        },
+        "importance": {
+          "score": 0.95,
+          "tier": "critical",
+          "reasons": [
+            "Foundry relationship",
+            "Named as the sole source ('sole source')"
+          ]
+        },
+        "interpretation": {
+          "status": "confirmed",
+          "method": "rules",
+          "flags": [],
+          "reason": null,
+          "model": null
+        }
+      },
+      {
+        "edge_id": "e-alp-facility-tw",
+        "source_company_key": "CIK:9990000001",
+        "source_company_name": "ZZ Alpha Corp",
+        "source_in_portfolio": true,
+        "edge_type": "facility",
+        "target_name": "Taiwan",
+        "target_kind": "country",
+        "target_key": null,
+        "target_in_portfolio": false,
+        "sole_source": false,
+        "qualifier": null,
+        "evidence_quote": "Substantially all of our final assembly is performed by partners located in Taiwan.",
+        "section": "Item 1",
+        "filing": {
+          "company_key": "CIK:9990000001",
+          "form": "10-K",
+          "accession": "9990000001-26-000001",
+          "filed": "2026-10-30",
+          "url": "https://example.invalid/synthetic/zzalp-10k"
+        },
+        "importance": {
+          "score": 0.7,
+          "tier": "high",
+          "reasons": [
+            "Production facility ('final assembly')"
+          ]
+        },
+        "interpretation": {
+          "status": "confirmed",
+          "method": "rules",
+          "flags": [],
+          "reason": null,
+          "model": null
+        }
+      },
+      {
+        "edge_id": "e-bet-foundry-eps",
+        "source_company_key": "CIK:9990000002",
+        "source_company_name": "ZZ Beta Holdings",
+        "source_in_portfolio": true,
+        "edge_type": "foundry",
+        "target_name": "ZZ Epsilon Semiconductor",
+        "target_kind": "company",
+        "target_key": "ALIAS:ZZEPSILON",
+        "target_in_portfolio": true,
+        "sole_source": false,
+        "qualifier": null,
+        "evidence_quote": "ZZ Epsilon Semiconductor manufactures our custom chips.",
+        "section": "Item 1",
+        "filing": {
+          "company_key": "CIK:9990000002",
+          "form": "10-K",
+          "accession": "9990000002-26-000001",
+          "filed": "2026-02-20",
+          "url": "https://example.invalid/synthetic/zzbet-10k"
+        },
+        "importance": {
+          "score": 0.9,
+          "tier": "critical",
+          "reasons": [
+            "Foundry relationship"
+          ]
+        },
+        "interpretation": {
+          "status": "confirmed",
+          "method": "rules+model",
+          "flags": [],
+          "reason": "The quote states the company uses ZZ Epsilon to manufacture its wafers.",
+          "model": "gemini-3.8-flash"
+        }
+      },
+      {
+        "edge_id": "e-bet-customer-1",
+        "source_company_key": "CIK:9990000002",
+        "source_company_name": "ZZ Beta Holdings",
+        "source_in_portfolio": true,
+        "edge_type": "customer",
+        "target_name": "One customer",
+        "target_kind": "unnamed_customer",
+        "target_key": null,
+        "target_in_portfolio": false,
+        "sole_source": false,
+        "qualifier": "18% of revenue",
+        "evidence_quote": "One customer accounted for 18% of total revenue.",
+        "section": "Item 1A",
+        "filing": {
+          "company_key": "CIK:9990000002",
+          "form": "10-K",
+          "accession": "9990000002-26-000001",
+          "filed": "2026-02-20",
+          "url": "https://example.invalid/synthetic/zzbet-10k"
+        },
+        "importance": {
+          "score": 0.55,
+          "tier": "medium",
+          "reasons": [
+            "Customer at 10-20% of revenue ('18% of revenue')",
+            "Capped at medium: interpretation flagged"
+          ]
+        },
+        "interpretation": {
+          "status": "flagged",
+          "method": "rules+model",
+          "flags": [
+            "judge_unclear"
+          ],
+          "reason": "The customer is not named, so the relationship cannot be confirmed.",
+          "model": "gemini-3.8-flash"
+        }
+      },
+      {
+        "edge_id": "e-gam-foundry-eps",
+        "source_company_key": "CIK:9990000006",
+        "source_company_name": "ZZ Gamma Devices",
+        "source_in_portfolio": false,
+        "edge_type": "foundry",
+        "target_name": "ZZ Epsilon Semiconductor",
+        "target_kind": "company",
+        "target_key": "ALIAS:ZZEPSILON",
+        "target_in_portfolio": true,
+        "sole_source": false,
+        "qualifier": null,
+        "evidence_quote": "Substantially all of our wafers are manufactured by ZZ Epsilon Semiconductor.",
+        "section": "1A",
+        "filing": {
+          "company_key": "CIK:9990000006",
+          "form": "10-K",
+          "accession": "9990000006-26-000001",
+          "filed": "2026-03-02",
+          "url": "https://www.sec.gov/Archives/edgar/data/9990000006/999000000626000001/zzg-10k.htm"
+        },
+        "importance": {
+          "score": 0.95,
+          "tier": "critical",
+          "reasons": [
+            "Foundry relationship",
+            "Supplies substantially all ('substantially all')"
+          ]
+        },
+        "interpretation": {
+          "status": "confirmed",
+          "method": "rules",
+          "flags": [],
+          "reason": null,
+          "model": null
+        }
+      }
+    ],
+    "metrics": [
+      {
+        "metric_id": "dep.ALIAS:ZZEPSILON",
+        "label": "Portfolio exposure that depends on ZZ Epsilon Semiconductor",
+        "value": 0.58,
+        "unit": "fraction",
+        "subject_key": "ALIAS:ZZEPSILON",
+        "supporting_edge_ids": [
+          "e-alp-foundry-eps",
+          "e-bet-foundry-eps"
+        ]
+      },
+      {
+        "metric_id": "facility.TW",
+        "label": "Portfolio exposure with key facilities in Taiwan",
+        "value": 0.34,
+        "unit": "fraction",
+        "subject_key": "TW",
+        "supporting_edge_ids": [
+          "e-alp-facility-tw"
+        ]
+      },
+      {
+        "metric_id": "spof.count",
+        "label": "Suppliers shared by 2+ portfolio companies",
+        "value": 1.0,
+        "unit": "count",
+        "subject_key": null,
+        "supporting_edge_ids": []
+      },
+      {
+        "metric_id": "critical.ALIAS:ZZEPSILON",
+        "label": "Portfolio exposure critically dependent on ZZ Epsilon Semiconductor",
+        "value": 0.58,
+        "unit": "fraction",
+        "subject_key": "ALIAS:ZZEPSILON",
+        "supporting_edge_ids": [
+          "e-alp-foundry-eps",
+          "e-bet-foundry-eps"
+        ]
+      },
+      {
+        "metric_id": "critical.ALIAS:ZZEPSILON.companies",
+        "label": "Portfolio companies critically dependent on ZZ Epsilon Semiconductor",
+        "value": 2.0,
+        "unit": "count",
+        "subject_key": "ALIAS:ZZEPSILON",
+        "supporting_edge_ids": [
+          "e-alp-foundry-eps",
+          "e-bet-foundry-eps"
+        ]
+      }
+    ],
+    "insights": {
+      "status": "ok",
+      "model": "synthetic",
+      "suggestions": [
+        {
+          "claim_id": "c-sugg-1",
+          "kind": "suggestion",
+          "severity": "warning",
+          "title": "Assembly concentrated in Taiwan",
+          "text": "34.00% of your portfolio relies on final assembly in Taiwan; consider holdings with manufacturing elsewhere.",
+          "cited_metric_ids": [
+            "facility.TW"
+          ],
+          "cited_edge_ids": [
+            "e-alp-facility-tw"
+          ]
+        }
+      ],
+      "flaws": [
+        {
+          "claim_id": "c-flaw-1",
+          "kind": "flaw",
+          "severity": "critical",
+          "title": "One foundry behind two holdings",
+          "text": "58.00% of your portfolio depends on ZZ Epsilon Semiconductor, which you also hold directly.",
+          "cited_metric_ids": [
+            "dep.ALIAS:ZZEPSILON"
+          ],
+          "cited_edge_ids": [
+            "e-alp-foundry-eps",
+            "e-bet-foundry-eps"
+          ]
+        }
+      ],
+      "rejected_claims_count": 1
+    },
+    "counts": {
+      "companies_requested": 3,
+      "companies_analysed": 2,
+      "companies_skipped": 1,
+      "verified_edges": 5,
+      "rejected_edges": 2,
+      "unresolved_counterparties": 0,
+      "interpretation_rejected": 1
+    },
+    "attributions": [
+      {
+        "source": "fake",
+        "text": "SYNTHETIC test data, not real holdings or filings",
+        "url": null,
+        "licence": null
+      }
+    ],
+    "coverage": {
+      "buckets": [
+        {
+          "kind": "verified",
+          "weight": 0.58,
+          "companies": 2,
+          "label": "Analysed, with verified dependencies"
+        },
+        {
+          "kind": "no_disclosures",
+          "weight": 0.0,
+          "companies": 0,
+          "label": "Analysed, but the filing names no dependencies"
+        },
+        {
+          "kind": "no_sec_filing",
+          "weight": 0.088,
+          "companies": 1,
+          "label": "No SEC annual report to read"
+        },
+        {
+          "kind": "not_analysed",
+          "weight": 0.0,
+          "companies": 0,
+          "label": "Could not be analysed this run"
+        },
+        {
+          "kind": "outside_top_n",
+          "weight": 0.332,
+          "companies": 4,
+          "label": "Outside the companies we analysed"
+        }
+      ],
+      "by_etf": [
+        {
+          "ticker": "ZZAAA",
+          "verified_weight": 0.62
+        },
+        {
+          "ticker": "ZZBBB",
+          "verified_weight": 0.51
+        }
+      ],
+      "largest_unanalysed": [
+        {
+          "company_key": "CIK:9990000004",
+          "company_name": "ZZ Delta Foods",
+          "exposure": 0.12
+        },
+        {
+          "company_key": "CIK:9990000005",
+          "company_name": "ZZ Zeta Retail",
+          "exposure": 0.09
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "outside_top_n",
+          "message": "33.20% of your portfolio is in companies outside the 3 we analysed. Raise the number analysed to 30 to cover more.",
+          "weight": 0.332
+        },
+        {
+          "kind": "unnamed_customers",
+          "message": "1 customer is not named in the filing (ZZ Beta Holdings, 18% of revenue).",
+          "weight": 0.24
+        }
+      ]
+    }
+  },
+  "error": null
+}
