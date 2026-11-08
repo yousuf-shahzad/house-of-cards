@@ -319,6 +319,102 @@
         "title": "CompanyRunStatus",
         "type": "object"
       },
+      "CompareRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "baseline": {
+            "items": {
+              "$ref": "#/components/schemas/PortfolioItem"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Baseline",
+            "type": "array"
+          },
+          "candidate": {
+            "items": {
+              "$ref": "#/components/schemas/PortfolioItem"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Candidate",
+            "type": "array"
+          },
+          "top_n": {
+            "default": 15,
+            "maximum": 30.0,
+            "minimum": 1.0,
+            "title": "Top N",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "baseline",
+          "candidate"
+        ],
+        "title": "CompareRequest",
+        "type": "object"
+      },
+      "CompareResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "baseline_top_n_weight": {
+            "title": "Baseline Top N Weight",
+            "type": "number"
+          },
+          "candidate_top_n_weight": {
+            "title": "Candidate Top N Weight",
+            "type": "number"
+          },
+          "candidate_unanalysed": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/UnanalysedCompany"
+            },
+            "title": "Candidate Unanalysed",
+            "type": "array"
+          },
+          "concentration_deltas": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ConcentrationDelta"
+            },
+            "title": "Concentration Deltas",
+            "type": "array"
+          },
+          "dependency_deltas": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/MetricDelta"
+            },
+            "title": "Dependency Deltas",
+            "type": "array"
+          },
+          "notes": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "ok",
+              "partial"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "baseline_top_n_weight",
+          "candidate_top_n_weight"
+        ],
+        "title": "CompareResponse",
+        "type": "object"
+      },
       "Concentration": {
         "additionalProperties": false,
         "properties": {
@@ -361,6 +457,42 @@
           "distinct_companies"
         ],
         "title": "Concentration",
+        "type": "object"
+      },
+      "ConcentrationDelta": {
+        "additionalProperties": false,
+        "properties": {
+          "baseline": {
+            "title": "Baseline",
+            "type": "number"
+          },
+          "candidate": {
+            "title": "Candidate",
+            "type": "number"
+          },
+          "delta": {
+            "title": "Delta",
+            "type": "number"
+          },
+          "name": {
+            "enum": [
+              "top5",
+              "top10",
+              "top20",
+              "effective_n",
+              "largest_company"
+            ],
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "baseline",
+          "candidate",
+          "delta"
+        ],
+        "title": "ConcentrationDelta",
         "type": "object"
       },
       "Contribution": {
@@ -1724,6 +1856,69 @@
         "title": "Insights",
         "type": "object"
       },
+      "MetricDelta": {
+        "additionalProperties": false,
+        "properties": {
+          "baseline": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline"
+          },
+          "candidate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Candidate"
+          },
+          "delta": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delta"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "metric_id": {
+            "title": "Metric Id",
+            "type": "string"
+          },
+          "unit": {
+            "enum": [
+              "fraction",
+              "count",
+              "ratio",
+              "days"
+            ],
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "metric_id",
+          "label",
+          "unit"
+        ],
+        "title": "MetricDelta",
+        "type": "object"
+      },
       "MetricFact": {
         "additionalProperties": false,
         "properties": {
@@ -2830,6 +3025,55 @@
           }
         },
         "summary": "Analysis"
+      }
+    },
+    "/api/compare": {
+      "post": {
+        "description": "Before/after comparison of two portfolios. Cache-only: never fetches a filing or calls Gemini; status\nis 'partial' when some of the candidate's top companies have no cached extraction yet.",
+        "operationId": "compare_api_compare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompareRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompareResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "VALIDATION_ERROR, ALLOCATION_SUM_INVALID, DUPLICATE_TICKER, TOO_MANY_ETFS, UNKNOWN_TICKER"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "SOURCES_UNAVAILABLE"
+          }
+        },
+        "summary": "Compare"
       }
     },
     "/api/dependencies": {
