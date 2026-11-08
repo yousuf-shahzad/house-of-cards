@@ -15,7 +15,6 @@ from collections.abc import Sequence
 from concurrent.futures import Future, ThreadPoolExecutor, TimeoutError
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
-from typing import Protocol
 
 from hoc import __version__
 from hoc.contract import (
@@ -39,14 +38,12 @@ from hoc.contract import (
     ResearchJob,
     ResearchRequest,
     ShockBasis,
-    ShockKind,
     ShockSpec,
     SourceError,
     SourceName,
     SourcesUnavailableError,
     StressRequest,
     StressResponse,
-    StressSide,
     TickerNotFound,
     UnknownTickerError,
     ValuationRequest,
@@ -55,6 +52,7 @@ from hoc.contract import (
 )
 from hoc.contract.stress import DEFAULT_SHOCK_DROP
 from hoc.examples import EXAMPLES
+from hoc.history import HistoricalShocks, YahooHistory, historical_shock, simulated_basis
 from hoc.jobs import (
     SUBMIT_WAIT_SECONDS,
     DependencyJobs,
@@ -74,6 +72,7 @@ from hoc.portfolio.ideas import (
     rank_change_ideas,
     verify_change_ideas,
 )
+from hoc.portfolio.stress import simulate_failure
 from hoc.portfolio.validation import validate_request
 from hoc.portfolio.valuation import value_portfolio
 
@@ -85,39 +84,6 @@ IDEAS_WAIT_SECONDS = 9.0
 IDEAS_TTL_SECONDS = 60.0
 IDEAS_MAX_KEYS = 32
 IDEAS_AI_TIMEOUT_SECONDS = 90.0
-
-
-class HistoryProvider(Protocol):
-    """FIX-63: the historical drop for a sector or country shock (hoc.history in production)."""
-
-    def historical_shock(self, kind: ShockKind, key: str) -> ShockBasis: ...
-
-
-def simulated_basis(reason: str) -> ShockBasis:
-    return ShockBasis(source="simulated", drop=DEFAULT_SHOCK_DROP,
-                      description=f"{reason}, so we simulated a {DEFAULT_SHOCK_DROP:.0%} fall.")
-
-
-class SimulatedHistory:
-    """Until hoc.history is wired in (FIX-63 item 1), every sector or country shock is the simulated fall."""
-
-    def historical_shock(self, kind: ShockKind, key: str) -> ShockBasis:
-        return simulated_basis("No price history for this group yet")
-
-
-def _simulate_failure(request: StressRequest, baseline: AnalysisResponse, candidate: AnalysisResponse | None,
-                      basis: ShockBasis) -> StressResponse:
-    """hoc.portfolio.stress.simulate_failure (FIX-63 item 2) once it lands; until then an empty, clearly
-    labelled answer so the route and the UI can be built against the real shape."""
-    try:
-        from hoc.portfolio.stress import simulate_failure
-    except ImportError:  # ponytail: temporary stub until item 2 merges; delete this branch then
-        empty = StressSide(affected_weight=0.0, loss_fraction=0.0, affected_count=0)
-        return StressResponse(status="partial", shock=request.shock, basis=basis, baseline=empty,
-                              candidate=empty if candidate is not None else None,
-                              notes=["The failure simulator is still being connected; losses aren't computed yet."])
-    return simulate_failure(request, baseline, candidate, basis)
-
 
 @dataclass
 class _IdeaContext:
@@ -159,9 +125,9 @@ class EtfService:
         self._idea_ai_jobs: dict[tuple, tuple[float, Future]] = {}
         self.idea_proposer = None
         """Lazy proposer, replaceable in tests. It never uses dependency jobs or the research runner."""
-        self.history: HistoryProvider = SimulatedHistory()
-        """FIX-63: where a shock's historical drop comes from. Replaced by hoc.history in production; tests
-        inject their own, so they never touch the network."""
+        self.history = HistoricalShocks(None)
+        """FIX-63: where a shock's historical drop comes from. Production: HistoricalShocks(YahooHistory(http));
+        without a provider every shock is the simulated 10% fall, so tests never touch the network."""
 
     @classmethod
     def from_settings(cls, settings) -> EtfService:
@@ -178,6 +144,7 @@ class EtfService:
         http = CachedHttpClient(settings, DiskCache(settings.cache_dir))
         service = cls(build_registry(settings, http), TickerInsideReference(http, settings), load_aliases(), settings)
         service.idea_proposer = IdeaProposer(http, settings)
+        service.history = HistoricalShocks(YahooHistory(http))
         service.quotes = TickerInsideAdapter(http, settings)
         service.dependency_pipeline = LivePipeline.from_settings(http, settings)
         service.research_runner = AgenticResearchRunner.from_settings(http, settings)
@@ -214,20 +181,21 @@ class EtfService:
         Synchronous; analysis errors (422/503) pass through like /api/compare. No filing fetch, no model call."""
         baseline = self.analyse(PortfolioRequest(holdings=request.baseline))
         candidate = self.analyse(PortfolioRequest(holdings=request.candidate)) if request.candidate else None
-        return _simulate_failure(request, baseline, candidate, self._shock_basis(request.shock))
+        return simulate_failure(request, baseline, candidate, self._shock_basis(request.shock))
 
     def _shock_basis(self, shock: ShockSpec) -> ShockBasis:
-        """The fall each affected company takes: the user's override, else history, else a simulated 10%."""
+        """The fall each affected company takes: the user's override, else history (hoc.history), else a
+        simulated 10%. A supplier never has its own history, so it never asks the provider."""
         if shock.drop is not None:
-            return ShockBasis(source="simulated", drop=shock.drop,
-                              description=f"A {shock.drop:.0%} fall you chose.")
+            return simulated_basis(f"You chose a {shock.drop:.0%} fall.", drop=shock.drop)
         if shock.kind == "supplier":
-            return simulated_basis("A single supplier has no price history of its own")
+            return historical_shock("supplier", shock.key, None, label=shock.label)
         try:
-            return self.history.historical_shock(shock.kind, shock.key)
-        except Exception:  # the provider should never raise; if it does, simulate instead of a 500
+            return self.history.historical_shock(shock.kind, shock.key, label=shock.label)
+        except Exception:  # hoc.history never raises; an injected provider might: simulate, never a 500
             log.exception("history provider failed for %s %s", shock.kind, shock.key)
-            return simulated_basis("Price history isn't available right now")
+            return simulated_basis(f"Price history isn't available right now, so we simulated a "
+                                   f"{DEFAULT_SHOCK_DROP:.0%} fall.")
 
     def compare(self, request: CompareRequest) -> CompareResponse:
         """Before/after comparison (X-API). Synchronous and cache-only: it runs both analyses, reads the

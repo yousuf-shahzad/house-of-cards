@@ -19,7 +19,7 @@ class RecordingHistory:
         self.basis = basis
         self.error = error
 
-    def historical_shock(self, kind, key):
+    def historical_shock(self, kind, key, label=None):
         self.calls.append((kind, key))
         if self.error:
             raise self.error
@@ -72,7 +72,7 @@ def test_supplier_and_override_never_ask_history(api):
     assert "supplier" in supplier["basis"]["description"]
     override = post(client, {"kind": "sector", "key": "energy", "drop": 0.25}).json()
     assert override["basis"] == {"source": "simulated", "drop": 0.25, "proxy": None, "window_start": None,
-                                 "window_end": None, "description": "A 25% fall you chose."}
+                                 "window_end": None, "description": "You chose a 25% fall."}
     assert history.calls == []
 
 
@@ -82,7 +82,7 @@ def test_a_failing_history_provider_falls_back_to_the_simulated_drop(api):
     assert body["basis"]["source"] == "simulated" and body["basis"]["drop"] == 0.10
 
 
-def test_default_provider_is_simulated_until_history_is_wired(api):
+def test_without_a_price_provider_shocks_are_simulated(api):
     _, client = api()
     body = post(client, {"kind": "country", "key": "TW"}).json()
     assert body["basis"]["source"] == "simulated"
@@ -101,3 +101,17 @@ def test_errors_match_compare(api):
     _, down = api(RecordingHistory(HISTORICAL), unavailable=["ZZAAA", "ZZBBB"])
     unavailable = post(down, {"kind": "sector", "key": "energy"})
     assert unavailable.status_code == 503 and unavailable.json()["error"]["code"] == "SOURCES_UNAVAILABLE"
+
+
+def test_losses_are_computed_by_simulate_failure(api):
+    """Wired to hoc.portfolio.stress: each side loses affected_weight x drop (no stub note any more)."""
+    _, client = api(RecordingHistory(HISTORICAL))
+    analysis = client.post("/api/analysis", json={"holdings": BASELINE}).json()
+    sector = next(c["sector"] for c in analysis["exposures"] if c.get("sector"))
+    body = post(client, {"kind": "sector", "key": sector, "drop": 0.25},
+                candidate=[{"ticker": "ZZAAA", "allocation": 1.0}]).json()
+    for side in (body["baseline"], body["candidate"]):
+        assert side["affected_weight"] > 0
+        assert side["loss_fraction"] == pytest.approx(side["affected_weight"] * 0.25)
+        assert side["affected"] and len(side["affected"]) <= 10
+    assert not any("still being connected" in note for note in body["notes"])
