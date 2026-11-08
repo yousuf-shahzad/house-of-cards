@@ -14,9 +14,10 @@ import type {
 } from "@/api/types";
 
 export const SVG_WIDTH = 900;
+export const DEFAULT_TARGET_LIMIT = 25;
 const SOURCE_X = 240;
 const TARGET_X = 640;
-const ROW_GAP = 48;
+const ROW_GAP = 46;
 const PAD_Y = 40;
 
 export type EdgeFilterGroup =
@@ -90,6 +91,85 @@ export const EDGE_TYPE_META: Record<EdgeType | "sole_source", EdgeTypeMeta> = {
   },
 };
 
+const ISO2_COUNTRY_NAMES: Record<string, string> = {
+  US: "United States",
+  TW: "Taiwan",
+  CN: "China",
+  KR: "South Korea",
+  JP: "Japan",
+  DE: "Germany",
+  NL: "Netherlands",
+  VN: "Vietnam",
+  IN: "India",
+  IE: "Ireland",
+  SG: "Singapore",
+  IL: "Israel",
+  MY: "Malaysia",
+  GB: "United Kingdom",
+  CA: "Canada",
+  FR: "France",
+  CH: "Switzerland",
+  MX: "Mexico",
+};
+
+const COUNTRY_NAME_TO_ISO2: Record<string, { code: string; name: string }> = {
+  tw: { code: "TW", name: "Taiwan" },
+  taiwan: { code: "TW", name: "Taiwan" },
+  "taiwan roc": { code: "TW", name: "Taiwan" },
+  "republic of china": { code: "TW", name: "Taiwan" },
+  hsinchu: { code: "TW", name: "Taiwan" },
+  tainan: { code: "TW", name: "Taiwan" },
+  taichung: { code: "TW", name: "Taiwan" },
+  us: { code: "US", name: "United States" },
+  usa: { code: "US", name: "United States" },
+  "u s": { code: "US", name: "United States" },
+  "u s a": { code: "US", name: "United States" },
+  "united states": { code: "US", name: "United States" },
+  "united states of america": { code: "US", name: "United States" },
+  unitedstates: { code: "US", name: "United States" },
+  arizona: { code: "US", name: "United States" },
+  california: { code: "US", name: "United States" },
+  cupertino: { code: "US", name: "United States" },
+  texas: { code: "US", name: "United States" },
+  oregon: { code: "US", name: "United States" },
+  ohio: { code: "US", name: "United States" },
+  "new mexico": { code: "US", name: "United States" },
+  cn: { code: "CN", name: "China" },
+  china: { code: "CN", name: "China" },
+  prc: { code: "CN", name: "China" },
+  "mainland china": { code: "CN", name: "China" },
+  "china mainland": { code: "CN", name: "China" },
+  kr: { code: "KR", name: "South Korea" },
+  korea: { code: "KR", name: "South Korea" },
+  "south korea": { code: "KR", name: "South Korea" },
+  "republic of korea": { code: "KR", name: "South Korea" },
+  jp: { code: "JP", name: "Japan" },
+  japan: { code: "JP", name: "Japan" },
+  kumamoto: { code: "JP", name: "Japan" },
+  de: { code: "DE", name: "Germany" },
+  germany: { code: "DE", name: "Germany" },
+  dresden: { code: "DE", name: "Germany" },
+  nl: { code: "NL", name: "Netherlands" },
+  netherlands: { code: "NL", name: "Netherlands" },
+  "the netherlands": { code: "NL", name: "Netherlands" },
+  veldhoven: { code: "NL", name: "Netherlands" },
+  vn: { code: "VN", name: "Vietnam" },
+  vietnam: { code: "VN", name: "Vietnam" },
+  in: { code: "IN", name: "India" },
+  india: { code: "IN", name: "India" },
+  ie: { code: "IE", name: "Ireland" },
+  ireland: { code: "IE", name: "Ireland" },
+  sg: { code: "SG", name: "Singapore" },
+  singapore: { code: "SG", name: "Singapore" },
+  il: { code: "IL", name: "Israel" },
+  israel: { code: "IL", name: "Israel" },
+  my: { code: "MY", name: "Malaysia" },
+  malaysia: { code: "MY", name: "Malaysia" },
+  gb: { code: "GB", name: "United Kingdom" },
+  uk: { code: "GB", name: "United Kingdom" },
+  "united kingdom": { code: "GB", name: "United Kingdom" },
+};
+
 export interface SourceGraphNode {
   id: string;
   companyKey: string;
@@ -139,19 +219,30 @@ export interface DependencyGraph {
   edges: DependencyGraphEdge[];
   height: number;
   totalEdgesBeforeFilter: number;
+  totalTargetsBeforeLimit: number;
+}
+
+export interface FacilityHoldingSite {
+  companyKey: string;
+  companyName: string;
+  exposure: Weight;
+  /** Specific named sites/facilities (e.g. "Gigafactory Shanghai", "Boise fab") under this holding. */
+  namedSites: Array<{
+    siteName: string;
+    qualifier: string | null;
+    edgeId: string;
+  }>;
+  edges: VerifiedEdge[];
 }
 
 export interface FacilityCountryRow {
   country: string;
+  countryCode: string;
   subjectKey: string | null;
   /** Unioned portfolio exposure of holdings with verified facilities in this jurisdiction. */
   dependentExposure: Weight;
   companyCount: number;
-  companies: Array<{
-    companyKey: string;
-    companyName: string;
-    exposure: Weight;
-  }>;
+  companies: FacilityHoldingSite[];
   edges: VerifiedEdge[];
   metric: MetricFact | null;
 }
@@ -159,8 +250,16 @@ export interface FacilityCountryRow {
 const scaled = (value: number, max: number) =>
   max > 0 ? Math.sqrt(Math.max(value, 0) / max) : 0;
 
+/** Inserts spaces into camelCase/PascalCase strings like "FremontFactory" -> "Fremont Factory". */
+export function humaniseSiteName(text: string): string {
+  return text
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function truncateText(text: string, max: number): string {
-  const clean = text.trim().replace(/\s+/g, " ");
+  const clean = humaniseSiteName(text);
   return clean.length <= max ? clean : `${clean.slice(0, max - 1).trimEnd()}…`;
 }
 
@@ -181,15 +280,58 @@ export function matchesEdgeFilter(edge: VerifiedEdge, filter: EdgeFilterGroup): 
   return true;
 }
 
+function isUnnamedCustomerEdge(edge: VerifiedEdge): boolean {
+  if (edge.target_kind === "unnamed_customer") return true;
+  if (
+    edge.edge_type === "customer" &&
+    !edge.target_key &&
+    /unnamed|undisclosed|one customer|single customer|largest customer|direct customer|customer [a-z0-9]/i.test(
+      edge.target_name,
+    )
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function shortCompanyName(name: string): string {
+  const cleaned = name
+    .replace(
+      // The lookahead (not \b) lets a trailing "." go too: \b after "Inc." would keep "Apple." .
+      /,?\s+\b(Inc\.?|Corp\.?|Corporation|Company|Co\.?|Ltd\.?|Limited|PLC|N\.V\.|S\.A\.|AG|SE|Holdings?)(?=[\s,]|$)/gi,
+      "",
+    )
+    .trim();
+  return cleaned || name.trim();
+}
+
+/**
+ * Each company's undisclosed customer is a distinct entity (e.g. "Broadcom's customer (32% of net revenue)")
+ * so multiple holdings with anonymous major customers never merge into a fake shared customer node.
+ */
 export function targetNodeIdForEdge(edge: VerifiedEdge): string {
+  if (isUnnamedCustomerEdge(edge)) {
+    const qualKey = (edge.qualifier ?? edge.target_name).trim().toUpperCase();
+    return `TARGET:unnamed_customer:${edge.source_company_key}:${qualKey}`;
+  }
   if (edge.target_key) return `TARGET_KEY:${edge.target_key}`;
   return `TARGET:${edge.target_kind}:${edge.target_name.trim().toUpperCase()}`;
+}
+
+export function targetDisplayNameForEdge(edge: VerifiedEdge, sourceName?: string): string {
+  if (isUnnamedCustomerEdge(edge)) {
+    const owner = shortCompanyName(sourceName ?? edge.source_company_name);
+    const qual = edge.qualifier ? `, ${edge.qualifier}` : "";
+    return `${owner}'s customer${qual}`;
+  }
+  return humaniseSiteName(edge.target_name);
 }
 
 export function buildDependencyGraph(
   result: DependencyResult,
   portfolioExposures: CompanyExposure[],
   filter: EdgeFilterGroup = "all",
+  targetLimit: number | null = DEFAULT_TARGET_LIMIT,
 ): DependencyGraph {
   const exposureByKey = new Map<string, Weight>();
   const nameByKey = new Map<string, string>();
@@ -209,7 +351,6 @@ export function buildDependencyGraph(
 
   const filteredEdges = result.edges.filter((edge) => matchesEdgeFilter(edge, filter));
 
-  // Normalize each edge into (leftPortfolioSource, rightTarget)
   type NormalizedPair = {
     edge: VerifiedEdge;
     sourceId: string;
@@ -223,8 +364,7 @@ export function buildDependencyGraph(
     targetInPortfolio: boolean;
   };
 
-  const pairs: NormalizedPair[] = filteredEdges.map((edge) => {
-    // Reverse-link case: external filer (not in portfolio) names a portfolio company as target
+  const allPairs: NormalizedPair[] = filteredEdges.map((edge) => {
     if (!edge.source_in_portfolio && edge.target_in_portfolio && edge.target_key) {
       const pKey = edge.target_key;
       const pName = nameByKey.get(pKey) ?? edge.target_name;
@@ -247,6 +387,7 @@ export function buildDependencyGraph(
     const sName = nameByKey.get(sKey) ?? edge.source_company_name;
     const sExp = exposureByKey.get(sKey) ?? 0;
     const tId = targetNodeIdForEdge(edge);
+    const tName = targetDisplayNameForEdge(edge, sName);
 
     return {
       edge,
@@ -256,14 +397,80 @@ export function buildDependencyGraph(
       sourceExposure: sExp,
       targetId: tId,
       targetKey: edge.target_key,
-      targetName: edge.target_name,
-      targetKind: edge.target_kind,
+      targetName: tName,
+      targetKind: isUnnamedCustomerEdge(edge) ? "unnamed_customer" : edge.target_kind,
       targetInPortfolio: edge.target_in_portfolio,
     };
   });
 
-  // Collect left-hand source nodes (all companies that have at least one edge in the current filter,
-  // or if filter === "all" and there are edges, the companies participating in those edges).
+  // Collect right-hand target nodes first so we can rank and optionally cap to top 25 counterparties
+  const targetAccumulator = new Map<
+    string,
+    {
+      id: string;
+      targetKey: string | null;
+      name: string;
+      kind: TargetKind;
+      inPortfolio: boolean;
+      dependentCompanies: Map<string, Weight>;
+      edgeIds: string[];
+      hasSoleSource: boolean;
+      primaryEdgeType: EdgeType;
+    }
+  >();
+
+  for (const pair of allPairs) {
+    const existing = targetAccumulator.get(pair.targetId);
+    if (existing) {
+      existing.dependentCompanies.set(pair.sourceId, pair.sourceExposure);
+      existing.edgeIds.push(pair.edge.edge_id);
+      if (pair.edge.sole_source) existing.hasSoleSource = true;
+    } else {
+      const depMap = new Map<string, Weight>();
+      depMap.set(pair.sourceId, pair.sourceExposure);
+      targetAccumulator.set(pair.targetId, {
+        id: pair.targetId,
+        targetKey: pair.targetKey,
+        name: pair.targetName,
+        kind: pair.targetKind,
+        inPortfolio: pair.targetInPortfolio,
+        dependentCompanies: depMap,
+        edgeIds: [pair.edge.edge_id],
+        hasSoleSource: pair.edge.sole_source,
+        primaryEdgeType: pair.edge.edge_type,
+      });
+    }
+  }
+
+  const allOrderedTargets = [...targetAccumulator.values()]
+    .map((item) => {
+      let dependentExposure = 0;
+      for (const w of item.dependentCompanies.values()) {
+        dependentExposure += w;
+      }
+      return {
+        ...item,
+        dependentExposure,
+        dependentCompanyKeys: [...item.dependentCompanies.keys()],
+      };
+    })
+    .sort(
+      (a, b) =>
+        b.dependentExposure - a.dependentExposure ||
+        b.dependentCompanyKeys.length - a.dependentCompanyKeys.length ||
+        a.name.localeCompare(b.name),
+    );
+
+  const totalTargetsBeforeLimit = allOrderedTargets.length;
+  const orderedTargets =
+    targetLimit !== null && allOrderedTargets.length > targetLimit
+      ? allOrderedTargets.slice(0, targetLimit)
+      : allOrderedTargets;
+
+  const allowedTargetIds = new Set(orderedTargets.map((t) => t.id));
+  const pairs = allPairs.filter((p) => allowedTargetIds.has(p.targetId));
+
+  // Collect left-hand source nodes participating in the visible pairs
   const sourceAccumulator = new Map<
     string,
     {
@@ -295,69 +502,9 @@ export function buildDependencyGraph(
     }
   }
 
-  // Sort left nodes by portfolio exposure desc, then name
   const orderedSources = [...sourceAccumulator.values()].sort(
     (a, b) => b.exposure - a.exposure || a.name.localeCompare(b.name),
   );
-
-  // Collect right-hand target nodes, unioning dependent portfolio company exposures
-  const targetAccumulator = new Map<
-    string,
-    {
-      id: string;
-      targetKey: string | null;
-      name: string;
-      kind: TargetKind;
-      inPortfolio: boolean;
-      dependentCompanies: Map<string, Weight>;
-      edgeIds: string[];
-      hasSoleSource: boolean;
-      primaryEdgeType: EdgeType;
-    }
-  >();
-
-  for (const pair of pairs) {
-    const existing = targetAccumulator.get(pair.targetId);
-    if (existing) {
-      existing.dependentCompanies.set(pair.sourceId, pair.sourceExposure);
-      existing.edgeIds.push(pair.edge.edge_id);
-      if (pair.edge.sole_source) existing.hasSoleSource = true;
-    } else {
-      const depMap = new Map<string, Weight>();
-      depMap.set(pair.sourceId, pair.sourceExposure);
-      targetAccumulator.set(pair.targetId, {
-        id: pair.targetId,
-        targetKey: pair.targetKey,
-        name: pair.targetName,
-        kind: pair.targetKind,
-        inPortfolio: pair.targetInPortfolio,
-        dependentCompanies: depMap,
-        edgeIds: [pair.edge.edge_id],
-        hasSoleSource: pair.edge.sole_source,
-        primaryEdgeType: pair.edge.edge_type,
-      });
-    }
-  }
-
-  // Sort right nodes: shared dependencies (2+ portfolio holdings) or higher unioned dependent weight first
-  const orderedTargets = [...targetAccumulator.values()]
-    .map((item) => {
-      let dependentExposure = 0;
-      for (const w of item.dependentCompanies.values()) {
-        dependentExposure += w;
-      }
-      return {
-        ...item,
-        dependentExposure,
-        dependentCompanyKeys: [...item.dependentCompanies.keys()],
-      };
-    })
-    .sort(
-      (a, b) =>
-        b.dependentExposure - a.dependentExposure ||
-        b.dependentCompanyKeys.length - a.dependentCompanyKeys.length ||
-        a.name.localeCompare(b.name),
-    );
 
   const maxRows = Math.max(orderedSources.length, orderedTargets.length, 1);
   const contentHeight = maxRows * ROW_GAP;
@@ -430,12 +577,46 @@ export function buildDependencyGraph(
     edges,
     height,
     totalEdgesBeforeFilter: result.edges.length,
+    totalTargetsBeforeLimit,
   };
 }
 
+function isDistinctSiteName(targetName: string, countryName: string, countryCode: string): boolean {
+  const normTarget = targetName.replace(/[^a-zA-Z0-9]+/g, "").toLowerCase();
+  const normCountry = countryName.replace(/[^a-zA-Z0-9]+/g, "").toLowerCase();
+  const normCode = countryCode.replace(/[^a-zA-Z0-9]+/g, "").toLowerCase();
+  if (!normTarget) return false;
+  if (normTarget === normCountry || normTarget === normCode) return false;
+  if (
+    normCountry === "unitedstates" &&
+    (normTarget === "usa" || normTarget === "us" || normTarget === "unitedstatesofamerica")
+  ) {
+    return false;
+  }
+  if (
+    normCountry === "china" &&
+    (normTarget === "prc" || normTarget === "mainlandchina" || normTarget === "chinamainland")
+  ) {
+    return false;
+  }
+  if (
+    normCountry === "taiwan" &&
+    (normTarget === "taiwanroc" || normTarget === "republicofchina")
+  ) {
+    return false;
+  }
+  if (normCountry === "southkorea" && (normTarget === "korea" || normTarget === "republicofkorea")) {
+    return false;
+  }
+  return true;
+}
+
 /**
- * Computes facility concentration by country/region without double-counting a company
- * that has multiple facility edges in the same country.
+ * Groups facility concentration strictly from the backend's `facility.<ISO2>` metrics
+ * (e.g. `facility.US`, `facility.CN`, `facility.TW`) so variants like "United States",
+ * "U.S.", "US", and named factories never split into separate country bars.
+ * Named sites (e.g. "Gigafactory Shanghai", "Boise fab", "Fremont Factory") are listed
+ * separately under their respective portfolio holdings inside each country card.
  */
 export function buildFacilityBreakdown(
   result: DependencyResult,
@@ -455,16 +636,102 @@ export function buildFacilityBreakdown(
     nameByKey.set(comp.company_key, comp.company_name);
   }
 
-  const facilityMetrics = result.metrics.filter((m) => m.metric_id.startsWith("facility."));
+  const edgeById = new Map(result.edges.map((e) => [e.edge_id, e]));
+  const metricById = new Map(result.metrics.map((m) => [m.metric_id, m]));
 
-  const groups = new Map<
+  // Primary path: group strictly by backend `facility.<ISO2>` fraction metrics. The backend also
+  // emits site-level ids (facility.FAB_22, facility.GIGAFACTORY_SHANGHAI) when a filing names a
+  // site without its country; those are sites, not countries, so they stay out of the country view.
+  const primaryFacilityMetrics = result.metrics.filter(
+    (m) =>
+      /^facility\.[A-Z]{2}$/.test(m.metric_id) &&
+      m.unit === "fraction",
+  );
+
+  if (primaryFacilityMetrics.length > 0) {
+    return primaryFacilityMetrics
+      .map((metric) => {
+        const rawCode = (metric.subject_key ?? metric.metric_id.slice("facility.".length)).trim();
+        const upperCode = rawCode.toUpperCase();
+        const labelSuffix = metric.label
+          .replace(/^Portfolio exposure with key facilities in\s+/i, "")
+          .trim();
+        const countryDisplay =
+          ISO2_COUNTRY_NAMES[upperCode] ?? humaniseSiteName(labelSuffix || rawCode);
+
+        const supportingEdges = metric.supporting_edge_ids
+          .map((id) => edgeById.get(id))
+          .filter((e): e is VerifiedEdge => e !== undefined);
+
+        const holdingsMap = new Map<string, FacilityHoldingSite>();
+        for (const edge of supportingEdges) {
+          const compKey = edge.source_company_key;
+          const compName = nameByKey.get(compKey) ?? edge.source_company_name;
+          const compExp = exposureByKey.get(compKey) ?? 0;
+
+          let holding = holdingsMap.get(compKey);
+          if (!holding) {
+            holding = {
+              companyKey: compKey,
+              companyName: compName,
+              exposure: compExp,
+              namedSites: [],
+              edges: [],
+            };
+            holdingsMap.set(compKey, holding);
+          }
+          holding.edges.push(edge);
+
+          const prettyTarget = humaniseSiteName(edge.target_name);
+          if (
+            edge.target_kind === "facility" ||
+            isDistinctSiteName(prettyTarget, countryDisplay, upperCode)
+          ) {
+            if (!holding.namedSites.some((s) => s.siteName.toLowerCase() === prettyTarget.toLowerCase())) {
+              holding.namedSites.push({
+                siteName: prettyTarget,
+                qualifier: edge.qualifier,
+                edgeId: edge.edge_id,
+              });
+            }
+          }
+        }
+
+        const companies = [...holdingsMap.values()].sort(
+          (a, b) => b.exposure - a.exposure || a.companyName.localeCompare(b.companyName),
+        );
+        const countMetric = metricById.get(`${metric.metric_id}.companies`);
+        const companyCount = countMetric
+          ? Math.round(countMetric.value)
+          : Math.max(companies.length, 1);
+
+        return {
+          country: countryDisplay,
+          countryCode: upperCode,
+          subjectKey: metric.subject_key ?? upperCode,
+          dependentExposure: metric.value,
+          companyCount,
+          companies,
+          edges: supportingEdges,
+          metric,
+        };
+      })
+      .sort(
+        (a, b) =>
+          b.dependentExposure - a.dependentExposure ||
+          b.companyCount - a.companyCount ||
+          a.country.localeCompare(b.country),
+      );
+  }
+
+  // Fallback path if no `facility.*` metrics exist in `result.metrics`
+  const fallbackGroups = new Map<
     string,
     {
       country: string;
-      subjectKey: string | null;
-      companies: Map<string, { companyKey: string; companyName: string; exposure: Weight }>;
+      countryCode: string;
+      holdings: Map<string, FacilityHoldingSite>;
       edges: VerifiedEdge[];
-      metric: MetricFact | null;
     }
   >();
 
@@ -476,55 +743,69 @@ export function buildFacilityBreakdown(
       edge.target_kind === "facility";
     if (!isFacility) continue;
 
-    const countryLabel = edge.target_name.trim();
-    const normKey = countryLabel.toUpperCase();
+    const norm = edge.target_name
+      .replace(/[^a-zA-Z0-9]+/g, " ")
+      .trim()
+      .toLowerCase();
+    const mapped = COUNTRY_NAME_TO_ISO2[norm] ?? {
+      code: norm.toUpperCase().replace(/\s+/g, "_") || "UNKNOWN",
+      name: humaniseSiteName(edge.target_name),
+    };
+
+    let group = fallbackGroups.get(mapped.code);
+    if (!group) {
+      group = {
+        country: mapped.name,
+        countryCode: mapped.code,
+        holdings: new Map(),
+        edges: [],
+      };
+      fallbackGroups.set(mapped.code, group);
+    }
+    group.edges.push(edge);
+
     const compKey = edge.source_company_key;
     const compName = nameByKey.get(compKey) ?? edge.source_company_name;
     const compExp = exposureByKey.get(compKey) ?? 0;
-
-    let group = groups.get(normKey);
-    if (!group) {
-      const matchingMetric =
-        facilityMetrics.find(
-          (m) =>
-            m.supporting_edge_ids.includes(edge.edge_id) ||
-            (m.subject_key && m.subject_key.toUpperCase() === normKey) ||
-            m.label.toLowerCase().includes(countryLabel.toLowerCase()),
-        ) ?? null;
-      group = {
-        country: countryLabel,
-        subjectKey: matchingMetric?.subject_key ?? edge.target_key,
-        companies: new Map(),
+    let holding = group.holdings.get(compKey);
+    if (!holding) {
+      holding = {
+        companyKey: compKey,
+        companyName: compName,
+        exposure: compExp,
+        namedSites: [],
         edges: [],
-        metric: matchingMetric,
       };
-      groups.set(normKey, group);
+      group.holdings.set(compKey, holding);
     }
-
-    group.companies.set(compKey, {
-      companyKey: compKey,
-      companyName: compName,
-      exposure: compExp,
-    });
-    group.edges.push(edge);
+    holding.edges.push(edge);
+    const prettyTarget = humaniseSiteName(edge.target_name);
+    if (isDistinctSiteName(prettyTarget, mapped.name, mapped.code)) {
+      if (!holding.namedSites.some((s) => s.siteName.toLowerCase() === prettyTarget.toLowerCase())) {
+        holding.namedSites.push({
+          siteName: prettyTarget,
+          qualifier: edge.qualifier,
+          edgeId: edge.edge_id,
+        });
+      }
+    }
   }
 
-  return [...groups.values()]
-    .map((group) => {
-      const companies = [...group.companies.values()].sort(
+  return [...fallbackGroups.values()]
+    .map((g) => {
+      const companies = [...g.holdings.values()].sort(
         (a, b) => b.exposure - a.exposure || a.companyName.localeCompare(b.companyName),
       );
-      const unionSum = companies.reduce((sum, item) => sum + item.exposure, 0);
-      const dependentExposure =
-        group.metric && group.metric.unit === "fraction" ? group.metric.value : unionSum;
+      const dependentExposure = companies.reduce((sum, c) => sum + c.exposure, 0);
       return {
-        country: group.country,
-        subjectKey: group.subjectKey,
+        country: g.country,
+        countryCode: g.countryCode,
+        subjectKey: g.countryCode,
         dependentExposure,
         companyCount: companies.length,
         companies,
-        edges: group.edges,
-        metric: group.metric,
+        edges: g.edges,
+        metric: null,
       };
     })
     .sort(
