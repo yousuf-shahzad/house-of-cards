@@ -49,9 +49,11 @@ from hoc.ai.verifier import (
     verify_quote,
 )
 from hoc.contract import (
+    CompanyExposure,
     CompanyRunStatus,
     CompanyUnavailable,
     FilingRef,
+    ResearchFinding,
     VerifiedEdge,
 )
 from hoc.contract.dependencies import CompanyStatus, EdgeType, FilingForm, TargetKind
@@ -177,6 +179,10 @@ class Extraction:
     quality: Literal["sections", "fallback"] | None = "sections"
     cached: bool = False
     model: str | None = None
+    findings: list[ResearchFinding] = field(default_factory=list)
+    rejected_edge_ids: list[str] = field(default_factory=list)
+    steps_done: int = 0
+    steps_total: int = 0
 
 
 @dataclass(frozen=True)
@@ -561,6 +567,87 @@ class DependencyExtractor:
         self.max_concurrency = max(1, int(max_concurrency))
         self.resolve_target_key = resolve_target_key
         self.portfolio_company_keys = set(portfolio_company_keys) if portfolio_company_keys else None
+        self._research_loop: Any = None
+
+    def _get_research_loop(self) -> Any:
+        if self._research_loop is None:
+            from hoc.research.loop import ResearchLoop
+
+            self._research_loop = ResearchLoop(
+                client=self.client,
+                fetcher=self.filing_fetcher,
+                cache=self.cache,
+            )
+        return self._research_loop
+
+    def research_company(
+        self,
+        company: Any,
+        filing: Any,
+        edges: Iterable[VerifiedEdge],
+        *,
+        depth: Literal["none", "light", "thorough"] = "light",
+        cache_only: bool = False,
+        progress: Callable[..., None] | None = None,
+        resolve_target_key: Callable[[str], str | None] | None = None,
+    ) -> Any:
+        """Run the v3.1 per-company agentic research sub-agent (`CompanyResearch`) on `edges`."""
+        company_key, company_name = _coerce_company(company)
+        comp_exp = (
+            company
+            if isinstance(company, CompanyExposure)
+            else CompanyExposure(
+                rank=int(getattr(company, "rank", 1) or 1),
+                company_key=company_key,
+                company_name=company_name,
+                identity_status="resolved",
+                symbols=list(getattr(company, "symbols", []) or []),
+                sector=getattr(company, "sector", "unknown"),
+                country=getattr(company, "country", None),
+                exposure=min(max(float(getattr(company, "exposure", 1.0) or 1.0), 0.0), 1.0),
+                etf_count=int(getattr(company, "etf_count", 1) or 1),
+                contributions=list(getattr(company, "contributions", []) or []),
+                securities=list(getattr(company, "securities", []) or []),
+            )
+        )
+        loop = self._get_research_loop()
+        return loop.research_company(
+            comp_exp,
+            filing,
+            list(edges),
+            depth=depth,
+            cache_only=cache_only,
+            progress=progress,
+            resolve_target_key=resolve_target_key or self.resolve_target_key,
+        )
+
+    def extract_agentic(
+        self,
+        company: Any,
+        filing: Any,
+        *,
+        depth: Literal["none", "light", "thorough"] = "light",
+        cache_only: bool = False,
+        progress: Callable[..., None] | None = None,
+        canonical_text: str | None = None,
+        sections: Mapping[str, tuple[int, int] | str] | None = None,
+        extraction_quality: Literal["sections", "fallback"] | None = None,
+        portfolio_company_keys: Collection[str] | None = None,
+        resolve_target_key: Callable[[str], str | None] | None = None,
+    ) -> Extraction:
+        """Run 1-pass extraction + V-INT followed by the per-company agentic research loop at `depth`."""
+        return self.extract(
+            company,
+            filing,
+            cache_only=cache_only,
+            canonical_text=canonical_text,
+            sections=sections,
+            extraction_quality=extraction_quality,
+            portfolio_company_keys=portfolio_company_keys,
+            resolve_target_key=resolve_target_key,
+            depth=depth,
+            progress=progress,
+        )
 
     def extract(
         self,
@@ -573,10 +660,12 @@ class DependencyExtractor:
         extraction_quality: Literal["sections", "fallback"] | None = None,
         portfolio_company_keys: Collection[str] | None = None,
         resolve_target_key: Callable[[str], str | None] | None = None,
+        depth: Literal["none", "light", "thorough"] = "none",
+        progress: Callable[..., None] | None = None,
     ) -> Extraction:
         """I-API pipeline seam: extract verified edges for `(company, filing)`.
 
-        Returns `Extraction(edges, rejected, interpretation_rejected, quality, cached, model)`.
+        Returns `Extraction(edges, rejected, interpretation_rejected, quality, cached, model, findings, ...)`.
         Raises `hoc.contract.CompanyUnavailable(status, message)` when:
         - `filing` indicates an unavailable status (`no_sec_filing`, `unsupported_form`, `sec_contact_missing`)
         - `cache_only=True` and the filing is not cached (`missing_api_key`)
@@ -602,6 +691,28 @@ class DependencyExtractor:
                 outcome.error_message or f"Extraction unavailable for {company_key}: {outcome.status}",
             )
         quality: Literal["sections", "fallback"] = outcome.extraction_quality or "sections"
+        if depth in ("light", "thorough"):
+            res = self.research_company(
+                company,
+                filing if getattr(filing, "text", None) else (outcome.filing or filing),
+                outcome.edges,
+                depth=depth,
+                cache_only=cache_only,
+                progress=progress,
+                resolve_target_key=resolve_target_key,
+            )
+            return Extraction(
+                edges=res.edges,
+                rejected=outcome.rejected_count,
+                interpretation_rejected=outcome.interpretation_rejected_count + res.interpretation_rejected,
+                quality=quality,
+                cached=bool(outcome.from_cache and res.cached),
+                model=outcome.model,
+                findings=res.findings,
+                rejected_edge_ids=res.rejected_edge_ids,
+                steps_done=res.steps_done,
+                steps_total=res.steps_total,
+            )
         return Extraction(
             edges=outcome.edges,
             rejected=outcome.rejected_count,
