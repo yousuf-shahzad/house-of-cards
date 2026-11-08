@@ -60,6 +60,8 @@ import {
   type ResearchRunStatus,
 } from "@/app/dependencies-state";
 import { monotonicProgressPct } from "@/app/pages/guide/sentence";
+import { PAGE_INFO_COPY } from "@/app/pages/guide/copy";
+import { TabInfoBanner } from "@/app/pages/guide";
 import { formatPct, Pct } from "@/app/ui/pct";
 import { Chip, type ChipColor } from "@/components/base/badges/chip";
 import { StatusDot } from "@/components/base/badges/status-dot";
@@ -1630,6 +1632,7 @@ function DependenciesPageContent() {
             run AI dependency extraction over your top {DEFAULT_TOP_N} company holdings.
           </p>
         </div>
+        <TabInfoBanner info={PAGE_INFO_COPY.dependencies} />
         {exampleError && (
           <p role="alert" className="text-body-2-medium text-text-error-primary">
             {exampleError}
@@ -1686,6 +1689,9 @@ function DependenciesPageContent() {
               customers, and facility locations from SEC filings. Python verifies every quote
               verbatim and computes deterministic exposure metrics.
             </p>
+            <div className="pt-1">
+              <TabInfoBanner info={PAGE_INFO_COPY.dependencies} />
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-2.5">
             {result && result.research_depth !== "thorough" && (

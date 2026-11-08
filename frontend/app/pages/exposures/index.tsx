@@ -34,6 +34,8 @@ import type {
   Sector,
 } from "@/api/types";
 import { useAnalysis } from "@/app/analysis";
+import { PAGE_INFO_COPY } from "@/app/pages/guide/copy";
+import { TabInfoBanner } from "@/app/pages/guide";
 import { AsOfBadge } from "@/app/ui/as-of-badge";
 import { EtfChip } from "@/app/ui/etf-chip";
 import { etfVisual } from "@/app/ui/etf-color";
@@ -720,6 +722,7 @@ export default function ExposuresPage() {
             portfolio to inspect your top-20 company exposures and per-ETF contributions.
           </p>
         </div>
+        <TabInfoBanner info={PAGE_INFO_COPY.exposures} />
         {exampleError && (
           <p role="alert" className="text-body-2-medium text-text-error-primary">
             {exampleError}
@@ -772,6 +775,8 @@ export default function ExposuresPage() {
 
   return (
     <div className="flex w-full flex-col gap-6">
+      <TabInfoBanner info={PAGE_INFO_COPY.exposures} />
+
       {/* Stale / background refresh banner while keeping previous analysis visible */}
       {(stale || status === "loading") && (
         <div

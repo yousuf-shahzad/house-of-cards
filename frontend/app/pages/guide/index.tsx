@@ -4,14 +4,20 @@
 // Integrates with B-SHELL's useExperience() (app/experience.tsx) so the top-bar "Step N of 5"
 // and the stepper stay in sync and preserve the active step across Simple/Full view switches.
 
-import { useCallback, useEffect, useState, type ComponentType } from "react";
-import { RiArrowLeftLine, RiArrowRightLine } from "@remixicon/react";
+import { useCallback, useEffect, useId, useState, type ComponentType } from "react";
+import { RiArrowLeftLine, RiArrowRightLine, RiInformationLine } from "@remixicon/react";
 import { useAnalysis } from "@/app/analysis";
 import { TOTAL_GUIDE_STEPS, useExperience } from "@/app/experience";
 import { Button } from "@/components/base/buttons/button";
 import { TryAChange } from "@/app/ui/try-a-change";
 import { ProgressBar } from "@/components/base/progress/progress";
-import { GUIDE_STEP_META, type GuideStepMeta } from "./copy";
+import {
+  GUIDE_STEP_INFO,
+  GUIDE_STEP_META,
+  TRY_CHANGE_INFO,
+  type GuideStepMeta,
+  type TabInfoGuide,
+} from "./copy";
 import RisksStep from "./step-4-risks";
 import NextStep from "./step-5-next";
 import { StepOwn } from "./steps/own";
@@ -41,6 +47,69 @@ export const GUIDE_STEPS: readonly GuideStepEntry[] = [
 ] as const;
 
 export { TOTAL_GUIDE_STEPS };
+
+export function TabInfoBanner({
+  info,
+  buttonLabel = "What's here & why",
+}: {
+  info: TabInfoGuide;
+  buttonLabel?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center">
+        <Button
+          variant="secondary"
+          size="xs"
+          leadingIcon={RiInformationLine}
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={() => setOpen((prev) => !prev)}
+        >
+          {open ? "Hide guide" : buttonLabel}
+        </Button>
+      </div>
+      {open && (
+        <aside
+          id={panelId}
+          aria-label={info.title}
+          className="flex flex-col gap-3 rounded-2xl border border-border-button-default bg-background-secondary-default p-4 text-body-2-regular text-text-secondary"
+        >
+          <p className="text-body-2-semibold text-text-primary">{info.title}</p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="flex flex-col gap-1">
+              <span className="text-caption-1-semibold text-text-primary">
+                What is on this screen
+              </span>
+              <p>{info.whatsHere}</p>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-caption-1-semibold text-text-primary">
+                Why it matters
+              </span>
+              <p>{info.whyItMatters}</p>
+            </div>
+          </div>
+          {info.keyDetails.length > 0 && (
+            <div className="flex flex-col gap-1 border-t border-separator-border pt-2.5">
+              <span className="text-caption-1-semibold text-text-primary">
+                Key details & how to read it
+              </span>
+              <ul className="list-disc space-y-1 pl-4">
+                {info.keyDetails.map((detail, idx) => (
+                  <li key={idx}>{detail}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </aside>
+      )}
+    </div>
+  );
+}
 
 export default function GuidePage() {
   const { step, totalSteps: total, setStep } = useExperience();
@@ -92,13 +161,21 @@ export default function GuidePage() {
           showValueLabel={false}
           size="md"
         />
-        <div className="flex flex-col gap-1 pt-1">
-          <h1 className="text-display-4-medium text-text-primary">{showTryChange ? "Try a change" : entry.meta.title}</h1>
+        <div className="flex flex-col gap-2 pt-1">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h1 className="text-display-4-medium text-text-primary">
+              {showTryChange ? "Try a change" : entry.meta.title}
+            </h1>
+          </div>
           <p className="text-body-regular text-text-secondary">
             {showTryChange
               ? "Change your ETFs below. The comparison with your portfolio updates each time you change a value."
               : entry.meta.subtitle}
           </p>
+          <TabInfoBanner
+            key={showTryChange ? "try-change" : entry.meta.id}
+            info={showTryChange ? TRY_CHANGE_INFO : GUIDE_STEP_INFO[entry.meta.id]}
+          />
         </div>
       </header>
 
