@@ -43,16 +43,6 @@ Before the first scan, show only "Find dependencies". After it, show "Scan 15 mo
 Show what it's doing under the progress bar: "Reading Apple's annual report…" or "Read 3 of 15 companies", from `job.companies[].status`. While at 0%, also show an elapsed timer and an animated bar. Applies to Full Dependencies, guide Step 4 and Simple Dependencies.
 - **Owner:** Yousuf's Claude builds `app/ui/` `scanActivity` + `<ScanActivity>`; Yousuf's Gemini mounts it in the 3 places · **Status:** assigned
 
-### FIX-64 · medium · BUG: Simple view tells you to "pin this row" for an unknown ticker (Kendrick's Claude, FIX-62)
-Simple Portfolio and every Simple "Finish your portfolio" card (`simple/index.tsx:142`) show "Price could not be loaded; pin this row to a percentage." Simple view has no pin control, and the real cause is an unknown ticker.
-- Fix: in Simple view, map the valuation issue codes to plain text without "pin" (e.g. "We couldn't find ZZZZ. Check the ticker, or remove it.").
-- **Owner:** Gawyn's Gemini (narrow handoff: `frontend/app/pages/simple/index.tsx`; ask Yousuf's Claude before touching `app/ui/draft-editor.tsx`) · **Status:** assigned (moved off Kendrick's Claude at Gawyn's instruction)
-
-### FIX-65 · medium · BUG: "Some holdings or company details are missing" shows on every Simple page, even at 99.93% coverage (Kendrick's Claude, FIX-62)
-The condition at `simple/index.tsx:148` is covered < total by more than 0.0001%, so normally excluded cash and futures trigger it.
-- Fix: show it only for real gaps: unexplained allocation, or the backend's `low_coverage` gap (covered < 95%).
-- **Owner:** Gawyn's Gemini (same file and PR as FIX-64) · **Status:** assigned
-
 ### FIX-63 · high · Failure simulator on the Compare screen (Gawyn, 11:04, top priority)
 "If an industry, country or supplier fails, what happens to my money?" Shows before → after money for Your portfolio and Your new mix.
 - The drop is **historical** when possible: the proxy ETF's worst one-month (21 trading days) fall in the last 5 years. Otherwise it's a **simulated 10% fall**.
@@ -97,6 +87,7 @@ For each **confirmed** bug, add one line under **New** in FIXES.md: `BUG: <what 
 
 ## Done (checked on `main` by the lead)
 
+- FIX-64/65 Simple view: an unknown ticker no longer says "pin this row" (plain issue text keyed on the issue code; Full view unchanged), and the "details are missing" banner shows only for real gaps (not at 99.93%). Gawyn's Gemini; checked by the lead in the browser and the owner — #276
 - FIX-40 guide steps 1–3 "Learn more in the full …" links open Full view (#/portfolio, #/exposures, #/risk), browser-checked by Kendrick's Claude under FIX-62 — #234
 - FIX-58 independent benchmark (Yousuf's request), in `backend/tests/live/etf_accuracy/`. The lead checked the saved `summary.json` / `verification.json`:
   - all 12 portfolios and 23 overlap pairs reconcile (worst top-10 error ~0 pp);
