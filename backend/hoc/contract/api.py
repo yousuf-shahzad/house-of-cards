@@ -14,6 +14,7 @@ from typing import Annotated, Any, Literal
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator
 
 from .holdings import NormalisedHolding, Notice, SourceAttempt
+from .raw import PriceQuote
 from .units import METHOD_VERSION, IdentityStatus, Sector, SectorBasis, SecurityIdType, SourceName, Weight
 
 TICKER_PATTERN = r"^[A-Za-z0-9.\-]{1,12}$"
@@ -257,6 +258,8 @@ class EtfSummary(_Model):
     attempts: list[SourceAttempt]
     holdings: list[NormalisedHolding] | None = None
     """Only with ?holdings=true."""
+    price: PriceQuote | None = None
+    """The ETF's latest price from its source, if published (v2)."""
 
 
 class ExampleEtf(_Model):
@@ -295,6 +298,7 @@ ErrorCode = Literal[
     "TOO_MANY_ETFS",
     "UNKNOWN_TICKER",
     "ETF_NOT_FOUND",
+    "JOB_NOT_FOUND",
     "SOURCES_UNAVAILABLE",
     "INTERNAL_ERROR",
 ]

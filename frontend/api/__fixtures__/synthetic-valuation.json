@@ -1,0 +1,79 @@
+{
+  "_comment": "SYNTHETIC fixture for VITE_API_MOCK=1 only. Not real data. Shape = ValuationResponse.",
+  "status": "usable",
+  "as_of_date": "2026-11-08",
+  "rows": [
+    {
+      "ticker": "ZZAAA",
+      "pinned": false,
+      "shares": 100.0,
+      "price": {
+        "price": 50.0,
+        "currency": "USD",
+        "as_of": "2026-11-06",
+        "kind": "close",
+        "source": "fake",
+        "attribution": "SYNTHETIC test data, not real holdings or filings"
+      },
+      "price_age_days": 2,
+      "price_stale": false,
+      "value": 5000.0,
+      "allocation": 0.4,
+      "issues": []
+    },
+    {
+      "ticker": "ZZBBB",
+      "pinned": false,
+      "shares": 40.0,
+      "price": {
+        "price": 125.0,
+        "currency": "USD",
+        "as_of": "2026-10-30",
+        "kind": "close",
+        "source": "fake",
+        "attribution": "SYNTHETIC test data, not real holdings or filings"
+      },
+      "price_age_days": 9,
+      "price_stale": true,
+      "value": 5000.0,
+      "allocation": 0.4,
+      "issues": [
+        {
+          "code": "stale_price",
+          "severity": "warning",
+          "ticker": "ZZBBB",
+          "message": "Price is from 2026-10-30 (9 days old)."
+        }
+      ]
+    },
+    {
+      "ticker": "ZZCCC",
+      "pinned": true,
+      "shares": null,
+      "price": null,
+      "price_age_days": null,
+      "price_stale": false,
+      "value": null,
+      "allocation": 0.2,
+      "issues": []
+    }
+  ],
+  "total_value": 10000.0,
+  "pinned_total": 0.2,
+  "issues": [
+    {
+      "code": "stale_price",
+      "severity": "warning",
+      "ticker": "ZZBBB",
+      "message": "Price is from 2026-10-30 (9 days old)."
+    }
+  ],
+  "attributions": [
+    {
+      "source": "fake",
+      "text": "SYNTHETIC test data, not real holdings or filings",
+      "url": null,
+      "licence": null
+    }
+  ]
+}

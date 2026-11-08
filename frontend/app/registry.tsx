@@ -4,12 +4,13 @@ import { lazy, type ComponentType, type LazyExoticComponent } from "react";
 import {
   RiBarChartHorizontalLine,
   RiGridLine,
+  RiLinksLine,
   RiNodeTree,
   RiPieChartLine,
   RiShieldCheckLine,
 } from "@remixicon/react";
 
-export type PageKey = "portfolio" | "exposures" | "overlap" | "network" | "risk";
+export type PageKey = "portfolio" | "exposures" | "overlap" | "network" | "dependencies" | "risk";
 
 export type PageDefinition = {
   key: PageKey;
@@ -57,6 +58,15 @@ export const pages: readonly PageDefinition[] = [
     title: "Where your money flows",
     description: "Each ETF linked to the largest companies it gives you.",
     Component: lazy(() => import("./pages/network")),
+  },
+  {
+    key: "dependencies",
+    label: "Dependencies",
+    href: "#/dependencies",
+    icon: RiLinksLine,
+    title: "What your companies depend on",
+    description: "Suppliers, customers and facilities found in company filings, with the evidence.",
+    Component: lazy(() => import("./pages/dependencies")),
   },
   {
     key: "risk",

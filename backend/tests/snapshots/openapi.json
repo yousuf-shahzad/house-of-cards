@@ -440,6 +440,7 @@
               "TOO_MANY_ETFS",
               "UNKNOWN_TICKER",
               "ETF_NOT_FOUND",
+              "JOB_NOT_FOUND",
               "SOURCES_UNAVAILABLE",
               "INTERNAL_ERROR"
             ],
@@ -774,6 +775,16 @@
               }
             ],
             "title": "Name"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PriceQuote"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "reported_weight": {
             "title": "Reported Weight",
@@ -1329,6 +1340,65 @@
           "holdings"
         ],
         "title": "PortfolioRequest",
+        "type": "object"
+      },
+      "PriceQuote": {
+        "additionalProperties": false,
+        "description": "One ETF's latest market price, as published by a source (v2). Used to value share counts.",
+        "properties": {
+          "as_of": {
+            "format": "date",
+            "title": "As Of",
+            "type": "string"
+          },
+          "attribution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attribution"
+          },
+          "currency": {
+            "pattern": "^[A-Z]{3}$",
+            "title": "Currency",
+            "type": "string"
+          },
+          "kind": {
+            "default": "close",
+            "enum": [
+              "close",
+              "nav"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "price": {
+            "exclusiveMinimum": 0.0,
+            "title": "Price",
+            "type": "number"
+          },
+          "source": {
+            "enum": [
+              "tickerinside",
+              "sec_nport",
+              "ishares",
+              "fake"
+            ],
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "price",
+          "currency",
+          "as_of",
+          "source"
+        ],
+        "title": "PriceQuote",
         "type": "object"
       },
       "Sector": {

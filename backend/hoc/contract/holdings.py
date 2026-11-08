@@ -7,6 +7,7 @@ from typing import Literal
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict
 
+from .raw import PriceQuote
 from .units import (
     AssetClass,
     CompanyKeyBasis,
@@ -107,6 +108,8 @@ class EtfHoldings(BaseModel):
     warnings: list[Notice] = []
     attempts: list[SourceAttempt] = []
     normaliser_version: str
+    price: PriceQuote | None = None
+    """Passed through unchanged from RawEtfHoldings.price (v2)."""
 
 
 class EtfFailure(BaseModel):

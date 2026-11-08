@@ -49,6 +49,7 @@ export type ErrorCode =
   | "TOO_MANY_ETFS"
   | "UNKNOWN_TICKER"
   | "ETF_NOT_FOUND"
+  | "JOB_NOT_FOUND"
   | "SOURCES_UNAVAILABLE"
   | "INTERNAL_ERROR";
 
@@ -281,6 +282,8 @@ export interface EtfSummary {
   warnings: Notice[];
   attempts: SourceAttempt[];
   holdings: NormalisedHolding[] | null;
+  /** The ETF's latest price from its source, if published (v2). */
+  price: PriceQuote | null;
 }
 
 export interface ExampleEtf {
@@ -320,4 +323,231 @@ export interface ErrorResponse {
     message: string;
     details: Record<string, unknown>;
   };
+}
+
+// =====================================================================================
+// v2: share-based valuation (backend/hoc/contract/valuation.py)
+// =====================================================================================
+
+/** An ETF's latest market price (backend/hoc/contract/raw.py PriceQuote). */
+export interface PriceQuote {
+  price: number;
+  /** ISO 4217, e.g. "USD". */
+  currency: string;
+  /** Trading date of the price, not the download date. */
+  as_of: IsoDate;
+  /** "close" = exchange closing price (not NAV); "nav" = net asset value per share. */
+  kind: "close" | "nav";
+  source: SourceName;
+  attribution: string | null;
+}
+
+/** Calendar days after which a price is flagged stale (warning only). */
+export const PRICE_STALE_DAYS = 4;
+
+export interface ValuationRow {
+  ticker: string;
+  /** Shares held (fractional allowed). Ignored when allocation_override is set. */
+  shares?: number | null;
+  /** Pinned target allocation as a FRACTION (0.25 = 25%); null = unpinned (valued from shares). */
+  allocation_override?: Weight | null;
+}
+
+export interface ValuationRequest {
+  rows: ValuationRow[];
+}
+
+export type ValuationIssueCode =
+  | "no_price"
+  | "invalid_price"
+  | "non_usd_price"
+  | "price_unavailable"
+  | "stale_price"
+  | "missing_shares"
+  | "pinned_over_100"
+  | "nothing_to_rescale"
+  | "allocation_sum_invalid"
+  | "duplicate_ticker"
+  | "too_many_etfs";
+
+export interface ValuationIssue {
+  code: ValuationIssueCode;
+  severity: "warning" | "blocking";
+  ticker: string | null;
+  message: string;
+}
+
+export interface ValuationRowResult {
+  ticker: string;
+  pinned: boolean;
+  shares: number | null;
+  price: PriceQuote | null;
+  price_age_days: number | null;
+  price_stale: boolean;
+  /** shares x price, in price.currency (unpinned rows with a usable price). */
+  value: number | null;
+  /** Resulting allocation (fraction); null when blocked for this row. */
+  allocation: Weight | null;
+  issues: ValuationIssue[];
+}
+
+/** POST /api/valuation. When status is "usable", rows' allocations total 1 and go straight to /api/analysis. */
+export interface ValuationResponse {
+  status: "usable" | "blocked";
+  as_of_date: IsoDate;
+  rows: ValuationRowResult[];
+  total_value: number;
+  pinned_total: Weight;
+  issues: ValuationIssue[];
+  attributions: Attribution[];
+}
+
+// =====================================================================================
+// v2: AI dependency analysis (backend/hoc/contract/dependencies.py)
+// =====================================================================================
+
+export const DEFAULT_TOP_N = 15;
+
+export interface DependencyRequest {
+  holdings: PortfolioItem[];
+  top_n?: number;
+}
+
+export type FilingForm = "10-K" | "20-F";
+
+export interface FilingRef {
+  /** The filer. */
+  company_key: string;
+  form: FilingForm;
+  accession: string;
+  filed: IsoDate;
+  url: string;
+}
+
+export type CompanyStatus =
+  | "queued"
+  | "fetching"
+  | "extracting"
+  | "cached"
+  | "done"
+  | "no_sec_filing"
+  | "unsupported_form"
+  | "sec_contact_missing"
+  | "missing_api_key"
+  | "error";
+
+export interface CompanyRunStatus {
+  company_key: string;
+  company_name: string;
+  exposure: Weight;
+  status: CompanyStatus;
+  extraction_quality: "sections" | "fallback" | null;
+  filing: FilingRef | null;
+  verified_edges: number;
+  rejected_edges: number;
+  message: string | null;
+}
+
+export type EdgeType =
+  | "supplier"
+  | "customer"
+  | "contract_manufacturer"
+  | "foundry"
+  | "key_input"
+  | "facility"
+  | "jv_partner";
+
+export type TargetKind =
+  | "company"
+  | "country"
+  | "region"
+  | "material"
+  | "component"
+  | "facility"
+  | "unnamed_customer";
+
+/** Only edges whose evidence_quote Python found verbatim in the filing. */
+export interface VerifiedEdge {
+  edge_id: string;
+  source_company_key: string;
+  source_company_name: string;
+  source_in_portfolio: boolean;
+  edge_type: EdgeType;
+  target_name: string;
+  target_kind: TargetKind;
+  /** Deterministic resolution; null = unresolved counterparty. */
+  target_key: string | null;
+  target_in_portfolio: boolean;
+  sole_source: boolean;
+  qualifier: string | null;
+  evidence_quote: string;
+  section: string;
+  filing: FilingRef;
+}
+
+export type MetricUnit = "fraction" | "count" | "ratio" | "days";
+
+export interface MetricFact {
+  metric_id: string;
+  label: string;
+  value: number;
+  /** "fraction" values are fractions of the portfolio. */
+  unit: MetricUnit;
+  subject_key: string | null;
+  supporting_edge_ids: string[];
+}
+
+export interface InsightClaim {
+  claim_id: string;
+  kind: "suggestion" | "flaw";
+  severity: "info" | "warning" | "critical";
+  title: string;
+  /** Rendered text; every number came from a cited metric. */
+  text: string;
+  cited_metric_ids: string[];
+  cited_edge_ids: string[];
+}
+
+export type InsightsStatus = "ok" | "metrics_only" | "missing_api_key" | "no_verified_edges" | "error";
+
+export interface Insights {
+  status: InsightsStatus;
+  model: string | null;
+  suggestions: InsightClaim[];
+  flaws: InsightClaim[];
+  /** Claims Python dropped (invented numbers, unknown ids, names outside portfolio/edges). */
+  rejected_claims_count: number;
+}
+
+export interface DependencyCounts {
+  companies_requested: number;
+  companies_analysed: number;
+  companies_skipped: number;
+  verified_edges: number;
+  rejected_edges: number;
+  unresolved_counterparties: number;
+}
+
+export interface DependencyResult {
+  as_of_date: IsoDate;
+  request: Required<DependencyRequest>;
+  companies: CompanyRunStatus[];
+  edges: VerifiedEdge[];
+  metrics: MetricFact[];
+  insights: Insights;
+  counts: DependencyCounts;
+  attributions: Attribution[];
+}
+
+export type JobStatus = "queued" | "running" | "done" | "error";
+
+/** POST /api/dependencies (200 if done from cache, 202 otherwise) and GET /api/dependencies/{job_id}. Poll every 1-2 s. */
+export interface DependencyJob {
+  job_id: string;
+  status: JobStatus;
+  progress_done: number;
+  progress_total: number;
+  companies: CompanyRunStatus[];
+  result: DependencyResult | null;
+  error: ErrorResponse["error"] | null;
 }

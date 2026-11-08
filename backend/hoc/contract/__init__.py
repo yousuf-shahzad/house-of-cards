@@ -30,9 +30,23 @@ from .api import (
     SecurityExposure,
     TopShared,
 )
+from .dependencies import (
+    DEFAULT_TOP_N,
+    CompanyRunStatus,
+    DependencyCounts,
+    DependencyJob,
+    DependencyRequest,
+    DependencyResult,
+    FilingRef,
+    InsightClaim,
+    Insights,
+    MetricFact,
+    VerifiedEdge,
+)
 from .errors import (
     EtfNotFoundError,
     HocError,
+    JobNotFoundError,
     PortfolioValidationError,
     SourceError,
     SourceParseError,
@@ -42,7 +56,7 @@ from .errors import (
     UnknownTickerError,
 )
 from .holdings import EtfFailure, EtfHoldings, ExcludedLine, NormalisedHolding, Notice, SourceAttempt
-from .raw import RawEtfHoldings, RawHolding, SecurityInfo
+from .raw import PriceQuote, RawEtfHoldings, RawHolding, SecurityInfo
 from .units import (
     ALLOCATION_TOLERANCE,
     EXCLUDED_ASSET_CLASSES,
@@ -54,6 +68,14 @@ from .units import (
     SourceName,
     Weight,
     wsum,
+)
+from .valuation import (
+    PRICE_STALE_DAYS,
+    ValuationIssue,
+    ValuationRequest,
+    ValuationResponse,
+    ValuationRow,
+    ValuationRowResult,
 )
 
 __all__ = [name for name in dir() if not name.startswith("_")]
