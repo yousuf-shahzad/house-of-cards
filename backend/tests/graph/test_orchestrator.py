@@ -430,8 +430,83 @@ def test_cache_key_changes_when_allocations_or_edges_change() -> None:
     )
     assert k1 != k2
     assert k1 != k3
-    assert prompt_version == "hoc-orch-v3.0"
+    assert prompt_version == "hoc-orch-v3.1"
     assert compute_dependency_summary(analysis.exposures, edges).verified_edges_count == 3
+
+
+def test_v31_plain_title_and_plain_text_verification_and_null_fallback(tmp_path: Path) -> None:
+    """v3.1 F5: valid plain_title/plain_text render {{metric:<id>}}; invalid plain fields become None while keeping the claim."""
+    analysis = _sample_analysis()
+    edges = _sample_edges()
+
+    def fake_llm(**_: Any) -> dict[str, Any]:
+        return {
+            "flaws": [
+                # 1. Valid plain_title (<=8 words, 0 numbers) and plain_text (<=25 words, 1 cited placeholder)
+                {
+                    "title": "Shared foundry bottleneck on ZZ Epsilon Semiconductor",
+                    "text": (
+                        "{{metric:dep.ALIAS:ZZEPSILON}} of your portfolio across "
+                        "{{metric:dep.ALIAS:ZZEPSILON.companies}} holdings relies on ZZ Epsilon Semiconductor."
+                    ),
+                    "plain_title": "Several holdings rely on one chip maker",
+                    "plain_text": "{{metric:dep.ALIAS:ZZEPSILON}} of your money depends on ZZ Epsilon Semiconductor.",
+                    "severity": "critical",
+                    "cited_metric_ids": ["dep.ALIAS:ZZEPSILON", "dep.ALIAS:ZZEPSILON.companies"],
+                    "cited_edge_ids": ["e-alp-foundry-eps", "e-bet-foundry-eps"],
+                },
+                # 2. Invalid plain_title (>8 words) and invalid plain_text (2 placeholders -> >1 number):
+                #    both become None, but the claim itself is kept.
+                {
+                    "title": "Taiwan assembly concentration",
+                    "text": "{{metric:facility.TW}} across {{metric:facility.TW.companies}} relies on Taiwan.",
+                    "plain_title": "This plain title has way more than eight words in it",
+                    "plain_text": (
+                        "{{metric:facility.TW}} across {{metric:facility.TW.companies}} relies on Taiwan."
+                    ),
+                    "severity": "warning",
+                    "cited_metric_ids": ["facility.TW", "facility.TW.companies"],
+                    "cited_edge_ids": ["e-alp-facility-tw"],
+                },
+            ],
+            "suggestions": [
+                # 3. Invalid plain_title (literal digit) and invalid plain_text (forbidden jargon '10-K' / >25 words):
+                #    both become None, claim is kept.
+                {
+                    "title": "Diversify foundry exposure",
+                    "text": "{{metric:dep.ALIAS:ZZEPSILON}} depends on ZZ Epsilon Semiconductor.",
+                    "plain_title": "Top 1 foundry risk",
+                    "plain_text": "Per 10-K filings {{metric:dep.ALIAS:ZZEPSILON}} depends on ZZ Epsilon Semiconductor.",
+                    "severity": "info",
+                    "cited_metric_ids": ["dep.ALIAS:ZZEPSILON"],
+                    "cited_edge_ids": ["e-alp-foundry-eps"],
+                },
+            ],
+        }
+
+    orch = DependencyOrchestrator(ai_client=fake_llm, cache_dir=tmp_path)
+    _, res = orch.insights(analysis, edges)
+    assert res.status == "ok"
+    assert res.rejected_claims_count == 0
+    assert len(res.flaws) == 2
+    assert len(res.suggestions) == 1
+
+    f1 = res.flaws[0]
+    assert f1.plain_title == "Several holdings rely on one chip maker"
+    assert f1.plain_text == "58.00% of your money depends on ZZ Epsilon Semiconductor."
+    assert len(f1.plain_title.split()) <= 8
+    assert len(f1.plain_text.split()) <= 25
+    assert "{{metric:" not in f1.plain_text
+
+    f2 = res.flaws[1]
+    assert f2.plain_title is None
+    assert f2.plain_text is None
+    assert "34.00%" in f2.text
+
+    s1 = res.suggestions[0]
+    assert s1.plain_title is None
+    assert s1.plain_text is None
+    assert "58.00%" in s1.text
 
 
 def test_fake_gemini_client_default_orchestrator_response_integration(
