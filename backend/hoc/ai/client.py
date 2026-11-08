@@ -324,6 +324,7 @@ class FakeGeminiClient:
     - By default, emits both valid verbatim quotes (matching the passed filing text)
       AND mutated/hallucinated quotes so offline unit tests and Tier B E2E tests
       verify that Python quote verification rejects unverified edges (`rejected > 0`).
+    - Also handles V-INT judge prompts (`JUDGE_SCHEMA` with `"verdicts"`).
     """
 
     def __init__(
@@ -379,6 +380,8 @@ class FakeGeminiClient:
                 return canned, used_model
 
         props = schema.get("properties", {}) if isinstance(schema, Mapping) else {}
+        if "verdicts" in props:
+            return self._default_judge_response(prompt), used_model
         if "suggestions" in props or "flaws" in props:
             return self._default_orchestrator_response(), used_model
         return self._default_extraction_response(prompt), used_model
@@ -457,7 +460,7 @@ class FakeGeminiClient:
 
         if self.include_mutated_quotes:
             edges.append({
-                "edge_type": "sole_source" if False else "supplier",
+                "edge_type": "supplier",
                 "target_name": "Hallucinated Quantum Foundry Corp.",
                 "target_kind": "company",
                 "sole_source": True,
@@ -480,6 +483,44 @@ class FakeGeminiClient:
                 })
 
         return {"edges": edges}
+
+    @staticmethod
+    def _default_judge_response(prompt: str) -> dict[str, Any]:
+        """Deterministic judge response for `hoc-v3-judge-1` prompts."""
+        verdicts: list[dict[str, Any]] = []
+        blocks = re.split(r"\[ITEM\s+\d+\]", prompt)
+        for block in blocks[1:]:
+            id_match = re.search(r"edge_id:\s*([^\r\n]+)", block)
+            flags_match = re.search(r"rule_flags:\s*([^\r\n]+)", block)
+            if not id_match:
+                continue
+            edge_id = id_match.group(1).strip()
+            flags_raw = flags_match.group(1).strip() if flags_match else "none"
+            flags = [f.strip() for f in flags_raw.split(",") if f.strip() and f.strip() != "none"]
+
+            if "competitor_mention" in flags:
+                label = "competitor"
+                reason = "Target is mentioned as a competitor in the filing context."
+            elif any(f in flags for f in ("negated", "direction_mismatch", "generic_reference")):
+                label = "contradicts"
+                reason = "Quote negates or reverses the claimed relationship."
+            elif "subject_mismatch" in flags:
+                label = "unrelated"
+                reason = "Filer is not the subject of the dependency in this context."
+            elif "hypothetical" in flags:
+                label = "unclear"
+                reason = "Quote uses conditional/hypothetical wording without a confirmed active dependency."
+            else:
+                label = "supports"
+                reason = "Quote directly supports the claimed dependency."
+
+            verdicts.append({
+                "edge_id": edge_id,
+                "label": label,
+                "cleared_flags": [],
+                "reason": reason,
+            })
+        return {"verdicts": verdicts}
 
     @staticmethod
     def _default_orchestrator_response() -> dict[str, Any]:

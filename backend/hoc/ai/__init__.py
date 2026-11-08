@@ -1,9 +1,15 @@
-"""Package G-AI: Gemini Interactions client, deterministic quote verifier, disk cache, and dependency extractor.
+"""Package G-AI & V-INT: Gemini client, quote verifier, interpretation verifier, disk cache, and extractor.
 
 Owner: Kendrick's Gemini (`@kendricklow2008 (Gemini)`).
 """
 
-from hoc.ai.cache import ExtractionCache
+from hoc.ai.cache import (
+    EXTRACTION_CACHE_NAMESPACE,
+    JUDGE_CACHE_NAMESPACE,
+    ExtractionCache,
+    make_extraction_cache_key,
+    make_judge_cache_key,
+)
 from hoc.ai.client import (
     API_REVISION,
     DEFAULT_EXTRACTOR_MODEL,
@@ -36,6 +42,27 @@ from hoc.ai.extractor import (
     pack_filing_sections,
     verify_and_build_edges,
 )
+from hoc.ai.interpretation import (
+    CONTEXT_WINDOW_CHARS,
+    DEFAULT_UNFLAGGED_SAMPLE_RATE,
+    INTERPRETATION_FLAGS,
+    JUDGE_LABELS,
+    JUDGE_PROMPT_VERSION,
+    JUDGE_SCHEMA,
+    JUDGE_SYSTEM_INSTRUCTION,
+    EdgeInterpretation,
+    InterpretationMethod,
+    InterpretationResult,
+    JudgeLabel,
+    attach_edge_interpretation,
+    build_judge_prompt,
+    check_interpretation_rules,
+    decide_interpretation_from_judge,
+    extract_quote_context,
+    should_sample_unflagged_edge,
+    verify_company_interpretations,
+    verify_edge_interpretation,
+)
 from hoc.ai.verifier import (
     PROMPT_VERSION,
     find_quote_span,
@@ -44,16 +71,26 @@ from hoc.ai.verifier import (
     resolve_quote_section,
     verify_quote,
 )
+from hoc.contract.dependencies import InterpretationFlag, InterpretationStatus
 
 __all__ = [
     "API_REVISION",
+    "CONTEXT_WINDOW_CHARS",
     "DEFAULT_EXTRACTOR_MODEL",
     "DEFAULT_MAX_CONCURRENCY",
     "DEFAULT_ORCHESTRATOR_MODEL",
+    "DEFAULT_UNFLAGGED_SAMPLE_RATE",
     "EDGE_TYPES",
+    "EXTRACTION_CACHE_NAMESPACE",
     "EXTRACTION_SCHEMA",
     "EXTRACTOR_SYSTEM_INSTRUCTION",
     "GEMINI_INTERACTIONS_URL",
+    "INTERPRETATION_FLAGS",
+    "JUDGE_CACHE_NAMESPACE",
+    "JUDGE_LABELS",
+    "JUDGE_PROMPT_VERSION",
+    "JUDGE_SCHEMA",
+    "JUDGE_SYSTEM_INSTRUCTION",
     "MAX_PACKED_CHARS",
     "MAX_REVERSE_HITS",
     "PROMPT_VERSION",
@@ -61,6 +98,7 @@ __all__ = [
     "CompanyExtractionOutcome",
     "CompanyUnavailable",
     "DependencyExtractor",
+    "EdgeInterpretation",
     "Extraction",
     "ExtractionCache",
     "FakeGeminiClient",
@@ -69,16 +107,31 @@ __all__ = [
     "GeminiMissingKeyError",
     "GeminiParseError",
     "GeminiQuotaError",
+    "InterpretationFlag",
+    "InterpretationMethod",
+    "InterpretationResult",
+    "InterpretationStatus",
+    "JudgeLabel",
     "RestGeminiClient",
+    "attach_edge_interpretation",
     "build_extraction_prompt",
+    "build_judge_prompt",
+    "check_interpretation_rules",
+    "decide_interpretation_from_judge",
     "dedupe_edges",
     "extract_interaction_text",
+    "extract_quote_context",
     "find_quote_span",
     "is_generic_company_target",
     "make_edge_id",
+    "make_extraction_cache_key",
+    "make_judge_cache_key",
     "normalise_for_verify",
     "pack_filing_sections",
     "resolve_quote_section",
+    "should_sample_unflagged_edge",
     "verify_and_build_edges",
+    "verify_company_interpretations",
+    "verify_edge_interpretation",
     "verify_quote",
 ]
