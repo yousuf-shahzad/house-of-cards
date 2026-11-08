@@ -15,7 +15,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
-from urllib.parse import urlencode, urlsplit
+from urllib.parse import parse_qsl, urlencode, urlsplit
 
 import httpx
 
@@ -70,14 +70,32 @@ class HttpClient(Protocol):
         ...
 
 
+GEMINI_HOST = "generativelanguage.googleapis.com"
+
 MIN_INTERVAL_SECONDS = {
     "sec.gov": 0.12,  # SEC fair access: at most 10 requests per second
     "api.openfigi.com": 2.5,  # keyless OpenFIGI: 25 requests per minute
+    GEMINI_HOST: 1.0,  # event key; Argon's limits are only visible in AI Studio
 }
 """Per-host spacing between requests. A key matches the host and its subdomains (www.sec.gov)."""
 RETRY_DELAYS = (1.0, 3.0)
 """Seconds to wait before each retry of a network error, 429 or 5xx. Retry-After is honoured up to 30 s."""
 TIMEOUT_SECONDS = 30.0
+
+# Per-host overrides (same host/subdomain matching as MIN_INTERVAL_SECONDS).
+TIMEOUT_BY_HOST = {GEMINI_HOST: 900.0}
+"""Long thinking calls on Argon can take minutes (R5). A timeout this long is never retried."""
+RETRY_DELAYS_BY_HOST = {GEMINI_HOST: (5.0, 20.0)}
+"""Gemini answers 429 (quota) and 503 ("model overloaded") often; back off harder."""
+RETRY_AFTER_CAP_BY_HOST = {GEMINI_HOST: 60.0}
+UNCACHED_ERROR_HOSTS = frozenset({GEMINI_HOST})
+"""Hosts whose non-2xx answers are never cached (a 400 from a bad prompt must not stick)."""
+SECRET_QUERY_PARAMS = frozenset({"key", "api_key", "apikey"})
+"""Never allowed in a URL: URLs are written to cache meta. Keys go in headers (x-goog-api-key)."""
+
+
+def _for_host(table: Mapping[str, Any], host: str, default):
+    return next((v for h, v in table.items() if host == h or host.endswith("." + h)), default)
 
 
 def _now() -> datetime:
@@ -114,6 +132,9 @@ class CachedHttpClient:
     # ---------- internals ----------
 
     def _fetch(self, method, url, key, *, source, ttl, headers, payload=None) -> CachedResponse:
+        parts = urlsplit(url)
+        if any(name.lower() in SECRET_QUERY_PARAMS for name, _ in parse_qsl(parts.query)):
+            raise ValueError(f"API keys must go in a header, never in the URL ({parts.hostname})")
         namespace = f"http/{source}"
         entry = self.cache.get(namespace, key)
         if entry is not None and (ttl is None or _now() - entry.fetched_at < ttl):
@@ -130,36 +151,44 @@ class CachedHttpClient:
             raise
         fetched_at = _now()
         content_type = response.headers.get("content-type")
-        # 429 and 5xx never get here (_request retries, then raises), so this caches only real answers.
-        self.cache.put(namespace, key, response.content, {
-            "url": url, "status": response.status_code, "content_type": content_type, "fetched_at": fetched_at,
-        })
+        # 429 and 5xx never get here (_request retries, then raises), so this caches only real answers;
+        # some hosts (Gemini) also keep their 4xx out of the cache. Headers are never stored.
+        if 200 <= response.status_code < 300 or parts.hostname not in UNCACHED_ERROR_HOSTS:
+            self.cache.put(namespace, key, response.content, {
+                "url": url, "status": response.status_code, "content_type": content_type, "fetched_at": fetched_at,
+            })
         return CachedResponse(url=url, status=response.status_code, content_type=content_type,
                               body=response.content, fetched_at=fetched_at)
 
     def _request(self, method, url, headers, payload) -> httpx.Response:
         merged = {"User-Agent": self.settings.user_agent, **(headers or {})}
         host = urlsplit(url).hostname or ""
+        delays = _for_host(RETRY_DELAYS_BY_HOST, host, RETRY_DELAYS)
+        timeout = _for_host(TIMEOUT_BY_HOST, host, TIMEOUT_SECONDS)
+        retry_after_cap = _for_host(RETRY_AFTER_CAP_BY_HOST, host, 30.0)
         last_error = "no attempt"
-        for attempt in range(len(RETRY_DELAYS) + 1):
+        attempts = 0
+        for attempt in range(len(delays) + 1):
             self._wait_for_host(host)
+            attempts += 1
+            delay = delays[attempt] if attempt < len(delays) else None
             try:
-                response = self._client.request(method, url, headers=merged, json=payload)
-            except httpx.HTTPError as exc:
+                response = self._client.request(method, url, headers=merged, json=payload, timeout=timeout)
+            except httpx.HTTPError as exc:  # message never includes headers, so no key leaks here
                 last_error = type(exc).__name__
-                delay = RETRY_DELAYS[attempt] if attempt < len(RETRY_DELAYS) else None
+                if isinstance(exc, httpx.TimeoutException) and timeout > TIMEOUT_SECONDS:
+                    break  # a long call that timed out is not worth repeating
             else:
                 if response.status_code != 429 and response.status_code < 500:
                     return response
                 last_error = f"HTTP {response.status_code}"
-                delay = RETRY_DELAYS[attempt] if attempt < len(RETRY_DELAYS) else None
                 retry_after = response.headers.get("retry-after", "")
                 if delay is not None and retry_after.isdigit():
-                    delay = min(max(delay, float(retry_after)), 30.0)
+                    delay = min(max(delay, float(retry_after)), retry_after_cap)
             if delay is None:
                 break
             time.sleep(delay)
-        raise SourceUnavailable(f"{host} unavailable after {len(RETRY_DELAYS) + 1} attempts ({last_error})")
+        raise SourceUnavailable(f"{host} unavailable after {attempts} attempt(s) ({last_error})")
 
     def _wait_for_host(self, host: str) -> None:
         interval = next((s for h, s in MIN_INTERVAL_SECONDS.items() if host == h or host.endswith("." + h)), 0)
