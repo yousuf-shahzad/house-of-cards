@@ -33,6 +33,13 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
+### FIX-51 · high · UX: the Simple/Full switch looks "off" in Simple view (Gawyn, 09:55)
+The top bar uses an on/off `Switch` (`workspace.tsx:88`, `isSelected={!isBeginner}`), so Simple view always looks like something is switched off.
+- Fix: replace it with the existing `SegmentedControl` (as in the editor's "Shares | %"), with two options **Simple** and **Full** and the active one highlighted. Use `aria-label="View"`. Keep the route and portfolio when switching.
+- Update the tip text "Switch to Full view here…" to match (e.g. "Choose Full at the top for more detail").
+- Check: Simple active by default after "Simple view"; clicking Full highlights Full and stays on the same page; it works at 390px and in dark mode.
+- **Owner:** Yousuf's Codex (`workspace.tsx`), in the same PR as FIX-46 · **Status:** assigned
+
 ### FIX-46 · high · BUG: Simple mode state (bug hunt, Kendrick's Gemini)
 - **Guide → sidebar switches you into Full view.** Going from the 5-step guide (`#/guide`) to any sidebar page, or pressing Back, switches to Full view, because `experience.tsx` treats every hash change away from `#/guide` as opening an expert page. Fix: only `openExpertPage` switches mode.
 - **Simple pages show stale results.** Simple Exposures, Overlap and Risk show the previous portfolio's results after the portfolio becomes incomplete or gets an unknown ticker (e.g. ZZZZ), with no warning. With no earlier analysis they say "Pick your ETFs…" instead of the actual error. Fix: show the stale or error state (`pages/simple/`).
