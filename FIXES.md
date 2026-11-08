@@ -53,11 +53,13 @@ In the FIX-1 live check, 4 of 23 light findings stopped after one tool call ("st
   - Raise the per-company budgets, especially thorough's, since the user asked to go deeper, or run a company's items in parallel. Keep the job inside A2's limits (light about +90 s, thorough about +180 s).
   - Label budget stops "not finished in time", not plain "unresolved".
   - Make each explanation match its outcome (Nvidia→OpenAI: outcome "unresolved", but the text says "is rejected").
-- **Owner:** Kendrick's Gemini (+ Bekarys's Claude for job limits) · **Status:** assigned
+- After it merges, Bekarys's Gemini re-runs the held-out eval at thorough depth to see whether deeper research changes links.
+- **Owner:** Kendrick's Gemini (+ Bekarys's Claude for job limits) · **Status:** plan approved (an 8-worker research pool; light 40 s and thorough 85 s per company)
 
 ### FIX-21 · medium · Docs quote the old swap figure
 After FIX-20, the XLK → VTV swap is 12.39% → 6.30% (−6.10 pts), not 4.69% (−7.71 pts).
 - Fix: update README.md, docs/hoc/DEMO.md and PITCH_DECK.md.
+- Also add the FIX-8 result honestly: on the held-out set, light research double-checks findings but changes no links, so precision and recall stay 88.4% / 57.4% (+0.0 pp). Don't claim the agents raise accuracy; say they verify, and that they made 2+ lookups with 0 circular confirmations.
 - Also (from Yousuf's deck review): PITCH_DECK.md slide 3 names Apple as one of the 4 companies behind the 12.39% TSMC figure. In our data they are Nvidia 6.89% + Broadcom 2.28% + AMD 2.04% + Intel 1.19%. Apple doesn't name its component suppliers.
 - **Owner:** Gawyn's Gemini · **Status:** assigned
 
@@ -110,11 +112,6 @@ Survivors are measured with cache-only compare on one company set (FIX-20). Pyth
   - Engine PR #192 is approved and blocked only on the proposer's "Consider" false positive (Gawyn's Gemini).
   - UI PR #186 is in review.
 
-### FIX-8 · medium · The evaluation doesn't show the effect of the research agents
-- Fix: after FIX-1 and FIX-2 merge, run `uv run hoc eval --live` with light agents. EVAL.md then reports precision and recall before vs after the agents, with confidence intervals. Do no tuning on the 10 held-out companies.
-- Also add an agentic acceptance check to `hoc eval`. From a result it reports tool calls per finding, `search_filings` use, whether thorough contains light, and duplicate `unnamed_customer` links, so FIX-1, FIX-2 and FIX-14 are judged by numbers.
-- **Owner:** Bekarys's Gemini (A3) · **Status:** unblocked 07:35. Running the live and replay eval with light agents, plus the agentic check.
-
 ### FIX-9 · medium · Final QA of both views
 - Fix: once everything above merges, audit the full and simple views end to end; send problems to their owners.
 - Also test with no AI key or SEC contact: page 4 must say "The AI check couldn't run on this computer" (FIX-4 was checked in code only).
@@ -129,6 +126,7 @@ The plan asked for the research trace to show live during the run.
 
 ## Done (checked on `main` by the lead)
 
+- FIX-8 before/after eval on the 10 held-out 10-Ks (light agents): precision 88.4% blind / 96.1% pooled and core recall 57.4%, all unchanged (+0.0 pp); 18 findings, 0 links added or removed; agentic check PASS (18/18 make 2+ tool calls, 0 circular). Reproduced offline by the lead — #196
 - FIX-1, FIX-2, FIX-14 real research loop. Light: 17/23 findings make 2+ tool calls (was 3/25). Thorough: 27/45 use `search_filings` (was 0). Thorough keeps every light edge. 0 duplicate or group customer links — #189
 - FIX-19 the bar resets only when a reused job starts again; a running bar at 100% stays at 100% — #187, #191
 - FIX-20 compare measures both sides on the same companies (+20% XLU: 9.92%, exact dilution; swap: 12.39% → 6.30%) — #183
