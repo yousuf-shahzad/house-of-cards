@@ -16,6 +16,19 @@ const DashboardSidebar = lazy(() =>
   })),
 );
 
+/** FIX-28: "What's here & why" for the Full-view pages that don't render their own. Lazy, so the guide bundle
+ * (where the banner and its copy live) stays out of the main chunk. */
+const PageInfo = lazy(() =>
+  Promise.all([import("./pages/guide"), import("./pages/guide/copy")]).then(([guide, copy]) => ({
+    default: function PageInfo({ pageKey }: { pageKey: string }) {
+      const info = copy.PAGE_INFO_COPY[pageKey];
+      return info ? <guide.TabInfoBanner info={info} /> : null;
+    },
+  })),
+);
+/** Pages that already show their own banner (with page-specific placement). */
+const PAGES_WITH_OWN_INFO = new Set(["exposures", "dependencies"]);
+
 export const APP_NAME = "House of Cards";
 
 const navItems = pages
@@ -256,6 +269,13 @@ export function Workspace() {
                 <div>
                   <h1 className="text-display-4-medium">{page.title}</h1>
                   <p className="text-body-regular text-text-secondary">{page.description}</p>
+                  {!PAGES_WITH_OWN_INFO.has(page.key) && (
+                    <div className="mt-3">
+                      <Suspense fallback={null}>
+                        <PageInfo key={page.key} pageKey={page.key} />
+                      </Suspense>
+                    </div>
+                  )}
                 </div>
               </div>
               <PageBoundary key={page.key}>
