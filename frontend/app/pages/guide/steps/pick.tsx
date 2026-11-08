@@ -155,6 +155,7 @@ export function StepPick(_props: GuideStepProps) {
       <DraftEditor
         draft={draft}
         label="Your ETFs"
+        sharesOnly
         reports={reports}
         flaggedIds={unknownIds}
         emptyText={{

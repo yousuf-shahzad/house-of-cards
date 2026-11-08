@@ -29,7 +29,7 @@ export {
 export const DEBOUNCE_MS = 400;
 export type AnalysisStatus = "invalid" | "loading" | "ready" | "error";
 
-type AnalysisContextValue = Omit<PortfolioDraft, "inputs" | "key" | "retryValuation" | "copyFrom"> & {
+type AnalysisContextValue = Omit<PortfolioDraft, "inputs" | "key" | "retryValuation" | "copyFrom" | "fillShares" | "sharesFill"> & {
   /** The Current portfolio's draft itself, e.g. to copy it into a Compare scenario. */
   draft: PortfolioDraft;
   status: AnalysisStatus;
