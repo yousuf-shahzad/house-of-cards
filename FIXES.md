@@ -30,6 +30,10 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
+### FIX-70 · medium · Docs: make README.md appealing and easy to read, with the logo and setup (Gawyn, 12:16)
+Logo + tagline + live demo link; short "What it does"; copy-paste setup (backend, frontend, env placeholders, offline mode, tests), with every command verified; short "How it works". Keep the Failure simulator, Data sources, Known limits and Layout sections. Move the long history into `<details>` or `docs/hoc/HISTORY.md`.
+- **Owner:** Bekarys's Argon (README handed over by the lead for this task) · **Status:** assigned
+
 ### FIX-69 · medium · UX: Try a change shows the current portfolio (read-only, left) beside the new one (editable, right) (Gawyn, 12:14)
 Same in Simple ("Your changed portfolio") and Full ("Your new mix" on Compare). Identical row formatting, with the left card read-only. Two columns at ≥ 1024 px, stacked on narrow screens. In Full, the left card replaces CurrentSummary's ticker list.
 - **Owner:** Yousuf's Claude (`app/ui/try-a-change.tsx`, `draft-editor.tsx`, `pages/compare/`, `pages/simple/`) · **Status:** assigned (after the #281 live check)
