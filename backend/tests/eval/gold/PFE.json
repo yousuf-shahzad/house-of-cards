@@ -1,0 +1,237 @@
+{
+  "company": {
+    "name": "Pfizer Inc.",
+    "cik": "0000078003",
+    "ticker": "PFE"
+  },
+  "filing": {
+    "form": "10-K",
+    "accession": "0000078003-26-000026",
+    "url": "https://www.sec.gov/Archives/edgar/data/78003/000007800326000026/pfe-20251231.htm"
+  },
+  "annotator": "Yousuf's Codex",
+  "relationships": [
+    {
+      "id": "PFE-1",
+      "edge_type": "customer",
+      "target_name": "McKesson, Inc.",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "The following summarizes revenue, as a percentage of Total revenues, from our three largest U.S. wholesaler customers, which was concentrated in our Biopharma operating segment: Year Ended December 31, 2025 2024 2023 McKesson, Inc. 25 % 23 % 16 % Cencora, Inc. 16 % 17 % 12 % Cardinal Health, Inc. 13 % 14 % 10 %",
+      "importance": "critical",
+      "notes": "Note 17B; 2025 25% of total revenue; wholesaler purchases from Pfizer; customer base 0.9."
+    },
+    {
+      "id": "PFE-2",
+      "edge_type": "customer",
+      "target_name": "Cencora, Inc.",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "The following summarizes revenue, as a percentage of Total revenues, from our three largest U.S. wholesaler customers, which was concentrated in our Biopharma operating segment: Year Ended December 31, 2025 2024 2023 McKesson, Inc. 25 % 23 % 16 % Cencora, Inc. 16 % 17 % 12 % Cardinal Health, Inc. 13 % 14 % 10 %",
+      "importance": "high",
+      "notes": "Note 17B; 2025 16% of total revenue; customer base 0.7."
+    },
+    {
+      "id": "PFE-3",
+      "edge_type": "customer",
+      "target_name": "Cardinal Health, Inc.",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "The following summarizes revenue, as a percentage of Total revenues, from our three largest U.S. wholesaler customers, which was concentrated in our Biopharma operating segment: Year Ended December 31, 2025 2024 2023 McKesson, Inc. 25 % 23 % 16 % Cencora, Inc. 16 % 17 % 12 % Cardinal Health, Inc. 13 % 14 % 10 %",
+      "importance": "high",
+      "notes": "Note 17B; 2025 13% of total revenue; customer base 0.7."
+    },
+    {
+      "id": "PFE-4",
+      "edge_type": "supplier",
+      "target_name": "BMS",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "In certain smaller markets we have full commercialization rights and BMS supplies the product to us at cost plus a percentage of the net sales to end-customers.",
+      "importance": "medium",
+      "notes": "Item 1 Collaboration; BMS = Bristol-Myers Squibb Company (glossary). Explicit product supply, not an inferred equity JV."
+    },
+    {
+      "id": "PFE-5",
+      "edge_type": "jv_partner",
+      "target_name": "BioNTech",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "Comirnaty is an mRNA-based coronavirus vaccine to help prevent COVID-19, which is jointly developed and commercialized with BioNTech. Pfizer and BioNTech equally share the costs of development for the Comirnaty program.",
+      "importance": "medium",
+      "notes": "Item 1; alliance: joint development/commercialisation and equal development-cost sharing; included under adjudicator policy, not asserted to be an equity JV."
+    },
+    {
+      "id": "PFE-6",
+      "edge_type": "jv_partner",
+      "target_name": "BMS",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "Eliquis (apixaban) is part of the novel oral anticoagulant market and was jointly developed and is commercialized with BMS as an alternative treatment option to warfarin in appropriate patients. We fund between 50% and 60% of all development costs depending on the study, and profits and losses are shared equally except in certain countries where we commercialize Eliquis and pay a percentage of net sales to BMS.",
+      "importance": "medium",
+      "notes": "Item 1; alliance: co-development/commercialisation and shared profits/costs. BMS = Bristol-Myers Squibb Company."
+    },
+    {
+      "id": "PFE-7",
+      "edge_type": "jv_partner",
+      "target_name": "Astellas",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "Xtandi (enzalutamide) is an androgen receptor inhibitor that blocks multiple steps in the androgen receptor signaling pathway within tumor cells that is being developed and commercialized in collaboration with Astellas, which has exclusive commercialization rights for Xtandi outside the U.S. We share equally in the gross profits and losses related to U.S. net sales and also share equally all Xtandi commercialization costs attributable to the U.S. market, subject to certain exceptions.",
+      "importance": "medium",
+      "notes": "Item 1; alliance: joint development/commercialisation, equal US profits/costs. Also Padcev collaboration; one partner label, no duplicate."
+    },
+    {
+      "id": "PFE-8",
+      "edge_type": "jv_partner",
+      "target_name": "SMPS",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "Orgovyx (relugolix) is an oral gonadotropin-releasing hormone (GnRH) receptor antagonist for the treatment of adult patients with advanced prostate cancer that is being developed and commercialized with SMPS. The companies equally share profits and allowable expenses in the U.S. for Orgovyx.",
+      "importance": "medium",
+      "notes": "Item 1; alliance: shared development/commercialisation and profits; SMPS = Sumitomo Pharma Switzerland GMBH. Separate terminated relugolix-combination collaboration is not asserted."
+    },
+    {
+      "id": "PFE-9",
+      "edge_type": "jv_partner",
+      "target_name": "Takeda",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "Adcetris (brentuximab vedotin) is being developed and commercialized in collaboration with Takeda. Pfizer has commercialization rights for Adcetris in the U.S. and its territories and in Canada. Takeda has commercialization rights in the rest of the world and pays Pfizer a royalty based on a percentage of Takeda's net sales of Adcetris in its licensed territories, based on annual net sales tiers.",
+      "importance": "medium",
+      "notes": "Item 1; alliance: co-development/commercialisation, territorial rights and royalty sharing; included per adjudicator policy, not just a standalone licence."
+    },
+    {
+      "id": "PFE-10",
+      "edge_type": "jv_partner",
+      "target_name": "Genmab",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "Tivdak (tisotumab vedotin-tftv) is commercialized in collaboration with Genmab. Pfizer has co-promotion rights in the U.S. Outside the U.S., Genmab has the sole right to promote Tivdak for second-line plus mCC and has co-promotion rights for other indications in all territories except certain territories where Zai Lab Limited (Zai Lab) has commercialization rights (mainland China, Hong Kong, Macau, and Taiwan). Our profit sharing rights, royalty rights and expense obligations relating to Tivdak vary by jurisdiction.",
+      "importance": "medium",
+      "notes": "Item 1; alliance: co-promotion, profit-sharing rights and expense obligations; jv_partner base 0.4."
+    },
+    {
+      "id": "PFE-11",
+      "edge_type": "facility",
+      "target_name": "Belgium",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "As of December 31, 2025, Pfizer Global Supply (PGS) had responsibility for 36 manufacturing plants around the world, which manufacture products for our commercial divisions, including in Belgium, Germany, India, Ireland, Italy, Japan, Singapore and the U.S.",
+      "importance": "high",
+      "notes": "Item 2; existing manufacturing network; production facility base 0.7."
+    },
+    {
+      "id": "PFE-12",
+      "edge_type": "facility",
+      "target_name": "Germany",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "As of December 31, 2025, Pfizer Global Supply (PGS) had responsibility for 36 manufacturing plants around the world, which manufacture products for our commercial divisions, including in Belgium, Germany, India, Ireland, Italy, Japan, Singapore and the U.S.",
+      "importance": "high",
+      "notes": "Item 2; existing manufacturing network; production facility base 0.7."
+    },
+    {
+      "id": "PFE-13",
+      "edge_type": "facility",
+      "target_name": "India",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "As of December 31, 2025, Pfizer Global Supply (PGS) had responsibility for 36 manufacturing plants around the world, which manufacture products for our commercial divisions, including in Belgium, Germany, India, Ireland, Italy, Japan, Singapore and the U.S.",
+      "importance": "high",
+      "notes": "Item 2; existing manufacturing network; production facility base 0.7."
+    },
+    {
+      "id": "PFE-14",
+      "edge_type": "facility",
+      "target_name": "Ireland",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "As of December 31, 2025, Pfizer Global Supply (PGS) had responsibility for 36 manufacturing plants around the world, which manufacture products for our commercial divisions, including in Belgium, Germany, India, Ireland, Italy, Japan, Singapore and the U.S.",
+      "importance": "high",
+      "notes": "Item 2; existing manufacturing network; production facility base 0.7."
+    },
+    {
+      "id": "PFE-15",
+      "edge_type": "facility",
+      "target_name": "Italy",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "As of December 31, 2025, Pfizer Global Supply (PGS) had responsibility for 36 manufacturing plants around the world, which manufacture products for our commercial divisions, including in Belgium, Germany, India, Ireland, Italy, Japan, Singapore and the U.S.",
+      "importance": "high",
+      "notes": "Item 2; existing manufacturing network; production facility base 0.7."
+    },
+    {
+      "id": "PFE-16",
+      "edge_type": "facility",
+      "target_name": "Japan",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "As of December 31, 2025, Pfizer Global Supply (PGS) had responsibility for 36 manufacturing plants around the world, which manufacture products for our commercial divisions, including in Belgium, Germany, India, Ireland, Italy, Japan, Singapore and the U.S.",
+      "importance": "high",
+      "notes": "Item 2; existing manufacturing network; production facility base 0.7."
+    },
+    {
+      "id": "PFE-17",
+      "edge_type": "facility",
+      "target_name": "Singapore",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "As of December 31, 2025, Pfizer Global Supply (PGS) had responsibility for 36 manufacturing plants around the world, which manufacture products for our commercial divisions, including in Belgium, Germany, India, Ireland, Italy, Japan, Singapore and the U.S.",
+      "importance": "high",
+      "notes": "Item 2; existing manufacturing network; production facility base 0.7."
+    },
+    {
+      "id": "PFE-18",
+      "edge_type": "facility",
+      "target_name": "United States",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "As of December 31, 2025, Pfizer Global Supply (PGS) had responsibility for 36 manufacturing plants around the world, which manufacture products for our commercial divisions, including in Belgium, Germany, India, Ireland, Italy, Japan, Singapore and the U.S.",
+      "importance": "high",
+      "notes": "Item 2; existing manufacturing network; production facility base 0.7."
+    },
+    {
+      "id": "PFE-19",
+      "edge_type": "facility",
+      "target_name": "United Kingdom",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Outside of the U.S., we lease R&D labs in the U.K., India and Belgium.",
+      "importance": "low",
+      "notes": "Item 2; UK research labs, office/R&D base 0.3; IN/BE production already labelled."
+    }
+  ],
+  "negatives": [
+    {
+      "id": "PFE-N1",
+      "target_name": "numerous suppliers worldwide",
+      "kind": "generic",
+      "quote": "We procure raw materials essential to our business from numerous suppliers worldwide."
+    },
+    {
+      "id": "PFE-N2",
+      "target_name": "contract manufacturers",
+      "kind": "generic",
+      "quote": "In addition, we engage contract manufacturers, and, from time to time, our contract manufacturers may face difficulties or are unable to manufacture our products at the necessary quantity or quality levels."
+    },
+    {
+      "id": "PFE-N3",
+      "target_name": "relugolix combination tablet collaboration",
+      "kind": "negated",
+      "quote": "Separately, in December 2024, the companies terminated their collaboration with respect to the relugolix combination tablet."
+    },
+    {
+      "id": "PFE-N4",
+      "target_name": "health plans",
+      "kind": "generic",
+      "quote": "Private third-party payors, such as health plans, increasingly challenge pharmaceutical product pricing, which could result in lower prices, lower reimbursement rates for payors and a reduction in demand for our products, including denial of coverage of our products, if lower cost alternatives are available."
+    },
+    {
+      "id": "PFE-N5",
+      "target_name": "Zai Lab Limited",
+      "kind": "generic",
+      "quote": "Outside the U.S., Genmab has the sole right to promote Tivdak for second-line plus mCC and has co-promotion rights for other indications in all territories except certain territories where Zai Lab Limited (Zai Lab) has commercialization rights (mainland China, Hong Kong, Macau, and Taiwan)."
+    }
+  ]
+}

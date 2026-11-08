@@ -1,0 +1,285 @@
+{
+  "company": {
+    "name": "Ford Motor Company",
+    "cik": "0000037996",
+    "ticker": "F"
+  },
+  "filing": {
+    "form": "10-K",
+    "accession": "0000037996-26-000015",
+    "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+  },
+  "annotator": "Yousuf's Codex",
+  "relationships": [
+    {
+      "id": "F-1",
+      "edge_type": "key_input",
+      "target_name": "steel",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We purchase a wide variety of raw materials from numerous suppliers around the world for use in the production of, and development of technologies in, our vehicles. These materials include base metals (e.g., steel and aluminum), precious metals (e.g., palladium), energy (e.g., natural gas), plastics/resins (e.g., polypropylene), battery raw materials (e.g., lithium, cobalt, nickel), and rare earth minerals (e.g., magnets, neodymium, dysprosium).",
+      "importance": "high",
+      "notes": "Item 1 Raw Materials; explicit purchased input, key_input base 0.6; no specific sole source attributed."
+    },
+    {
+      "id": "F-2",
+      "edge_type": "key_input",
+      "target_name": "aluminum",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We purchase a wide variety of raw materials from numerous suppliers around the world for use in the production of, and development of technologies in, our vehicles. These materials include base metals (e.g., steel and aluminum), precious metals (e.g., palladium), energy (e.g., natural gas), plastics/resins (e.g., polypropylene), battery raw materials (e.g., lithium, cobalt, nickel), and rare earth minerals (e.g., magnets, neodymium, dysprosium).",
+      "importance": "high",
+      "notes": "Item 1 Raw Materials; explicit purchased input, key_input base 0.6; no specific sole source attributed."
+    },
+    {
+      "id": "F-3",
+      "edge_type": "key_input",
+      "target_name": "palladium",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We purchase a wide variety of raw materials from numerous suppliers around the world for use in the production of, and development of technologies in, our vehicles. These materials include base metals (e.g., steel and aluminum), precious metals (e.g., palladium), energy (e.g., natural gas), plastics/resins (e.g., polypropylene), battery raw materials (e.g., lithium, cobalt, nickel), and rare earth minerals (e.g., magnets, neodymium, dysprosium).",
+      "importance": "high",
+      "notes": "Item 1 Raw Materials; explicit purchased input, key_input base 0.6; no specific sole source attributed."
+    },
+    {
+      "id": "F-4",
+      "edge_type": "key_input",
+      "target_name": "natural gas",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We purchase a wide variety of raw materials from numerous suppliers around the world for use in the production of, and development of technologies in, our vehicles. These materials include base metals (e.g., steel and aluminum), precious metals (e.g., palladium), energy (e.g., natural gas), plastics/resins (e.g., polypropylene), battery raw materials (e.g., lithium, cobalt, nickel), and rare earth minerals (e.g., magnets, neodymium, dysprosium).",
+      "importance": "high",
+      "notes": "Item 1 Raw Materials; explicit purchased input, key_input base 0.6; no specific sole source attributed."
+    },
+    {
+      "id": "F-5",
+      "edge_type": "key_input",
+      "target_name": "polypropylene",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We purchase a wide variety of raw materials from numerous suppliers around the world for use in the production of, and development of technologies in, our vehicles. These materials include base metals (e.g., steel and aluminum), precious metals (e.g., palladium), energy (e.g., natural gas), plastics/resins (e.g., polypropylene), battery raw materials (e.g., lithium, cobalt, nickel), and rare earth minerals (e.g., magnets, neodymium, dysprosium).",
+      "importance": "high",
+      "notes": "Item 1 Raw Materials; explicit purchased input, key_input base 0.6; no specific sole source attributed."
+    },
+    {
+      "id": "F-6",
+      "edge_type": "key_input",
+      "target_name": "lithium",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We purchase a wide variety of raw materials from numerous suppliers around the world for use in the production of, and development of technologies in, our vehicles. These materials include base metals (e.g., steel and aluminum), precious metals (e.g., palladium), energy (e.g., natural gas), plastics/resins (e.g., polypropylene), battery raw materials (e.g., lithium, cobalt, nickel), and rare earth minerals (e.g., magnets, neodymium, dysprosium).",
+      "importance": "high",
+      "notes": "Item 1 Raw Materials; explicit purchased input, key_input base 0.6; no specific sole source attributed."
+    },
+    {
+      "id": "F-7",
+      "edge_type": "key_input",
+      "target_name": "cobalt",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We purchase a wide variety of raw materials from numerous suppliers around the world for use in the production of, and development of technologies in, our vehicles. These materials include base metals (e.g., steel and aluminum), precious metals (e.g., palladium), energy (e.g., natural gas), plastics/resins (e.g., polypropylene), battery raw materials (e.g., lithium, cobalt, nickel), and rare earth minerals (e.g., magnets, neodymium, dysprosium).",
+      "importance": "high",
+      "notes": "Item 1 Raw Materials; explicit purchased input, key_input base 0.6; no specific sole source attributed."
+    },
+    {
+      "id": "F-8",
+      "edge_type": "key_input",
+      "target_name": "nickel",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We purchase a wide variety of raw materials from numerous suppliers around the world for use in the production of, and development of technologies in, our vehicles. These materials include base metals (e.g., steel and aluminum), precious metals (e.g., palladium), energy (e.g., natural gas), plastics/resins (e.g., polypropylene), battery raw materials (e.g., lithium, cobalt, nickel), and rare earth minerals (e.g., magnets, neodymium, dysprosium).",
+      "importance": "high",
+      "notes": "Item 1 Raw Materials; explicit purchased input, key_input base 0.6; no specific sole source attributed."
+    },
+    {
+      "id": "F-9",
+      "edge_type": "key_input",
+      "target_name": "neodymium",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We purchase a wide variety of raw materials from numerous suppliers around the world for use in the production of, and development of technologies in, our vehicles. These materials include base metals (e.g., steel and aluminum), precious metals (e.g., palladium), energy (e.g., natural gas), plastics/resins (e.g., polypropylene), battery raw materials (e.g., lithium, cobalt, nickel), and rare earth minerals (e.g., magnets, neodymium, dysprosium).",
+      "importance": "high",
+      "notes": "Item 1 Raw Materials; explicit purchased input, key_input base 0.6; no specific sole source attributed."
+    },
+    {
+      "id": "F-10",
+      "edge_type": "key_input",
+      "target_name": "dysprosium",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We purchase a wide variety of raw materials from numerous suppliers around the world for use in the production of, and development of technologies in, our vehicles. These materials include base metals (e.g., steel and aluminum), precious metals (e.g., palladium), energy (e.g., natural gas), plastics/resins (e.g., polypropylene), battery raw materials (e.g., lithium, cobalt, nickel), and rare earth minerals (e.g., magnets, neodymium, dysprosium).",
+      "importance": "high",
+      "notes": "Item 1 Raw Materials; explicit purchased input, key_input base 0.6; no specific sole source attributed."
+    },
+    {
+      "id": "F-11",
+      "edge_type": "key_input",
+      "target_name": "magnets",
+      "target_kind": "component",
+      "direction": "depends_on_target",
+      "quote": "We purchase a wide variety of raw materials from numerous suppliers around the world for use in the production of, and development of technologies in, our vehicles. These materials include base metals (e.g., steel and aluminum), precious metals (e.g., palladium), energy (e.g., natural gas), plastics/resins (e.g., polypropylene), battery raw materials (e.g., lithium, cobalt, nickel), and rare earth minerals (e.g., magnets, neodymium, dysprosium).",
+      "importance": "high",
+      "notes": "Item 1; explicit present-tense disclosure."
+    },
+    {
+      "id": "F-12",
+      "edge_type": "jv_partner",
+      "target_name": "Diesel Song Cong One Member Limited Liability Company",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "Ford Vietnam Limited - a joint venture between Ford (75%) and Diesel Song Cong One Member Limited Liability Company (a subsidiary of the Vietnam Engine and Agricultural Machinery Corporation, which, in turn, is majority owned (87.43%) by the State of Vietnam represented by the Ministry of Industry and Trade) (25%).",
+      "importance": "medium",
+      "notes": "Item 2; explicit equity JV partner, base 0.4."
+    },
+    {
+      "id": "F-13",
+      "edge_type": "jv_partner",
+      "target_name": "Mazda",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "AutoAlliance (Thailand) Co., Ltd. (\"AAT\") - a 50/50 joint venture between Ford and Mazda that owns and operates a manufacturing plant in Rayong, Thailand. AAT produces Ford and Mazda products for domestic and export sales.",
+      "importance": "medium",
+      "notes": "Item 2; explicit 50/50 manufacturing JV."
+    },
+    {
+      "id": "F-14",
+      "edge_type": "jv_partner",
+      "target_name": "SK On Co., Ltd.",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "BlueOval SK, LLC (\"BOSK\") - a 50/50 joint venture among Ford, SK On Co., Ltd. (\"SK On\"), and SK Battery America, Inc. (\"SKBA,\" a wholly owned subsidiary of SK On) formed to build and operate an EV battery plant in Tennessee and two EV battery plants in Kentucky to supply batteries to Ford and Ford affiliates.",
+      "importance": "medium",
+      "notes": "Item 2; JV exists at filing date. Disposition agreed but closing expected in first half of 2026; not yet closed."
+    },
+    {
+      "id": "F-15",
+      "edge_type": "jv_partner",
+      "target_name": "SK Battery America, Inc.",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "BlueOval SK, LLC (\"BOSK\") - a 50/50 joint venture among Ford, SK On Co., Ltd. (\"SK On\"), and SK Battery America, Inc. (\"SKBA,\" a wholly owned subsidiary of SK On) formed to build and operate an EV battery plant in Tennessee and two EV battery plants in Kentucky to supply batteries to Ford and Ford affiliates.",
+      "importance": "medium",
+      "notes": "Item 2; JV exists at filing date. Disposition agreed but closing expected in first half of 2026; not yet closed."
+    },
+    {
+      "id": "F-16",
+      "edge_type": "jv_partner",
+      "target_name": "Chongqing Changan Automobile Co., Ltd.",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "Changan Ford Automobile Corporation, Ltd. (\"CAF\") - a 50/50 joint venture between Ford and Chongqing Changan Automobile Co., Ltd. (\"Changan\"). CAF operates four assembly plants, an engine plant, and a transmission plant in China where it produces and distributes a variety of Ford and Lincoln brand passenger vehicle models.",
+      "importance": "medium",
+      "notes": "Item 2; explicit 50/50 JV."
+    },
+    {
+      "id": "F-17",
+      "edge_type": "jv_partner",
+      "target_name": "Koc Group",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "Ford Otomotiv Sanayi Anonim Sirketi (\"Ford Otosan\") - a joint venture in Türkiye among Ford (41%), the Koc Group of Türkiye (41%), and public investors (18%) that is the sole supplier to us of the Transit, Transit Custom, and Transit Courier commercial vehicles and the Puma for Europe and the sole distributor of Ford vehicles in Türkiye.",
+      "importance": "medium",
+      "notes": "Item 2; partner in Ford Otosan. Sole-supplier cue applies to Otosan rather than Koc Group."
+    },
+    {
+      "id": "F-18",
+      "edge_type": "contract_manufacturer",
+      "target_name": "Ford Otosan",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "Ford Otomotiv Sanayi Anonim Sirketi (\"Ford Otosan\") - a joint venture in Türkiye among Ford (41%), the Koc Group of Türkiye (41%), and public investors (18%) that is the sole supplier to us of the Transit, Transit Custom, and Transit Courier commercial vehicles and the Puma for Europe and the sole distributor of Ford vehicles in Türkiye.",
+      "importance": "critical",
+      "notes": "Item 2; sole supplier of named commercial vehicles/Puma for Europe; sole-source override at least 0.95."
+    },
+    {
+      "id": "F-19",
+      "edge_type": "jv_partner",
+      "target_name": "Nanchang Jiangling Investment Co., Ltd.",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "JMC - a publicly-traded company in China with Ford (32%) and Nanchang Jiangling Investment Co., Ltd. (41%) as its controlling shareholders.",
+      "importance": "medium",
+      "notes": "Item 2; co-controlling shareholder in JMC."
+    },
+    {
+      "id": "F-20",
+      "edge_type": "facility",
+      "target_name": "United States",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "We own substantially all of our U.S. manufacturing and assembly facilities.",
+      "importance": "high",
+      "notes": "Item 2; US production facilities."
+    },
+    {
+      "id": "F-21",
+      "edge_type": "facility",
+      "target_name": "Vietnam",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Ford Vietnam Limited assembles and distributes a variety of Ford passenger and commercial vehicle models. The joint venture operates one plant in Vietnam.",
+      "importance": "high",
+      "notes": "Item 2; JV production plant (VN)."
+    },
+    {
+      "id": "F-22",
+      "edge_type": "facility",
+      "target_name": "Thailand",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "AutoAlliance (Thailand) Co., Ltd. (\"AAT\") - a 50/50 joint venture between Ford and Mazda that owns and operates a manufacturing plant in Rayong, Thailand. AAT produces Ford and Mazda products for domestic and export sales.",
+      "importance": "high",
+      "notes": "Item 2; JV manufacturing plant in Rayong (TH)."
+    },
+    {
+      "id": "F-23",
+      "edge_type": "facility",
+      "target_name": "China",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "CAF operates four assembly plants, an engine plant, and a transmission plant in China where it produces and distributes a variety of Ford and Lincoln brand passenger vehicle models.",
+      "importance": "high",
+      "notes": "Item 2; existing JV production plants (CN)."
+    },
+    {
+      "id": "F-24",
+      "edge_type": "facility",
+      "target_name": "Türkiye",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "The joint venture owns three plants, a parts distribution depot, and a research and development center in Türkiye, and a combined vehicle and engine plant in Romania.",
+      "importance": "high",
+      "notes": "Item 2; Ford Otosan production locations (TR, RO)."
+    },
+    {
+      "id": "F-25",
+      "edge_type": "facility",
+      "target_name": "Romania",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "The joint venture owns three plants, a parts distribution depot, and a research and development center in Türkiye, and a combined vehicle and engine plant in Romania.",
+      "importance": "high",
+      "notes": "Item 2; Ford Otosan production locations (TR, RO)."
+    }
+  ],
+  "negatives": [
+    {
+      "id": "F-N1",
+      "target_name": "single customer",
+      "kind": "negated",
+      "quote": "We do not depend on any single customer or a few customers to the extent that the loss of such customers would have a material adverse effect on our business."
+    },
+    {
+      "id": "F-N2",
+      "target_name": "single or limited number of suppliers",
+      "kind": "generic",
+      "quote": "Many components used in our products are available only from a single or limited number of suppliers and, therefore, cannot be re-sourced quickly or inexpensively to another supplier (due to long lead times, specialized tooling, rigorous validation requirements, and new contractual commitments that may be required by another supplier before ramping up to provide the components or materials, etc.)."
+    },
+    {
+      "id": "F-N3",
+      "target_name": "additional companies",
+      "kind": "hypothetical",
+      "quote": "We have invested in, formed strategic alliances or entered into commercial relationships with, and announced or formed joint ventures with a number of companies, and we may expand those relationships or enter into similar relationships with additional companies."
+    }
+  ]
+}

@@ -1,0 +1,191 @@
+{
+  "company": {
+    "name": "The Boeing Company",
+    "cik": "0000012927",
+    "ticker": "BA"
+  },
+  "filing": {
+    "form": "10-K",
+    "accession": "0001628280-26-004357",
+    "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+  },
+  "annotator": "Yousuf's Codex",
+  "relationships": [
+    {
+      "id": "BA-1",
+      "edge_type": "key_input",
+      "target_name": "aluminum",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "The most important raw materials required for our aerospace products are aluminum (sheet, plate, forgings and extrusions), titanium (sheet, plate, forgings and extrusions) and composites (including carbon and boron).",
+      "importance": "high",
+      "notes": "Item 1 Raw Materials; explicitly required inputs, not individually identified as sole sourced."
+    },
+    {
+      "id": "BA-2",
+      "edge_type": "key_input",
+      "target_name": "titanium",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "The most important raw materials required for our aerospace products are aluminum (sheet, plate, forgings and extrusions), titanium (sheet, plate, forgings and extrusions) and composites (including carbon and boron).",
+      "importance": "high",
+      "notes": "Item 1 Raw Materials; explicitly required inputs, not individually identified as sole sourced."
+    },
+    {
+      "id": "BA-3",
+      "edge_type": "key_input",
+      "target_name": "composites",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "The most important raw materials required for our aerospace products are aluminum (sheet, plate, forgings and extrusions), titanium (sheet, plate, forgings and extrusions) and composites (including carbon and boron).",
+      "importance": "high",
+      "notes": "Item 1 Raw Materials; explicitly required inputs, not individually identified as sole sourced."
+    },
+    {
+      "id": "BA-4",
+      "edge_type": "key_input",
+      "target_name": "carbon",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "The most important raw materials required for our aerospace products are aluminum (sheet, plate, forgings and extrusions), titanium (sheet, plate, forgings and extrusions) and composites (including carbon and boron).",
+      "importance": "high",
+      "notes": "Item 1 Raw Materials; explicitly required inputs, not individually identified as sole sourced."
+    },
+    {
+      "id": "BA-5",
+      "edge_type": "key_input",
+      "target_name": "boron",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "The most important raw materials required for our aerospace products are aluminum (sheet, plate, forgings and extrusions), titanium (sheet, plate, forgings and extrusions) and composites (including carbon and boron).",
+      "importance": "high",
+      "notes": "Item 1 Raw Materials; explicitly required inputs, not individually identified as sole sourced."
+    },
+    {
+      "id": "BA-6",
+      "edge_type": "key_input",
+      "target_name": "electricity",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We are also dependent on the availability of energy sources, such as electricity, at affordable prices.",
+      "importance": "high",
+      "notes": "Item 1; explicitly dependent energy input."
+    },
+    {
+      "id": "BA-7",
+      "edge_type": "customer",
+      "target_name": "U.S. government",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "In 2025, 35% of our revenues were earned pursuant to U.S. government contracts, which include FMS.",
+      "importance": "critical",
+      "notes": "Item 1A; government customer, target consumes Boeing output; 35% includes foreign military sales, customer base 0.9."
+    },
+    {
+      "id": "BA-8",
+      "edge_type": "facility",
+      "target_name": "United States",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "We had approximately 111 million square feet of floor space on December 31, 2025 for manufacturing, warehousing, engineering, administration and other productive uses, of which approximately 86% was located in the United States.",
+      "importance": "high",
+      "notes": "Item 2; manufacturing plus other productive uses; US footprint corroborated by production locations."
+    },
+    {
+      "id": "BA-9",
+      "edge_type": "facility",
+      "target_name": "China",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Commercial Airplanes - Greater Seattle, WA; Wichita, KS; China; Greater Charleston, SC; Greater Los Angeles, CA; Tulsa, OK; Greater Portland, OR; Greater Salt Lake City, UT; Australia; Canada; Malaysia; and Mexico",
+      "importance": "high",
+      "notes": "Item 2; commercial-airplane operating/production locations; country not individual site."
+    },
+    {
+      "id": "BA-10",
+      "edge_type": "facility",
+      "target_name": "Australia",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Commercial Airplanes - Greater Seattle, WA; Wichita, KS; China; Greater Charleston, SC; Greater Los Angeles, CA; Tulsa, OK; Greater Portland, OR; Greater Salt Lake City, UT; Australia; Canada; Malaysia; and Mexico",
+      "importance": "high",
+      "notes": "Item 2; commercial-airplane operating/production locations; country not individual site."
+    },
+    {
+      "id": "BA-11",
+      "edge_type": "facility",
+      "target_name": "Canada",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Commercial Airplanes - Greater Seattle, WA; Wichita, KS; China; Greater Charleston, SC; Greater Los Angeles, CA; Tulsa, OK; Greater Portland, OR; Greater Salt Lake City, UT; Australia; Canada; Malaysia; and Mexico",
+      "importance": "high",
+      "notes": "Item 2; commercial-airplane operating/production locations; country not individual site."
+    },
+    {
+      "id": "BA-12",
+      "edge_type": "facility",
+      "target_name": "Malaysia",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Commercial Airplanes - Greater Seattle, WA; Wichita, KS; China; Greater Charleston, SC; Greater Los Angeles, CA; Tulsa, OK; Greater Portland, OR; Greater Salt Lake City, UT; Australia; Canada; Malaysia; and Mexico",
+      "importance": "high",
+      "notes": "Item 2; commercial-airplane operating/production locations; country not individual site."
+    },
+    {
+      "id": "BA-13",
+      "edge_type": "facility",
+      "target_name": "Mexico",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Commercial Airplanes - Greater Seattle, WA; Wichita, KS; China; Greater Charleston, SC; Greater Los Angeles, CA; Tulsa, OK; Greater Portland, OR; Greater Salt Lake City, UT; Australia; Canada; Malaysia; and Mexico",
+      "importance": "high",
+      "notes": "Item 2; commercial-airplane operating/production locations; country not individual site."
+    },
+    {
+      "id": "BA-14",
+      "edge_type": "facility",
+      "target_name": "Great Britain",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Other - Great Britain; India; Greater Los Angeles, CA; and Greater Washington, DC",
+      "importance": "low",
+      "notes": "Item 2; Other sites are corporate offices, R&D and common internal services; office/R&D base 0.3."
+    },
+    {
+      "id": "BA-15",
+      "edge_type": "facility",
+      "target_name": "India",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Other - Great Britain; India; Greater Los Angeles, CA; and Greater Washington, DC",
+      "importance": "low",
+      "notes": "Item 2; Other sites are corporate offices, R&D and common internal services; office/R&D base 0.3."
+    }
+  ],
+  "negatives": [
+    {
+      "id": "BA-N1",
+      "target_name": "Airbus",
+      "kind": "competitor",
+      "quote": "BCA faces aggressive international competitors who are intent on increasing their market share, such as Airbus and entrants from China."
+    },
+    {
+      "id": "BA-N2",
+      "target_name": "Lockheed Martin Corporation",
+      "kind": "competitor",
+      "quote": "BDS faces strong competition primarily from General Dynamics Corporation, Lockheed Martin Corporation, Northrop Grumman Corporation, RTX Corporation and SpaceX."
+    },
+    {
+      "id": "BA-N3",
+      "target_name": "SpaceX",
+      "kind": "competitor",
+      "quote": "BDS faces strong competition primarily from General Dynamics Corporation, Lockheed Martin Corporation, Northrop Grumman Corporation, RTX Corporation and SpaceX."
+    },
+    {
+      "id": "BA-N4",
+      "target_name": "sole-source suppliers",
+      "kind": "generic",
+      "quote": "We continue to work with a small number of sole-source suppliers to ensure continuity of supply for certain items."
+    }
+  ]
+}

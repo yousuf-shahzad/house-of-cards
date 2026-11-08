@@ -1,0 +1,265 @@
+{
+  "company": {
+    "name": "General Motors Company",
+    "cik": "0001467858",
+    "ticker": "GM"
+  },
+  "filing": {
+    "form": "10-K",
+    "accession": "0001467858-26-000013",
+    "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+  },
+  "annotator": "Yousuf's Codex",
+  "relationships": [
+    {
+      "id": "GM-1",
+      "edge_type": "key_input",
+      "target_name": "steel",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We purchase a wide variety of raw materials, systems, components, parts, supplies, semiconductors, energy, freight, transportation, and other services from numerous suppliers to manufacture our products. The raw materials primarily include steel, aluminum, resins, copper, lead, and precious metals.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "GM-2",
+      "edge_type": "key_input",
+      "target_name": "aluminum",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We purchase a wide variety of raw materials, systems, components, parts, supplies, semiconductors, energy, freight, transportation, and other services from numerous suppliers to manufacture our products. The raw materials primarily include steel, aluminum, resins, copper, lead, and precious metals.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "GM-3",
+      "edge_type": "key_input",
+      "target_name": "resins",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We purchase a wide variety of raw materials, systems, components, parts, supplies, semiconductors, energy, freight, transportation, and other services from numerous suppliers to manufacture our products. The raw materials primarily include steel, aluminum, resins, copper, lead, and precious metals.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "GM-4",
+      "edge_type": "key_input",
+      "target_name": "copper",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We purchase a wide variety of raw materials, systems, components, parts, supplies, semiconductors, energy, freight, transportation, and other services from numerous suppliers to manufacture our products. The raw materials primarily include steel, aluminum, resins, copper, lead, and precious metals.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "GM-5",
+      "edge_type": "key_input",
+      "target_name": "lead",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We purchase a wide variety of raw materials, systems, components, parts, supplies, semiconductors, energy, freight, transportation, and other services from numerous suppliers to manufacture our products. The raw materials primarily include steel, aluminum, resins, copper, lead, and precious metals.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "GM-6",
+      "edge_type": "key_input",
+      "target_name": "precious metals",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We purchase a wide variety of raw materials, systems, components, parts, supplies, semiconductors, energy, freight, transportation, and other services from numerous suppliers to manufacture our products. The raw materials primarily include steel, aluminum, resins, copper, lead, and precious metals.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "GM-7",
+      "edge_type": "key_input",
+      "target_name": "semiconductors",
+      "target_kind": "component",
+      "direction": "depends_on_target",
+      "quote": "We purchase a wide variety of raw materials, systems, components, parts, supplies, semiconductors, energy, freight, transportation, and other services from numerous suppliers to manufacture our products. The raw materials primarily include steel, aluminum, resins, copper, lead, and precious metals.",
+      "importance": "high",
+      "notes": "Item 1; explicit present-tense disclosure."
+    },
+    {
+      "id": "GM-8",
+      "edge_type": "key_input",
+      "target_name": "lithium",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "This includes securing supply through offtake agreements for raw materials and derivatives thereof, such as lithium, cathode active material, manganese, synthetic and natural graphite, nickel, cobalt, rare earth elements, and permanent motor magnets.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "GM-9",
+      "edge_type": "key_input",
+      "target_name": "cathode active material",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "This includes securing supply through offtake agreements for raw materials and derivatives thereof, such as lithium, cathode active material, manganese, synthetic and natural graphite, nickel, cobalt, rare earth elements, and permanent motor magnets.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "GM-10",
+      "edge_type": "key_input",
+      "target_name": "manganese",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "This includes securing supply through offtake agreements for raw materials and derivatives thereof, such as lithium, cathode active material, manganese, synthetic and natural graphite, nickel, cobalt, rare earth elements, and permanent motor magnets.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "GM-11",
+      "edge_type": "key_input",
+      "target_name": "synthetic and natural graphite",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "This includes securing supply through offtake agreements for raw materials and derivatives thereof, such as lithium, cathode active material, manganese, synthetic and natural graphite, nickel, cobalt, rare earth elements, and permanent motor magnets.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "GM-12",
+      "edge_type": "key_input",
+      "target_name": "nickel",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "This includes securing supply through offtake agreements for raw materials and derivatives thereof, such as lithium, cathode active material, manganese, synthetic and natural graphite, nickel, cobalt, rare earth elements, and permanent motor magnets.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "GM-13",
+      "edge_type": "key_input",
+      "target_name": "cobalt",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "This includes securing supply through offtake agreements for raw materials and derivatives thereof, such as lithium, cathode active material, manganese, synthetic and natural graphite, nickel, cobalt, rare earth elements, and permanent motor magnets.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "GM-14",
+      "edge_type": "key_input",
+      "target_name": "rare earth elements",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "This includes securing supply through offtake agreements for raw materials and derivatives thereof, such as lithium, cathode active material, manganese, synthetic and natural graphite, nickel, cobalt, rare earth elements, and permanent motor magnets.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "GM-15",
+      "edge_type": "key_input",
+      "target_name": "permanent motor magnets",
+      "target_kind": "component",
+      "direction": "depends_on_target",
+      "quote": "This includes securing supply through offtake agreements for raw materials and derivatives thereof, such as lithium, cathode active material, manganese, synthetic and natural graphite, nickel, cobalt, rare earth elements, and permanent motor magnets.",
+      "importance": "high",
+      "notes": "Item 1; explicit present-tense disclosure."
+    },
+    {
+      "id": "GM-16",
+      "edge_type": "jv_partner",
+      "target_name": "LG Energy Solution",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "Our EV portfolio takes advantage of integrated supply chain development, including battery cell production from Ultium Cells Holdings LLC (a joint venture with LG Energy Solution) in plants in Warren, Ohio and Spring Hill, Tennessee.",
+      "importance": "medium",
+      "notes": "Item 1; explicit JV co-owner, not itself asserted to be a sole source."
+    },
+    {
+      "id": "GM-17",
+      "edge_type": "supplier",
+      "target_name": "Ultium Cells Holdings LLC",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "Our EV portfolio takes advantage of integrated supply chain development, including battery cell production from Ultium Cells Holdings LLC (a joint venture with LG Energy Solution) in plants in Warren, Ohio and Spring Hill, Tennessee.",
+      "importance": "medium",
+      "notes": "Item 1; JV supplies battery cells; supplier base 0.5."
+    },
+    {
+      "id": "GM-18",
+      "edge_type": "facility",
+      "target_name": "United States",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "We have a network of 50 U.S. manufacturing plants and parts facilities in 19 states, which includes 11 vehicle assembly plants.",
+      "importance": "high",
+      "notes": "Item 1; existing US production footprint."
+    },
+    {
+      "id": "GM-19",
+      "edge_type": "facility",
+      "target_name": "Canada",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "The major facilities outside the U.S., which are principally vehicle manufacturing and assembly operations, are located in Canada and Mexico within our GMNA segment, and Brazil, China, and South Korea within our GMI segment.",
+      "importance": "high",
+      "notes": "Item 2; production/assembly countries explicitly listed."
+    },
+    {
+      "id": "GM-20",
+      "edge_type": "facility",
+      "target_name": "Mexico",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "The major facilities outside the U.S., which are principally vehicle manufacturing and assembly operations, are located in Canada and Mexico within our GMNA segment, and Brazil, China, and South Korea within our GMI segment.",
+      "importance": "high",
+      "notes": "Item 2; production/assembly countries explicitly listed."
+    },
+    {
+      "id": "GM-21",
+      "edge_type": "facility",
+      "target_name": "Brazil",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "The major facilities outside the U.S., which are principally vehicle manufacturing and assembly operations, are located in Canada and Mexico within our GMNA segment, and Brazil, China, and South Korea within our GMI segment.",
+      "importance": "high",
+      "notes": "Item 2; production/assembly countries explicitly listed."
+    },
+    {
+      "id": "GM-22",
+      "edge_type": "facility",
+      "target_name": "China",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "The major facilities outside the U.S., which are principally vehicle manufacturing and assembly operations, are located in Canada and Mexico within our GMNA segment, and Brazil, China, and South Korea within our GMI segment.",
+      "importance": "high",
+      "notes": "Item 2; production/assembly countries explicitly listed."
+    },
+    {
+      "id": "GM-23",
+      "edge_type": "facility",
+      "target_name": "South Korea",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "The major facilities outside the U.S., which are principally vehicle manufacturing and assembly operations, are located in Canada and Mexico within our GMNA segment, and Brazil, China, and South Korea within our GMI segment.",
+      "importance": "high",
+      "notes": "Item 2; production/assembly countries explicitly listed."
+    }
+  ],
+  "negatives": [
+    {
+      "id": "GM-N1",
+      "target_name": "start-ups and other non-traditional competitors",
+      "kind": "competitor",
+      "quote": "In addition to our traditional competitors, we must also be responsive to the entrance of start-ups and other non-traditional competitors in the automotive industry, such as software and ridesharing services supported by large technology companies."
+    },
+    {
+      "id": "GM-N2",
+      "target_name": "two largest suppliers overall",
+      "kind": "generic",
+      "quote": "Combined purchases from our two largest suppliers overall were approximately 12% of our total purchases in the year ended December 31, 2025, and approximately 11% of our total purchases in each of the years ended December 31, 2024 and 2023."
+    },
+    {
+      "id": "GM-N3",
+      "target_name": "Iran",
+      "kind": "generic",
+      "quote": "Cuba, Iran, North Korea, and Sudan have been subject to broad economic sanctions. Accordingly, these countries are excluded from industry sales data and corresponding calculation of market share."
+    }
+  ]
+}

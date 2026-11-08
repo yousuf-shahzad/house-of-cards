@@ -1,0 +1,221 @@
+{
+  "company": {
+    "name": "Corning Incorporated",
+    "cik": "0000024741",
+    "ticker": "GLW"
+  },
+  "filing": {
+    "form": "10-K",
+    "accession": "0000024741-26-000124",
+    "url": "https://www.sec.gov/Archives/edgar/data/24741/000002474126000124/glw-20251231.htm"
+  },
+  "annotator": "Yousuf's Codex",
+  "relationships": [
+    {
+      "id": "GLW-1",
+      "edge_type": "facility",
+      "target_name": "United States",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Our optical fiber manufacturing facilities are in North Carolina, China, India and Poland.",
+      "importance": "high",
+      "notes": "Item 1; US production in North Carolina."
+    },
+    {
+      "id": "GLW-2",
+      "edge_type": "facility",
+      "target_name": "China",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Our optical fiber manufacturing facilities are in North Carolina, China, India and Poland.",
+      "importance": "high",
+      "notes": "Item 1; explicitly manufacturing countries."
+    },
+    {
+      "id": "GLW-3",
+      "edge_type": "facility",
+      "target_name": "India",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Our optical fiber manufacturing facilities are in North Carolina, China, India and Poland.",
+      "importance": "high",
+      "notes": "Item 1; explicitly manufacturing countries."
+    },
+    {
+      "id": "GLW-4",
+      "edge_type": "facility",
+      "target_name": "Poland",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Our optical fiber manufacturing facilities are in North Carolina, China, India and Poland.",
+      "importance": "high",
+      "notes": "Item 1; explicitly manufacturing countries."
+    },
+    {
+      "id": "GLW-5",
+      "edge_type": "facility",
+      "target_name": "Mexico",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Our manufacturing operations for hardware and equipment products are in Texas, Mexico, Germany, Poland and China.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "GLW-6",
+      "edge_type": "facility",
+      "target_name": "Germany",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Our manufacturing operations for hardware and equipment products are in Texas, Mexico, Germany, Poland and China.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "GLW-7",
+      "edge_type": "facility",
+      "target_name": "South Korea",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "We have display glass manufacturing operations in China, South Korea and Taiwan, and service our glass customers in all regions, utilizing our manufacturing facilities throughout Asia.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "GLW-8",
+      "edge_type": "facility",
+      "target_name": "Taiwan",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "We have display glass manufacturing operations in China, South Korea and Taiwan, and service our glass customers in all regions, utilizing our manufacturing facilities throughout Asia.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "GLW-9",
+      "edge_type": "facility",
+      "target_name": "France",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "We manufacture these products in California, Illinois, Maine, Massachusetts, New York, North Carolina, Utah, Virginia, China, France, Mexico, Brazil and Poland.",
+      "importance": "high",
+      "notes": "Item 1 Life Sciences; explicit manufacturing footprint."
+    },
+    {
+      "id": "GLW-10",
+      "edge_type": "facility",
+      "target_name": "Brazil",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "We manufacture these products in California, Illinois, Maine, Massachusetts, New York, North Carolina, Utah, Virginia, China, France, Mexico, Brazil and Poland.",
+      "importance": "high",
+      "notes": "Item 1 Life Sciences; explicit manufacturing footprint."
+    },
+    {
+      "id": "GLW-11",
+      "edge_type": "key_input",
+      "target_name": "industrial water",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "Our manufacturing processes and products require access to uninterrupted power sources, significant quantities of industrial water, certain precious metals and various batch materials.",
+      "importance": "high",
+      "notes": "Item 1; explicit present-tense disclosure."
+    },
+    {
+      "id": "GLW-12",
+      "edge_type": "key_input",
+      "target_name": "ores",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "Availability of resources, such as ores, minerals, polymers, lithium, helium and processed chemicals, required in our manufacturing operations appear to be adequate.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "GLW-13",
+      "edge_type": "key_input",
+      "target_name": "minerals",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "Availability of resources, such as ores, minerals, polymers, lithium, helium and processed chemicals, required in our manufacturing operations appear to be adequate.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "GLW-14",
+      "edge_type": "key_input",
+      "target_name": "polymers",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "Availability of resources, such as ores, minerals, polymers, lithium, helium and processed chemicals, required in our manufacturing operations appear to be adequate.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "GLW-15",
+      "edge_type": "key_input",
+      "target_name": "lithium",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "Availability of resources, such as ores, minerals, polymers, lithium, helium and processed chemicals, required in our manufacturing operations appear to be adequate.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "GLW-16",
+      "edge_type": "key_input",
+      "target_name": "helium",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "Availability of resources, such as ores, minerals, polymers, lithium, helium and processed chemicals, required in our manufacturing operations appear to be adequate.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "GLW-17",
+      "edge_type": "key_input",
+      "target_name": "processed chemicals",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "Availability of resources, such as ores, minerals, polymers, lithium, helium and processed chemicals, required in our manufacturing operations appear to be adequate.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "GLW-18",
+      "edge_type": "key_input",
+      "target_name": "precious metals",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We have adequate programs to ensure a reliable supply of raw and batch materials, as well as precious metals which are used in our production processes.",
+      "importance": "high",
+      "notes": "Item 1; explicit present-tense disclosure."
+    }
+  ],
+  "negatives": [
+    {
+      "id": "GLW-N1",
+      "target_name": "Amphenol",
+      "kind": "competitor",
+      "quote": "Our principal competitors include Amphenol, Fujikura and their subsidiary America Fujikura Ltd., Sumitomo and Prysmian Group S.p.A."
+    },
+    {
+      "id": "GLW-N2",
+      "target_name": "AGC Inc.",
+      "kind": "competitor",
+      "quote": "Our principal competitors include AGC Inc. and Nippon Electric Glass Co., Ltd."
+    },
+    {
+      "id": "GLW-N3",
+      "target_name": "Nippon Electric Glass Co., Ltd.",
+      "kind": "competitor",
+      "quote": "Our principal competitors include AGC Inc. and Nippon Electric Glass Co., Ltd."
+    },
+    {
+      "id": "GLW-N4",
+      "target_name": "limited number of suppliers",
+      "kind": "generic",
+      "quote": "Certain key materials and proprietary equipment used in the manufacturing of products are currently sole-sourced or available only from a limited number of suppliers."
+    }
+  ]
+}
