@@ -14,11 +14,13 @@ import {
 export type ExperienceMode = "beginner" | "expert" | null;
 
 export const TOTAL_GUIDE_STEPS = 5;
+/** Product choice: use "#/guide" here to launch the five-step guide instead. */
+export const BEGINNER_START_PAGE: string = "#/portfolio";
 
 export interface ExperienceContextValue {
   /** Current mode in memory only (`null` shows the launch dialog on every load). */
   mode: ExperienceMode;
-  /** Switch between `"beginner"` (`#/guide`) and `"expert"` (full app). */
+  /** Switch detail level while keeping the current workspace page. */
   setMode: (nextMode: "beginner" | "expert", targetHash?: string) => void;
   /** Convenience booleans. */
   isBeginner: boolean;
@@ -31,7 +33,7 @@ export interface ExperienceContextValue {
   totalSteps: number;
   /** Switch to Full view on a specific expert route (e.g. `"#/compare"`). */
   openExpertPage: (hash?: string) => void;
-  /** Switch to Simple view on `#/guide`, optionally jumping to a 1-based step. */
+  /** Open the optional five-step guide, optionally jumping to a 1-based step. */
   openBeginnerGuide: (step?: number) => void;
 }
 
@@ -52,6 +54,7 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<ExperienceMode>(null);
   const [step, setStepState] = useState<number>(1);
   const lastExpertHashRef = useRef<string>("#/portfolio");
+  const previousHashRef = useRef(window.location.hash);
 
   const setStep = useCallback((nextStep: number) => {
     setStepState(clampStep(nextStep));
@@ -63,18 +66,11 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
       lastExpertHashRef.current = currentHash;
     }
     setModeState(nextMode);
-    if (nextMode === "beginner") {
-      const nextHash = targetHash ?? "#/guide";
-      if (window.location.hash !== nextHash) {
-        window.location.hash = nextHash;
-      }
-    } else {
-      const nextHash =
-        targetHash ??
-        (!currentHash || isGuideHash(currentHash) ? lastExpertHashRef.current : currentHash);
-      if (window.location.hash !== nextHash) {
-        window.location.hash = nextHash;
-      }
+    const nextHash = targetHash ??
+      (!currentHash || isGuideHash(currentHash) ? lastExpertHashRef.current : currentHash);
+    previousHashRef.current = nextHash;
+    if (window.location.hash !== nextHash) {
+      window.location.hash = nextHash;
     }
   }, []);
 
@@ -95,12 +91,14 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
     [setMode, setStep],
   );
 
-  // Sync mode when a step link navigates directly to an expert route (e.g. `#/compare`, `#/exposures`)
-  // or when navigating back to `#/guide`.
+  // Ordinary navigation preserves the detail level. Legacy guide links to the full
+  // pages still open Full view; the guide's openInFullView helper changes only the hash.
   useEffect(() => {
     const onHashChange = () => {
       const currentHash = window.location.hash;
       if (!currentHash) return;
+      const wasGuide = isGuideHash(previousHashRef.current);
+      previousHashRef.current = currentHash;
       if (isGuideHash(currentHash)) {
         const match = currentHash.match(/[?&]step=(\d+)/);
         if (match) {
@@ -109,7 +107,7 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
         setModeState((prev) => (prev === null ? prev : "beginner"));
       } else {
         lastExpertHashRef.current = currentHash;
-        setModeState((prev) => (prev === null ? prev : "expert"));
+        if (wasGuide) setModeState((prev) => (prev === null ? prev : "expert"));
       }
     };
     window.addEventListener("hashchange", onHashChange);
