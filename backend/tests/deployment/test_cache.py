@@ -76,3 +76,11 @@ def test_corrupt_shared_entries_are_cache_misses(tmp_path, payload):
     cache = BlobCache(tmp_path, objects)
     objects.put(cache._key("synthetic", "wanted"), payload)
     assert cache.get("synthetic", "wanted") is None
+
+
+def test_local_only_http_namespaces_do_not_spend_shared_read_quota(tmp_path, monkeypatch):
+    objects = MemoryStore()
+    monkeypatch.setattr(objects, "get", lambda key: pytest.fail("unnecessary shared lookup"))
+    cache = BlobCache(tmp_path, objects)
+    assert cache.get("http/gemini", "synthetic") is None
+    assert cache.get("http/tickerinside", "https://tickerinside.com/api/v1/sec/zz.json") is None

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import time
 import uuid
 from typing import Protocol
@@ -39,7 +40,8 @@ class QueuePublisher:
         from vercel.queue.sync import QueueClient
 
         try:
-            QueueClient().send(topic, payload, idempotency_key=key, retention=3600)
+            deployment = os.getenv("VERCEL_DEPLOYMENT_ID", "local")
+            QueueClient().send(topic, payload, idempotency_key=f"{deployment}:{key}", retention=3600)
         except DuplicateIdempotencyKeyError:
             pass
 

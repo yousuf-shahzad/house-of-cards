@@ -249,6 +249,7 @@ def test_research_can_read_finished_dependencies_from_a_fresh_instance(rig):
 def test_installed_sdk_can_discover_private_queue_subscribers():
     queue = pytest.importorskip("vercel.queue")
 
+    import hoc.deployment.progress
     import hoc.deployment.worker  # noqa: F401 - import performs SDK build-time validation
 
     subscriptions = {s.topic: s for s in queue.get_subscriptions()}

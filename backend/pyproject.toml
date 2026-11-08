@@ -24,6 +24,9 @@ entrypoint = "vercel_app:app"
 [[tool.vercel.subscribers]]
 entrypoint = "hoc.deployment.worker"
 
+[[tool.vercel.subscribers]]
+entrypoint = "hoc.deployment.progress"
+
 [dependency-groups]
 dev = [
     "pytest>=8",

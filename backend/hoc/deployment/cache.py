@@ -32,6 +32,8 @@ class BlobCache:
         cached = self.local.get(namespace, key)
         if cached is not None:
             return cached
+        if namespace == "http/gemini" or (namespace == "http/tickerinside" and "/api/v1/sec/" in key):
+            return None
         found = self.store.get(self._key(namespace, key))
         if found is None:
             return None

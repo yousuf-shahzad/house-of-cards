@@ -35,13 +35,16 @@ subclass swaps scheduling and storage, preserving the public API contracts:
    filing extraction and bounded company research before returning. There is no
    detached research thread after the function response.
 3. Company checkpoints are independent immutable objects. Retried completed tasks
-   reuse them. A serialized progress consumer updates the shared polling snapshot.
+   reuse them. A serialized progress consumer in its own private function updates
+   the polling snapshot without waiting for the model worker's concurrency slots.
 4. A final task resolves/merges links, scores them, computes the existing metrics
    and coverage, and runs synthesis. Additional research and AI change ideas also
    run as queued tasks.
 5. A fresh API instance can read progress and finished results from Blob. A stale
    run becomes an explicit error after 30 minutes; retry creates a new generation
-   and reuses underlying extraction caches. Queue delivery is at least once,
+   and reuses underlying extraction caches. Queue publication keys include the
+   deployment ID, letting a new deployment resume an interrupted dispatch.
+   Queue delivery is at least once,
    rather than an exactly-once execution guarantee.
 
 The Python service **must use `entrypoint: pyproject.toml`**. This makes the Python

@@ -34,6 +34,21 @@ from hoc.jobs import (
 log = logging.getLogger(__name__)
 
 
+class ReportingJobs(DependencyJobs):
+    """Publish meaningful company transitions without changing the local runner."""
+
+    def __init__(self, *args, report, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.report = report
+
+    def _set_company(self, job, index, **changes):
+        previous = job.companies[index].status
+        super()._set_company(job, index, **changes)
+        current = job.companies[index]
+        if current.status != previous and current.status in ("fetching", "extracting", "researching"):
+            self.report(current)
+
+
 class Worker:
     def __init__(self, service, store: JobStore) -> None:
         self.service, self.store = service, store
@@ -96,12 +111,18 @@ class Worker:
         # All work below is awaited by the queue invocation. InlineExecutor here
         # supplies the existing helper seam; it never launches a detached job.
         inline = InlineExecutor()
-        local = DependencyJobs(
+
+        def report(current):
+            self.store.objects.put(progress_key, encode({"company": current.model_dump(mode="json")}))
+            self.store.progress(record)
+
+        local = ReportingJobs(
             lambda _: analysis,
             self.service.dependency_pipeline,
             runner=inline,
             workers=inline,
             research_workers=inline,
+            report=report,
         )
         job = _Job(
             job_id=record["job_id"],
@@ -160,7 +181,13 @@ class Worker:
                 progress_done=done,
                 progress_total=total,
                 research=findings,
-                phase="synthesising" if done == total else "reading",
+                phase=(
+                    "synthesising"
+                    if done == total
+                    else "researching"
+                    if any(c["status"] == "researching" for c in companies)
+                    else "reading"
+                ),
                 steps_done=done,
                 steps_total=total + 1,
             ).model_dump(mode="json")
