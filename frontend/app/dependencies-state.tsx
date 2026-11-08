@@ -21,9 +21,11 @@ import {
 } from "react";
 import { api, ApiError, type AllocationInput } from "@/api/client";
 import {
+  DEFAULT_RESEARCH_ITEMS,
   DEFAULT_TOP_N,
   type AnalysisResponse,
   type DependencyJob,
+  type ResearchJob,
 } from "@/api/types";
 import { useAnalysis } from "./analysis";
 import { targetNodeIdForEdge } from "./pages/dependencies/graph";
@@ -32,6 +34,7 @@ export const POLL_INTERVAL_MS = 1200;
 export const RECONNECT_WINDOW_MS = 30_000;
 
 export type DependenciesRunStatus = "idle" | "starting" | "polling" | "done" | "error";
+export type ResearchRunStatus = "idle" | "starting" | "polling" | "done" | "error";
 
 export interface DependenciesSnapshot {
   status: DependenciesRunStatus;
@@ -45,6 +48,10 @@ export interface DependenciesSnapshot {
   selectedEdgeId: string | null;
   selectedNodeId: string | null;
   drawerOpen: boolean;
+  /** v3 A-RES: agentic research loop state. */
+  researchStatus: ResearchRunStatus;
+  researchJob: ResearchJob | null;
+  researchError: ApiError | null;
 }
 
 export interface DependenciesContextValue extends DependenciesSnapshot {
@@ -52,6 +59,8 @@ export interface DependenciesContextValue extends DependenciesSnapshot {
   stale: boolean;
   /** Starts or re-runs dependency analysis for the current `analysis` holdings. */
   runDependencies: (topN?: number) => void;
+  /** Starts or re-runs the v3 agentic research loop (A-RES) over uncertain findings. */
+  runResearch: (maxItems?: number) => void;
   /** Selects a verified edge (and optionally opens the evidence drawer). */
   selectEdge: (edgeId: string | null, openDrawer?: boolean) => void;
   /** Selects a graph node (company or counterparty/target) to inspect its edges. */
@@ -72,6 +81,9 @@ let storeState: DependenciesSnapshot = {
   selectedEdgeId: null,
   selectedNodeId: null,
   drawerOpen: false,
+  researchStatus: "idle",
+  researchJob: null,
+  researchError: null,
 };
 
 interface RunContext {
@@ -287,12 +299,191 @@ function holdingsToAllocationInputs(analysis: AnalysisResponse): AllocationInput
 
 let nextRunSeq = 0;
 
+interface ResearchRunContext {
+  runId: number;
+  dependencyJobId: string;
+  maxItems: number;
+  transientSince: number | null;
+  transientAttempts: number;
+}
+
+let activeResearchRun: ResearchRunContext | null = null;
+let activeResearchController: AbortController | null = null;
+let researchPollTimer: number | null = null;
+
+function stopActiveResearchPolling() {
+  if (researchPollTimer !== null) {
+    window.clearTimeout(researchPollTimer);
+    researchPollTimer = null;
+  }
+  if (activeResearchController !== null) {
+    activeResearchController.abort();
+    activeResearchController = null;
+  }
+}
+
+function scheduleNextResearchPoll(rRun: ResearchRunContext, researchId: string, delayMs: number) {
+  if (activeResearchRun?.runId !== rRun.runId) return;
+  if (researchPollTimer !== null) {
+    window.clearTimeout(researchPollTimer);
+  }
+  researchPollTimer = window.setTimeout(async () => {
+    if (activeResearchRun?.runId !== rRun.runId) return;
+    const controller = new AbortController();
+    activeResearchController = controller;
+    try {
+      const updated = await api.researchJob(researchId, controller.signal);
+      if (activeResearchRun?.runId !== rRun.runId) return;
+      rRun.transientSince = null;
+      rRun.transientAttempts = 0;
+      handleResearchJobUpdate(rRun, updated);
+    } catch (cause) {
+      if (activeResearchRun?.runId !== rRun.runId) return;
+      if (cause instanceof DOMException && cause.name === "AbortError") return;
+
+      if (isTransientError(cause)) {
+        const now = Date.now();
+        if (rRun.transientSince === null) rRun.transientSince = now;
+        if (now - rRun.transientSince < RECONNECT_WINDOW_MS) {
+          const nextDelay = backoffDelayMs(rRun.transientAttempts++);
+          scheduleNextResearchPoll(rRun, researchId, nextDelay);
+          return;
+        }
+      }
+
+      const apiErr =
+        cause instanceof ApiError
+          ? cause
+          : new ApiError(
+              "UNEXPECTED_ERROR",
+              cause instanceof Error ? cause.message : "Failed while polling research status.",
+              0,
+            );
+      setStoreState({ researchStatus: "error", researchError: apiErr });
+    }
+  }, delayMs);
+}
+
+function handleResearchJobUpdate(rRun: ResearchRunContext, rJob: ResearchJob) {
+  if (activeResearchRun?.runId !== rRun.runId) return;
+
+  if (rJob.status === "done") {
+    stopActiveResearchPolling();
+    const shouldMergeIntoJob =
+      rJob.result !== null &&
+      storeState.job !== null &&
+      storeState.job.job_id === rJob.dependency_job_id;
+    const updatedJob =
+      shouldMergeIntoJob && storeState.job
+        ? { ...storeState.job, result: rJob.result }
+        : storeState.job;
+    setStoreState({
+      job: updatedJob,
+      researchStatus: "done",
+      researchJob: rJob,
+      researchError: null,
+    });
+    return;
+  }
+
+  if (rJob.status === "error") {
+    stopActiveResearchPolling();
+    const err = rJob.error
+      ? new ApiError(rJob.error.code, rJob.error.message, 500, rJob.error.details)
+      : new ApiError("INTERNAL_ERROR", "Agentic research loop failed.", 500);
+    setStoreState({
+      researchStatus: "error",
+      researchJob: rJob,
+      researchError: err,
+    });
+    return;
+  }
+
+  setStoreState({
+    researchStatus: "polling",
+    researchJob: rJob,
+    researchError: null,
+  });
+
+  scheduleNextResearchPoll(rRun, rJob.research_id, POLL_INTERVAL_MS);
+}
+
+export function triggerResearchRun(
+  dependencyJobId: string,
+  maxItems = DEFAULT_RESEARCH_ITEMS,
+) {
+  stopActiveResearchPolling();
+  const rRun: ResearchRunContext = {
+    runId: ++nextRunSeq,
+    dependencyJobId,
+    maxItems,
+    transientSince: null,
+    transientAttempts: 0,
+  };
+  activeResearchRun = rRun;
+
+  setStoreState({
+    researchStatus: "starting",
+    researchError: null,
+  });
+
+  const controller = new AbortController();
+  activeResearchController = controller;
+
+  api
+    .research(dependencyJobId, maxItems, controller.signal)
+    .then((rJob) => {
+      if (activeResearchRun?.runId !== rRun.runId) return;
+      handleResearchJobUpdate(rRun, rJob);
+    })
+    .catch(async (cause: unknown) => {
+      if (activeResearchRun?.runId !== rRun.runId) return;
+      if (cause instanceof DOMException && cause.name === "AbortError") return;
+
+      // If the backend restarted after the dependency job finished, re-POST dependencies once (cache replay) and retry research
+      if (isJobNotFoundError(cause) && activeRun) {
+        try {
+          const restored = await api.dependencies(
+            activeRun.rows,
+            activeRun.topN,
+            controller.signal,
+          );
+          if (activeResearchRun?.runId !== rRun.runId) return;
+          if (restored.status === "done") {
+            setStoreState({ job: restored });
+            rRun.dependencyJobId = restored.job_id;
+            const retried = await api.research(restored.job_id, maxItems, controller.signal);
+            if (activeResearchRun?.runId !== rRun.runId) return;
+            handleResearchJobUpdate(rRun, retried);
+            return;
+          }
+        } catch {
+          // Fall through to report the original error if replay failed
+        }
+      }
+
+      const apiErr =
+        cause instanceof ApiError
+          ? cause
+          : new ApiError(
+              "UNEXPECTED_ERROR",
+              cause instanceof Error ? cause.message : "Could not start agentic research loop.",
+              0,
+            );
+      setStoreState({
+        researchStatus: "error",
+        researchError: apiErr,
+      });
+    });
+}
+
 export function triggerDependenciesRun(
   analysis: AnalysisResponse,
   analysedKey: string | null,
   topN = DEFAULT_TOP_N,
 ) {
   stopActivePolling();
+  stopActiveResearchPolling();
   const rows = holdingsToAllocationInputs(analysis);
   const run: RunContext = {
     runId: ++nextRunSeq,
@@ -310,6 +501,9 @@ export function triggerDependenciesRun(
     topN,
     reconnecting: false,
     error: null,
+    researchStatus: "idle",
+    researchJob: null,
+    researchError: null,
   });
 
   postJobWithRecovery(run);
@@ -325,7 +519,10 @@ function useDependenciesInternal(): DependenciesContextValue {
 
   // Clean up polling only on full window unload
   useEffect(() => {
-    const onUnload = () => stopActivePolling();
+    const onUnload = () => {
+      stopActivePolling();
+      stopActiveResearchPolling();
+    };
     window.addEventListener("beforeunload", onUnload);
     return () => window.removeEventListener("beforeunload", onUnload);
   }, []);
@@ -336,6 +533,15 @@ function useDependenciesInternal(): DependenciesContextValue {
       triggerDependenciesRun(analysis, analysedKey, topN);
     },
     [analysis, analysedKey, snapshot.topN],
+  );
+
+  const runResearch = useCallback(
+    (maxItems = DEFAULT_RESEARCH_ITEMS) => {
+      const jobId = snapshot.job?.job_id;
+      if (!jobId) return;
+      triggerResearchRun(jobId, maxItems);
+    },
+    [snapshot.job?.job_id],
   );
 
   const selectEdge = useCallback((edgeId: string | null, openDrawer = true) => {
@@ -386,11 +592,12 @@ function useDependenciesInternal(): DependenciesContextValue {
       ...snapshot,
       stale,
       runDependencies,
+      runResearch,
       selectEdge,
       selectNode,
       setDrawerOpen,
     }),
-    [snapshot, stale, runDependencies, selectEdge, selectNode, setDrawerOpen],
+    [snapshot, stale, runDependencies, runResearch, selectEdge, selectNode, setDrawerOpen],
   );
 }
 

@@ -7,6 +7,7 @@ import type {
   CompanyRunStatus,
   DependencyResult,
   EdgeType,
+  ImportanceTier,
   MetricFact,
   TargetKind,
   VerifiedEdge,
@@ -27,6 +28,42 @@ export type EdgeFilterGroup =
   | "inputs"
   | "facilities"
   | "sole_source";
+
+export type ImportanceFilterGroup = "all" | "critical_high" | "critical" | "flagged";
+
+export interface ImportanceTierMeta {
+  label: string;
+  shortLabel: string;
+  badgeColor: "rose" | "orange" | "blue" | "neutral";
+  rank: number;
+}
+
+export const IMPORTANCE_TIER_META: Record<ImportanceTier, ImportanceTierMeta> = {
+  critical: {
+    label: "Critical importance",
+    shortLabel: "Critical",
+    badgeColor: "rose",
+    rank: 4,
+  },
+  high: {
+    label: "High importance",
+    shortLabel: "High",
+    badgeColor: "orange",
+    rank: 3,
+  },
+  medium: {
+    label: "Medium importance",
+    shortLabel: "Medium",
+    badgeColor: "blue",
+    rank: 2,
+  },
+  low: {
+    label: "Low importance",
+    shortLabel: "Low",
+    badgeColor: "neutral",
+    rank: 1,
+  },
+};
 
 export interface EdgeTypeMeta {
   label: string;
@@ -92,24 +129,51 @@ export const EDGE_TYPE_META: Record<EdgeType | "sole_source", EdgeTypeMeta> = {
 };
 
 const ISO2_COUNTRY_NAMES: Record<string, string> = {
-  US: "United States",
-  TW: "Taiwan",
-  CN: "China",
-  KR: "South Korea",
-  JP: "Japan",
-  DE: "Germany",
-  NL: "Netherlands",
-  VN: "Vietnam",
-  IN: "India",
-  IE: "Ireland",
-  SG: "Singapore",
-  IL: "Israel",
-  MY: "Malaysia",
-  GB: "United Kingdom",
+  AT: "Austria",
+  AU: "Australia",
+  BE: "Belgium",
+  BR: "Brazil",
   CA: "Canada",
-  FR: "France",
   CH: "Switzerland",
+  CL: "Chile",
+  CN: "China",
+  CR: "Costa Rica",
+  CZ: "Czechia",
+  DE: "Germany",
+  DK: "Denmark",
+  ES: "Spain",
+  FI: "Finland",
+  FR: "France",
+  GB: "United Kingdom",
+  HK: "Hong Kong",
+  HU: "Hungary",
+  ID: "Indonesia",
+  IE: "Ireland",
+  IL: "Israel",
+  IN: "India",
+  IT: "Italy",
+  JP: "Japan",
+  KR: "South Korea",
+  LU: "Luxembourg",
   MX: "Mexico",
+  MY: "Malaysia",
+  NL: "Netherlands",
+  NO: "Norway",
+  NZ: "New Zealand",
+  PH: "Philippines",
+  PL: "Poland",
+  PT: "Portugal",
+  RO: "Romania",
+  SA: "Saudi Arabia",
+  SE: "Sweden",
+  SG: "Singapore",
+  TH: "Thailand",
+  TR: "Turkey",
+  TW: "Taiwan",
+  UA: "Ukraine",
+  US: "United States",
+  VN: "Vietnam",
+  ZA: "South Africa",
 };
 
 const COUNTRY_NAME_TO_ISO2: Record<string, { code: string; name: string }> = {
@@ -280,6 +344,32 @@ export function matchesEdgeFilter(edge: VerifiedEdge, filter: EdgeFilterGroup): 
   return true;
 }
 
+export function matchesImportanceFilter(
+  edge: VerifiedEdge,
+  filter: ImportanceFilterGroup,
+): boolean {
+  if (filter === "all") return true;
+  if (filter === "flagged") return edge.interpretation?.status === "flagged";
+  const tier = edge.importance?.tier;
+  if (filter === "critical") return tier === "critical";
+  if (filter === "critical_high") return tier === "critical" || tier === "high";
+  return true;
+}
+
+export function compareEdgesByImportance(
+  a: VerifiedEdge,
+  b: VerifiedEdge,
+  exposureMap?: Map<string, number>,
+): number {
+  const scoreDiff = (b.importance?.score ?? 0) - (a.importance?.score ?? 0);
+  if (Math.abs(scoreDiff) > 1e-6) return scoreDiff;
+  if (a.sole_source !== b.sole_source) return a.sole_source ? -1 : 1;
+  const expA = exposureMap?.get(a.source_company_key) ?? 0;
+  const expB = exposureMap?.get(b.source_company_key) ?? 0;
+  if (Math.abs(expB - expA) > 1e-6) return expB - expA;
+  return a.source_company_name.localeCompare(b.source_company_name);
+}
+
 function isUnnamedCustomerEdge(edge: VerifiedEdge): boolean {
   if (edge.target_kind === "unnamed_customer") return true;
   if (
@@ -332,6 +422,7 @@ export function buildDependencyGraph(
   portfolioExposures: CompanyExposure[],
   filter: EdgeFilterGroup = "all",
   targetLimit: number | null = DEFAULT_TARGET_LIMIT,
+  importanceFilter: ImportanceFilterGroup = "all",
 ): DependencyGraph {
   const exposureByKey = new Map<string, Weight>();
   const nameByKey = new Map<string, string>();
@@ -349,7 +440,10 @@ export function buildDependencyGraph(
     statusByKey.set(comp.company_key, comp.status);
   }
 
-  const filteredEdges = result.edges.filter((edge) => matchesEdgeFilter(edge, filter));
+  const filteredEdges = result.edges.filter(
+    (edge) =>
+      matchesEdgeFilter(edge, filter) && matchesImportanceFilter(edge, importanceFilter),
+  );
 
   type NormalizedPair = {
     edge: VerifiedEdge;
