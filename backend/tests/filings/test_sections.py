@@ -53,3 +53,10 @@ def test_fallback_is_capped_when_no_headings_found():
     text = normalise("No item headings here. " * 10_000)
     sections, quality = section_map(text, "10-K")
     assert quality == "fallback" and sections == {"document": (0, FALLBACK_CHARS)}
+
+
+def test_20f_headings_without_a_space_after_the_number():
+    text = normalise(f"ITEM 3.KEY INFORMATION D. Risk Factors We depend on ZZ Optics. {FILLER}"
+                     f"ITEM 4.INFORMATION ON THE COMPANY {FILLER} ITEM 5.OPERATING REVIEW {FILLER} ITEM 6.DIRECTORS {FILLER}")
+    sections, quality = section_map(text, "20-F")
+    assert quality == "sections" and {"3", "4", "5"} <= set(sections) and "3D" not in sections

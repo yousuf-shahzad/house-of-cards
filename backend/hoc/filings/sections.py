@@ -21,7 +21,7 @@ FALLBACK_CHARS = 160_000
 """Without usable sections, send at most this much of the document (never all of ASML's 20-F)."""
 CONCENTRATION_WINDOW = 600
 
-_HEADING = re.compile(r"(?<![A-Za-z])ITEM\s+(\d{1,2})\s*\.?\s*([A-D](?![a-z]))?\s*[.:\-]?\s+(?-i:(?=[A-Z]))", re.IGNORECASE)
+_HEADING = re.compile(r"(?<![A-Za-z])ITEM\s+(\d{1,2})\s*\.?\s*([A-D](?![a-z]))?\s*[.:\-]?\s*(?-i:(?=[A-Z]))", re.IGNORECASE)
 _CROSS_REF = re.compile(r"(?:\bsee|\bin|\bunder|\bof|\band|\bthis|\bour|[\"'(,])\s*(?:part\s+i+\s*,?\s*)?$", re.IGNORECASE)
 _CONCENTRATION = re.compile(
     r"10\s?%\s+or\s+more|more\s+than\s+10\s?%|concentration\s+of|\d{1,2}(?:\.\d)?\s?%\s+of\s+(?:our\s+)?(?:total\s+)?"

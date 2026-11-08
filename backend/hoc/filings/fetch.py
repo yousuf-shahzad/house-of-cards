@@ -20,6 +20,7 @@ from typing import Literal
 
 from hoc.contract import CompanyUnavailable, SourceError
 
+from .names import name_key
 from .sections import section_map
 from .text import html_to_text, normalise
 
@@ -31,6 +32,8 @@ SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK{cik}.json"
 ARCHIVE_URL = "https://www.sec.gov/Archives/edgar/data/{cik}/{accession}/{document}"
 EFTS_URL = "https://efts.sec.gov/LATEST/search-index"
 MAX_REVERSE_HITS = 10
+REVERSE_WINDOW = timedelta(days=460)
+"""Full-text search looks back ~15 months, so each filer's latest annual report is in range."""
 METADATA_TTL = timedelta(hours=24)
 SOURCE = "sec_filings"
 
@@ -69,7 +72,7 @@ class FilingFetcher:
 
     def for_company(self, company) -> Filing:
         """Latest 10-K/20-F for a CompanyExposure-like object (company_key, symbols). Raises FilingUnavailable."""
-        return self.latest(self.cik_for(company.company_key, tuple(company.symbols)))
+        return self.latest(self.cik_for(company.company_key, tuple(company.symbols), getattr(company, "company_name", None)))
 
     def _headers(self) -> dict[str, str]:
         contact = (self.settings.sec_contact or "").strip()
@@ -84,8 +87,13 @@ class FilingFetcher:
             raise FilingUnavailable("error", f"SEC request failed: {exc}") from exc
         return response
 
-    def cik_for(self, company_key: str, symbols: list[str] | tuple[str, ...] = ()) -> str:
-        """10-digit CIK for a portfolio company, or FilingUnavailable('no_sec_filing')."""
+    def cik_for(self, company_key: str, symbols: list[str] | tuple[str, ...] = (), name: str | None = None) -> str:
+        """10-digit CIK for a portfolio company, or FilingUnavailable('no_sec_filing').
+
+        CIK keys first, then a US symbol in company_tickers.json, then an EXACT name_key match of the
+        company name against SEC titles (TSMC is held as 2330.TW but files a 20-F as
+        'TAIWAN SEMICONDUCTOR MANUFACTURING CO LTD'). A name matching two CIKs is not used.
+        """
         if company_key.startswith("CIK:") and company_key[4:].isdigit():
             return company_key[4:].zfill(10)
         us_symbols = [s.upper() for s in symbols if "." not in s or re.fullmatch(r"[A-Z]+\.[A-Z]", s.upper())]
@@ -100,6 +108,10 @@ class FilingFetcher:
                 for symbol in us_symbols:
                     if symbol in by_ticker:
                         return str(by_ticker[symbol]).zfill(10)
+        if name and (wanted := name_key(name)):
+            ciks = {cik for title, cik in self.sec_titles().items() if name_key(title) == wanted}
+            if len(ciks) == 1:
+                return ciks.pop()
         raise FilingUnavailable("no_sec_filing", f"No SEC filer found for {company_key}")
 
     def latest(self, cik: str) -> Filing:
@@ -151,14 +163,17 @@ class FilingFetcher:
         except (AttributeError, KeyError, TypeError, ValueError) as exc:
             raise FilingUnavailable("error", "SEC company_tickers.json is malformed") from exc
 
-    def names_in_other_filings(self, name: str, *, exclude_cik: str | None = None,
-                               limit: int = MAX_REVERSE_HITS) -> list[Filing]:
+    def names_in_other_filings(self, name: str, *, exclude_cik: str | None = None, limit: int = MAX_REVERSE_HITS,
+                               today: date | None = None) -> list[Filing]:
         """Other companies' latest-year 10-K/20-F that mention `name` verbatim (EDGAR full-text search).
 
         One filing per filer (the newest hit), the queried company itself excluded, at most `limit`.
         A hit only means the name appears (often as a competitor); the extractor decides the relationship.
         """
-        response = self._get(EFTS_URL, METADATA_TTL, params={"q": f'"{name}"', "forms": ",".join(ANNUAL_FORMS)})
+        today = today or date.today()
+        params = {"q": f'"{name}"', "forms": ",".join(ANNUAL_FORMS), "dateRange": "custom",
+                  "startdt": (today - REVERSE_WINDOW).isoformat(), "enddt": today.isoformat()}
+        response = self._get(EFTS_URL, METADATA_TTL, params=params)
         if response.status != 200:
             raise FilingUnavailable("error", f"EDGAR full-text search returned HTTP {response.status}")
         try:
@@ -168,6 +183,9 @@ class FilingFetcher:
                 accession, document = str(hit["_id"]).split(":", 1)
                 source = hit["_source"]
                 form = str(source.get("form") or source["root_forms"][0])
+                # only the primary 10-K/20-F document: exhibits (EX-10.8...) and XBRL fragments (R24.xml) are skipped
+                if source.get("file_type") != form or re.fullmatch(r"R\d+\.xml", document, re.IGNORECASE):
+                    continue
                 rows.append((str(source["ciks"][0]).zfill(10), form, accession, str(source["file_date"]), document))
         except (KeyError, IndexError, TypeError, ValueError) as exc:
             raise FilingUnavailable("error", "EDGAR full-text search answer is malformed") from exc
