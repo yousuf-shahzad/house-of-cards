@@ -485,3 +485,45 @@ def test_proposer_builds_real_gemini_client_and_classifies_timeout_by_type(tmp_p
     assert timeout_res.ai_status == "timeout"
 
 
+def test_dep_placeholder_requires_or_rewrites_company_subject() -> None:
+    """FIX-26: dep.* placeholders without their company subject are rewritten with the company name or rejected."""
+    tsmc_fact = MetricFact(
+        metric_id="dep.ALIAS:TSMC",
+        label="Portfolio exposure dependent on Taiwan Semiconductor Manufacturing Co., Ltd.",
+        value=0.1241,
+        unit="fraction",
+        supporting_edge_ids=["e1"],
+    )
+
+    # 1. '...reduces reliance on {{metric:dep.ALIAS:TSMC}}.' is rewritten so the company follows 'reliance on'
+    rewritten, err = verify_and_render_proposal_rationale(
+        "Swapping QQQ into VTV reduces reliance on {{metric:dep.ALIAS:TSMC}}.",
+        metrics_by_id={"dep.ALIAS:TSMC": tsmc_fact},
+        allowed_tickers={"QQQ", "VTV", "TSMC"},
+        allowed_entities={"taiwan semiconductor manufacturing", "tsmc"},
+    )
+    assert err is None
+    assert rewritten == "Swapping QQQ into VTV reduces 12.41% reliance on Taiwan Semiconductor Manufacturing."
+
+    # 2. When the company name is already present next to the placeholder, it is not duplicated
+    existing, err2 = verify_and_render_proposal_rationale(
+        "Swapping QQQ into VTV lowers your {{metric:dep.ALIAS:TSMC}} Taiwan Semiconductor reliance.",
+        metrics_by_id={"dep.ALIAS:TSMC": tsmc_fact},
+        allowed_tickers={"QQQ", "VTV", "TSMC"},
+        allowed_entities={"taiwan semiconductor manufacturing", "tsmc"},
+    )
+    assert err2 is None
+    assert existing == "Swapping QQQ into VTV lowers your 12.41% Taiwan Semiconductor reliance."
+
+    # 3. When neither the text nor the metric has a company subject, the rationale is rejected
+    missing_text, missing_err = verify_and_render_proposal_rationale(
+        "Swapping QQQ into VTV reduces reliance on {{metric:dep.CIK:0000000000}}.",
+        metrics_by_id={"dep.CIK:0000000000": 0.1241},
+        allowed_tickers={"QQQ", "VTV"},
+        allowed_entities=set(),
+    )
+    assert missing_text is None
+    assert missing_err == "missing_dependency_subject:dep.CIK:0000000000"
+
+
+

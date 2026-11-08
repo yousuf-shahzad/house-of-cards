@@ -500,6 +500,79 @@ def _find_unknown_entity_in_text(
     return None
 
 
+_LEGAL_SUFFIX_RE = re.compile(
+    r",?\s*\b(?:Co\.,?\s*Ltd\.?|Corp(?:oration)?\.?|Inc(?:orporated)?\.?|Ltd\.?|L\.?P\.?|PLC|N\.?V\.?|S\.?A\.?|SE|AG)\.?\s*$",
+    re.IGNORECASE,
+)
+_GENERIC_SUBJECT_WORDS: frozenset[str] = frozenset(
+    {
+        "portfolio",
+        "exposure",
+        "dependent",
+        "dependency",
+        "dependencies",
+        "reliance",
+        "company",
+        "companies",
+        "corporation",
+        "incorporated",
+        "limited",
+        "holdings",
+        "holding",
+        "group",
+        "international",
+        "semiconductor",
+        "semiconductors",
+        "manufacturing",
+        "electronics",
+        "technology",
+        "technologies",
+        "systems",
+        "devices",
+        "foundry",
+    }
+)
+
+
+def _extract_dependency_subject(
+    mid: str,
+    entry: MetricFact | PortfolioIssue | float | str,
+) -> tuple[str | None, list[str]]:
+    """Extract the human-readable company/counterparty subject and identifying tokens for a `dep.*` metric."""
+    raw_label = getattr(entry, "label", "") if not isinstance(entry, (str, int, float)) else ""
+    subject: str | None = None
+    if isinstance(raw_label, str) and raw_label.strip():
+        cleaned_label = raw_label.strip().rstrip(".")
+        if "dependent on " in cleaned_label:
+            subject = cleaned_label.split("dependent on ", 1)[1].strip()
+        elif cleaned_label.lower().endswith(" dependency"):
+            subject = cleaned_label[:-11].strip()
+        elif not cleaned_label.startswith("dep."):
+            subject = cleaned_label
+        if subject:
+            subject = _LEGAL_SUFFIX_RE.sub("", subject).strip().rstrip(",")
+
+    alias_tail: str | None = None
+    if mid.startswith("dep.ALIAS:"):
+        alias_tail = mid.split("dep.ALIAS:", 1)[1].replace("_", " ").strip()
+        if not subject and alias_tail:
+            subject = alias_tail
+
+    match_tokens: list[str] = []
+    if subject:
+        norm_subj = _normalise_entity_token(subject)
+        if norm_subj:
+            match_tokens.append(norm_subj)
+            for tok in norm_subj.split():
+                if len(tok) >= 3 and tok not in _GENERIC_SUBJECT_WORDS:
+                    match_tokens.append(tok)
+    if alias_tail:
+        norm_alias = _normalise_entity_token(alias_tail)
+        if norm_alias and norm_alias not in match_tokens:
+            match_tokens.append(norm_alias)
+    return subject, match_tokens
+
+
 def verify_and_render_proposal_rationale(
     rationale_template: str,
     *,
@@ -544,6 +617,44 @@ def verify_and_render_proposal_rationale(
     )
     if unknown_ent is not None:
         return None, f"unknown_entity:{unknown_ent}"
+
+    # FIX-26: Ensure every `dep.*` placeholder is accompanied by the company/counterparty it describes,
+    # rewriting "...reduces reliance on {{metric:dep.ALIAS:TSMC}}" -> "...reduces {{metric:dep.ALIAS:TSMC}} reliance on Taiwan Semiconductor Manufacturing"
+    norm_stripped = _normalise_entity_token(stripped)
+    for mid in dict.fromkeys(placeholders):
+        if not mid.startswith("dep."):
+            continue
+        subject, match_tokens = _extract_dependency_subject(mid, metrics_by_id[mid])
+        has_subject_in_text = any(
+            bool(re.search(rf"\b{re.escape(tok)}\b", norm_stripped)) for tok in match_tokens
+        )
+        ph_literal = f"{{{{metric:{mid}}}}}"
+        prep_noun_re = re.compile(
+            rf"\b(reliance|dependence|dependency|exposure)\s+(on|to)\s+{re.escape(ph_literal)}",
+            re.IGNORECASE,
+        )
+        bare_prep_re = re.compile(
+            rf"\b(on|to|from)\s+{re.escape(ph_literal)}(?!\s+[A-Za-z])",
+            re.IGNORECASE,
+        )
+        if prep_noun_re.search(cleaned):
+            if not subject:
+                return None, f"missing_dependency_subject:{mid}"
+            cleaned = prep_noun_re.sub(
+                lambda m, p=ph_literal, s=subject: f"{p} {m.group(1)} {m.group(2)} {s}",
+                cleaned,
+            )
+        elif bare_prep_re.search(cleaned) and not has_subject_in_text:
+            if not subject:
+                return None, f"missing_dependency_subject:{mid}"
+            cleaned = bare_prep_re.sub(
+                lambda m, p=ph_literal, s=subject: f"{p} reliance {m.group(1)} {s}",
+                cleaned,
+            )
+        elif not has_subject_in_text:
+            if not subject:
+                return None, f"missing_dependency_subject:{mid}"
+            cleaned = cleaned.replace(ph_literal, f"{ph_literal} {subject}", 1)
 
     def _expand(match: re.Match[str]) -> str:
         mid = match.group(1)
