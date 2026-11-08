@@ -29,6 +29,7 @@ MANUAL = {
     "sk hynix": "SK Hynix",
     "hynix": "SK Hynix",
     "umc": "United Microelectronics",
+    "google": "Alphabet",
 }
 """Short or brand names seen in filings -> the name a portfolio/alias/SEC entry carries. Keep it short."""
 
