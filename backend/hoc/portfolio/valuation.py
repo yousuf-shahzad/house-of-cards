@@ -19,6 +19,8 @@ from hoc.contract import (
     wsum,
 )
 
+MAX_SHARES = 1_000_000_000
+
 
 def value_portfolio(
     request: ValuationRequest,
@@ -93,7 +95,9 @@ def value_portfolio(
             issue("non_usd_price", "Price is not in USD; pin this row to a percentage.", row)
         elif item.shares is not None:
             value = item.shares * quote.price
-            if not math.isfinite(value) or (item.shares > 0 and value == 0):
+            if not math.isfinite(item.shares) or item.shares > MAX_SHARES:
+                issue("invalid_price", f"Share count exceeds the maximum of {MAX_SHARES:,} shares.", row)
+            elif not math.isfinite(value) or (item.shares > 0 and value == 0):
                 issue("invalid_price", "Share value is outside the supported numeric range.", row)
             else:
                 row.value = value

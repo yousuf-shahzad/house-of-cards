@@ -41,8 +41,9 @@ export type ValuationStatus = "off" | "pricing" | "usable" | "blocked" | "error"
 
 const validPct = (value: number | null): value is number =>
   value !== null && Number.isFinite(value) && value >= 0 && value <= 100;
-const validShares = (value: number | null): value is number =>
-  value !== null && Number.isFinite(value) && value >= 0;
+export const MAX_SHARES = 1_000_000_000;
+export const validShares = (value: number | null): value is number =>
+  value !== null && Number.isFinite(value) && value >= 0 && value <= MAX_SHARES;
 
 /** Checks that need no prices. Shares mode adds the pinned-row rules from docs/hoc/PLAN-v2.md. */
 export function validateRows(rows: DraftRow[], mode: InputMode = "percent"): Validation {
@@ -249,7 +250,9 @@ export function usePortfolioDraft(): PortfolioDraft {
 
   const inputs = useMemo<AllocationInput[] | null>(() => {
     if (!validation.valid) return null;
-    return rows.map((row) => ({ ticker: row.ticker, allocationPct: effectivePct[row.id] as number }));
+    return rows
+      .filter((row) => (effectivePct[row.id] ?? 0) > 0)
+      .map((row) => ({ ticker: row.ticker, allocationPct: effectivePct[row.id] as number }));
   }, [validation.valid, rows, effectivePct]);
   const key = useMemo(
     () =>

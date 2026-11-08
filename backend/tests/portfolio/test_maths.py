@@ -186,6 +186,9 @@ def test_missing_etf_and_zero_allocation_overlap(funds):
     assert zero.overlap.etfs == ["ZZAAA", "ZZBBB"]
     assert zero.overlap.pairs[0].weighted_overlap == pytest.approx(0.5)
     assert zero.coverage.covered_weight == pytest.approx(0.95)
+    assert all(company.exposure > 0 for company in zero.exposures)
+    assert all(all(c.etf_ticker != "ZZBBB" for c in company.contributions) for company in zero.exposures)
+    assert all(company.etf_count == 1 for company in zero.exposures)
 
 
 def test_empty_and_negative_holdings(funds):
