@@ -311,6 +311,16 @@ def test_reverse_is_skipped_once_the_time_budget_is_spent(setup, monkeypatch):
     assert all("time budget" in c["message"] for c in job["companies"])
 
 
+def test_a_cache_only_replay_ignores_the_time_budget(setup, monkeypatch):
+    # A slow warm-up must still replay cached reverse links: the budget only caps Gemini spend on live clicks.
+    monkeypatch.setattr("hoc.jobs.REVERSE_BUDGET_SECONDS", -1.0)
+    _, service, pipeline = setup(ReversePipeline())
+    job = service.submit_dependencies(DependencyRequest(holdings=HOLDINGS, top_n=3), cache_only=True)
+    assert len(pipeline.reverse_calls) == 3 and all(cache_only for _, cache_only in pipeline.reverse_calls)
+    assert sum(e.source_company_key == "CIK:9990000099" for e in job.result.edges) == 3
+    assert not any("time budget" in (c.message or "") for c in job.companies)
+
+
 def test_a_reverse_filer_that_is_a_holding_gets_its_portfolio_name(setup, make_service):
     service, _ = make_service()
     top = service.analyse(PortfolioRequest(holdings=HOLDINGS)).exposures[:2]
