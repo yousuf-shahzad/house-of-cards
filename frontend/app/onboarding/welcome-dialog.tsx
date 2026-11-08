@@ -25,7 +25,6 @@ export function WelcomeDialog() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <button
             type="button"
-            autoFocus
             data-testid="welcome-choice-beginner"
             onClick={() => setMode("beginner", BEGINNER_START_PAGE)}
             className="group flex flex-col items-start gap-2 rounded-2xl border border-border-button-default bg-background-secondary-default p-5 text-left transition-colors hover:border-accent-500 hover:bg-background-tertiary-default focus-visible:ring-2 focus-visible:ring-border-focus-ring focus-visible:outline-none"
