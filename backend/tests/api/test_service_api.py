@@ -340,3 +340,41 @@ def test_unknown_route_and_wrong_method_use_the_error_envelope(make_service):
     assert wrong.json()["error"]["code"] == "METHOD_NOT_ALLOWED"
     assert "POST" in wrong.headers["allow"]
     assert api.get("/api/dependencies/nope").json()["error"]["code"] == "JOB_NOT_FOUND"  # route 404s keep theirs
+
+
+# ---------- FIX-63: price history warm-up ----------
+
+
+class _RecordingShocks:
+    def __init__(self):
+        self.calls = []
+
+    def historical_shock(self, kind, key, label=None):
+        from hoc.contract import ShockBasis
+
+        self.calls.append((kind, key))
+        return ShockBasis(source="historical", drop=0.2, proxy="X", description="synthetic")
+
+
+def test_history_warm_up_fetches_each_proxy_once(make_service):
+    from hoc.api.app import warm_history
+    from hoc.history import COUNTRY_PROXIES, SECTOR_PROXIES
+
+    service, _ = make_service()
+    service.history = _RecordingShocks()
+    warm_history(service)
+    proxies = [SECTOR_PROXIES[k] if kind == "sector" else COUNTRY_PROXIES[k] for kind, k in service.history.calls]
+    assert len(proxies) == len(set(proxies)) == len(set(SECTOR_PROXIES.values()) | set(COUNTRY_PROXIES.values()))
+    assert ("sector", "information_technology") in service.history.calls and ("country", "TW") in service.history.calls
+
+
+def test_history_warm_up_is_skipped_offline(make_service):
+    import dataclasses
+
+    from hoc.api.app import warm_history
+
+    service, _ = make_service()
+    service.history = _RecordingShocks()
+    service.settings = dataclasses.replace(service.settings, offline=True)
+    warm_history(service)
+    assert service.history.calls == []

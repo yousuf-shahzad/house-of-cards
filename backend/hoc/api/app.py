@@ -51,6 +51,7 @@ from hoc.contract import (
     ValuationResponse,
 )
 from hoc.contract.api import TICKER_PATTERN
+from hoc.history import COUNTRY_PROXIES, SECTOR_PROXIES
 from hoc.jobs import NotWiredPipeline
 from hoc.service import EtfService
 
@@ -84,6 +85,8 @@ def warm_up(state) -> None:
     log.info("loading example ETFs, reference files and sector data")
     try:
         service = _service(state)
+        # FIX-63: price history in its own thread, so it neither waits for nor delays the examples.
+        threading.Thread(target=warm_history, args=(service,), name="hoc-warm-history", daemon=True).start()
         examples = service.examples().examples
         for example in examples:
             missing = [e.ticker for e in example.holdings if not e.verified]
@@ -111,6 +114,24 @@ def _replay_dependencies(service: EtfService, examples) -> None:
         cached = sum(c.status in ("cached", "done") for c in job.companies)
         log.info("dependencies %s: %d/%d companies from cache (%s)", example.id, cached, len(job.companies),
                  job.status)
+
+
+def warm_history(service: EtfService) -> None:
+    """FIX-63: fetch every sector and country proxy's daily closes once (24 h HTTP cache), so the first failure
+    simulator click is instant. Skipped offline. Never raises: a proxy that fails is fetched on first use."""
+    if service.settings.offline:
+        log.info("price history: offline, skipped")
+        return
+    started = time.monotonic()
+    shocks = {proxy: ("sector", key) for key, proxy in SECTOR_PROXIES.items()}
+    shocks.update({proxy: ("country", key) for key, proxy in COUNTRY_PROXIES.items() if proxy not in shocks})
+    ready = 0
+    for kind, key in shocks.values():
+        try:
+            ready += service.history.historical_shock(kind, key).source == "historical"
+        except Exception:  # the provider never raises; a stand-in might: skip it, the click will retry
+            log.warning("price history for %s %s failed", kind, key, exc_info=True)
+    log.info("price history: %d/%d proxies ready in %.1f s", ready, len(shocks), time.monotonic() - started)
 
 
 def _warm_change_ideas(service: EtfService, examples) -> None:
