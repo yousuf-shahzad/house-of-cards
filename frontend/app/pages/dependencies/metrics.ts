@@ -9,7 +9,7 @@
 
 import type { MetricFact } from "@/api/types";
 
-export type MetricKind = "depends_on" | "facility" | "customer" | "single_point" | "summary" | "other";
+export type MetricKind = "depends_on" | "critical" | "facility" | "customer" | "single_point" | "summary" | "other";
 
 export interface MetricCard {
   /** The fraction metric this card shows (its id is the React key). */
@@ -43,6 +43,7 @@ const SUBJECT_PATTERNS: RegExp[] = [
 
 const CATEGORY: Record<MetricKind, string> = {
   depends_on: "Depends on",
+  critical: "Critically depends on",
   facility: "Key sites in",
   customer: "Major customer",
   single_point: "Single point of failure",
@@ -77,6 +78,7 @@ const UNNAMED_CUSTOMERS = "Undisclosed major customers";
 export function metricKind(metricId: string): MetricKind {
   if (metricId === "facility.unplaced.count") return "summary"; // a count of edges, not a country
   if (metricId.startsWith("dep.")) return "depends_on";
+  if (metricId.startsWith("critical.")) return "critical"; // v3 R-IMP: critical- or high-tier edges only
   if (metricId.startsWith("facility.")) return "facility";
   if (metricId.startsWith("customer.")) return "customer";
   if (metricId === "spof.count") return "summary";
@@ -107,6 +109,10 @@ function plural(n: number, one: string, many: string): string {
 
 function explain(kind: MetricKind, subject: string, companies: number | null): string {
   switch (kind) {
+    case "critical":
+      return companies === null
+        ? "of your portfolio is in companies that rely on it critically"
+        : `of your portfolio is in ${plural(companies, "company", "companies")} that rely on it critically`;
     case "depends_on":
       return companies === null
         ? "of your portfolio is in companies that rely on it"
@@ -171,6 +177,7 @@ export function metricCitationLabel(metric: MetricFact): string {
     if (kind === "facility") return `Companies with key sites in ${subject}`;
     if (unnamedCustomer) return "Companies with an undisclosed major customer";
     if (kind === "customer") return `Companies naming ${subject} as a major customer`;
+    if (kind === "critical") return `Companies critically relying on ${subject}`;
     return `Companies relying on ${subject}`;
   }
   if (kind === "summary") {

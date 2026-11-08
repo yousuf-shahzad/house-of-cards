@@ -2,15 +2,19 @@
 // converted to a fraction. Inputs above this layer are in percent; API responses
 // keep the contract's fractions of 1.
 import {
+  DEFAULT_RESEARCH_ITEMS,
   DEFAULT_TOP_N,
   type PortfolioRequest,
   type AnalysisResponse,
+  type CompareRequest,
+  type CompareResponse,
   type DependencyJob,
   type DependencyRequest,
   type ErrorResponse,
   type EtfSummary,
   type ExamplesResponse,
   type HealthResponse,
+  type ResearchJob,
   type ValuationIssue,
   type ValuationRequest,
   type ValuationResponse,
@@ -55,6 +59,14 @@ export function toValuationRequest(rows: ShareInput[]): ValuationRequest {
 
 export function toDependencyRequest(rows: AllocationInput[], topN: number): DependencyRequest {
   return { ...toAnalysisRequest(rows), top_n: topN };
+}
+
+export function toCompareRequest(baseline: AllocationInput[], candidate: AllocationInput[], topN: number): CompareRequest {
+  return {
+    baseline: toAnalysisRequest(baseline).holdings,
+    candidate: toAnalysisRequest(candidate).holdings,
+    top_n: topN,
+  };
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -182,6 +194,12 @@ async function mockValuation(rows: ShareInput[]): Promise<ValuationResponse> {
   };
 }
 
+const mockCompare = async (): Promise<CompareResponse> =>
+  (await import("./__fixtures__/synthetic-compare.json")).default as unknown as CompareResponse;
+
+const mockResearch = async (): Promise<ResearchJob> =>
+  (await import("./__fixtures__/synthetic-research.json")).default as unknown as ResearchJob;
+
 const mockDependencies = async (): Promise<DependencyJob> =>
   (await import("./__fixtures__/synthetic-dependencies.json")).default as unknown as DependencyJob;
 
@@ -222,4 +240,21 @@ export const api = {
     MOCK_MODE
       ? mockDependencies()
       : request<DependencyJob>(`/api/dependencies/${encodeURIComponent(jobId)}`, { signal }),
+  /** Before/after comparison of two portfolios. Synchronous and cache-only: it never calls Gemini. */
+  compare: (baseline: AllocationInput[], candidate: AllocationInput[], topN = DEFAULT_TOP_N, signal?: AbortSignal) =>
+    MOCK_MODE
+      ? mockCompare()
+      : request<CompareResponse>("/api/compare", postJson(toCompareRequest(baseline, candidate, topN), signal)),
+  /** Starts the research loop on a finished dependency job (202, or 200 if cached); poll researchJob(research_id). */
+  research: (dependencyJobId: string, maxItems = DEFAULT_RESEARCH_ITEMS, signal?: AbortSignal) =>
+    MOCK_MODE
+      ? mockResearch()
+      : request<ResearchJob>(
+          `/api/dependencies/${encodeURIComponent(dependencyJobId)}/research`,
+          postJson({ max_items: maxItems }, signal),
+        ),
+  researchJob: (researchId: string, signal?: AbortSignal) =>
+    MOCK_MODE
+      ? mockResearch()
+      : request<ResearchJob>(`/api/research/${encodeURIComponent(researchId)}`, { signal }),
 };
