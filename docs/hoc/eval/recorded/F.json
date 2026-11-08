@@ -1,0 +1,666 @@
+{
+  "ticker": "F",
+  "company_key": "CIK:0000037996",
+  "company_name": "Ford Motor Company",
+  "filing_accession": "0000037996-26-000015",
+  "filing_form": "10-K",
+  "filing_filed": "2026-02-11",
+  "filing_url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm",
+  "prompt_version": "hoc-v2-extract-1",
+  "judge_prompt_version": "hoc-v3-judge-1",
+  "model": "gemini-3.8-flash",
+  "edges": [
+    {
+      "edge_id": "edge_fef6717a6179",
+      "source_company_key": "CIK:0000037996",
+      "source_company_name": "Ford Motor Company",
+      "source_in_portfolio": true,
+      "edge_type": "jv_partner",
+      "target_name": "Diesel Song Cong One Member Limited Liability Company",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "25% JV partner in Ford Vietnam Limited",
+      "evidence_quote": "Ford Vietnam Limited - a joint venture between Ford (75%) and Diesel Song Cong One Member Limited Liability Company (a subsidiary of the Vietnam Engine and Agricultural Machinery Corporation, which, in turn, is majority owned (87.43%) by the State of Vietnam represented by the Ministry of Industry and Trade) (25%).",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000037996",
+        "form": "10-K",
+        "accession": "0000037996-26-000015",
+        "filed": "2026-02-11",
+        "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+      },
+      "importance": {
+        "score": 0.4,
+        "tier": "medium",
+        "reasons": [
+          "Joint-venture partner relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_0b25b7ecf734",
+      "source_company_key": "CIK:0000037996",
+      "source_company_name": "Ford Motor Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Vietnam",
+      "target_kind": "country",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "operates one assembly plant",
+      "evidence_quote": "Ford Vietnam Limited assembles and distributes a variety of Ford passenger and commercial vehicle models. The joint venture operates one plant in Vietnam.",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000037996",
+        "form": "10-K",
+        "accession": "0000037996-26-000015",
+        "filed": "2026-02-11",
+        "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('plant')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_53114ac01918",
+      "source_company_key": "CIK:0000037996",
+      "source_company_name": "Ford Motor Company",
+      "source_in_portfolio": true,
+      "edge_type": "jv_partner",
+      "target_name": "Mazda",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "50/50 joint venture in AutoAlliance (Thailand) Co., Ltd.",
+      "evidence_quote": "AutoAlliance (Thailand) Co., Ltd. (\"AAT\") - a 50/50 joint venture between Ford and Mazda that owns and operates a manufacturing plant in Rayong, Thailand.",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000037996",
+        "form": "10-K",
+        "accession": "0000037996-26-000015",
+        "filed": "2026-02-11",
+        "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+      },
+      "importance": {
+        "score": 0.4,
+        "tier": "medium",
+        "reasons": [
+          "Joint-venture partner relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_103948ced6bf",
+      "source_company_key": "CIK:0000037996",
+      "source_company_name": "Ford Motor Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Rayong, Thailand",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "manufacturing plant",
+      "evidence_quote": "AutoAlliance (Thailand) Co., Ltd. (\"AAT\") - a 50/50 joint venture between Ford and Mazda that owns and operates a manufacturing plant in Rayong, Thailand.",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000037996",
+        "form": "10-K",
+        "accession": "0000037996-26-000015",
+        "filed": "2026-02-11",
+        "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('manufacturing')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The quote explicitly confirms that Ford's joint venture owns and operates a manufacturing plant in Rayong, Thailand supporting Ford's business segments.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_e2ba4a04a38b",
+      "source_company_key": "CIK:0000037996",
+      "source_company_name": "Ford Motor Company",
+      "source_in_portfolio": true,
+      "edge_type": "jv_partner",
+      "target_name": "SK On Co., Ltd.",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "partner in 50/50 joint venture BlueOval SK, LLC",
+      "evidence_quote": "BlueOval SK, LLC (\"BOSK\") - a 50/50 joint venture among Ford, SK On Co., Ltd. (\"SK On\"), and SK Battery America, Inc. (\"SKBA,\" a wholly owned subsidiary of SK On) formed to build and operate an EV battery plant in Tennessee and two EV battery plants in Kentucky to supply batteries to Ford and Ford affiliates.",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000037996",
+        "form": "10-K",
+        "accession": "0000037996-26-000015",
+        "filed": "2026-02-11",
+        "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+      },
+      "importance": {
+        "score": 0.4,
+        "tier": "medium",
+        "reasons": [
+          "Joint-venture partner relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The text confirms BlueOval SK, LLC is a 50/50 joint venture among Ford, SK On Co., Ltd., and its subsidiary.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_e1ecf3f2984c",
+      "source_company_key": "CIK:0000037996",
+      "source_company_name": "Ford Motor Company",
+      "source_in_portfolio": true,
+      "edge_type": "jv_partner",
+      "target_name": "SK Battery America, Inc.",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "partner in 50/50 joint venture BlueOval SK, LLC",
+      "evidence_quote": "BlueOval SK, LLC (\"BOSK\") - a 50/50 joint venture among Ford, SK On Co., Ltd. (\"SK On\"), and SK Battery America, Inc. (\"SKBA,\" a wholly owned subsidiary of SK On) formed to build and operate an EV battery plant in Tennessee and two EV battery plants in Kentucky to supply batteries to Ford and Ford affiliates.",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000037996",
+        "form": "10-K",
+        "accession": "0000037996-26-000015",
+        "filed": "2026-02-11",
+        "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+      },
+      "importance": {
+        "score": 0.4,
+        "tier": "medium",
+        "reasons": [
+          "Joint-venture partner relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_11c160bb4baa",
+      "source_company_key": "CIK:0000037996",
+      "source_company_name": "Ford Motor Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Tennessee",
+      "target_kind": "region",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "EV battery plant location",
+      "evidence_quote": "formed to build and operate an EV battery plant in Tennessee and two EV battery plants in Kentucky to supply batteries to Ford and Ford affiliates.",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000037996",
+        "form": "10-K",
+        "accession": "0000037996-26-000015",
+        "filed": "2026-02-11",
+        "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('plant')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_6120a7e70e4d",
+      "source_company_key": "CIK:0000037996",
+      "source_company_name": "Ford Motor Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Kentucky",
+      "target_kind": "region",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "two EV battery plants location",
+      "evidence_quote": "formed to build and operate an EV battery plant in Tennessee and two EV battery plants in Kentucky to supply batteries to Ford and Ford affiliates.",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000037996",
+        "form": "10-K",
+        "accession": "0000037996-26-000015",
+        "filed": "2026-02-11",
+        "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('plant')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_0d2600fa3842",
+      "source_company_key": "CIK:0000037996",
+      "source_company_name": "Ford Motor Company",
+      "source_in_portfolio": true,
+      "edge_type": "jv_partner",
+      "target_name": "Chongqing Changan Automobile Co., Ltd.",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "50/50 joint venture partner in Changan Ford Automobile Corporation, Ltd.",
+      "evidence_quote": "Changan Ford Automobile Corporation, Ltd. (\"CAF\") - a 50/50 joint venture between Ford and Chongqing Changan Automobile Co., Ltd. (\"Changan\").",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000037996",
+        "form": "10-K",
+        "accession": "0000037996-26-000015",
+        "filed": "2026-02-11",
+        "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+      },
+      "importance": {
+        "score": 0.4,
+        "tier": "medium",
+        "reasons": [
+          "Joint-venture partner relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The quote verifies that Changan Ford Automobile Corporation, Ltd. is a 50/50 joint venture between Ford and Chongqing Changan Automobile Co., Ltd.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_70dc11cb3798",
+      "source_company_key": "CIK:0000037996",
+      "source_company_name": "Ford Motor Company",
+      "source_in_portfolio": true,
+      "edge_type": "supplier",
+      "target_name": "Ford Otosan",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": true,
+      "qualifier": "sole supplier of Transit, Transit Custom, and Transit Courier commercial vehicles and the Puma for Europe",
+      "evidence_quote": "Ford Otomotiv Sanayi Anonim Sirketi (\"Ford Otosan\") - a joint venture in Türkiye among Ford (41%), the Koc Group of Türkiye (41%), and public investors (18%) that is the sole supplier to us of the Transit, Transit Custom, and Transit Courier commercial vehicles and the Puma for Europe",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000037996",
+        "form": "10-K",
+        "accession": "0000037996-26-000015",
+        "filed": "2026-02-11",
+        "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+      },
+      "importance": {
+        "score": 0.95,
+        "tier": "critical",
+        "reasons": [
+          "Supplier relationship",
+          "Named as the sole source ('sole supplier')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_e53e432f2a29",
+      "source_company_key": "CIK:0000037996",
+      "source_company_name": "Ford Motor Company",
+      "source_in_portfolio": true,
+      "edge_type": "jv_partner",
+      "target_name": "Koc Group of Türkiye",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "41% partner in Ford Otosan joint venture",
+      "evidence_quote": "Ford Otomotiv Sanayi Anonim Sirketi (\"Ford Otosan\") - a joint venture in Türkiye among Ford (41%), the Koc Group of Türkiye (41%), and public investors (18%) that is the sole supplier to us of the Transit, Transit Custom, and Transit Courier commercial vehicles and the Puma for Europe",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000037996",
+        "form": "10-K",
+        "accession": "0000037996-26-000015",
+        "filed": "2026-02-11",
+        "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+      },
+      "importance": {
+        "score": 0.95,
+        "tier": "critical",
+        "reasons": [
+          "Joint-venture partner relationship",
+          "Named as the sole source ('sole supplier')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_4a57069351c4",
+      "source_company_key": "CIK:0000037996",
+      "source_company_name": "Ford Motor Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Türkiye",
+      "target_kind": "country",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "three plants, parts distribution depot, and R&D center",
+      "evidence_quote": "The joint venture owns three plants, a parts distribution depot, and a research and development center in Türkiye, and a combined vehicle and engine plant in Romania.",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000037996",
+        "form": "10-K",
+        "accession": "0000037996-26-000015",
+        "filed": "2026-02-11",
+        "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('plants')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The text confirms that Ford's joint venture operates three plants, a parts distribution depot, and an R&D center in Türkiye.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_bb31fbfae7f0",
+      "source_company_key": "CIK:0000037996",
+      "source_company_name": "Ford Motor Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Romania",
+      "target_kind": "country",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "combined vehicle and engine plant",
+      "evidence_quote": "The joint venture owns three plants, a parts distribution depot, and a research and development center in Türkiye, and a combined vehicle and engine plant in Romania.",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000037996",
+        "form": "10-K",
+        "accession": "0000037996-26-000015",
+        "filed": "2026-02-11",
+        "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('plants')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_588cf0c4f55a",
+      "source_company_key": "CIK:0000037996",
+      "source_company_name": "Ford Motor Company",
+      "source_in_portfolio": true,
+      "edge_type": "jv_partner",
+      "target_name": "Nanchang Jiangling Investment Co., Ltd.",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "controlling shareholder with Ford in JMC",
+      "evidence_quote": "JMC - a publicly-traded company in China with Ford (32%) and Nanchang Jiangling Investment Co., Ltd. (41%) as its controlling shareholders.",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000037996",
+        "form": "10-K",
+        "accession": "0000037996-26-000015",
+        "filed": "2026-02-11",
+        "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+      },
+      "importance": {
+        "score": 0.4,
+        "tier": "medium",
+        "reasons": [
+          "Joint-venture partner relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_8820b0b24436",
+      "source_company_key": "CIK:0000037996",
+      "source_company_name": "Ford Motor Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Nanchang",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "two assembly plants and one engine plant",
+      "evidence_quote": "JMC operates two assembly plants and one engine plant in Nanchang.",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000037996",
+        "form": "10-K",
+        "accession": "0000037996-26-000015",
+        "filed": "2026-02-11",
+        "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('assembly')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_83e00ad1aec8",
+      "source_company_key": "CIK:0000037996",
+      "source_company_name": "Ford Motor Company",
+      "source_in_portfolio": true,
+      "edge_type": "supplier",
+      "target_name": "Takata",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "supplier of desiccated airbag inflators",
+      "evidence_quote": "For example, NHTSA and the automotive industry are currently engaged in a study of the safety of approximately 56 million Takata desiccated airbag inflators in the United States. Of these, approximately 3.5 million of the inflators are in our vehicles.",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0000037996",
+        "form": "10-K",
+        "accession": "0000037996-26-000015",
+        "filed": "2026-02-11",
+        "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Supplier relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The context mentions 3.5 million Takata airbag inflators are installed in Ford vehicles, supporting a supplier relationship.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_cf85a07ce5ef",
+      "source_company_key": "CIK:0000037996",
+      "source_company_name": "Ford Motor Company",
+      "source_in_portfolio": true,
+      "edge_type": "supplier",
+      "target_name": "ARC Automotive",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "supplier of airbag inflators",
+      "evidence_quote": "In addition, NHTSA is considering action related to 52 million vehicles containing inflators from ARC Automotive and Delphi Automotive in the United States. Ford has 2.5 million vehicles within this population.",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0000037996",
+        "form": "10-K",
+        "accession": "0000037996-26-000015",
+        "filed": "2026-02-11",
+        "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Supplier relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_a7c38c5f5085",
+      "source_company_key": "CIK:0000037996",
+      "source_company_name": "Ford Motor Company",
+      "source_in_portfolio": true,
+      "edge_type": "supplier",
+      "target_name": "Delphi Automotive",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "supplier of airbag inflators",
+      "evidence_quote": "In addition, NHTSA is considering action related to 52 million vehicles containing inflators from ARC Automotive and Delphi Automotive in the United States. Ford has 2.5 million vehicles within this population.",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0000037996",
+        "form": "10-K",
+        "accession": "0000037996-26-000015",
+        "filed": "2026-02-11",
+        "url": "https://www.sec.gov/Archives/edgar/data/37996/000003799626000015/f-20251231.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Supplier relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    }
+  ],
+  "vint_rejected_edges": [],
+  "quote_rejected_count": 0
+}

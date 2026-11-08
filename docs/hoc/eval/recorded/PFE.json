@@ -1,0 +1,52 @@
+{
+  "ticker": "PFE",
+  "company_key": "CIK:0000078003",
+  "company_name": "Pfizer Inc.",
+  "filing_accession": "0000078003-26-000026",
+  "filing_form": "10-K",
+  "filing_filed": "2026-02-26",
+  "filing_url": "https://www.sec.gov/Archives/edgar/data/78003/000007800326000026/pfe-20251231.htm",
+  "prompt_version": "hoc-v2-extract-1",
+  "judge_prompt_version": "hoc-v3-judge-1",
+  "model": "gemini-3.8-flash",
+  "edges": [
+    {
+      "edge_id": "edge_4c9eb973643e",
+      "source_company_key": "CIK:0000078003",
+      "source_company_name": "Pfizer Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "jv_partner",
+      "target_name": "BioNTech",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "collaboration partner for Comirnaty supply",
+      "evidence_quote": "We and our collaboration partner, BioNTech, have entered into agreements to supply pre-specified doses of Comirnaty with multiple developed and emerging nations around the world",
+      "section": "concentration_8",
+      "filing": {
+        "company_key": "CIK:0000078003",
+        "form": "10-K",
+        "accession": "0000078003-26-000026",
+        "filed": "2026-02-26",
+        "url": "https://www.sec.gov/Archives/edgar/data/78003/000007800326000026/pfe-20251231.htm"
+      },
+      "importance": {
+        "score": 0.4,
+        "tier": "medium",
+        "reasons": [
+          "Joint-venture partner relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The quote explicitly refers to BioNTech as Pfizer's 'collaboration partner' with whom they enter into agreements to supply Comirnaty doses, supporting the jv_partner relationship.",
+        "model": "gemini-3.8-flash"
+      }
+    }
+  ],
+  "vint_rejected_edges": [],
+  "quote_rejected_count": 0
+}

@@ -1,0 +1,304 @@
+{
+  "ticker": "QRVO",
+  "company_key": "CIK:0001604778",
+  "company_name": "Qorvo, Inc.",
+  "filing_accession": "0001628280-26-032873",
+  "filing_form": "10-K",
+  "filing_filed": "2026-05-08",
+  "filing_url": "https://www.sec.gov/Archives/edgar/data/1604778/000162828026032873/rfmd-20260328.htm",
+  "prompt_version": "hoc-v2-extract-1",
+  "judge_prompt_version": "hoc-v3-judge-1",
+  "model": "gemini-3.8-flash",
+  "edges": [
+    {
+      "edge_id": "edge_045a9cdb4eed",
+      "source_company_key": "CIK:0001604778",
+      "source_company_name": "Qorvo, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "customer",
+      "target_name": "Apple Inc.",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "largest end customer, accounting for 50% and 47% of total revenue in fiscal years 2026 and 2025, respectively",
+      "evidence_quote": "We provide products to our largest end customer, Apple Inc. (\"Apple\"), through sales to multiple contract manufacturers, which in the aggregate accounted for 50% and 47% of total revenue in fiscal years 2026 and 2025, respectively.",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0001604778",
+        "form": "10-K",
+        "accession": "0001628280-26-032873",
+        "filed": "2026-05-08",
+        "url": "https://www.sec.gov/Archives/edgar/data/1604778/000162828026032873/rfmd-20260328.htm"
+      },
+      "importance": {
+        "score": 0.9,
+        "tier": "critical",
+        "reasons": [
+          "Customer at >=20% of revenue ('largest end customer, accounting for 50% and 47% of total revenue in fiscal years 2026 and 2025, respectively')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_130040dfc4b1",
+      "source_company_key": "CIK:0001604778",
+      "source_company_name": "Qorvo, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "customer",
+      "target_name": "Samsung Electronics Co., Ltd.",
+      "target_kind": "company",
+      "target_key": "ALIAS:SAMSUNG_ELEC",
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "accounted for 10% of total revenue in both fiscal years 2026 and 2025",
+      "evidence_quote": "Samsung Electronics Co., Ltd. (\"Samsung\") accounted for 10% of total revenue in both fiscal years 2026 and 2025.",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0001604778",
+        "form": "10-K",
+        "accession": "0001628280-26-032873",
+        "filed": "2026-05-08",
+        "url": "https://www.sec.gov/Archives/edgar/data/1604778/000162828026032873/rfmd-20260328.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Customer at 10-20% of revenue ('accounted for 10% of total revenue in both fiscal years 2026 and 2025')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_ff0a9ab0362e",
+      "source_company_key": "CIK:0001604778",
+      "source_company_name": "Qorvo, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Richardson, Texas",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "advanced microwave module assembly and manufacturing facility",
+      "evidence_quote": "We also invest in packaging R&D internally, including at our advanced microwave module assembly facility in Richardson, Texas",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0001604778",
+        "form": "10-K",
+        "accession": "0001628280-26-032873",
+        "filed": "2026-05-08",
+        "url": "https://www.sec.gov/Archives/edgar/data/1604778/000162828026032873/rfmd-20260328.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('packaging')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_dbeaa56bc419",
+      "source_company_key": "CIK:0001604778",
+      "source_company_name": "Qorvo, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Oregon",
+      "target_kind": "region",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "fabrication facility for the production of BAW, GaAs, GaN and SAW wafers",
+      "evidence_quote": "In fiscal 2026, our fabrication facilities for the production of BAW, GaAs, GaN and SAW wafers were located in North Carolina, Oregon and Texas.",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0001604778",
+        "form": "10-K",
+        "accession": "0001628280-26-032873",
+        "filed": "2026-05-08",
+        "url": "https://www.sec.gov/Archives/edgar/data/1604778/000162828026032873/rfmd-20260328.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('fabrication')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_7ce50a2d7edd",
+      "source_company_key": "CIK:0001604778",
+      "source_company_name": "Qorvo, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Germany",
+      "target_kind": "country",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "internal assembly facility location",
+      "evidence_quote": "In fiscal 2026, our internal assembly facilities were located in Costa Rica, Germany and the U.S.",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0001604778",
+        "form": "10-K",
+        "accession": "0001628280-26-032873",
+        "filed": "2026-05-08",
+        "url": "https://www.sec.gov/Archives/edgar/data/1604778/000162828026032873/rfmd-20260328.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('assembly')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_77207ed9acba",
+      "source_company_key": "CIK:0001604778",
+      "source_company_name": "Qorvo, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "key_input",
+      "target_name": "GaN on silicon carbide (\"SiC\") wafers",
+      "target_kind": "material",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "raw material used in GaN manufacturing operations",
+      "evidence_quote": "In our GaN and GaAs manufacturing operations, we use several raw materials, including GaN on silicon carbide (\"SiC\") wafers and GaAs wafers.",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0001604778",
+        "form": "10-K",
+        "accession": "0001628280-26-032873",
+        "filed": "2026-05-08",
+        "url": "https://www.sec.gov/Archives/edgar/data/1604778/000162828026032873/rfmd-20260328.htm"
+      },
+      "importance": {
+        "score": 0.6,
+        "tier": "high",
+        "reasons": [
+          "Key input relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_a6f8ade36db5",
+      "source_company_key": "CIK:0001604778",
+      "source_company_name": "Qorvo, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "key_input",
+      "target_name": "lithium tantalate",
+      "target_kind": "material",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "raw material in acoustic filter manufacturing operations",
+      "evidence_quote": "In our acoustic filter manufacturing operations, raw materials include silicon, lithium niobate and lithium tantalate.",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0001604778",
+        "form": "10-K",
+        "accession": "0001628280-26-032873",
+        "filed": "2026-05-08",
+        "url": "https://www.sec.gov/Archives/edgar/data/1604778/000162828026032873/rfmd-20260328.htm"
+      },
+      "importance": {
+        "score": 0.6,
+        "tier": "high",
+        "reasons": [
+          "Key input relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The quote explicitly identifies lithium tantalate as a raw material used in Qorvo's acoustic filter manufacturing operations, supporting the key_input relationship.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_9908c45cce95",
+      "source_company_key": "CIK:0001604778",
+      "source_company_name": "Qorvo, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "key_input",
+      "target_name": "lithium niobate",
+      "target_kind": "material",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "raw material in acoustic filter manufacturing operations",
+      "evidence_quote": "In our acoustic filter manufacturing operations, raw materials include silicon, lithium niobate and lithium tantalate.",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0001604778",
+        "form": "10-K",
+        "accession": "0001628280-26-032873",
+        "filed": "2026-05-08",
+        "url": "https://www.sec.gov/Archives/edgar/data/1604778/000162828026032873/rfmd-20260328.htm"
+      },
+      "importance": {
+        "score": 0.6,
+        "tier": "high",
+        "reasons": [
+          "Key input relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    }
+  ],
+  "vint_rejected_edges": [],
+  "quote_rejected_count": 0
+}

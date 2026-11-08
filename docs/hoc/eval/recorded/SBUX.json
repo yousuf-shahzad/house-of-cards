@@ -1,0 +1,232 @@
+{
+  "ticker": "SBUX",
+  "company_key": "CIK:0000829224",
+  "company_name": "Starbucks Corporation",
+  "filing_accession": "0000829224-25-000114",
+  "filing_form": "10-K",
+  "filing_filed": "2025-11-14",
+  "filing_url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm",
+  "prompt_version": "hoc-v2-extract-1",
+  "judge_prompt_version": "hoc-v3-judge-1",
+  "model": "gemini-3.8-flash",
+  "edges": [
+    {
+      "edge_id": "edge_95b957477eb2",
+      "source_company_key": "CIK:0000829224",
+      "source_company_name": "Starbucks Corporation",
+      "source_in_portfolio": true,
+      "edge_type": "jv_partner",
+      "target_name": "Nestlé S.A.",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Global Coffee Alliance licensing and distribution partner",
+      "evidence_quote": "We also sell a variety of coffee and tea products and license our trademarks through other channels, such as licensed stores as well as grocery and foodservice through our Global Coffee Alliance with Nestlé S.A. (\"Nestlé\").",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0000829224",
+        "form": "10-K",
+        "accession": "0000829224-25-000114",
+        "filed": "2025-11-14",
+        "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"
+      },
+      "importance": {
+        "score": 0.4,
+        "tier": "medium",
+        "reasons": [
+          "Joint-venture partner relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The quote explicitly confirms an alliance/partnership with Nestlé S.A. ('Global Coffee Alliance') to sell coffee/tea products and license trademarks.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_e0657c8e2100",
+      "source_company_key": "CIK:0000829224",
+      "source_company_name": "Starbucks Corporation",
+      "source_in_portfolio": true,
+      "edge_type": "contract_manufacturer",
+      "target_name": "Nestlé",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "controls distribution of packaged coffee and roasts/packages products",
+      "evidence_quote": "Nestlé controls distribution of Starbucks packaged coffee products outside of Starbucks stores through the Global Coffee Alliance, and in some cases, also roasts and packages these products.",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0000829224",
+        "form": "10-K",
+        "accession": "0000829224-25-000114",
+        "filed": "2025-11-14",
+        "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"
+      },
+      "importance": {
+        "score": 0.85,
+        "tier": "critical",
+        "reasons": [
+          "Contract manufacturer relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The quote directly confirms that Nestlé roasts and packages Starbucks packaged coffee products outside of Starbucks stores, supporting contract manufacturing.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_8027779671e0",
+      "source_company_key": "CIK:0000829224",
+      "source_company_name": "Starbucks Corporation",
+      "source_in_portfolio": true,
+      "edge_type": "jv_partner",
+      "target_name": "PepsiCo, Inc.",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "collaborative relationship for ready-to-drink businesses",
+      "evidence_quote": "while our global ready-to-drink businesses operate under collaborative relationships with PepsiCo, Inc., Nestlé, and others.",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0000829224",
+        "form": "10-K",
+        "accession": "0000829224-25-000114",
+        "filed": "2025-11-14",
+        "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"
+      },
+      "importance": {
+        "score": 0.4,
+        "tier": "medium",
+        "reasons": [
+          "Joint-venture partner relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_0cf373b56cc0",
+      "source_company_key": "CIK:0000829224",
+      "source_company_name": "Starbucks Corporation",
+      "source_in_portfolio": true,
+      "edge_type": "key_input",
+      "target_name": "green coffee beans",
+      "target_kind": "material",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "purchased from multiple coffee-producing regions",
+      "evidence_quote": "We purchase green coffee beans from multiple coffee-producing regions around the world and custom roast them to our exacting standards for our many blends and single-origin coffees.",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0000829224",
+        "form": "10-K",
+        "accession": "0000829224-25-000114",
+        "filed": "2025-11-14",
+        "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"
+      },
+      "importance": {
+        "score": 0.6,
+        "tier": "high",
+        "reasons": [
+          "Key input relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The quote explicitly states that Starbucks purchases green coffee beans from multiple regions to custom roast them for blends and coffees, confirming it as a key input.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_c9fdbeb07560",
+      "source_company_key": "CIK:0000829224",
+      "source_company_name": "Starbucks Corporation",
+      "source_in_portfolio": true,
+      "edge_type": "key_input",
+      "target_name": "dairy",
+      "target_kind": "material",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "fluid milk and plant-based dairy-free alternatives",
+      "evidence_quote": "In addition to coffee, we also purchase significant amounts of dairy, particularly fluid milk, and to a lesser degree, plant-based dairy-free alternative products, such as oat milk and almond milk, to support the needs of our company-operated stores.",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0000829224",
+        "form": "10-K",
+        "accession": "0000829224-25-000114",
+        "filed": "2025-11-14",
+        "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"
+      },
+      "importance": {
+        "score": 0.6,
+        "tier": "high",
+        "reasons": [
+          "Key input relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_4999a0a62b28",
+      "source_company_key": "CIK:0000829224",
+      "source_company_name": "Starbucks Corporation",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "China Farmer Support Center",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "farmer support center located in Yunnan Province",
+      "evidence_quote": "To help ensure the future supply of high-quality green coffee and to reinforce our leadership role in the coffee industry, Starbucks operates ten farmer support centers, including our China Farmer Support Center located in the Yunnan Province of this high-growth market.",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0000829224",
+        "form": "10-K",
+        "accession": "0000829224-25-000114",
+        "filed": "2025-11-14",
+        "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Facility location"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    }
+  ],
+  "vint_rejected_edges": [],
+  "quote_rejected_count": 0
+}
