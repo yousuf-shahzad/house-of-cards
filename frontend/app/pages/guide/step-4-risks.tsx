@@ -283,13 +283,19 @@ export default function RisksStep(_props: RiskStepProps) {
   const activePhase = job?.phase ?? "reading";
   const stepsDone = job?.steps_done || job?.progress_done || 0;
   const stepsTotal = job?.steps_total || job?.progress_total || job?.companies.length || 15;
-  const rawPct = stepsTotal > 0 ? (stepsDone / stepsTotal) * 100 : 0;
-  const progressRef = useRef<{ jobId: string | null; pct: number }>({ jobId: null, pct: 0 });
+  const rawPct = job?.status === "done" ? 100 : stepsTotal > 0 ? (stepsDone / stepsTotal) * 100 : 0;
+  const progressRef = useRef<{ jobId: string | null; pct: number; status: string | null }>({
+    jobId: null,
+    pct: 0,
+    status: null,
+  });
   progressRef.current = monotonicProgressPct(
     progressRef.current.jobId,
     progressRef.current.pct,
     job?.job_id,
     rawPct,
+    progressRef.current.status,
+    job?.status ?? status,
   );
   const progressPct = progressRef.current.pct;
   const phases: Array<{ id: "reading" | "researching" | "synthesising"; label: string }> = [
