@@ -43,27 +43,45 @@ Found by the lead in the FIX-17 live check. Compare (Try a change and change ide
 - Then update the 12.39% → 4.69% figure everywhere it's quoted (README, DEMO, PITCH_DECK).
 - **Owner:** Yousuf's Codex (`portfolio/compare.py`, `portfolio/ideas.py`), then Gawyn's Gemini (docs numbers) · **Status:** assigned
 
-### FIX-17 · high · Suggest specific changes on screen 5 and in Try a change (both views)
-Gawyn wants concrete ideas such as "add this ETF to help fix this diversification issue", which the user can pick to load into Try a change, in the simple view and the full view.
-- **Backend (Python owns every number):** a new `POST /api/change-ideas`.
-  - **Input:** the current holdings.
-  - **Candidates:** a pinned list of diversifying ETFs that our sources can load (e.g. equal-weight S&P 500, value, international, under-weighted sectors).
-  - **Testing:** try each at 10% and 20%, using compare in cache-only mode with no AI calls.
-  - **Ranking:** order the ideas by how much they fix the portfolio's worst issue (the largest industry when that's the problem, else the biggest dependency, else top 10 / effective N).
-  - **Output:** the top 3. Each has the ETF, its share, which issue it addresses, a plain title and reason, the full candidate holdings, and the before → after deltas.
-  - **Contract:** new models, lead-approved and additive only: `hoc/contract`, the `types.ts` mirror, a fixture, the snapshot, and `CONTRACT.md` §10.
-- **Frontend:**
-  - **Screen 5:** idea cards ("Add RSP: largest industry 51% → 41%") with a "Try this" button that opens Try a change with the idea loaded. The ETF is added as whole shares worth its share of your portfolio.
-  - **Try a change** (guide and Compare page): an "Ideas" list at the top that loads an idea in one click.
-- **Owner:**
-  - Yousuf's Codex: backend + contract. Shape approved. It merges the contract + fixture as a small PR first.
-  - Yousuf's Claude: the vite proxy and `api.changeIdeas`.
-  - Bekarys's Claude: the screen-5 cards and the Ideas list in Try a change.
-- **Live check of the engine (#178) found:**
-  - **Wrong issue:** all 3 ideas address the TSMC dependency, although the screens tell the user the problem is one industry (Technology 51%). The ideas engine's stricter 95% sector-coverage gate skips the industry rule. Use the same rule as the verdict on screen 3 and the Risk page.
-  - **Identical text:** the 3 ideas (XLU, XLP, XLV) have the same reason sentence. Say what each adds, e.g. "Add health care (XLV)" with "Adds health-care companies; your largest industry, Technology, would fall from 51% to 41%." Prefer some variety, such as one broad fund if it helps.
-  - **Numbers:** these also depend on FIX-20.
-- **Status:** contract (#177), client (#179) and engine (#178) merged. Codex fixes the points above; Bekarys's Claude builds the UI.
+### FIX-17 · high · Change ideas: AI proposes, Python verifies (Gawyn, 07:08)
+Gawyn wants concrete ideas ("add this ETF to help fix this diversification issue") on screen 5 and in Try a change, in both views. **The AI proposes the changes and Python verifies them**, the same pattern as the AI summaries.
+
+**1. AI proposer** (Gawyn's Gemini; new `backend/hoc/graph/idea_proposer.py`, next to the orchestrator; uses the existing Gemini client without changing `hoc/ai`):
+- **Input from Python:** the portfolio's issues. That means the largest industry (same ≥40% rule as the verdict on screen 3 and the Risk page), the biggest dependencies, top 10, and effective N, all as metric ids. It also gets the current holdings, and a pinned universe of loadable ETFs (about 15–20: broad, equal-weight, value, international, sector funds). Each ETF comes with its name, category and largest industry, computed by Python.
+- **Asks the model (Flash, for speed)** for up to 5 proposals. Each one is:
+  - `add`: put fraction f of the portfolio into ETF Z, scaling the rest; or
+  - `swap`: move f from held ETF Y into ETF Z;
+  - with f in {0.1, 0.2, 0.3}, the issue id it addresses, and a short `rationale`. Numbers in the rationale appear only as `{{metric:id}}` placeholders.
+- **Behaviour:** versioned prompt, JSON schema, cached per (holdings, issues, prompt version, model).
+- **On a missing key, error or timeout:** return no proposals with an `ai_status`.
+
+**2. Python verifier and ranker** (Yousuf's Codex; `portfolio/ideas.py`, after FIX-20). It rejects any proposal that:
+- uses a ticker outside the universe;
+- has a bad fraction, or a swap source that isn't held;
+- has a rationale that fails the orchestrator's placeholder, number and name rules;
+- doesn't measurably improve the issue it names;
+- makes the largest industry or the top dependency worse beyond a small tolerance.
+
+Survivors are measured with cache-only compare on one company set (FIX-20). Python renders every number, ranks by verified improvement, and returns the top 3 distinct ETFs. If the AI is unavailable or nothing survives, the current rules shortlist is the fallback.
+
+**3. Contract** (lead-approved, Codex adds it; additive):
+- **`ChangeIdea`:**
+  - `proposed_by: "ai" | "rules"`;
+  - `action: "add" | "swap"`;
+  - `swap_from: str | None`;
+  - `rationale: str | None`, the verified and rendered text;
+  - `add_fraction` widens to 0.1 / 0.2 / 0.3.
+- **`ChangeIdeasResponse`:**
+  - `ai_status: "ok" | "missing_api_key" | "failed" | "timeout" | "not_used"`;
+  - `model` and `prompt_version`;
+  - `rejected_proposals: [{ticker, action, reason}]`, so the UI can say "the AI suggested 5, we kept 3".
+
+**4. UI** (Bekarys's Claude):
+- **Cards:** idea cards show the rationale and an "AI idea, checked with your numbers" note. Rules ideas are labelled as such.
+- **Swaps:** they move shares from the source ETF.
+- **Retry:** retry once while the AI is pending.
+- **Live check (lead):** sample portfolio. Every shown idea improves its named issue by the shown amount; the AI and fallback paths both work, including with no key.
+- **Owners:** Gawyn's Gemini (proposer) + Yousuf's Codex (verifier, contract, FIX-20 first) + Bekarys's Claude (UI) · **Status:** assigned; the rules-only version is merged (#177–#179)
 
 ### FIX-19 · low · Progress bar can stick at 100% when a finished scan is re-run
 Found by Yousuf's Claude in review of #174. The backend reuses the job_id when a cached replay is upgraded to a live run, so the "never go down" rule keeps showing 100% until the new run ends.
