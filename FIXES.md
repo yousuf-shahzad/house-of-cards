@@ -36,7 +36,7 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 ### FIX-54 · high · BUG: Full-view pages spin forever or show an old result when the portfolio is invalid (bug hunt batch 2)
 - **(a) Exposures** (`exposures/index.tsx:781`) checks `stale || status === "loading"`, so an invalid edit shows an endless "Updating" spinner, and UNKNOWN_TICKER shows the spinner and the error together. Fix: spinner only while loading; show the error, or "finish your portfolio", for error/invalid. **Owner:** Yousuf's Codex, together with its FIX-43 Exposures edits.
 - **(b) Risk** (`risk/index.tsx:381`) has the same pattern. **Owner:** Gawyn's Gemini.
-- **(c) Portfolio + analysis state:** `portfolio/index.tsx:64` shows "See what you really own" while stale (it checks `status === "ready"` without `!stale`), and `analysis.tsx` keeps `status === "error"` after the bad ticker is cleared (`inputs` is null). Fix both. **Owner:** Gawyn's Claude (lead, at Gawyn's request).
+- **(c) Portfolio + analysis state:** done in #240. The Portfolio link now requires `!stale`. The `analysis.tsx` error report did not reproduce: in % mode, ZZZZ shows the error and clearing it clears the error.
 - **Status:** assigned
 
 ### FIX-55 · high · BUG: Full Dependencies ignores stale/error state and drops the top 30 back to 15 (bug hunt batch 2)
