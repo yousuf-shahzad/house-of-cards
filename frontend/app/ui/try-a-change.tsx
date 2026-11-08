@@ -403,14 +403,14 @@ function ideaHeadline(idea: ChangeIdea): string {
   return what ? `${verb}: ${what}` : verb;
 }
 
-/** "AI suggested 5 ideas; 2 passed the check with your numbers", with each rejection's reason under a toggle.
+/** "AI suggested 5 ideas; we kept 2", with each rejection's reason under a toggle.
  * The ideas the AI proposed are the kept AI cards plus the rejected proposals. */
 function AiCheckSummary({ response }: { response: ChangeIdeasResponse }) {
   const rejected = response.rejected_proposals ?? [];
   const kept = response.ideas.filter((idea) => idea.proposed_by === "ai").length;
   if (response.ai_status !== "ok" || kept + rejected.length === 0) return null;
   const proposed = kept + rejected.length;
-  const summary = `AI suggested ${proposed} ${proposed === 1 ? "idea" : "ideas"}; ${kept} passed the check with your numbers.`;
+  const summary = `AI suggested ${proposed} ${proposed === 1 ? "idea" : "ideas"}; we kept ${kept}.`;
   if (rejected.length === 0) return <p className="text-body-2-regular text-text-secondary">{summary}</p>;
   return (
     <details className="text-body-2-regular text-text-secondary">
@@ -444,9 +444,9 @@ export function ChangeIdeas({ heading = "Ideas to try", onTried }: { heading?: s
     <section className="flex flex-col gap-3" aria-label={heading} aria-busy={ideas.status === "loading"}>
       <h2 className="text-headline-small text-text-primary">{heading}</h2>
       {ideas.status === "loading" && (
-        <p className="flex items-center gap-2 text-body-2-regular text-text-secondary">
+        <div className="flex items-center gap-2 text-body-2-regular text-text-secondary">
           <Spinner size="sm" aria-label="Looking for ideas" /> Looking for ETFs that would spread your money more…
-        </p>
+        </div>
       )}
       {ideas.status === "error" && (
         <p className="text-body-2-regular text-text-secondary">
@@ -469,9 +469,9 @@ export function ChangeIdeas({ heading = "Ideas to try", onTried }: { heading?: s
       )}
       {ideas.response && <AiCheckSummary response={ideas.response} />}
       {ideas.response?.ai_status === "pending" && (
-        <p className="flex items-center gap-2 text-body-2-regular text-text-secondary">
+        <div className="flex items-center gap-2 text-body-2-regular text-text-secondary">
           <Spinner size="sm" aria-label="AI is checking more ideas" /> AI is checking more ideas…
-        </p>
+        </div>
       )}
       {list.length > 0 && (
         <ul className="grid grid-cols-1 gap-3 md:grid-cols-3">
