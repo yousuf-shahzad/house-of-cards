@@ -163,6 +163,8 @@ type Headline = {
   direction: -1 | 0 | 1;
   /** Whether going up is the safer direction (only "behaves like N holdings"). */
   higherIsBetter: boolean;
+  /** Replaces "no change" when there is nothing to compare. */
+  note?: string;
 };
 
 const direction = (change: number, epsilon: number): -1 | 0 | 1 => (Math.abs(change) < epsilon ? 0 : change > 0 ? 1 : -1);
@@ -190,7 +192,17 @@ function headlines(result: CompareResponse): Headline[] {
       higherIsBetter: false,
     });
   } else {
-    out.push({ label: "Company dependencies", before: "", after: "", direction: 0, higherIsBetter: false });
+    const known = result.dependency_deltas.some(
+      (delta) => delta.unit === "fraction" && delta.metric_id.startsWith("dep.") && delta.delta !== null,
+    );
+    out.push({
+      label: "Company dependencies",
+      before: "",
+      after: "",
+      direction: 0,
+      higherIsBetter: false,
+      note: known ? undefined : "not checked yet",
+    });
   }
   const byName = new Map(result.concentration_deltas.map((row) => [row.name, row]));
   for (const [name, label] of [
@@ -235,7 +247,7 @@ function HeadlineRow({ row }: { row: Headline }) {
         )}
         {better === null ? (
           <Chip variant="caption" color="neutral">
-            no change
+            {row.note ?? "no change"}
           </Chip>
         ) : (
           <Chip variant="caption" color={better ? "lime" : "orange"}>
