@@ -6,12 +6,12 @@
 
 import { RiArrowRightUpLine, RiPieChart2Line, RiScales3Line } from "@remixicon/react";
 import { useAnalysis } from "@/app/analysis";
+import { diversificationVerdict } from "@/app/ui/concentration";
 import { Pct } from "@/app/ui/pct";
 import { Chip } from "@/components/base/badges/chip";
 import { Button } from "@/components/base/buttons/button";
 import { Spinner } from "@/components/base/spinner/spinner";
 import {
-  concentrationVerdict,
   GUIDE_STEP_META,
   openInFullView,
   plainSectorName,
@@ -46,17 +46,11 @@ export function StepSpread({ onBack }: GuideStepProps) {
   }
 
   const { concentration, sectors } = analysis;
-  const verdict = concentrationVerdict(concentration.hhi);
+  const verdict = diversificationVerdict({ hhi: concentration.hhi, sectors });
   const equalHoldingsCount = Math.max(1, Math.round(concentration.effective_companies));
   const topThreeSectors = sectors.filter((item) => item.sector !== "unknown").slice(0, 3);
-  const topSector = topThreeSectors[0] ?? null;
-  const sectorConcentrated = Boolean(topSector && topSector.weight >= 0.4);
-  const chipColor =
-    sectorConcentrated && verdict.label === "Diversified" ? "yellow" : verdict.color;
-  const chipLabel =
-    sectorConcentrated && verdict.label === "Diversified"
-      ? "Spread across companies, concentrated in one industry"
-      : verdict.label;
+  const topSector = verdict.topSector ?? topThreeSectors[0] ?? null;
+  const sectorConcentrated = verdict.sectorConcentrated;
   const maxSectorWeight = Math.max(0.01, topSector?.weight ?? 0.01);
 
   return (
@@ -68,8 +62,8 @@ export function StepSpread({ onBack }: GuideStepProps) {
             <RiScales3Line className="size-5 shrink-0 text-foreground-icon-secondary" aria-hidden />
             <h2 className="text-headline-medium text-text-primary">Overall balance</h2>
           </div>
-          <Chip variant="subtle" color={chipColor}>
-            {chipLabel}
+          <Chip variant="subtle" color={verdict.color}>
+            {verdict.label}
           </Chip>
         </div>
 
