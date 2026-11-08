@@ -408,3 +408,80 @@ def test_enrich_universe_uses_authoritative_fund_reported_sector_breakdown() -> 
     assert len(enriched) == 1
     assert enriched[0].largest_industry == "Health Care"
 
+
+def test_proposer_builds_real_gemini_client_and_classifies_timeout_by_type(tmp_path: Path) -> None:
+    """FIX-24: IdeaProposer instantiates the real GeminiClient over an HTTP double and classifies timeouts by type."""
+    import json
+
+    import httpx
+
+    from hoc.contract import SourceUnavailable
+
+    holdings = _sample_holdings()
+    analysis = _sample_analysis()
+    issues = build_portfolio_issues(analysis, _sample_dep_metrics())
+
+    class _FakeResponse:
+        status = 200
+
+        def json(self) -> dict[str, Any]:
+            return {
+                "output_text": json.dumps(
+                    {
+                        "proposals": [
+                            {
+                                "action": "add",
+                                "ticker": "RSP",
+                                "fraction": 0.2,
+                                "swap_from": "",
+                                "issue_id": "top_sector",
+                                "title": "Add equal-weight US stocks with RSP",
+                                "rationale": "Consider broader exposure for {{metric:top_sector}}.",
+                                "cited_metric_ids": ["top_sector"],
+                            }
+                        ]
+                    }
+                )
+            }
+
+    class _FakeHttpClient:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def post_json(self, url: str, payload: Any, **kwargs: Any) -> _FakeResponse:
+            self.calls += 1
+            return _FakeResponse()
+
+    http_double = _FakeHttpClient()
+    settings = Settings(gemini_api_key="SYNTHETIC-test-key", cache_dir=tmp_path / "ok")
+    proposer = IdeaProposer(http_double, settings)
+    res = proposer.propose(holdings, issues, analysis=analysis)
+    assert res.ai_status == "ok"
+    assert len(res.proposals) == 1
+    assert res.proposals[0].ticker == "RSP"
+    assert http_double.calls == 1
+
+    # TypeError whose message contains 'timeout' must be classified as 'failed', NOT 'timeout'
+    def _bad_type_error(**_: Any) -> dict[str, Any]:
+        raise TypeError("GeminiClient.__init__() got an unexpected keyword argument 'timeout'")
+
+    type_err_res = IdeaProposer(ai_client=_bad_type_error, cache_dir=tmp_path / "err").propose(
+        holdings, issues, analysis=analysis
+    )
+    assert type_err_res.ai_status == "failed"
+
+    # Real httpx.ReadTimeout wrapped in SourceUnavailable -> GeminiError is classified as 'timeout'
+    class _TimeoutHttpClient:
+        def post_json(self, url: str, payload: Any, **kwargs: Any) -> Any:
+            try:
+                raise httpx.ReadTimeout("timed out")
+            except httpx.TimeoutException as exc:
+                raise SourceUnavailable("gemini", "timed out") from exc
+
+    timeout_res = IdeaProposer(
+        _TimeoutHttpClient(),
+        Settings(gemini_api_key="SYNTHETIC-test-key", cache_dir=tmp_path / "to"),
+    ).propose(holdings, issues, analysis=analysis)
+    assert timeout_res.ai_status == "timeout"
+
+
