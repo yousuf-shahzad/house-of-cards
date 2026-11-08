@@ -377,16 +377,43 @@ export default function RiskPage() {
 
   return (
     <div className="flex w-full flex-col gap-6">
-      {/* Background refresh / stale notice */}
-      {(stale || status === "loading") && (
+      {/* Background refresh notice (spinner only while actively loading) */}
+      {status === "loading" && (
         <div
           role="status"
           className="flex items-center justify-between gap-3 rounded-2xl border border-border-button-default bg-background-secondary-default px-4 py-2.5"
         >
           <div className="flex items-center gap-2 text-body-2-medium text-text-secondary">
             <Spinner size="sm" />
-            <span>Updating risk, sector, and coverage diagnostics…</span>
+            <span>Updating risk, industry, and coverage diagnostics…</span>
           </div>
+        </div>
+      )}
+
+      {/* Stale draft notice when portfolio edits are incomplete or invalid */}
+      {stale && status !== "loading" && status !== "error" && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border-button-default bg-background-secondary-default px-4 py-3"
+        >
+          <div className="flex items-center gap-2.5 text-body-2-regular text-text-secondary">
+            <Chip variant="caption" color="yellow">
+              Stale view
+            </Chip>
+            <span>
+              Showing the last valid analysis. Finish your portfolio on the Portfolio page to
+              update.
+            </span>
+          </div>
+          <Button
+            variant="secondary"
+            size="xs"
+            onClick={() => {
+              location.hash = "#/portfolio";
+            }}
+          >
+            Edit portfolio
+          </Button>
         </div>
       )}
 
