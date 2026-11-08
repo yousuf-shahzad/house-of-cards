@@ -1,0 +1,396 @@
+{
+  "company": {
+    "name": "Deere & Company",
+    "cik": "0000315189",
+    "ticker": "DE"
+  },
+  "filing": {
+    "form": "10-K",
+    "accession": "0001104659-25-122321",
+    "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+  },
+  "annotators": [
+    "Yousuf's Codex",
+    "Bekarys's Claude"
+  ],
+  "adjudicator": "Gawyn's Claude",
+  "relationships": [
+    {
+      "id": "DE-1",
+      "edge_type": "facility",
+      "target_name": "Brazil",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Catalão, Brazil John Deere Brasil Ltda (Catalão) Factory PPA",
+      "importance": "high",
+      "tier": "core",
+      "source": "both",
+      "aliases": [
+        "factories in Brazil (Catalão, Horizontina, Indaiatuba, Montenegro)"
+      ],
+      "edge_type_alternatives": [],
+      "country": "BR",
+      "annotator_ids": [
+        "DE-11",
+        "DE-B5"
+      ],
+      "notes": "Item 2; named factory (BR)."
+    },
+    {
+      "id": "DE-2",
+      "edge_type": "facility",
+      "target_name": "Canada",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "In the U.S. and Canada, the equipment operations own and operate 23 factory locations and lease and operate four locations for manufacturing purposes, as well as own and lease 12 facilities for distribution purposes.",
+      "importance": "high",
+      "tier": "core",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": "CA",
+      "annotator_ids": [
+        "DE-10"
+      ],
+      "notes": "Item 2; joint US/Canada manufacturing footprint, no allocation of factory counts by country inferred."
+    },
+    {
+      "id": "DE-3",
+      "edge_type": "facility",
+      "target_name": "Germany",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Mannheim, Germany John Deere Werke Mannheim Factory SAT, PPA",
+      "importance": "high",
+      "tier": "core",
+      "source": "both",
+      "aliases": [
+        "factories in Germany (Mannheim, Zweibrücken, Wirtgen Group sites)"
+      ],
+      "edge_type_alternatives": [],
+      "country": "DE",
+      "annotator_ids": [
+        "DE-14",
+        "DE-B6"
+      ],
+      "notes": "Item 2; named factory (DE)."
+    },
+    {
+      "id": "DE-4",
+      "edge_type": "facility",
+      "target_name": "Spain",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Getafae, Spain John Deere Iberica, S.A. PPA, CF, SAT",
+      "importance": "low",
+      "tier": "core",
+      "source": "both",
+      "aliases": [
+        "John Deere Iberica, Spain"
+      ],
+      "edge_type_alternatives": [],
+      "country": "ES",
+      "annotator_ids": [
+        "DE-13",
+        "DE-B10"
+      ],
+      "notes": "Item 2 significant manufacturing properties table (ES)."
+    },
+    {
+      "id": "DE-5",
+      "edge_type": "facility",
+      "target_name": "Finland",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Joensuu, Finland Finland Forestry Factory CF",
+      "importance": "low",
+      "tier": "core",
+      "source": "both",
+      "aliases": [
+        "forestry factory in Joensuu, Finland"
+      ],
+      "edge_type_alternatives": [],
+      "country": "FI",
+      "annotator_ids": [
+        "DE-12",
+        "DE-B11"
+      ],
+      "notes": "Item 2; named factory (FI)."
+    },
+    {
+      "id": "DE-6",
+      "edge_type": "facility",
+      "target_name": "France",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Saran, France Saran Engine Factory SAT, PPA, CF",
+      "importance": "medium",
+      "tier": "core",
+      "source": "both",
+      "aliases": [
+        "Saran Engine Factory, France"
+      ],
+      "edge_type_alternatives": [],
+      "country": "FR",
+      "annotator_ids": [
+        "DE-17",
+        "DE-B9"
+      ],
+      "notes": "Item 2; named factory (FR)."
+    },
+    {
+      "id": "DE-7",
+      "edge_type": "facility",
+      "target_name": "India",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Pune, India John Deere Pune Works Factory SAT",
+      "importance": "medium",
+      "tier": "core",
+      "source": "both",
+      "aliases": [
+        "John Deere Pune Works, India"
+      ],
+      "edge_type_alternatives": [],
+      "country": "IN",
+      "annotator_ids": [
+        "DE-16",
+        "DE-B8"
+      ],
+      "notes": "Item 2; named factory (IN)."
+    },
+    {
+      "id": "DE-8",
+      "edge_type": "facility",
+      "target_name": "Mexico",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Monterrey, Mexico Industrias John Deere SA de CV Factory SAT, PPA, CF",
+      "importance": "high",
+      "tier": "core",
+      "source": "both",
+      "aliases": [
+        "factories in Mexico (Monterrey, Torréon engine)"
+      ],
+      "edge_type_alternatives": [],
+      "country": "MX",
+      "annotator_ids": [
+        "DE-15",
+        "DE-B7"
+      ],
+      "notes": "Item 2; named factory (MX)."
+    },
+    {
+      "id": "DE-9",
+      "edge_type": "facility",
+      "target_name": "United States",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "In the U.S. and Canada, the equipment operations own and operate 23 factory locations and lease and operate four locations for manufacturing purposes, as well as own and lease 12 facilities for distribution purposes.",
+      "importance": "high",
+      "tier": "core",
+      "source": "both",
+      "aliases": [
+        "factory locations in the U.S. (Waterloo, Moline, Des Moines, Dubuque and others)"
+      ],
+      "edge_type_alternatives": [],
+      "country": "US",
+      "annotator_ids": [
+        "DE-9",
+        "DE-B4"
+      ],
+      "notes": "Item 2; US manufacturing footprint separately corroborated by Augusta/Davenport/Waterloo in table."
+    },
+    {
+      "id": "DE-10",
+      "edge_type": "jv_partner",
+      "target_name": "Banco Bradesco S.A.",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "For example, in the second quarter of fiscal year 2025, we completed a transaction with a Brazilian bank, Banco Bradesco S.A. (Bradesco), for Bradesco to invest and become 50% owner of our subsidiary in Brazil, Banco John Deere S.A.",
+      "importance": "low",
+      "tier": "core",
+      "source": "both",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "DE-8",
+        "DE-B3"
+      ],
+      "notes": "Item 1 Financial Services; transaction completed, co-owns bank (50%); JV base 0.4."
+    },
+    {
+      "id": "DE-11",
+      "edge_type": "key_input",
+      "target_name": "electronics",
+      "target_kind": "component",
+      "direction": "depends_on_target",
+      "quote": "We source raw materials, manufactured components, and replacement parts for our equipment, engines, and other products from leading suppliers globally. These materials and components include a variety of steel products, metal castings, forgings, plastics, hydraulics, electronics, and ready-to-assemble components made to certain specifications.",
+      "importance": "medium",
+      "tier": "core",
+      "source": "both",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "DE-6",
+        "DE-B2"
+      ],
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "DE-12",
+      "edge_type": "key_input",
+      "target_name": "forgings",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We source raw materials, manufactured components, and replacement parts for our equipment, engines, and other products from leading suppliers globally. These materials and components include a variety of steel products, metal castings, forgings, plastics, hydraulics, electronics, and ready-to-assemble components made to certain specifications.",
+      "importance": "high",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "DE-3"
+      ],
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "DE-13",
+      "edge_type": "key_input",
+      "target_name": "hydraulics",
+      "target_kind": "component",
+      "direction": "depends_on_target",
+      "quote": "We source raw materials, manufactured components, and replacement parts for our equipment, engines, and other products from leading suppliers globally. These materials and components include a variety of steel products, metal castings, forgings, plastics, hydraulics, electronics, and ready-to-assemble components made to certain specifications.",
+      "importance": "high",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "DE-5"
+      ],
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "DE-14",
+      "edge_type": "key_input",
+      "target_name": "metal castings",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We source raw materials, manufactured components, and replacement parts for our equipment, engines, and other products from leading suppliers globally. These materials and components include a variety of steel products, metal castings, forgings, plastics, hydraulics, electronics, and ready-to-assemble components made to certain specifications.",
+      "importance": "high",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "DE-2"
+      ],
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "DE-15",
+      "edge_type": "key_input",
+      "target_name": "plastics",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We source raw materials, manufactured components, and replacement parts for our equipment, engines, and other products from leading suppliers globally. These materials and components include a variety of steel products, metal castings, forgings, plastics, hydraulics, electronics, and ready-to-assemble components made to certain specifications.",
+      "importance": "high",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "DE-4"
+      ],
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "DE-16",
+      "edge_type": "key_input",
+      "target_name": "ready-to-assemble components",
+      "target_kind": "component",
+      "direction": "depends_on_target",
+      "quote": "We source raw materials, manufactured components, and replacement parts for our equipment, engines, and other products from leading suppliers globally. These materials and components include a variety of steel products, metal castings, forgings, plastics, hydraulics, electronics, and ready-to-assemble components made to certain specifications.",
+      "importance": "high",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "DE-7"
+      ],
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "DE-17",
+      "edge_type": "key_input",
+      "target_name": "steel products",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We source raw materials, manufactured components, and replacement parts for our equipment, engines, and other products from leading suppliers globally. These materials and components include a variety of steel products, metal castings, forgings, plastics, hydraulics, electronics, and ready-to-assemble components made to certain specifications.",
+      "importance": "medium",
+      "tier": "core",
+      "source": "both",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "DE-1",
+        "DE-B1"
+      ],
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    }
+  ],
+  "negatives": [
+    {
+      "id": "DE-N1",
+      "target_name": "AGCO Corporation",
+      "kind": "competitor",
+      "quote": "The competitive environment for the agriculture and turf operations includes some global competitors, such as AGCO Corporation, CLAAS KGaA mbH, CNH Industrial N.V., Kubota Tractor Corporation, and The Toro Company.",
+      "source": "a"
+    },
+    {
+      "id": "DE-N2",
+      "target_name": "CNH Industrial N.V.",
+      "kind": "competitor",
+      "quote": "The competitive environment for the agriculture and turf operations includes some global competitors, such as AGCO Corporation, CLAAS KGaA mbH, CNH Industrial N.V., Kubota Tractor Corporation, and The Toro Company.",
+      "source": "a"
+    },
+    {
+      "id": "DE-N3",
+      "target_name": "Kubota Tractor Corporation",
+      "kind": "competitor",
+      "quote": "The competitive environment for the agriculture and turf operations includes some global competitors, such as AGCO Corporation, CLAAS KGaA mbH, CNH Industrial N.V., Kubota Tractor Corporation, and The Toro Company.",
+      "source": "a"
+    },
+    {
+      "id": "DE-N4",
+      "target_name": "future joint ventures",
+      "kind": "hypothetical",
+      "quote": "Acquisitions and joint ventures we have entered into, or may enter into in the future, may involve significant challenges and risks, including that the acquisitions or joint ventures do not advance our business strategy, or fail to produce satisfactory returns on investment.",
+      "source": "a"
+    },
+    {
+      "id": "DE-N5",
+      "target_name": "single source suppliers",
+      "kind": "generic",
+      "quote": "reliance on single source suppliers, or suppliers that are proprietary in nature that cannot be replaced expeditiously",
+      "source": "b"
+    },
+    {
+      "id": "DE-N6",
+      "target_name": "Federal Trade Commission",
+      "kind": "unrelated",
+      "quote": "the Federal Trade Commission (FTC), along with the Attorneys General of the States of Illinois and Minnesota, filed a lawsuit against us",
+      "source": "b"
+    }
+  ]
+}

@@ -1,0 +1,857 @@
+{
+  "company": {
+    "name": "Skyworks Solutions, Inc.",
+    "cik": "0000004127",
+    "ticker": "SWKS"
+  },
+  "filing": {
+    "form": "10-K",
+    "accession": "0000004127-25-000085",
+    "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+  },
+  "annotators": [
+    "Yousuf's Codex",
+    "Bekarys's Claude"
+  ],
+  "adjudicator": "Gawyn's Claude",
+  "relationships": [
+    {
+      "id": "SWKS-1",
+      "edge_type": "customer",
+      "target_name": "Amazon",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-1"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-2",
+      "edge_type": "customer",
+      "target_name": "Apple Inc.",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "During fiscal 2025, fiscal 2024, and fiscal 2023, Apple, through sales to multiple distributors, contract manufacturers, and direct sales for multiple applications including smartphones, tablets, desktop, and notebook computers, watches and other devices, in the aggregate accounted for 67%, 69%, and 66% of the Company's net revenue, respectively.",
+      "importance": "critical",
+      "tier": "core",
+      "source": "both",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-36",
+        "SWKS-B1"
+      ],
+      "notes": "Note 14 Concentrations; Apple end-customer aggregated through distributors, manufacturers and direct sales; 2025 67%, customer base 0.9."
+    },
+    {
+      "id": "SWKS-3",
+      "edge_type": "customer",
+      "target_name": "Arcadyan",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-2"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-4",
+      "edge_type": "customer",
+      "target_name": "Arris",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-3"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-5",
+      "edge_type": "customer",
+      "target_name": "Bose",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-4"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-6",
+      "edge_type": "customer",
+      "target_name": "Ciena",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-5"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-7",
+      "edge_type": "customer",
+      "target_name": "Cisco",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-6"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-8",
+      "edge_type": "customer",
+      "target_name": "Ericsson",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-7"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-9",
+      "edge_type": "customer",
+      "target_name": "Fibocom",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-8"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-10",
+      "edge_type": "customer",
+      "target_name": "Garmin",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-9"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-11",
+      "edge_type": "customer",
+      "target_name": "Gemalto",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-10"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-12",
+      "edge_type": "customer",
+      "target_name": "General Electric",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-11"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-13",
+      "edge_type": "customer",
+      "target_name": "Google",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-12"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-14",
+      "edge_type": "customer",
+      "target_name": "Honeywell",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-13"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-15",
+      "edge_type": "customer",
+      "target_name": "Itron",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-14"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-16",
+      "edge_type": "customer",
+      "target_name": "Lenovo",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-15"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-17",
+      "edge_type": "customer",
+      "target_name": "LG Electronics",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-16"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-18",
+      "edge_type": "customer",
+      "target_name": "Microsoft",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-17"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-19",
+      "edge_type": "customer",
+      "target_name": "Motorola",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-18"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-20",
+      "edge_type": "customer",
+      "target_name": "NETGEAR",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-19"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-21",
+      "edge_type": "customer",
+      "target_name": "Nokia",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-20"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-22",
+      "edge_type": "customer",
+      "target_name": "Northrop Grumman",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-21"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-23",
+      "edge_type": "customer",
+      "target_name": "OPPO",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-22"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-24",
+      "edge_type": "customer",
+      "target_name": "Rockwell Collins",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-23"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-25",
+      "edge_type": "customer",
+      "target_name": "Sagemcom",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-24"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-26",
+      "edge_type": "customer",
+      "target_name": "Samsung",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-25"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-27",
+      "edge_type": "customer",
+      "target_name": "Schneider Electric",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-26"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-28",
+      "edge_type": "customer",
+      "target_name": "Sierra Wireless",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-27"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-29",
+      "edge_type": "customer",
+      "target_name": "Sonos",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-28"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-30",
+      "edge_type": "customer",
+      "target_name": "Sony",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-29"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-31",
+      "edge_type": "customer",
+      "target_name": "Technicolor",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-30"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-32",
+      "edge_type": "customer",
+      "target_name": "Telit",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-31"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-33",
+      "edge_type": "customer",
+      "target_name": "Tesla",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-32"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-34",
+      "edge_type": "customer",
+      "target_name": "TP-Link",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-33"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-35",
+      "edge_type": "customer",
+      "target_name": "VIVO",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-34"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-36",
+      "edge_type": "customer",
+      "target_name": "Xiaomi",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-35"
+      ],
+      "notes": "Item 1; explicitly key customers, not suppliers; no individual revenue share disclosed here; customer base 0.5."
+    },
+    {
+      "id": "SWKS-37",
+      "edge_type": "foundry",
+      "target_name": "semiconductor foundries in the Asia-Pacific region",
+      "target_kind": "region",
+      "direction": "depends_on_target",
+      "quote": "including third-party packaging, assembly, and test facilities and semiconductor foundries located in the Asia-Pacific region",
+      "importance": "high",
+      "tier": "extended",
+      "source": "b",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-B2"
+      ],
+      "notes": "Region only; foundries supply silicon-based products and extra GaAs capacity."
+    },
+    {
+      "id": "SWKS-38",
+      "edge_type": "facility",
+      "target_name": "Japan",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Osaka, Japan Owned (1) 383,600 Filter manufacturing",
+      "importance": "high",
+      "tier": "core",
+      "source": "both",
+      "aliases": [
+        "filter wafer processing facilities in Osaka, Japan"
+      ],
+      "edge_type_alternatives": [],
+      "country": "JP",
+      "annotator_ids": [
+        "SWKS-40",
+        "SWKS-B4"
+      ],
+      "notes": "Item 2; JP filter manufacturing."
+    },
+    {
+      "id": "SWKS-39",
+      "edge_type": "facility",
+      "target_name": "Mexico",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Mexicali, Mexico Owned 380,000 Manufacturing and office space",
+      "importance": "high",
+      "tier": "core",
+      "source": "both",
+      "aliases": [
+        "packaging, assembly and test facilities in Mexicali, Mexico"
+      ],
+      "edge_type_alternatives": [],
+      "country": "MX",
+      "annotator_ids": [
+        "SWKS-41",
+        "SWKS-B5"
+      ],
+      "notes": "Item 2; MX production."
+    },
+    {
+      "id": "SWKS-40",
+      "edge_type": "facility",
+      "target_name": "Singapore",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Singapore, Singapore Leased 429,500 Filter manufacturing",
+      "importance": "high",
+      "tier": "core",
+      "source": "both",
+      "aliases": [
+        "Singapore Filter Manufacturing Facility"
+      ],
+      "edge_type_alternatives": [],
+      "country": "SG",
+      "annotator_ids": [
+        "SWKS-39",
+        "SWKS-B6"
+      ],
+      "notes": "Item 2 production facility table; SG filter manufacturing."
+    },
+    {
+      "id": "SWKS-41",
+      "edge_type": "facility",
+      "target_name": "United States",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Woburn, Massachusetts Owned 158,000 Manufacturing and office space",
+      "importance": "high",
+      "tier": "core",
+      "source": "both",
+      "aliases": [
+        "wafer fabrication facilities in Newbury Park, California and Woburn, Massachusetts"
+      ],
+      "edge_type_alternatives": [],
+      "country": "US",
+      "annotator_ids": [
+        "SWKS-42",
+        "SWKS-B3"
+      ],
+      "notes": "Item 2; US production, not just Irvine headquarters."
+    },
+    {
+      "id": "SWKS-42",
+      "edge_type": "key_input",
+      "target_name": "gallium",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "Although we maintain relationships with suppliers located around the world with the objective of ensuring that we have adequate sources for the supply of raw materials and components for our manufacturing needs, increases in demand from the semiconductor industry for such raw materials and components (including, but not limited to, gallium, germanium, and other critical minerals and rare earth metals), as well as increased demand for commodities in general, can result in tighter supplies and higher costs.",
+      "importance": "high",
+      "tier": "core",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-37"
+      ],
+      "notes": "Item 1A; specifically identified raw materials/components used by manufacturing."
+    },
+    {
+      "id": "SWKS-43",
+      "edge_type": "key_input",
+      "target_name": "germanium",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "Although we maintain relationships with suppliers located around the world with the objective of ensuring that we have adequate sources for the supply of raw materials and components for our manufacturing needs, increases in demand from the semiconductor industry for such raw materials and components (including, but not limited to, gallium, germanium, and other critical minerals and rare earth metals), as well as increased demand for commodities in general, can result in tighter supplies and higher costs.",
+      "importance": "high",
+      "tier": "core",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SWKS-38"
+      ],
+      "notes": "Item 1A; specifically identified raw materials/components used by manufacturing."
+    }
+  ],
+  "negatives": [
+    {
+      "id": "SWKS-N1",
+      "target_name": "Broadcom",
+      "kind": "competitor",
+      "quote": "Our competitors include Analog Devices, Broadcom, Cirrus Logic, Murata Manufacturing, NXP Semiconductors, Qorvo, Qualcomm, and Texas Instruments.",
+      "source": "a"
+    },
+    {
+      "id": "SWKS-N2",
+      "target_name": "Qorvo",
+      "kind": "competitor",
+      "quote": "Our competitors include Analog Devices, Broadcom, Cirrus Logic, Murata Manufacturing, NXP Semiconductors, Qorvo, Qualcomm, and Texas Instruments.",
+      "source": "a"
+    },
+    {
+      "id": "SWKS-N3",
+      "target_name": "Qualcomm",
+      "kind": "competitor",
+      "quote": "Our competitors include Analog Devices, Broadcom, Cirrus Logic, Murata Manufacturing, NXP Semiconductors, Qorvo, Qualcomm, and Texas Instruments.",
+      "source": "a"
+    },
+    {
+      "id": "SWKS-N4",
+      "target_name": "sole-source suppliers",
+      "kind": "generic",
+      "quote": "However, there are limited situations where we procure certain components and services for our products from single or limited sources, and we are currently dependent on a limited number of sole-source suppliers.",
+      "source": "a"
+    },
+    {
+      "id": "SWKS-N5",
+      "target_name": "Murata Manufacturing",
+      "kind": "competitor",
+      "quote": "Analog Devices, Broadcom, Cirrus Logic, Murata Manufacturing, NXP Semiconductors, Qorvo, Qualcomm, and Texas Instruments",
+      "source": "b"
+    },
+    {
+      "id": "SWKS-N6",
+      "target_name": "foundries",
+      "kind": "generic",
+      "quote": "We rely on foundries to provide silicon-based products and to supplement our gallium arsenide wafer manufacturing capacity.",
+      "source": "b"
+    },
+    {
+      "id": "SWKS-N7",
+      "target_name": "leased facilities",
+      "kind": "hypothetical",
+      "quote": "If we are unable to renew existing leases or subleases on terms acceptable to us, we may be required to relocate our affected operations.",
+      "source": "b"
+    }
+  ]
+}

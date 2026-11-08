@@ -1,0 +1,284 @@
+{
+  "company": {
+    "name": "Qorvo, Inc.",
+    "cik": "0001604778",
+    "ticker": "QRVO"
+  },
+  "filing": {
+    "form": "10-K",
+    "accession": "0001628280-26-032873",
+    "url": "https://www.sec.gov/Archives/edgar/data/1604778/000162828026032873/rfmd-20260328.htm"
+  },
+  "annotators": [
+    "Yousuf's Codex",
+    "Bekarys's Claude"
+  ],
+  "adjudicator": "Gawyn's Claude",
+  "relationships": [
+    {
+      "id": "QRVO-1",
+      "edge_type": "customer",
+      "target_name": "Apple Inc.",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "We provide products to our largest end customer, Apple Inc. (\"Apple\"), through sales to multiple contract manufacturers, which in the aggregate accounted for 50% and 47% of total revenue in fiscal years 2026 and 2025, respectively.",
+      "importance": "critical",
+      "tier": "core",
+      "source": "both",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "QRVO-1",
+        "QRVO-B1"
+      ],
+      "notes": "Item 1 Customers; end-customer through contract manufacturers; 2026 50%, customer base 0.9."
+    },
+    {
+      "id": "QRVO-2",
+      "edge_type": "customer",
+      "target_name": "Samsung Electronics Co., Ltd.",
+      "target_kind": "company",
+      "direction": "target_depends_on_company",
+      "quote": "Samsung Electronics Co., Ltd. (\"Samsung\") accounted for 10% of total revenue in both fiscal years 2026 and 2025.",
+      "importance": "high",
+      "tier": "core",
+      "source": "both",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "QRVO-2",
+        "QRVO-B2"
+      ],
+      "notes": "Item 1 Customers; 10% of revenue, customer base 0.7; direction is sales to Samsung."
+    },
+    {
+      "id": "QRVO-3",
+      "edge_type": "facility",
+      "target_name": "Germany",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Nuremberg, Germany Leased Packaging and test",
+      "importance": "medium",
+      "tier": "core",
+      "source": "both",
+      "aliases": [
+        "packaging and test facility in Nuremberg, Germany"
+      ],
+      "edge_type_alternatives": [],
+      "country": "DE",
+      "annotator_ids": [
+        "QRVO-11",
+        "QRVO-B8"
+      ],
+      "notes": "Item 2; DE operating packaging/test site."
+    },
+    {
+      "id": "QRVO-4",
+      "edge_type": "facility",
+      "target_name": "United States",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Hillsboro, Oregon Owned Wafer fabrication Richardson, Texas Owned Wafer fabrication, assembly and test",
+      "importance": "high",
+      "tier": "core",
+      "source": "both",
+      "aliases": [
+        "wafer fabrication facilities in Hillsboro, Oregon and Richardson, Texas"
+      ],
+      "edge_type_alternatives": [],
+      "country": "US",
+      "annotator_ids": [
+        "QRVO-10",
+        "QRVO-B7"
+      ],
+      "notes": "Item 2; US operating production sites as of March 28, 2026."
+    },
+    {
+      "id": "QRVO-5",
+      "edge_type": "supplier",
+      "target_name": "buyer of the North Carolina fabrication facility",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "we completed the sale of our North Carolina fabrication facility and are operating under a short-term supply agreement with the buyer",
+      "importance": "medium",
+      "tier": "extended",
+      "source": "b",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "QRVO-B6"
+      ],
+      "notes": "Unnamed buyer supplies SAW filters until production moves to Texas."
+    },
+    {
+      "id": "QRVO-6",
+      "edge_type": "key_input",
+      "target_name": "GaAs wafers",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "In our GaN and GaAs manufacturing operations, we use several raw materials, including GaN on silicon carbide (\"SiC\") wafers and GaAs wafers.",
+      "importance": "medium",
+      "tier": "core",
+      "source": "both",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "QRVO-7",
+        "QRVO-B3"
+      ],
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "QRVO-7",
+      "edge_type": "key_input",
+      "target_name": "GaN on silicon carbide (\"SiC\") wafers",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "In our GaN and GaAs manufacturing operations, we use several raw materials, including GaN on silicon carbide (\"SiC\") wafers and GaAs wafers.",
+      "importance": "medium",
+      "tier": "core",
+      "source": "both",
+      "aliases": [
+        "GaN on silicon carbide (SiC) wafers"
+      ],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "QRVO-6",
+        "QRVO-B4"
+      ],
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "QRVO-8",
+      "edge_type": "key_input",
+      "target_name": "lithium niobate",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "In our acoustic filter manufacturing operations, raw materials include silicon, lithium niobate and lithium tantalate.",
+      "importance": "low",
+      "tier": "core",
+      "source": "both",
+      "aliases": [
+        "lithium niobate and lithium tantalate",
+        "lithium tantalate"
+      ],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "QRVO-8",
+        "QRVO-B5"
+      ],
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "QRVO-9",
+      "edge_type": "key_input",
+      "target_name": "passive components",
+      "target_kind": "component",
+      "direction": "depends_on_target",
+      "quote": "We purchase numerous raw materials and parts, such as silicon, passive components and substrates for our manufacturing processes.",
+      "importance": "high",
+      "tier": "core",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "QRVO-5"
+      ],
+      "notes": "Item 1; explicit present-tense disclosure."
+    },
+    {
+      "id": "QRVO-10",
+      "edge_type": "key_input",
+      "target_name": "silicon",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We purchase numerous raw materials and parts, such as silicon, passive components and substrates for our manufacturing processes.",
+      "importance": "high",
+      "tier": "core",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "QRVO-3"
+      ],
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "QRVO-11",
+      "edge_type": "key_input",
+      "target_name": "substrates",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We purchase numerous raw materials and parts, such as silicon, passive components and substrates for our manufacturing processes.",
+      "importance": "high",
+      "tier": "core",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "QRVO-4"
+      ],
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    }
+  ],
+  "negatives": [
+    {
+      "id": "QRVO-N1",
+      "target_name": "Broadcom Inc.",
+      "kind": "competitor",
+      "quote": "CSG competes primarily with Broadcom Inc.; Murata Manufacturing Co., Ltd.; Nordic Semiconductor; NXP Semiconductors N.V.; Qualcomm Technologies, Inc.; RichWave Technology Corporation; Silicon Laboratories Inc.; Skyworks Solutions, Inc.; and Vanchip (Tianjin) Technology Co., Ltd.",
+      "source": "a"
+    },
+    {
+      "id": "QRVO-N2",
+      "target_name": "Skyworks Solutions, Inc.",
+      "kind": "competitor",
+      "quote": "ACG competes primarily with Broadcom Inc.; Maxscend Microelectronics Co., Ltd.; Murata Manufacturing Co., Ltd.; Qualcomm Technologies, Inc.; Skyworks Solutions, Inc.; and Vanchip (Tianjin) Technology Co., Ltd.",
+      "source": "a"
+    },
+    {
+      "id": "QRVO-N3",
+      "target_name": "Costa Rica",
+      "kind": "negated",
+      "quote": "We closed our assembly and test facility in Costa Rica in the third quarter of fiscal 2026 and transitioned to external partners.",
+      "source": "a"
+    },
+    {
+      "id": "QRVO-N4",
+      "target_name": "leading silicon foundries",
+      "kind": "generic",
+      "quote": "We also use multiple silicon-based process technologies, including SOI, SiGe and bulk CMOS, which are sourced from leading silicon foundries located throughout the world.",
+      "source": "a"
+    },
+    {
+      "id": "QRVO-N5",
+      "target_name": "Murata Manufacturing Co., Ltd.",
+      "kind": "competitor",
+      "quote": "ACG competes primarily with Broadcom Inc.; Maxscend Microelectronics Co., Ltd.; Murata Manufacturing Co., Ltd.",
+      "source": "b"
+    },
+    {
+      "id": "QRVO-N6",
+      "target_name": "Costa Rica facility",
+      "kind": "negated",
+      "quote": "In the third quarter of fiscal 2026, we completed the sale of our Costa Rica facility.",
+      "source": "b"
+    },
+    {
+      "id": "QRVO-N7",
+      "target_name": "third-party foundries",
+      "kind": "generic",
+      "quote": "third-party foundries and other third-party suppliers to manufacture, assemble and test our products and otherwise deliver on their commitments to us in a timely and cost-effective manner",
+      "source": "b"
+    }
+  ]
+}
