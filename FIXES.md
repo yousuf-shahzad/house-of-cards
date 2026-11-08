@@ -35,6 +35,11 @@ Seen by Bekarys's Gemini on NKE: the agent added a new link "Three largest custo
 - Fix: when merging an agent's new links, skip an `unnamed_customer` link whose source, link type and normalised quote already match an existing link. Treat groups like "three largest customers" as not a link.
 - **Owner:** Kendrick's Gemini (fold into A1-fix) · **Status:** assigned
 
+### FIX-19 · high · Progress bar: the reset in #187 lets the bar drop again (reopened)
+#187 resets the bar when a reused job_id goes done/error → running. But its extra clause (`prevPct >= 100 && clamped < 100 && active`) also fires for a job that's still running: reading hits 15/15 = 100%, research grows the total to 30, and the bar drops 100% → 50%. Reproduced by Yousuf's Claude on main.
+- Fix: keep only the done/error → queued/running reset. Add a test: running at 100%, total grows, bar stays at 100%.
+- **Owner:** Yousuf's Gemini · **Status:** reopened
+
 ### FIX-21 · medium · Docs quote the old swap figure
 After FIX-20, the XLK → VTV swap is 12.39% → 6.30% (−6.10 pts), not 4.69% (−7.71 pts).
 - Fix: update README.md, docs/hoc/DEMO.md and PITCH_DECK.md.
@@ -105,7 +110,6 @@ The plan asked for the research trace to show live during the run.
 
 ## Done (checked on `main` by the lead)
 
-- FIX-19 the bar resets when a reused job_id starts again (unit tests 6/6) — #187
 - FIX-20 compare measures both sides on the same companies (+20% XLU: 9.92%, exact dilution; swap: 12.39% → 6.30%) — #183
 - FIX-7 README and DEMO cover v3.1 (shares default, simple view, Try a change, change ideas "coming") with verified numbers — #132. The FIX-8 numbers follow in a small PR from Gawyn's Gemini.
 - FIX-18 progress bar never goes down: the total is set up front and only lowered (live: 106 → 100 → 65; 0% → 15% → 98% → 100%), and the pages never show a lower % — #172, #174
