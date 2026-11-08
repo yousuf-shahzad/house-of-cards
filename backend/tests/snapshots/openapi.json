@@ -1,6 +1,35 @@
 {
   "components": {
     "schemas": {
+      "AffectedCompany": {
+        "additionalProperties": false,
+        "properties": {
+          "company_key": {
+            "title": "Company Key",
+            "type": "string"
+          },
+          "company_name": {
+            "title": "Company Name",
+            "type": "string"
+          },
+          "exposure": {
+            "title": "Exposure",
+            "type": "number"
+          },
+          "loss": {
+            "title": "Loss",
+            "type": "number"
+          }
+        },
+        "required": [
+          "company_key",
+          "company_name",
+          "exposure",
+          "loss"
+        ],
+        "title": "AffectedCompany",
+        "type": "object"
+      },
       "AnalysisResponse": {
         "additionalProperties": false,
         "properties": {
@@ -3035,6 +3064,122 @@
         "title": "SecurityExposure",
         "type": "object"
       },
+      "ShockBasis": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "drop": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 1.0,
+            "title": "Drop",
+            "type": "number"
+          },
+          "proxy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proxy"
+          },
+          "source": {
+            "enum": [
+              "historical",
+              "simulated"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "window_end": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window End"
+          },
+          "window_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Start"
+          }
+        },
+        "required": [
+          "source",
+          "drop",
+          "description"
+        ],
+        "title": "ShockBasis",
+        "type": "object"
+      },
+      "ShockSpec": {
+        "additionalProperties": false,
+        "properties": {
+          "drop": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 1.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Drop"
+          },
+          "key": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "sector",
+              "country",
+              "supplier"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          }
+        },
+        "required": [
+          "kind",
+          "key"
+        ],
+        "title": "ShockSpec",
+        "type": "object"
+      },
       "SourceAttempt": {
         "additionalProperties": false,
         "properties": {
@@ -3076,6 +3221,136 @@
           "outcome"
         ],
         "title": "SourceAttempt",
+        "type": "object"
+      },
+      "StressRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "baseline": {
+            "items": {
+              "$ref": "#/components/schemas/PortfolioItem"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Baseline",
+            "type": "array"
+          },
+          "candidate": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PortfolioItem"
+                },
+                "maxItems": 50,
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Candidate"
+          },
+          "company_keys": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 300,
+            "title": "Company Keys",
+            "type": "array"
+          },
+          "shock": {
+            "$ref": "#/components/schemas/ShockSpec"
+          }
+        },
+        "required": [
+          "baseline",
+          "shock"
+        ],
+        "title": "StressRequest",
+        "type": "object"
+      },
+      "StressResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "baseline": {
+            "$ref": "#/components/schemas/StressSide"
+          },
+          "basis": {
+            "$ref": "#/components/schemas/ShockBasis"
+          },
+          "candidate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StressSide"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "shock": {
+            "$ref": "#/components/schemas/ShockSpec"
+          },
+          "status": {
+            "enum": [
+              "ok",
+              "partial"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "shock",
+          "basis",
+          "baseline"
+        ],
+        "title": "StressResponse",
+        "type": "object"
+      },
+      "StressSide": {
+        "additionalProperties": false,
+        "properties": {
+          "affected": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AffectedCompany"
+            },
+            "title": "Affected",
+            "type": "array"
+          },
+          "affected_count": {
+            "title": "Affected Count",
+            "type": "integer"
+          },
+          "affected_weight": {
+            "title": "Affected Weight",
+            "type": "number"
+          },
+          "loss_fraction": {
+            "title": "Loss Fraction",
+            "type": "number"
+          }
+        },
+        "required": [
+          "affected_weight",
+          "loss_fraction",
+          "affected_count"
+        ],
+        "title": "StressSide",
         "type": "object"
       },
       "TopShared": {
@@ -4081,6 +4356,55 @@
           }
         },
         "summary": "Get Research"
+      }
+    },
+    "/api/stress": {
+      "post": {
+        "description": "FIX-63 failure simulator: one industry, country or supplier fails; the share of each portfolio's value\nlost. Same 422/503 analysis errors as /api/compare; no filing fetch or model call.",
+        "operationId": "stress_api_stress_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StressRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StressResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "VALIDATION_ERROR, ALLOCATION_SUM_INVALID, DUPLICATE_TICKER, TOO_MANY_ETFS, UNKNOWN_TICKER"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "SOURCES_UNAVAILABLE"
+          }
+        },
+        "summary": "Stress"
       }
     },
     "/api/valuation": {
