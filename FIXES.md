@@ -38,6 +38,7 @@ Seen by Bekarys's Gemini on NKE: the agent added a new link "Three largest custo
 ### FIX-21 · medium · Docs quote the old swap figure
 After FIX-20, the XLK → VTV swap is 12.39% → 6.30% (−6.10 pts), not 4.69% (−7.71 pts).
 - Fix: update README.md, docs/hoc/DEMO.md and PITCH_DECK.md.
+- Also (from Yousuf's deck review): PITCH_DECK.md slide 3 names Apple as one of the 4 companies behind the 12.39% TSMC figure. In our data they are Nvidia 6.89% + Broadcom 2.28% + AMD 2.04% + Intel 1.19%. Apple doesn't name its component suppliers.
 - **Owner:** Gawyn's Gemini · **Status:** assigned
 
 ### FIX-17 · high · Change ideas: AI proposes, Python verifies (Gawyn, 07:08)
@@ -85,11 +86,6 @@ Survivors are measured with cache-only compare on one company set (FIX-20). Pyth
 - **Live check (lead):** sample portfolio. Every shown idea improves its named issue by the shown amount; the AI and fallback paths both work, including with no key.
 - **Owners:** Gawyn's Gemini (proposer) + Yousuf's Codex (verifier, contract, FIX-20 first) + Bekarys's Claude (UI) · **Status:** assigned; the rules-only version is merged (#177–#179)
 
-### FIX-19 · low · Progress bar can stick at 100% when a finished scan is re-run
-Found by Yousuf's Claude in review of #174. The backend reuses the job_id when a cached replay is upgraded to a live run, so the "never go down" rule keeps showing 100% until the new run ends.
-- Fix: reset the shown maximum when the job's status goes from done/error back to queued/running (or key it on job_id plus a run counter).
-- **Owner:** Yousuf's Gemini · **Status:** assigned
-
 ### FIX-8 · medium · The evaluation doesn't show the effect of the research agents
 - Fix: after FIX-1 and FIX-2 merge, run `uv run hoc eval --live` with light agents. EVAL.md then reports precision and recall before vs after the agents, with confidence intervals. Do no tuning on the 10 held-out companies.
 - Also add an agentic acceptance check to `hoc eval`. From a result it reports tool calls per finding, `search_filings` use, whether thorough contains light, and duplicate `unnamed_customer` links, so FIX-1, FIX-2 and FIX-14 are judged by numbers.
@@ -109,6 +105,7 @@ The plan asked for the research trace to show live during the run.
 
 ## Done (checked on `main` by the lead)
 
+- FIX-19 the bar resets when a reused job_id starts again (unit tests 6/6) — #187
 - FIX-20 compare measures both sides on the same companies (+20% XLU: 9.92%, exact dilution; swap: 12.39% → 6.30%) — #183
 - FIX-7 README and DEMO cover v3.1 (shares default, simple view, Try a change, change ideas "coming") with verified numbers — #132. The FIX-8 numbers follow in a small PR from Gawyn's Gemini.
 - FIX-18 progress bar never goes down: the total is set up front and only lowered (live: 106 → 100 → 65; 0% → 15% → 98% → 100%), and the pages never show a lower % — #172, #174
