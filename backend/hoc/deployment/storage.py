@@ -30,6 +30,16 @@ def read_json(store: ObjectStore, key: str) -> dict | None:
     return json.loads(entry.body) if entry else None
 
 
+def is_storage_failure(exc: Exception) -> bool:
+    if isinstance(exc, OSError):
+        return True
+    try:
+        from vercel.blob import BlobError
+    except ImportError:
+        return False
+    return isinstance(exc, BlobError)
+
+
 class BlobStore:
     def __init__(self, prefix: str | None = None) -> None:
         # Separate preview data from production. No user input becomes a Blob path.

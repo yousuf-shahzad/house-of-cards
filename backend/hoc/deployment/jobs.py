@@ -6,6 +6,7 @@ import logging
 import os
 import time
 import uuid
+from functools import wraps
 from typing import Protocol
 
 from hoc.contract import (
@@ -23,7 +24,7 @@ from hoc.contract import (
     ResearchRequest,
     SourcesUnavailableError,
 )
-from hoc.deployment.storage import ObjectStore, encode, read_json
+from hoc.deployment.storage import ObjectStore, encode, read_json, is_storage_failure
 from hoc.jobs import JOB_RETENTION_SECONDS, job_id_for, research_id_for
 
 WORK_TOPIC = "hoc-work"
@@ -52,6 +53,20 @@ def run_path(record: dict, suffix: str) -> str:
     return f"runs/{record['run_id']}/{suffix}.json"
 
 
+def _with_storage_errors(method):
+    @wraps(method)
+    def call(*args, **kwargs):
+        try:
+            return method(*args, **kwargs)
+        except Exception as exc:
+            if not is_storage_failure(exc):
+                raise
+            raise SourcesUnavailableError(
+                "Saved scans are temporarily unavailable. You can still analyse and compare your portfolio."
+            ) from exc
+    return call
+
+
 class JobStore:
     def __init__(self, objects: ObjectStore, publisher: Publisher) -> None:
         self.objects, self.publisher = objects, publisher
@@ -60,6 +75,7 @@ class JobStore:
     def pointer(kind: str, job_id: str) -> str:
         return f"jobs/{kind}/{job_id}.json"
 
+    @_with_storage_errors
     def read(self, kind: str, job_id: str) -> dict | None:
         record = read_json(self.objects, self.pointer(kind, job_id))
         if record is None:
@@ -80,6 +96,7 @@ class JobStore:
             record["snapshot"] = snapshot
         return record
 
+    @_with_storage_errors
     def start(self, kind: str, job_id: str, payload: dict, snapshot: dict) -> dict:
         path = self.pointer(kind, job_id)
         for _ in range(3):
