@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from hoc.api.app import create_app
 from hoc.config import Settings
 from hoc.contract import ShockBasis
+from hoc.contract.stress import DEFAULT_SHOCK_DROP
 
 BASELINE = [{"ticker": "ZZAAA", "allocation": 0.6}, {"ticker": "ZZBBB", "allocation": 0.4}]
 
@@ -68,7 +69,7 @@ def test_supplier_and_override_never_ask_history(api):
     history = RecordingHistory(HISTORICAL)
     _, client = api(history)
     supplier = post(client, {"kind": "supplier", "key": "ALIAS:TSMC"}, company_keys=["CIK:1", "CIK:2"]).json()
-    assert supplier["basis"]["source"] == "simulated" and supplier["basis"]["drop"] == 0.10
+    assert supplier["basis"]["source"] == "simulated" and supplier["basis"]["drop"] == DEFAULT_SHOCK_DROP
     assert "supplier" in supplier["basis"]["description"]
     override = post(client, {"kind": "sector", "key": "energy", "drop": 0.25}).json()
     assert override["basis"] == {"source": "simulated", "drop": 0.25, "proxy": None, "window_start": None,
@@ -79,7 +80,7 @@ def test_supplier_and_override_never_ask_history(api):
 def test_a_failing_history_provider_falls_back_to_the_simulated_drop(api):
     _, client = api(RecordingHistory(error=RuntimeError("yahoo down")))
     body = post(client, {"kind": "sector", "key": "energy"}).json()
-    assert body["basis"]["source"] == "simulated" and body["basis"]["drop"] == 0.10
+    assert body["basis"]["source"] == "simulated" and body["basis"]["drop"] == DEFAULT_SHOCK_DROP
 
 
 def test_without_a_price_provider_shocks_are_simulated(api):

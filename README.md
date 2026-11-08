@@ -213,7 +213,7 @@ a notional $10,000 in `%` mode), how much less the new mix loses, the shock basi
   Finance v8 chart API (e.g. `XLK` `-19.37%` from `2026-10-07` to `2026-11-05` for Information Technology, `EWT`
   `-26.12%` for Taiwan, `SPY` `-12.80%` for the US; full proxy map in [`docs/hoc/CONTRACT.md`](docs/hoc/CONTRACT.md)
   §11 and standalone stdlib verification in [`validation/stress/`](validation/stress/)). When no proxy history is
-  available, it falls back to a **simulated 10% fall** and says why. **Supplier** shocks are always a simulated 10%
+  available, it falls back to a **simulated 20% fall** and says why. **Supplier** shocks are always a simulated 20%
   fall across the supplier (if held) and the portfolio companies that rely on it in the verified dependency scan.
 - **Known limits:** Country codes come from TickerInside's per-stock files and are unknown (`null`) for **~70–80%**
   of a typical US-heavy portfolio (those holdings are excluded from country shocks and the uncounted share is

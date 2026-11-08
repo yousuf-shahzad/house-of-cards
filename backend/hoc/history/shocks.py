@@ -52,7 +52,7 @@ def simulated_basis(reason: str, drop: float = DEFAULT_SHOCK_DROP) -> ShockBasis
 
 
 def historical_shock(kind: str, key: str, provider: HistoryProvider | None, *, label: str | None = None) -> ShockBasis:
-    """The drop for one shock, from history if possible, else a simulated 10% fall (never raises)."""
+    """The drop for one shock, from history if possible, else a simulated DEFAULT_SHOCK_DROP (20%) fall (never raises)."""
     name = label or label_for(kind, key)
     pct = f"{DEFAULT_SHOCK_DROP:.0%}"
     if kind == "supplier":
@@ -103,7 +103,7 @@ def basis_for(shock: ShockSpec, provider: HistoryProvider | None) -> ShockBasis:
 
 class HistoricalShocks:
     """What Service.history holds (Bekarys's Claude, #259): historical_shock(kind, key) -> ShockBasis.
-    Production: HistoricalShocks(YahooHistory(http)). Never raises; falls back to a simulated 10%."""
+    Production: HistoricalShocks(YahooHistory(http)). Never raises; falls back to a simulated DEFAULT_SHOCK_DROP (20%)."""
 
     def __init__(self, provider: HistoryProvider | None) -> None:
         self.provider = provider

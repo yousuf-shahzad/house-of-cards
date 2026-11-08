@@ -805,13 +805,13 @@ export interface RejectedIdeaProposal {
 
 // ---------- Failure simulator (POST /api/stress), Compare screen ----------
 // Every affected company loses basis.drop of its value: the proxy ETF's worst one-month fall
-// (21 trading days) in the last 5 years of daily closes, else a simulated 10% fall.
+// (21 trading days) in the last 5 years of daily closes, else a simulated 20% fall.
 // The API returns fractions; the UI turns them into money (before = portfolio value in shares
 // mode, or a notional $10,000 in % mode; after = before * (1 - loss_fraction)).
 
 export type ShockKind = "sector" | "country" | "supplier";
 export type ShockSource = "historical" | "simulated";
-export const DEFAULT_SHOCK_DROP = 0.1;
+export const DEFAULT_SHOCK_DROP = 0.2;
 
 export interface ShockSpec {
   kind: ShockKind;
@@ -819,7 +819,7 @@ export interface ShockSpec {
   key: string;
   /** Display name, echoed back. */
   label?: string | null;
-  /** Override the fall (0.10 = 10%). Omit for historical-if-possible, else 10%. */
+  /** Override the fall (0.10 = 10%). Omit for historical-if-possible, else a simulated 20%. */
   drop?: number | null;
 }
 
