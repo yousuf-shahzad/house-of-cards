@@ -14,7 +14,7 @@ from pathlib import Path
 import httpx
 
 from hoc.config import Settings
-from hoc.contract import ChangeIdeasResponse, EtfHoldings
+from hoc.contract import ChangeIdeasResponse, EtfHoldings, SourcesUnavailableError
 from hoc.core.cache import DiskCache
 from hoc.core.http import CachedHttpClient
 from hoc.deployment.jobs import (
@@ -116,9 +116,14 @@ class VercelService(EtfService):
             "date": str(context.baseline.as_of_date),
         }
         key = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
-        record = self.job_store.start(
-            "ideas", key, {"request": request.model_dump(mode="json")}, {"status": "queued"}
-        )
+        try:
+            record = self.job_store.start(
+                "ideas", key, {"request": request.model_dump(mode="json")}, {"status": "queued"}
+            )
+        except SourcesUnavailableError:
+            rules.ai_status = "failed"
+            rules.notes.append("AI suggestions are temporarily unavailable. Calculated change ideas are still available.")
+            return rules
         if record["snapshot"]["status"] == "done":
             return ChangeIdeasResponse.model_validate(record["snapshot"]["result"])
         rules.ai_status = "failed" if record["snapshot"]["status"] == "error" else "pending"

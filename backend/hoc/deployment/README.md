@@ -77,6 +77,14 @@ deployment/run prefixes from the private store after they are no longer needed.
 Job messages expire after an hour; stored checkpoints are not automatically
 deleted by queue expiration. Keep watch on the Vercel usage dashboard during demos.
 
+When shared Blob access fails (including a Hobby quota suspension), optional cache
+reads become misses and writes remain local. A 60-second circuit breaker avoids
+repeating failed cache operations. Portfolio calculations can still fetch genuine
+upstream data. Durable scans remain unavailable and return an explicit 503;
+calculated change ideas still return, with AI suggestions marked unavailable.
+This degradation does not reset a quota, recover suspended records, or enable paid
+usage. Use the local backend for a demo requiring scans while Blob is suspended.
+
 ## Verification
 
 ```powershell

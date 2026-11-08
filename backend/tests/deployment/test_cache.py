@@ -112,3 +112,42 @@ def test_local_only_http_namespaces_do_not_spend_shared_read_quota(tmp_path, mon
     cache = BlobCache(tmp_path, objects)
     assert cache.get("http/gemini", "synthetic") is None
     assert cache.get("http/tickerinside", "https://tickerinside.com/api/v1/sec/zz.json") is None
+
+
+def test_suspended_cache_does_not_block_real_http_or_local_reuse(tmp_path, monkeypatch):
+    import httpx
+    from datetime import timedelta
+    from hoc.config import Settings
+    from hoc.core.http import CachedHttpClient
+
+    objects, remote_calls, upstream = MemoryStore(), [], []
+
+    def unavailable(key):
+        remote_calls.append(key)
+        raise PermissionError("synthetic suspended storage")
+
+    monkeypatch.setattr(objects, "get", unavailable)
+    monkeypatch.setattr(objects, "put", lambda *a, **kw: pytest.fail("remote cache should be paused"))
+    cache = BlobCache(tmp_path, objects)
+    http = CachedHttpClient(Settings(cache_dir=tmp_path), cache)
+    http._client = httpx.Client(transport=httpx.MockTransport(
+        lambda req: upstream.append(req.url) or httpx.Response(200, content=b"real source bytes")
+    ))
+    first = http.get("https://example.invalid/fund", source="synthetic", ttl=timedelta(hours=1))
+    second = http.get("https://example.invalid/fund", source="synthetic", ttl=timedelta(hours=1))
+    assert first.body == second.body == b"real source bytes"
+    assert len(upstream) == len(remote_calls) == 1
+
+
+def test_failed_cache_write_preserves_local_entry_and_metadata(tmp_path, monkeypatch):
+    objects = MemoryStore()
+
+    def unavailable(*args, **kwargs):
+        raise PermissionError("synthetic suspended storage")
+
+    monkeypatch.setattr(objects, "put", unavailable)
+    monkeypatch.setattr(objects, "keys", lambda *a: pytest.fail("remote cache should be paused"))
+    cache = BlobCache(tmp_path, objects)
+    entry = cache.put("ai/extractions", "verified", b"verified bytes", {"status": 200})
+    assert cache.get("ai/extractions", "verified").body == entry.body
+    assert list(cache.iter_metadata("ai/extractions")) == [entry.meta]

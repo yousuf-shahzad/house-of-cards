@@ -263,6 +263,45 @@ def test_completed_scan_can_be_replaced_after_retention_expires(rig):
     assert rig.deps().get(job.job_id).status == "done"
 
 
+def test_suspended_job_storage_has_an_explicit_unavailable_error(rig, monkeypatch):
+    def unavailable(*args):
+        raise PermissionError("synthetic suspended storage")
+
+    monkeypatch.setattr(rig.objects, "get", unavailable)
+    with pytest.raises(SourcesUnavailableError, match="Saved scans are temporarily unavailable"):
+        rig.deps().submit(rig.request)
+    with pytest.raises(SourcesUnavailableError, match="Saved scans are temporarily unavailable"):
+        rig.deps().get("existing-job")
+
+
+def test_rule_ideas_survive_unavailable_ai_job_storage(rig, monkeypatch):
+    from hoc.contract import ChangeIdeasRequest, ChangeIdeasResponse
+    from hoc.deployment.runtime import VercelService
+
+    monkeypatch.setattr("hoc.portfolio.ideas.baseline_idea_metrics", lambda *a, **kw: {})
+    monkeypatch.setattr("hoc.graph.idea_proposer.build_portfolio_issues", lambda *a: [])
+
+    def unavailable(*args):
+        raise PermissionError("synthetic suspended storage")
+
+    monkeypatch.setattr(rig.objects, "get", unavailable)
+    request = ChangeIdeasRequest(holdings=rig.request.holdings)
+    rules = ChangeIdeasResponse(status="ok", notes=["Existing calculated result"])
+    key = (tuple(sorted((h.ticker, h.allocation) for h in request.holdings)), request.top_n)
+    service = SimpleNamespace(
+        settings=SimpleNamespace(gemini_api_key="synthetic", offline=False, gemini_orchestrator_model="synthetic"),
+        _compute_change_ideas=lambda _: rules,
+        _idea_contexts={key: SimpleNamespace(baseline=rig.analysis, cached=None)},
+        idea_proposer=SimpleNamespace(prompt_version="synthetic"),
+        job_store=rig.store,
+        aliases=None,
+    )
+    result = VercelService.change_ideas(service, request)
+    assert result is rules and result.status == "ok" and result.ai_status == "failed"
+    assert result.notes[0] == "Existing calculated result"
+    assert "Calculated change ideas are still available" in result.notes[-1]
+
+
 def test_installed_sdk_can_discover_private_queue_subscribers():
     queue = pytest.importorskip("vercel.queue")
 
