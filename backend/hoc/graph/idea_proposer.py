@@ -45,6 +45,7 @@ from hoc.graph.orchestrator import (
     _normalise_entity_token,
     build_allowed_vocabulary,
 )
+from hoc.portfolio.sectors import etf_sectors
 
 log = logging.getLogger("hoc.graph.idea_proposer")
 
@@ -210,7 +211,7 @@ def enrich_universe_from_loaded(
     *,
     notes: list[str] | None = None,
 ) -> list[EtfUniverseEntry]:
-    """Return universe entries enriched from loaded `EtfHoldings`; if `loaded` is non-empty, skip unloaded ETFs."""
+    """Return universe entries enriched from loaded `EtfHoldings` using authoritative `etf_sectors`."""
     if not loaded:
         return list(universe)
     enriched: list[EtfUniverseEntry] = []
@@ -220,16 +221,15 @@ def enrich_universe_from_loaded(
             if notes is not None:
                 notes.append(f"Skipped candidate {entry.ticker}: holdings unavailable or incomplete.")
             continue
-        sector_weights: dict[str, float] = {}
-        for h in etf.holdings:
-            if h.sector and h.sector != Sector.unknown:
-                sname = _format_sector_display_name(h.sector)
-                sector_weights[sname] = sector_weights.get(sname, 0.0) + float(h.weight)
-        if not sector_weights and getattr(etf, "sector_Compare", None):
-            pass
+        basis, raw_sector_weights = etf_sectors(etf)
+        sector_weights: dict[str, float] = {
+            _format_sector_display_name(sec): float(weight)
+            for sec, weight in raw_sector_weights.items()
+            if sec != Sector.unknown and float(weight) > 0
+        }
         largest_ind = (
             max(sector_weights.items(), key=lambda kv: (kv[1], kv[0]))[0]
-            if sector_weights
+            if basis != "none" and sector_weights
             else entry.largest_industry
         )
         enriched.append(
@@ -410,12 +410,308 @@ def _format_lookup_metric(entry: MetricFact | PortfolioIssue | float | str) -> s
     return str(entry)
 
 
+_COMMON_PROSE_WORDS: frozenset[str] = frozenset(
+    {
+        "add",
+        "adds",
+        "adding",
+        "swap",
+        "swaps",
+        "swapping",
+        "shift",
+        "shifts",
+        "shifting",
+        "move",
+        "moves",
+        "moving",
+        "reduce",
+        "reduces",
+        "reducing",
+        "lower",
+        "lowers",
+        "lowering",
+        "spread",
+        "spreads",
+        "spreading",
+        "broaden",
+        "broadens",
+        "broadening",
+        "replace",
+        "replaces",
+        "replacing",
+        "trim",
+        "trims",
+        "trimming",
+        "cut",
+        "cuts",
+        "cutting",
+        "diversify",
+        "diversifies",
+        "diversifying",
+        "diversification",
+        "put",
+        "puts",
+        "putting",
+        "tilt",
+        "tilts",
+        "tilting",
+        "keep",
+        "keeps",
+        "keeping",
+        "avoid",
+        "avoids",
+        "avoiding",
+        "limit",
+        "limits",
+        "limiting",
+        "balance",
+        "balances",
+        "balancing",
+        "help",
+        "helps",
+        "helping",
+        "cap",
+        "caps",
+        "capping",
+        "your",
+        "the",
+        "this",
+        "these",
+        "that",
+        "those",
+        "into",
+        "from",
+        "with",
+        "across",
+        "outside",
+        "beyond",
+        "while",
+        "without",
+        "through",
+        "toward",
+        "towards",
+        "away",
+        "out",
+        "over",
+        "under",
+        "equal",
+        "weight",
+        "weighted",
+        "value",
+        "growth",
+        "broad",
+        "core",
+        "total",
+        "large",
+        "mid",
+        "small",
+        "international",
+        "developed",
+        "emerging",
+        "global",
+        "world",
+        "foreign",
+        "domestic",
+        "american",
+        "united",
+        "states",
+        "markets",
+        "market",
+        "stocks",
+        "stock",
+        "equities",
+        "equity",
+        "shares",
+        "share",
+        "funds",
+        "fund",
+        "etf",
+        "etfs",
+        "index",
+        "portfolio",
+        "holdings",
+        "holding",
+        "allocation",
+        "sector",
+        "sectors",
+        "industry",
+        "industries",
+        "companies",
+        "company",
+        "firms",
+        "firm",
+        "names",
+        "name",
+        "giants",
+        "giant",
+        "leaders",
+        "leader",
+        "suppliers",
+        "supplier",
+        "customers",
+        "customer",
+        "partners",
+        "partner",
+        "reliance",
+        "dependency",
+        "dependencies",
+        "concentration",
+        "exposure",
+        "overlap",
+        "risk",
+        "risks",
+        "single",
+        "top",
+        "biggest",
+        "largest",
+        "main",
+        "heavy",
+        "heavily",
+        "high",
+        "higher",
+        "low",
+        "more",
+        "less",
+        "fewer",
+        "other",
+        "new",
+        "current",
+        "existing",
+        "overall",
+        "direct",
+        "indirect",
+        "supply",
+        "chain",
+        "chip",
+        "chips",
+        "semiconductor",
+        "semiconductors",
+        "foundry",
+        "foundries",
+        "factory",
+        "factories",
+        "manufacturing",
+        "makers",
+        "maker",
+        "hardware",
+        "software",
+        "cloud",
+        "tech",
+        "technology",
+        "information",
+        "financial",
+        "financials",
+        "healthcare",
+        "health",
+        "care",
+        "consumer",
+        "staples",
+        "discretionary",
+        "utilities",
+        "utility",
+        "energy",
+        "industrial",
+        "industrials",
+        "materials",
+        "material",
+        "communication",
+        "communications",
+        "services",
+        "real",
+        "estate",
+        "defensive",
+        "cyclical",
+        "dividend",
+        "income",
+        "bond",
+        "bonds",
+        "treasury",
+        "gold",
+        "commodity",
+        "commodities",
+    }
+)
+
+
+def _expand_allowed_entity_tokens(
+    allowed_entities: set[str] | None,
+    metrics_by_id: Mapping[str, MetricFact | PortfolioIssue | float | str] | None = None,
+) -> set[str]:
+    """Normalise `allowed_entities` (plus metric labels/IDs when needed) into surface forms and words."""
+    expanded: set[str] = set()
+    sources: list[str] = list(allowed_entities or ())
+    if metrics_by_id:
+        for mid, entry in metrics_by_id.items():
+            if mid.startswith("dep.ALIAS:"):
+                sources.append(mid.split("dep.ALIAS:", 1)[1].replace("_", " "))
+            label = getattr(entry, "label", "")
+            if isinstance(label, str) and label:
+                if "dependent on " in label:
+                    sources.append(label.split("dependent on ", 1)[1])
+                else:
+                    sources.append(label)
+    for raw in sources:
+        norm = _normalise_entity_token(str(raw))
+        if len(norm) >= 2:
+            expanded.add(norm)
+            for tok in norm.split():
+                if len(tok) >= 3:
+                    expanded.add(tok)
+    return expanded
+
+
+def _find_unknown_entity_in_text(
+    stripped_text: str,
+    *,
+    allowed_entities: set[str] | None,
+    allowed_tickers: set[str] | None = None,
+    metrics_by_id: Mapping[str, MetricFact | PortfolioIssue | float | str] | None = None,
+    explicit_entities: Sequence[str] = (),
+) -> str | None:
+    """Return the first unverified company/entity name found in `explicit_entities` or `stripped_text`."""
+    permitted_upper = set(allowed_tickers or ()) | set(_COMMON_UPPER_ACRONYMS)
+    norm_allowed = _expand_allowed_entity_tokens(allowed_entities, metrics_by_id)
+
+    for ent in explicit_entities:
+        norm_ent = _normalise_entity_token(ent)
+        if not norm_ent:
+            continue
+        if (
+            ent.upper() not in permitted_upper
+            and norm_ent not in norm_allowed
+            and not any(
+                norm_ent in allowed or allowed in norm_ent
+                for allowed in norm_allowed
+                if len(allowed) >= 3
+            )
+        ):
+            return ent
+
+    for token in re.findall(r"\b[A-Z][A-Za-z0-9.\-]*\b", stripped_text):
+        if token.isupper() and 2 <= len(token) <= 5 and token in permitted_upper:
+            continue
+        norm_tok = _normalise_entity_token(token)
+        if len(norm_tok) < 3 or norm_tok in _COMMON_PROSE_WORDS:
+            continue
+        if token.upper() in permitted_upper:
+            continue
+        if norm_tok in norm_allowed or any(
+            norm_tok in allowed or allowed in norm_tok
+            for allowed in norm_allowed
+            if len(allowed) >= 4
+        ):
+            continue
+        return token
+    return None
+
+
 def verify_and_render_proposal_rationale(
     rationale_template: str,
     *,
     metrics_by_id: Mapping[str, MetricFact | PortfolioIssue | float | str],
     allowed_tickers: set[str] | None = None,
     allowed_entities: set[str] | None = None,
+    explicit_entities: Sequence[str] = (),
     max_words: int = 35,
 ) -> tuple[str | None, str | None]:
     """Verify a proposal `rationale` template using the orchestrator's grounding rules and render placeholders."""
@@ -444,9 +740,15 @@ def verify_and_render_proposal_rationale(
             if token not in permitted_upper:
                 return None, f"unknown_ticker_in_rationale:{token}"
 
-    if allowed_entities is not None:
-        # Ensure no unknown proper-noun ticker/entity outside allowed vocabulary if needed
-        _ = allowed_entities
+    unknown_ent = _find_unknown_entity_in_text(
+        stripped,
+        allowed_entities=allowed_entities,
+        allowed_tickers=allowed_tickers,
+        metrics_by_id=metrics_by_id if allowed_entities is None else None,
+        explicit_entities=explicit_entities,
+    )
+    if unknown_ent is not None:
+        return None, f"unknown_entity:{unknown_ent}"
 
     def _expand(match: re.Match[str]) -> str:
         mid = match.group(1)
@@ -580,6 +882,12 @@ def verify_raw_proposals(
             allowed_entities.add(norm_name)
     for h in holdings:
         allowed_tickers.add(h.ticker.upper())
+    allowed_entities |= _expand_allowed_entity_tokens(allowed_entities, metrics_by_id)
+    for iss in issues:
+        if iss.metric_id.startswith("dep.ALIAS:"):
+            alias_code = iss.metric_id.split("dep.ALIAS:", 1)[1].strip().upper()
+            if 2 <= len(alias_code) <= 5 and alias_code.isalpha():
+                allowed_tickers.add(alias_code)
 
     verified: list[RawIdeaProposal] = []
     rejected: list[dict[str, str]] = []
@@ -660,13 +968,27 @@ def verify_raw_proposals(
                 break
         if not raw_title:
             continue
+        title_unknown_ent = _find_unknown_entity_in_text(
+            raw_title,
+            allowed_entities=allowed_entities,
+            allowed_tickers=allowed_tickers,
+        )
+        if title_unknown_ent is not None:
+            rejected.append({"ticker": ticker, "action": action, "reason": f"unknown_entity:{title_unknown_ent}"})
+            continue
 
+        explicit_entities = [
+            str(ent).strip()
+            for ent in (raw.get("entities") or raw.get("referenced_companies") or [])
+            if str(ent).strip()
+        ]
         rationale_template = str(raw.get("rationale") or "").strip()
         rendered_rat, rat_err = verify_and_render_proposal_rationale(
             rationale_template,
             metrics_by_id=metrics_by_id,
             allowed_tickers=allowed_tickers,
             allowed_entities=allowed_entities,
+            explicit_entities=explicit_entities,
         )
         if rendered_rat is None or rat_err is not None:
             rejected.append({"ticker": ticker, "action": action, "reason": rat_err or "invalid_rationale"})
