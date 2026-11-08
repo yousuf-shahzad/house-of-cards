@@ -25,6 +25,8 @@ import {
   DEFAULT_TOP_N,
   type AnalysisResponse,
   type DependencyJob,
+  type DependencyResult,
+  type ResearchDepth,
   type ResearchJob,
 } from "@/api/types";
 import { useAnalysis } from "./analysis";
@@ -42,6 +44,8 @@ export interface DependenciesSnapshot {
   /** The `analysedKey` of the portfolio when the dependency run was triggered. */
   depsKey: string | null;
   topN: number;
+  /** v3.1: current requested depth ("light" default, "thorough" via Go deeper). */
+  depth: ResearchDepth;
   /** True while retrying after a transient 502/503/504/network error or 404 re-POST. */
   reconnecting: boolean;
   error: ApiError | null;
@@ -58,7 +62,9 @@ export interface DependenciesContextValue extends DependenciesSnapshot {
   /** True when the portfolio has changed since the current dependency run. */
   stale: boolean;
   /** Starts or re-runs dependency analysis for the current `analysis` holdings. */
-  runDependencies: (topN?: number) => void;
+  runDependencies: (topN?: number, depth?: ResearchDepth) => void;
+  /** v3.1: Starts a thorough dependency job that replaces the current result in place when done. */
+  goDeeper: () => void;
   /** Starts or re-runs the v3 agentic research loop (A-RES) over uncertain findings. */
   runResearch: (maxItems?: number) => void;
   /** Selects a verified edge (and optionally opens the evidence drawer). */
@@ -76,6 +82,7 @@ let storeState: DependenciesSnapshot = {
   job: null,
   depsKey: null,
   topN: DEFAULT_TOP_N,
+  depth: "light",
   reconnecting: false,
   error: null,
   selectedEdgeId: null,
@@ -90,6 +97,8 @@ interface RunContext {
   runId: number;
   rows: AllocationInput[];
   topN: number;
+  depth: ResearchDepth;
+  preservedResult: DependencyResult | null;
   transientSince: number | null;
   transientAttempts: number;
   repostedAfter404: boolean;
@@ -157,7 +166,7 @@ function postJobWithRecovery(run: RunContext) {
   activeController = controller;
 
   api
-    .dependencies(run.rows, run.topN, controller.signal)
+    .dependencies(run.rows, run.topN, controller.signal, run.depth)
     .then((job) => {
       if (activeRun?.runId !== run.runId) return;
       run.transientSince = null;
@@ -279,10 +288,14 @@ function handleJobUpdate(run: RunContext, job: DependencyJob) {
     return;
   }
 
-  // Still queued or running -> schedule next poll
+  // Still queued or running -> schedule next poll (preserve previous result in place during Go deeper)
+  const jobWithPreservedResult: DependencyJob =
+    job.result === null && run.preservedResult
+      ? { ...job, result: run.preservedResult }
+      : job;
   setStoreState({
     status: "polling",
-    job,
+    job: jobWithPreservedResult,
     reconnecting: false,
     error: null,
   });
@@ -481,14 +494,23 @@ export function triggerDependenciesRun(
   analysis: AnalysisResponse,
   analysedKey: string | null,
   topN = DEFAULT_TOP_N,
+  depth: ResearchDepth = "light",
 ) {
   stopActivePolling();
   stopActiveResearchPolling();
   const rows = holdingsToAllocationInputs(analysis);
+  const preservedResult =
+    storeState.depsKey !== null &&
+    storeState.depsKey === analysedKey &&
+    storeState.job?.result
+      ? storeState.job.result
+      : null;
   const run: RunContext = {
     runId: ++nextRunSeq,
     rows,
     topN,
+    depth,
+    preservedResult,
     transientSince: null,
     transientAttempts: 0,
     repostedAfter404: false,
@@ -499,6 +521,7 @@ export function triggerDependenciesRun(
     status: "starting",
     depsKey: analysedKey,
     topN,
+    depth,
     reconnecting: false,
     error: null,
     researchStatus: "idle",
@@ -528,12 +551,17 @@ function useDependenciesInternal(): DependenciesContextValue {
   }, []);
 
   const runDependencies = useCallback(
-    (topN = snapshot.topN || DEFAULT_TOP_N) => {
+    (topN = snapshot.topN || DEFAULT_TOP_N, depth: ResearchDepth = "light") => {
       if (!analysis) return;
-      triggerDependenciesRun(analysis, analysedKey, topN);
+      triggerDependenciesRun(analysis, analysedKey, topN, depth);
     },
     [analysis, analysedKey, snapshot.topN],
   );
+
+  const goDeeper = useCallback(() => {
+    if (!analysis) return;
+    triggerDependenciesRun(analysis, analysedKey, snapshot.topN || DEFAULT_TOP_N, "thorough");
+  }, [analysis, analysedKey, snapshot.topN]);
 
   const runResearch = useCallback(
     (maxItems = DEFAULT_RESEARCH_ITEMS) => {
@@ -592,12 +620,13 @@ function useDependenciesInternal(): DependenciesContextValue {
       ...snapshot,
       stale,
       runDependencies,
+      goDeeper,
       runResearch,
       selectEdge,
       selectNode,
       setDrawerOpen,
     }),
-    [snapshot, stale, runDependencies, runResearch, selectEdge, selectNode, setDrawerOpen],
+    [snapshot, stale, runDependencies, goDeeper, runResearch, selectEdge, selectNode, setDrawerOpen],
   );
 }
 
