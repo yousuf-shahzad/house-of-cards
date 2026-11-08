@@ -33,6 +33,21 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
+### FIX-52 · high · Reorder the Dependencies page: the important actions and AI synthesis first (Gawyn, 09:57)
+Today the order is: header (Find dependencies, Go deeper) → progress → coverage panel (holding "Scan top 30") → audit bar → AI synthesis → research panel (holding "Investigate gaps") → key numbers → graph → countries.
+
+**New order:**
+1. **Action row at the top** with "Find dependencies"/"Run again", "Go deeper", **"Scan top 30"** (shown when part of the portfolio is outside the top N) and **"Investigate gaps"**. Move the buttons, don't copy them, so there are no duplicates.
+2. **AI synthesis** (the plain cards).
+3. **Investigate uncertain findings** (the research results).
+4. **Key numbers.**
+5. **What we know about your portfolio** (coverage). Point to the action row instead of holding its own Scan button.
+6. **Verification & filing coverage audit.**
+7. **Graph**, then **countries**.
+
+- Keep the FIX-23 collapsing, the FIX-27 graph expansion and the evidence drawer working. Apply the same order to Simple Dependencies where it applies (Codex reviews that part).
+- **Owner:** Yousuf's Gemini (`pages/dependencies/`), right after FIX-40 · **Status:** assigned
+
 ### FIX-51 · high · UX: the Simple/Full switch looks "off" in Simple view (Gawyn, 09:55)
 The top bar uses an on/off `Switch` (`workspace.tsx:88`, `isSelected={!isBeginner}`), so Simple view always looks like something is switched off.
 - Fix: replace it with the existing `SegmentedControl` (as in the editor's "Shares | %"), with two options **Simple** and **Full** and the active one highlighted. Use `aria-label="View"`. Keep the route and portfolio when switching.
