@@ -39,9 +39,10 @@ The Dependencies page reads top to bottom: audit & coverage bar, AI synthesis, k
     dependencies (Meta), **1.43%** no SEC filing (Samsung, reached via reverse links), and **56.64%** outside the
     top-15 cutoff — with per-ETF verified shares (**XLK 63% / QQQ 52% / IVV 37% / EEM 15%**) and plain-English
     coverage gaps.
-  - **Interpretation verification (v3):** Every quote was checked word for word against its filing and verified by
-    rules + an independent Flash judge on ±300 characters of context: **138 confirmed, 1 flagged** (`Nvidia ->
-    OpenAI`, flagged as tentative because the 10-K says *"agreement being finalized... no assurance"*).
+  - **Interpretation verification (v3):** Every quote is checked word for word against its filing and scanned by
+    deterministic rules on ±300 characters of context, with an independent Flash judge reviewing every
+    rules-flagged edge plus a 20% sample of unflagged edges: **138 confirmed, 1 flagged** (`Nvidia -> OpenAI`,
+    flagged as tentative because the 10-K says *"agreement being finalized... no assurance"*).
 - **1:55, the AI synthesis:** read one **critical flaw** and one **diversification idea**. Every number in them is a
   Python metric (`hoc-orch-v3.0`, **0 rejected claims**); a claim with any other number is dropped automatically.
 - **2:10, relationship importance & single points of failure (key numbers):** Every edge is scored deterministically
@@ -53,9 +54,9 @@ The Dependencies page reads top to bottom: audit & coverage bar, AI synthesis, k
   canonical ISO-2 countries (**US 35.77%**, **China 19.03%**), leaving only region-only `"Asia"` unplaced.
 - **2:25, prove it & investigate gaps (graph + research loop):** click a TSMC edge to open the evidence drawer
   (verbatim quote, section, form, filing date, importance tier/reasons, interpretation badge, and SEC link). Click
-  **Investigate gaps** to run the bounded agentic research loop over SEC filings for flagged edges, undisclosed
-  customers, and zero-disclosure holdings — every new finding passes the same verbatim quote and interpretation
-  checks before merging.
+  **Investigate gaps** (`A-RES`) to run the bounded agentic research loop over SEC filings for flagged edges,
+  undisclosed customers, and zero-disclosure holdings — every new finding passes the same verbatim quote and
+  interpretation checks before merging.
 - **2:40, act on it (Compare):** open **Compare** (`#/compare`). The Scenario is seeded from your current portfolio
   (`IVV 40 / QQQ 25 / XLK 15 / EEM 20`). Cut `QQQ` to **10%**, remove `XLK`, and add **VTV 30%** (`IVV 40 / QQQ 10 /
   VTV 30 / EEM 20`), then click **Compare**. Instantly (cache-only, zero Gemini or SEC calls):
@@ -68,11 +69,11 @@ The Dependencies page reads top to bottom: audit & coverage bar, AI synthesis, k
 From `backend/`:
 
 ```bash
-uv run python -m hoc.cli eval          # offline replay (default): reproduces all 306 numbers in results.json with zero API calls
-uv run python -m hoc.cli eval --live   # full extraction + judge evaluation over the 10 held-out 10-Ks (115 core + 97 extended + 79 hard negatives)
+uv run hoc eval          # offline replay (default): reproduces all numbers in docs/hoc/eval/results.json with zero API calls
+uv run hoc eval --live   # full extraction + judge evaluation over the 10 held-out 10-Ks (115 core + 107 extended + 79 hard negatives)
 ```
 
-Headline benchmark numbers ([`docs/hoc/EVAL.md`](EVAL.md)): **88.4%** blind precision (**96.1%** pooled precision, 124/129), **57.4%** core recall (66/115), **1.3%** hard-negative false-positive rate (1/79), **100.0%** direction accuracy, and **100.0%** facility-country accuracy (39/39). (On the 10 held-out filings V-INT filtered 0 additional edges beyond quote verification; its live contribution is on `us-core-tilt`, where it flagged the tentative `Nvidia -> OpenAI` disclosure.)
+Headline benchmark numbers ([`docs/hoc/EVAL.md`](EVAL.md)): **88.4% [83.2%, 92.5%]** blind precision (**96.1% [89.6%, 100.0%]** pooled precision, 124/129; blind F1 **69.6% [51.9%, 82.7%]**, pooled F1 **71.9% [53.3%, 85.1%]**), **57.4% [35.3%, 76.0%]** core recall (66/115; inter-annotator F1 = **0.49**), **1.3% [0.0%, 3.9%]** hard-negative false-positive rate (**1/79**), **100.0%** direction accuracy (124/124), **100.0%** facility-country accuracy (**39/39**), and importance-tier quadratic weighted Cohen's $\kappa = \mathbf{0.475\ [0.382,\ 0.631]}$ (54/79). (On the 10 held-out filings V-INT filtered **0** edges beyond quote verification; its live contribution is on `us-core-tilt`, where it flagged the tentative `Nvidia -> OpenAI` disclosure.)
 
 ## If something goes wrong
 
