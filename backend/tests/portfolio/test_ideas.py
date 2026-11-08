@@ -63,7 +63,7 @@ def test_industry_first_best_fraction_three_distinct_etfs_and_exact_allocations(
         delta = next(d for d in idea.concentration_deltas if d.name == "top_sector")
         assert delta.delta < 0
         assert "51.0%" in idea.reason and f"{delta.candidate:.1%}" in idea.reason
-        assert "Information Technology" in idea.reason
+        assert "Technology" in idea.reason
         assert idea.biggest_dependency_delta is None
         assert idea.status == "partial" and idea.candidate_unanalysed
     # Input iteration order cannot change the shortlist or its stable identifiers.
@@ -146,4 +146,4 @@ def test_reason_names_both_industries_if_the_largest_changes():
     request, baseline, _, scenarios = setup(candidates=[candidate])
     ideas = ranked(request, baseline, scenarios).ideas
     assert len(ideas) == 1
-    assert "Information Technology at 51.0% to Health Care at 47.2%" in ideas[0].reason
+    assert "Technology at 51.0% to Health Care at 47.2%" in ideas[0].reason
