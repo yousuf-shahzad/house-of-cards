@@ -1,9 +1,19 @@
 // F6 (v3.1): "Try a change". Edit a copy of the current portfolio; it is compared automatically
 // (POST /api/compare, cache-only) and the result is four before -> after rows plus "More details".
 // Used by the Compare page (Full view) and the guide's step-5 sub-screen (Simple view).
-import { useEffect, useState, type ReactNode } from "react";
+// FIX-17: "Ideas" (POST /api/change-ideas, cache-only, no AI) on top, also shown on guide step 5.
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { RiArrowDownLine, RiArrowRightLine, RiArrowUpLine, RiRefreshLine } from "@remixicon/react";
-import type { CompareResponse, ConcentrationDelta, ConcentrationName, MetricDelta, MetricFact } from "@/api/types";
+import { api } from "@/api/client";
+import type {
+  ChangeIdea,
+  ChangeIdeasResponse,
+  CompareResponse,
+  ConcentrationDelta,
+  ConcentrationName,
+  MetricDelta,
+  MetricFact,
+} from "@/api/types";
 import { useAnalysis } from "@/app/analysis";
 import { metricCitationLabel } from "@/app/pages/dependencies/metrics";
 import { useScenario } from "@/app/scenario";
@@ -262,6 +272,168 @@ function HeadlineRow({ row }: { row: Headline }) {
   );
 }
 
+// ---------- FIX-17: change ideas ----------
+
+const IDEAS_RETRY_MS = 5000;
+/** Finished answers per portfolio key, shared by step 5 and Try a change (the backend memoises too). */
+const ideasCache = new Map<string, ChangeIdeasResponse>();
+
+type IdeasState = { key: string; status: "loading" | "ready" | "error"; response: ChangeIdeasResponse | null };
+
+function useChangeIdeas(): IdeasState | null {
+  const { draft: current } = useAnalysis();
+  const { inputs, key } = current;
+  const [state, setState] = useState<IdeasState | null>(null);
+  useEffect(() => {
+    if (!inputs) return;
+    const done = ideasCache.get(key);
+    if (done) {
+      setState({ key, status: "ready", response: done });
+      return;
+    }
+    const controller = new AbortController();
+    let timer: number | undefined;
+    let retried = false;
+    const load = () => {
+      setState({ key, status: "loading", response: null });
+      api
+        .changeIdeas(inputs, undefined, controller.signal)
+        .then((response) => {
+          // A cold backend answers "partial" with no ideas while the candidate ETFs load: ask once more.
+          if (response.status === "partial" && response.ideas.length === 0 && !retried) {
+            retried = true;
+            timer = window.setTimeout(load, IDEAS_RETRY_MS);
+            return;
+          }
+          if (response.status === "ok") ideasCache.set(key, response);
+          setState({ key, status: "ready", response });
+        })
+        .catch((cause: unknown) => {
+          if (cause instanceof DOMException && cause.name === "AbortError") return;
+          setState({ key, status: "error", response: null });
+        });
+    };
+    load();
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [key, inputs]);
+  return inputs && state?.key === key ? state : null;
+}
+
+/** Loads an idea into Try a change: your shares plus whole shares of the new ETF worth f / (1 - f) of your
+ * portfolio, which gives it the idea's share. Falls back to the idea's own percentages when prices aren't usable. */
+function useLoadIdea(): (idea: ChangeIdea) => Promise<void> {
+  const { draft: current } = useAnalysis();
+  const { scenario } = useScenario();
+  return useCallback(
+    async (idea: ChangeIdea) => {
+      const valued = current.mode === "shares" && !current.rows.some((row) => row.pinned) ? current.valuation.result : null;
+      if (valued && valued.total_value > 0) {
+        try {
+          const quote = (await api.valuation([{ ticker: idea.ticker, shares: 1, overridePct: null }])).rows[0]?.price;
+          const currency = valued.rows.find((row) => row.price)?.price?.currency;
+          if (quote && quote.price > 0 && quote.currency === currency) {
+            const value = (valued.total_value * idea.add_fraction) / (1 - idea.add_fraction);
+            const shares = Math.max(1, Math.round(value / quote.price));
+            scenario.copyFrom(
+              [...current.rows, { id: "", ticker: idea.ticker, allocationPct: null, shares, pinned: false }],
+              "shares",
+            );
+            return;
+          }
+        } catch {
+          // No price: use the idea's percentages below.
+        }
+      }
+      scenario.setRows(idea.holdings.map((row) => ({ ticker: row.ticker, allocationPct: row.allocation * 100 })));
+    },
+    [current, scenario],
+  );
+}
+
+/** "Add RSP: largest industry 51.0% → 42.8%", from the measure the idea addresses (Python's numbers). */
+function ideaHeadline(idea: ChangeIdea): string {
+  const row = (name: ConcentrationName) => idea.concentration_deltas.find((delta) => delta.name === name);
+  const dep = idea.biggest_dependency_delta;
+  let what: string | null = null;
+  if (idea.addresses === "dependency" && dep && dep.baseline !== null && dep.candidate !== null) {
+    const label = deltaLabel(dep);
+    what = `${label.charAt(0).toLowerCase()}${label.slice(1)} ${formatPct(dep.baseline, 1)} → ${formatPct(dep.candidate, 1)}`;
+  } else if (idea.addresses === "effective_n") {
+    const n = row("effective_n");
+    if (n) what = `behaves like ${Math.round(n.baseline)} → ${Math.round(n.candidate)} holdings`;
+  } else {
+    const name = idea.addresses === "top10" ? "top10" : "top_sector";
+    const delta = row(name);
+    if (delta) {
+      const label = name === "top10" ? "top 10 companies" : "largest industry";
+      what = `${label} ${formatPct(delta.baseline, 1)} → ${formatPct(delta.candidate, 1)}`;
+    }
+  }
+  return what ? `Add ${idea.ticker}: ${what}` : `Add ${idea.ticker}`;
+}
+
+/** Up to three ETF ideas with "Try this". `onTried` runs after an idea is loaded into Try a change. */
+export function ChangeIdeas({ heading = "Ideas to try", onTried }: { heading?: string; onTried?: () => void }) {
+  const ideas = useChangeIdeas();
+  const loadIdea = useLoadIdea();
+  const [loading, setLoading] = useState<string | null>(null);
+  if (!ideas) return null;
+  const list = ideas.response?.ideas ?? [];
+  const tryIdea = (idea: ChangeIdea) => {
+    setLoading(idea.idea_id);
+    void loadIdea(idea).finally(() => {
+      setLoading(null);
+      onTried?.();
+    });
+  };
+  return (
+    <section className="flex flex-col gap-3" aria-label={heading} aria-busy={ideas.status === "loading"}>
+      <h2 className="text-headline-small text-text-primary">{heading}</h2>
+      {ideas.status === "loading" && (
+        <p className="flex items-center gap-2 text-body-2-regular text-text-secondary">
+          <Spinner size="sm" aria-label="Looking for ideas" /> Looking for ETFs that would spread your money more…
+        </p>
+      )}
+      {ideas.status === "error" && (
+        <p className="text-body-2-regular text-text-secondary">
+          Ideas couldn't load right now. You can still try your own change.
+        </p>
+      )}
+      {ideas.status === "ready" && list.length === 0 && (
+        <p className="text-body-2-regular text-text-secondary">
+          None of the ETFs we can check would clearly improve your mix right now.
+        </p>
+      )}
+      {list.length > 0 && (
+        <ul className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          {list.map((idea) => (
+            <li
+              key={idea.idea_id}
+              className="flex flex-col gap-2 rounded-2xl border border-separator-border bg-background-primary-default p-4"
+            >
+              <span className="text-body-semibold text-text-primary" style={tabular}>
+                {ideaHeadline(idea)}
+              </span>
+              <span className="text-body-2-regular text-text-secondary">{idea.reason}</span>
+              <span className="text-caption-1-regular text-text-tertiary" style={tabular}>
+                {idea.etf_name}, {formatPct(idea.add_fraction, 0)} of the new mix
+              </span>
+              <div className="mt-auto pt-1">
+                <Button variant="secondary" size="small" disabled={loading !== null} onClick={() => tryIdea(idea)}>
+                  {loading === idea.idea_id ? "Loading…" : "Try this"}
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 /** The editable copy of the portfolio, the four headline rows and "More details". */
 export function TryAChange({ editorTitle = "Your new mix" }: { editorTitle?: string }) {
   const { draft: current } = useAnalysis();
@@ -292,6 +464,7 @@ export function TryAChange({ editorTitle = "Your new mix" }: { editorTitle?: str
 
   return (
     <div className="flex flex-col gap-6">
+      <ChangeIdeas heading="Ideas" />
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-headline-small text-text-primary">{editorTitle}</h2>
