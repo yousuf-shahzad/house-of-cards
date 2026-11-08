@@ -78,12 +78,6 @@ Found by Bekarys's Gemini (QA). Since #221, these links only change the hash, so
 - Fix: use `openExpertPage(...)` in `guide/copy.ts:95`, `steps/pick.tsx:195`, `steps/own.tsx:127` and `steps/spread.tsx:151`.
 - **Owner:** Yousuf's Gemini (guide) · **Status:** PR #234 open
 
-### FIX-41 · medium · UX: Simple-mode controls (from FIX-39)
-- The top-bar switch says "Simple view / Full view" without showing which is active. Label the state clearly, e.g. "Full view" on or off, or highlight the active mode.
-- Each Simple page has both "Show full detail on this page" and "Open the five-step guide" at the bottom. Keep one clear footer action per page; the guide link can live once in the walkthrough tips.
-- Simple Dependencies embeds Guide Step 4, so it shows duplicate "Learn more" and "See every link and its evidence" buttons. Hide Step 4's "Learn more" when embedded (add a small prop to `step-4-risks.tsx`; lead-approved).
-- **Owner:** Yousuf's Codex (`workspace.tsx`, `pages/simple/`, plus the one prop in `step-4-risks.tsx`) · **Status:** assigned
-
 ### FIX-42 · medium · UX: plain words in the info text and on the Dependencies page (from FIX-39)
 - **Info banners (`guide/copy.ts`):** SEC N-PORT → "official fund reports"; 10-K/20-F → "company annual reports"; look-through → "the companies inside your ETFs"; ISIN/CIK merging → "merges share classes like GOOG and GOOGL"; HHI/1-HHI → "concentration score"; GICS → "industry breakdown".
 - **Dependencies (Full view):**
@@ -94,30 +88,6 @@ Found by Bekarys's Gemini (QA). Since #221, these links only change the hash, so
   - Drop the two-letter country chips next to country names.
 - **Mobile 390px:** collapse the three rows of graph filter pills into one compact selector.
 - **Owner:** Yousuf's Gemini (`guide/copy.ts`, `pages/dependencies/`) · **Status:** after FIX-40
-
-### FIX-36 · high · Independent proof outside the app: QQQ vs XLK overlap, and dependencies vs price history (Gawyn, 09:22)
-Prove one example without the app's own code or validation.
-
-**Part 1, overlap.**
-- Download QQQ's and XLK's holdings straight from the issuers (Invesco for QQQ, State Street for XLK). Record the URL, as-of date and file hash.
-- Compute the company-level weighted overlap O = Σ_c min(w_QQQ,c, w_XLK,c), as defined in `docs/hoc/CONTRACT.md` (share classes such as GOOG/GOOGL merged by issuer), plus the shared-company count and the top shared names.
-- Compare with the app's 50.11% / 35 shared, and explain any gap (the app's QQQ is the N-PORT file as of 2026-06-30). Use the issuer file closest to that date if one exists.
-
-**Part 2, dependencies vs history.**
-- Hypotheses: the app's predicted links between companies in these ETFs. Use pairs where both sides have US-listed price history, ADRs included, e.g. Nvidia/AMD/Broadcom/Intel → TSMC (TSM) and Intel → ASML. Export them from an app result JSON; that's the thing being tested, not the evidence.
-- Data: about 3 years of daily adjusted prices from a public source the app doesn't use (e.g. Yahoo Finance or Stooq). Record the source and dates.
-- Method:
-  - Take residual returns after the market (SPY) and the sector (e.g. SOXX/XLK).
-  - Compare residual correlation for predicted-link pairs against matched same-sector pairs with no predicted link, using a permutation or bootstrap CI.
-  - Add an event study: on the target's |z| > 2 days, check whether linked companies move the same way more often than controls.
-- Report the effect sizes with CIs, honestly: correlation isn't dependency, and samples are small.
-
-**Deliverables:**
-- A new top-level `validation/` folder with a README (sources, method, results) and standalone Python that does **not** import `hoc`.
-- Small raw-data snapshots, with sources and dates.
-- A `results.json`.
-
-- **Owner:** Gawyn's Gemini (new folder `validation/`) · **Status:** assigned
 
 ### FIX-37 · high · Bug hunt across the whole app; report bugs in FIXES.md (Gawyn, 09:23)
 Find real bugs on current `main`, in both views and on every page:
@@ -137,6 +107,11 @@ For each **confirmed** bug, add one line under **New** in FIXES.md: `BUG: <what 
 
 ## Done (checked on `main` by the lead)
 
+- FIX-36 independent proof (`validation/`, standard library only, no `hoc` imports; the lead re-ran it from saved data and got identical results):
+  - **Overlap:** QQQ/XLK reproduces the app's 50.11% / 35 shared exactly with date-matched files, and is 51.44% on current issuer files.
+  - **Prices:** predicted links show only a weak, non-significant edge in 3-year residual co-movement (+0.062, 95% CI [−0.0015, 0.126], p = 0.09; event study +5.0 pp, p = 0.21).
+  - #227
+- FIX-41 Simple-mode controls (active mode shown, one footer action, guide link in the tips, embedded Step 4 without Learn more) — #225
 - FIX-43 plain words on Exposures, Overlap, the editor and Compare ("Companies / Exact share classes", no raw keys, "Use this as my portfolio" beside Reset); verified by QA — #237
 - FIX-50 Try a change: % ideas keep exact allocations; share swaps remove the full source; "Make this my portfolio" runs the scan and stays in mode; verified by QA — #235
 - FIX-53 Simple Portfolio has a "Next: what you really own →" button: disabled with a reason until the portfolio is ready, then it leads to Simple Exposures (lead's own change, checked in the browser) — #236
