@@ -1482,3 +1482,158 @@ def test_fix14_skips_duplicate_unnamed_customers_and_plural_customer_groups() ->
     assert [e.edge_id for e in res.edges] == ["e_unnamed_existing"]
     assert all(f.new_edges == [] for f in res.findings)
 
+
+def test_fix22_budgets_and_budget_stops_labelled_not_finished_in_time(tmp_path) -> None:
+    import time as _time
+
+    from hoc.core.cache import DiskCache
+    from hoc.research.loop import (
+        DEFAULT_ITEM_TIMEOUT_SECONDS,
+        RESEARCH_DEPTH_TIMEOUT_SECONDS,
+    )
+
+    assert DEFAULT_ITEM_TIMEOUT_SECONDS == 40.0
+    assert RESEARCH_DEPTH_TIMEOUT_SECONDS == {"none": 0.0, "light": 40.0, "thorough": 85.0}
+
+    analysis, _ = _sample_analysis_and_result()
+    comp = analysis.exposures[0]
+    filing = _sample_filing(cik="0009990001", accession="0009990001-25-000221")
+    e_single = _make_edge(
+        edge_id="e_budget_1",
+        source_key=comp.company_key,
+        source_name=comp.company_name,
+        target_name="ZZFAB",
+        sole_source=True,
+    )
+    e_flag = _make_edge(
+        edge_id="e_budget_2",
+        source_key=comp.company_key,
+        source_name=comp.company_name,
+        target_name="ZZSUP",
+        quote="We depend on ZZSUP for specialized substrate packaging.",
+        interp_status="flagged",
+        interp_flags=["judge_unclear"],
+    )
+
+    class SlowStepClient(FakeGeminiClient):
+        def generate_json(self, prompt, schema, **kwargs):
+            if "verdicts" in schema.get("properties", {}):
+                return super().generate_json(prompt, schema, **kwargs)
+            _time.sleep(0.08)
+            return super().generate_json(prompt, schema, **kwargs)
+
+    disk = DiskCache(tmp_path)
+    # Tight budget so the step times out during investigation
+    timed_out_runner = ResearchLoop(
+        client=SlowStepClient(),
+        disk_cache=disk,
+        filings_by_key={comp.company_key: filing},
+        call_timeout_s=0.01,
+        item_timeout_s=0.02,
+        total_timeout_s=0.02,
+    )
+    res_timeout = timed_out_runner.research_company(comp, filing, [e_single, e_flag], depth="light")
+    assert len(res_timeout.findings) == 2
+    for finding in res_timeout.findings:
+        assert finding.outcome == "unresolved"
+        assert finding.explanation.startswith("Not finished in time:")
+        assert finding.steps[-1].summary.startswith("Not finished in time:")
+
+    # Re-running with normal budget and cache_only=False re-investigates budget-stopped findings
+    normal_runner = ResearchLoop(
+        client=FakeGeminiClient(),
+        disk_cache=disk,
+        filings_by_key={comp.company_key: filing},
+    )
+    res_recovered = normal_runner.research_company(comp, filing, [e_single, e_flag], depth="light")
+    assert all(not f.explanation.startswith("Not finished in time:") for f in res_recovered.findings)
+
+
+def test_fix22_explanation_outcome_consistency_for_hypothetical_flagged_edge(tmp_path) -> None:
+    from hoc.core.cache import DiskCache
+
+    analysis, _ = _sample_analysis_and_result()
+    comp = analysis.exposures[0]
+    hypo_quote = (
+        "We are finalizing an investment and partnership agreement with OpenAI. "
+        "There is no assurance that we will enter into an investment and partnership agreement "
+        "with OpenAI or that a transaction will be completed."
+    )
+    second_openai_quote = (
+        "Our cloud service customers and AI model developers such as OpenAI deploy our accelerated computing platforms."
+    )
+    filing = _sample_filing(
+        cik="0001045810",
+        accession="0001045810-26-000024",
+        text=(
+            "ITEM 1. BUSINESS\n"
+            f"{second_openai_quote}\n"
+            "ITEM 1A. RISK FACTORS\n"
+            f"{hypo_quote}\n"
+        ),
+    )
+    edge_jv = _make_edge(
+        edge_id="e_nvda_openai_jv",
+        source_key=comp.company_key,
+        source_name="Nvidia",
+        target_name="OpenAI",
+        target_key="ALIAS:OPENAI",
+        edge_type="jv_partner",
+        sole_source=False,
+        quote=hypo_quote,
+        interp_status="flagged",
+        interp_flags=["hypothetical"],
+    )
+
+    class ContradictoryRejectionProseClient(FakeGeminiClient):
+        def generate_json(self, prompt, schema, **kwargs):
+            # V-INT keeps the edge flagged as hypothetical (not rejected, not confirmed)
+            props = schema.get("properties", {})
+            if "verdicts" in props:
+                return {
+                    "verdicts": [
+                        {
+                            "index": 0,
+                            "status": "flagged",
+                            "flags": ["hypothetical"],
+                            "rationale": "The partnership agreement is still being finalized with no assurance of completion.",
+                        }
+                    ]
+                }, self.extractor_model
+            if "flags" in props and "status" in props:
+                return {
+                    "status": "flagged",
+                    "flags": ["hypothetical"],
+                    "rationale": "The partnership agreement is still being finalized with no assurance of completion.",
+                }, self.extractor_model
+            resp, model = super().generate_json(prompt, schema, **kwargs)
+            if resp.get("action") == "conclude":
+                return {
+                    "action": "conclude",
+                    "query": "OpenAI",
+                    "outcome": "rejected",
+                    "explanation": (
+                        f'The jv_partner edge to OpenAI is rejected. The filing states: "{hypo_quote}" '
+                        "This does not establish an active joint venture and should not be recorded."
+                    ),
+                    "candidate_edges": [],
+                }, model
+            return resp, model
+
+    disk = DiskCache(tmp_path)
+    runner = ResearchLoop(
+        client=ContradictoryRejectionProseClient(),
+        disk_cache=disk,
+        filings_by_key={comp.company_key: filing},
+    )
+    res = runner.research_company(comp, filing, [edge_jv], depth="light")
+    assert len(res.findings) == 1
+    finding = res.findings[0]
+    assert finding.outcome == "unresolved"
+    assert finding.rejected_edge_ids == []
+    assert "is rejected" not in finding.explanation.lower()
+    assert "does not establish" not in finding.explanation.lower()
+    assert "should not be recorded" not in finding.explanation.lower()
+    assert "unresolved" in finding.explanation.lower() or "prospective" in finding.explanation.lower()
+
+
