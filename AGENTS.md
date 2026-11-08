@@ -30,6 +30,11 @@ Humans over agents. Only the team lead reassigns work between teammates. If anyo
 
 ## 3. Workflow
 
+0. **`FIXES.md` (repo root) is the team's to-do list:** every open problem, its owner and its status.
+   - Read it at the start of every task and after every `git pull`, and work on the items with your name, top to bottom.
+   - Gawyn adds new problems there at any time.
+   - The lead assigns them and marks them done.
+   - Agents don't edit it; post on the board instead.
 1. Pick or file an issue. Comment on it or post on the board when you take it.
 2. Branch `<issue#>-<slug>` from fresh `main`.
 3. Small commits. Stage only your own files (no `git add -A`).
@@ -43,7 +48,7 @@ Project: House of Cards PoC. Plan and rules: `docs/hoc/PLAN.md` (v2: `PLAN-v2.md
 
 | Area (package) | Owner | Folders |
 |---|---|---|
-| Contract (C0, frozen), lead integration, README, docs | Gawyn's Claude (`@whitehawk9571 (Claude)`) | `backend/hoc/contract/`, `backend/hoc/sources/base.py`, `backend/hoc/sources/registry.py`, `backend/hoc/sources/fake.py`, `backend/pyproject.toml`, `backend/tests/conftest.py`, `backend/tests/fixtures/`, `backend/tests/snapshots/`, `frontend/api/types.ts`, `frontend/api/__fixtures__/`, `frontend/app/registry.tsx` (entries), `docs/hoc/`, `README.md` |
+| Contract (C0, frozen), lead integration, README, docs | Gawyn's Claude (`@whitehawk9571 (Claude)`) | `backend/hoc/contract/`, `backend/hoc/sources/base.py`, `backend/hoc/sources/registry.py`, `backend/hoc/sources/fake.py`, `backend/pyproject.toml`, `backend/tests/conftest.py`, `backend/tests/fixtures/`, `backend/tests/snapshots/`, `frontend/api/types.ts`, `frontend/api/__fixtures__/`, `frontend/app/registry.tsx` (entries), `docs/hoc/`, `README.md`, `FIXES.md` (Gawyn adds to it too) |
 | Frontend shell + shares adder (S-UI) | Yousuf's Claude (`@yousuf-shahzad (Claude)`) | `frontend/` (except files listed for others), incl. `package.json`/lockfile, `vite.config.ts`, `frontend/api/client.ts`, `frontend/app/analysis.tsx`, `frontend/app/ui/`, `frontend/app/pages/portfolio/`, `frontend/app/pages/network/`, `frontend/app/pages/compare/` (v3 X-UI) |
 | Portfolio maths (e) + valuation (S-API), iShares adapter, live tests | Yousuf's Codex (`@yousuf-shahzad (Codex)`) | `backend/hoc/portfolio/` (incl. `valuation.py`, v3 `compare.py`), `backend/tests/portfolio/`, `backend/tests/eval/gold/` (v3 E-GOLD annotator A), `backend/hoc/sources/ishares/`, `backend/tests/sources/ishares/`, `backend/tests/live/` |
 | Exposures page + Dependencies page (G-UI); guided view (all 5 steps) | Yousuf's Gemini (`@yousuf-shahzad (Gemini)`) | `frontend/app/pages/exposures/`, `frontend/app/pages/dependencies/`, `frontend/app/dependencies-state.tsx`, `frontend/app/pages/guide/` (steps 4–5 and `use-auto-dependencies.ts` from Kendrick's Claude, 2026-11-08) |
