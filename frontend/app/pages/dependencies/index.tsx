@@ -2121,6 +2121,7 @@ function DependenciesPageContent() {
 
               <ProgressBar
                 aria-label="Dependency scan progress"
+                size="lg"
                 value={progressPct}
                 maxValue={100}
                 isIndeterminate={scanBarIndeterminate(job, progressPct, depStatus === "starting")}
