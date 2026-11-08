@@ -3,10 +3,27 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import Annotated, Literal
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 from .units import AssetClass, SourceName, Weight
+
+
+class PriceQuote(BaseModel):
+    """One ETF's latest market price, as published by a source (v2). Used to value share counts."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    price: Annotated[float, Field(gt=0, allow_inf_nan=False)]
+    """Price per share in `currency`."""
+    currency: Annotated[str, Field(pattern=r"^[A-Z]{3}$")]
+    as_of: date
+    """The trading date of the price (e.g. TickerInside last_close_date), not the download date."""
+    kind: Literal["close", "nav"] = "close"
+    """'close' = exchange closing price (TickerInside last_close); 'nav' = net asset value per share."""
+    source: SourceName
+    attribution: str | None = None
 
 
 class RawHolding(BaseModel):
@@ -56,6 +73,8 @@ class RawEtfHoldings(BaseModel):
     """The fund's own sector breakdown, label -> fraction of NAV, if the source publishes one."""
     holdings: list[RawHolding]
     warnings: list[str] = []
+    price: PriceQuote | None = None
+    """The ETF's own latest price, if this source publishes one (v2). Bad price data -> None + a warning."""
 
 
 class SecurityInfo(BaseModel):

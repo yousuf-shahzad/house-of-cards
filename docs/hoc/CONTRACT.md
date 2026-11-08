@@ -129,3 +129,37 @@ Dev: the Vite dev server proxies `/api` to `http://127.0.0.1:8000`; CORS allows 
 - Attribution: TickerInside is CC BY 4.0, so its `cite_as` text is carried in `attribution` and shown in the UI.
   SEC data is public domain (send a User-Agent with contact details). Issuer files (iShares) must not be
   republished.
+
+## 7. v2 additions (PLAN-v2, C0)
+
+Models: `backend/hoc/contract/valuation.py`, `backend/hoc/contract/dependencies.py`, `PriceQuote` in `raw.py`;
+TypeScript mirror at the end of `frontend/api/types.ts`; mocks `frontend/api/__fixtures__/synthetic-{valuation,dependencies}.json`.
+Routes are wired by I-API (Bekarys's Claude); the OpenAPI snapshot updates with them.
+
+- **Prices.** `PriceQuote {price > 0 finite, currency (ISO 4217), as_of (trading date), kind close|nav, source, attribution}`,
+  optional on `RawEtfHoldings`, `EtfHoldings` (passed through) and `EtfSummary`. TickerInside `last_close` is an exchange
+  close, not NAV. Bad price data → `price: null` plus a warning, never an invalid ETF.
+- **`POST /api/valuation`** `ValuationRequest {rows: [{ticker, shares?, allocation_override?}]}` → `ValuationResponse`.
+  Pinned rows have `allocation_override` (fraction). With pinned total P and unpinned values Vᵢ = sharesᵢ × priceᵢ:
+  allocationᵢ = (1 − P)·Vᵢ / ΣV. Blocking issues: `pinned_over_100`, `nothing_to_rescale` (P < 1 and ΣV = 0),
+  `allocation_sum_invalid` (all pinned, not 1), `no_price` / `invalid_price` / `non_usd_price` / `price_unavailable` /
+  `missing_shares` on an unpinned row (pin it to a %), `duplicate_ticker`, `too_many_etfs`. Warning: `stale_price`
+  (price date more than `PRICE_STALE_DAYS` = 4 calendar days before `as_of_date`). `status: usable` ⇒ allocations total 1
+  and go to `/api/analysis` unchanged.
+- **`POST /api/dependencies`** `DependencyRequest {holdings, top_n=15 (1..30)}` → `DependencyJob` (HTTP 200 if done from
+  cache, 202 otherwise). **`GET /api/dependencies/{job_id}`** → `DependencyJob`; unknown id → 404 `JOB_NOT_FOUND`.
+  `job_id` = sha256(top-N company keys + filing accessions + prompt versions + allocations hash) → idempotent.
+- **Statuses are enums.** Company: `queued fetching extracting cached done no_sec_filing unsupported_form
+  sec_contact_missing missing_api_key error` (+ `extraction_quality sections|fallback`). Insights:
+  `ok metrics_only missing_api_key no_verified_edges error`. Missing key/contact is a status, never a 500.
+- **Edges** (`VerifiedEdge`) exist only if `normalise(evidence_quote)` (one `...` splice allowed, halves ≥ 25 chars,
+  in order within 300 chars) is found in `normalise(html_to_text(filing))` (`hoc.filings.text`). `target_key` comes
+  only from deterministic name resolution, else null. Types: `supplier customer contract_manufacturer foundry key_input
+  facility jv_partner`; target kinds: `company country region material component facility unnamed_customer`.
+- **Metrics** (`MetricFact`) are Python's (unit `fraction|count|ratio|days`); supplier dependency is unioned per
+  (dependent company, target) so a company is never counted twice. **Insights** cite `metric_id`s/`edge_id`s; any number
+  in `text` must come from a cited metric, and names must be in the portfolio or verified edges, else the claim is dropped
+  (`rejected_claims_count`).
+- **Settings** (env): `GEMINI_API_KEY` (secret; never in URLs, cache or logs; `repr=False`),
+  `HOC_GEMINI_EXTRACTOR_MODEL` (default `gemini-3.8-flash`), `HOC_GEMINI_ORCHESTRATOR_MODEL` (default `gemini-4-argon`),
+  `HOC_DEPS_TOP_N` (default 15). Fetching filings needs `HOC_SEC_CONTACT`.

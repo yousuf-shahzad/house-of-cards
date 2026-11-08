@@ -69,6 +69,13 @@ class EtfNotFoundError(HocError):
     status = 404
 
 
+class JobNotFoundError(HocError):
+    """GET /api/dependencies/{job_id} for an unknown or expired job (v2)."""
+
+    code = "JOB_NOT_FOUND"
+    status = 404
+
+
 class SourcesUnavailableError(HocError):
     """No requested ETF could be loaded because sources were unavailable."""
 
