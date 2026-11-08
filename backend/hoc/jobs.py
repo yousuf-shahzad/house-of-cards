@@ -79,6 +79,9 @@ class DependencyPipeline(Protocol):
         through Insights.status; never raises for those."""
         ...
 
+    # Optional: resolver_for(portfolio: Sequence[CompanyExposure]) -> Callable[[str], str | None], the
+    # deterministic name -> company_key resolver for one job's portfolio (G-DOC). Without it keys stay None.
+
 
 class NotWiredPipeline:
     """Stand-in until G-DOC, G-AI and G-ORCH merge: every company is reported, nothing is invented."""
@@ -165,12 +168,22 @@ def job_id_for(request: DependencyRequest, companies: Sequence[CompanyExposure],
     return hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
 
 
-def _portfolio_flags(analysis: AnalysisResponse, edges: list[VerifiedEdge]) -> list[VerifiedEdge]:
-    """source/target_in_portfolio from this job's own analysis (extractions are cached across portfolios)."""
+def _resolve_and_flag(analysis: AnalysisResponse, edges: list[VerifiedEdge],
+                      resolve: Callable[[str], str | None] | None = None) -> list[VerifiedEdge]:
+    """Against this job's own portfolio (extractions are cached across portfolios): fill a missing company
+    target_key with the deterministic resolver, then set source/target_in_portfolio. The LLM never picks a key."""
     keys = {c.company_key for c in analysis.exposures}
-    return [e.model_copy(update={"source_in_portfolio": e.source_company_key in keys,
-                                 "target_in_portfolio": e.target_key is not None and e.target_key in keys})
-            for e in edges]
+    flagged = []
+    for edge in edges:
+        target_key = edge.target_key
+        if target_key is None and resolve is not None and edge.target_kind == "company":
+            target_key = resolve(edge.target_name)
+        flagged.append(edge.model_copy(update={
+            "target_key": target_key,
+            "source_in_portfolio": edge.source_company_key in keys,
+            "target_in_portfolio": target_key is not None and target_key in keys,
+        }))
+    return flagged
 
 
 @dataclass
@@ -270,8 +283,10 @@ class DependencyJobs:
         try:
             futures = [self._workers.submit(self._company, job, i, c) for i, c in enumerate(job.top)]
             extractions = [f.result() for f in futures]
-            edges = _portfolio_flags(job.analysis,
-                                     list({e.edge_id: e for x in extractions if x for e in x.edges}.values()))
+            resolver_for = getattr(self.pipeline, "resolver_for", None)
+            edges = _resolve_and_flag(job.analysis,
+                                      list({e.edge_id: e for x in extractions if x for e in x.edges}.values()),
+                                      resolver_for(job.analysis.exposures) if resolver_for else None)
             metrics, insights = self.pipeline.insights(job.analysis, edges, cache_only=job.cache_only)
             with self._lock:
                 companies = list(job.companies)
