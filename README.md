@@ -242,15 +242,16 @@ Run the evaluation harness from `backend/`:
 # Offline replay (default: deterministic verifier + V-INT + R-IMP against recorded predictions; zero API calls)
 cd backend && uv run hoc eval
 
-# Live (runs Gemini extractor + V-INT Flash judge on the 10 held-out 10-Ks and updates docs/hoc/EVAL.md)
+# Live (runs Gemini extractor + V-INT Flash judge + per-company light research agents on the 10 held-out 10-Ks and updates docs/hoc/EVAL.md)
 cd backend && uv run hoc eval --live
+cd backend && uv run hoc eval --check-agentic recorded
 ```
 
 - **Benchmark results ([`docs/hoc/EVAL.md`](docs/hoc/EVAL.md)):**
   - **Micro precision:** **88.4% [83.2%, 92.5%]** blind (114/129; **Micro F1 = 69.6% [51.9%, 82.7%]**) and **96.1% [89.6%, 100.0%]** after blind pooled adjudication (124/129; **Micro F1 = 71.9% [53.3%, 85.1%]**, with 10 of 14 unmatched predictions confirmed verbatim in the filings as extended relationships).
   - **Core recall (`tier='core'`, blind denominator):** **57.4% [35.3%, 76.0%]** (66/115 core relationships; misses are mainly multi-site facility countries, 23/49, and Pfizer co-development alliances, 18/49).
   - **Hard-negative false-positive rate:** **1.3% [0.0%, 3.9%]** (**1/79** across 27 competitor, 11 negated, 9 hypothetical, 7 unrelated, and 25 generic passages), **100.0% [100.0%, 100.0%] direction accuracy** (124/124), **100.0% [100.0%, 100.0%] facility-country accuracy** (**39/39**), and **importance-tier agreement** quadratic weighted Cohen's $\kappa = \mathbf{0.475\ [0.382,\ 0.631]}$ (54/79).
-  - **Honest V-INT note:** On the 10 held-out filings, the extractor + verbatim quote check already rejected 78/79 hard negatives so **V-INT filtered 0 edges on the held-out set** (`129 -> 129`); on the live `us-core-tilt` portfolio run, V-INT rejected **1** misread divestiture (`AMD -> Sanmina`, *"we sold the ZT Manufacturing Business to Sanmina"*) and flagged **1** tentative overclaim (`Nvidia -> OpenAI`). Supplier precision is the weakest relationship type (16.7% blind / 50.0% pooled, 3/6).
+  - **Honest V-INT & light-agent note (FIX-8):** On the 10 held-out filings, the extractor + verbatim quote check already rejected 78/79 hard negatives so **V-INT filtered 0 edges on the held-out set** (`129 -> 129`), and the per-company `light` research agents double-checked **18/18** open findings with **2+ tool calls** (`avg = 2.00`, `0` circular confirmations, `0` duplicate/group unnamed-customer links) while adding **+0** and rejecting **-0** edges on the held-out set — so held-out precision (**88.4%** blind / **96.1%** pooled) and core recall (**57.4%**) are **unchanged (`+0.0 pp`)**. On the live `us-core-tilt` portfolio run, V-INT rejected **1** misread divestiture (`AMD -> Sanmina`, *"we sold the ZT Manufacturing Business to Sanmina"*) and flagged **1** tentative overclaim (`Nvidia -> OpenAI`). Supplier precision is the weakest relationship type (16.7% blind / 50.0% pooled, 3/6).
 
 The unit tests cover weighted exposure, duplicate and overlapping holdings, share-class merging, allocation
 validation, weighted overlap, incomplete and missing data, the source adapters' parsing, relationship
