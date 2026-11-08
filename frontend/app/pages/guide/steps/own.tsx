@@ -71,10 +71,7 @@ export function StepOwn({ onBack }: GuideStepProps) {
                   <span className="mr-2 text-text-tertiary tabular-nums">#{index + 1}</span>
                   <Pct value={company.exposure} digits={2} className="font-semibold text-text-primary" /> of your money
                   ends up in <strong>{company.company_name}</strong>, through{" "}
-                  <strong>
-                    {etfCount} of your {etfCount === 1 ? "ETF" : "ETFs"}
-                  </strong>
-                  .
+                  <strong>{etfCount} of your ETFs</strong>.
                 </p>
 
                 <div
