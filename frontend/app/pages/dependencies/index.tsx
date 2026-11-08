@@ -53,6 +53,7 @@ import {
 } from "@/components/base/segmented-control/segmented-control";
 import { Spinner } from "@/components/base/spinner/spinner";
 import { cx } from "@/utils/cx";
+import { buildMetricCards, buildSummaryFacts, metricCitationLabel } from "./metrics";
 import {
   buildDependencyGraph,
   buildFacilityBreakdown,
@@ -149,6 +150,9 @@ function analysisErrorCopy(error: ApiError): string {
   }
   return error.message;
 }
+
+/** Metric cards shown before "Show all": the largest shares, so the page stays short. */
+const METRIC_CARDS_SHOWN = 9;
 
 function formatMetricValue(metric: MetricFact): string {
   if (metric.unit === "fraction") return formatPct(metric.value, 2);
@@ -547,6 +551,7 @@ function DependenciesPageContent() {
   const [exampleError, setExampleError] = useState<string | null>(null);
   const [edgeFilter, setEdgeFilter] = useState<EdgeFilterGroup>("all");
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+  const [showAllMetrics, setShowAllMetrics] = useState(false);
 
   const handleLoadExample = useCallback(async () => {
     setLoadingExample(true);
@@ -638,6 +643,10 @@ function DependenciesPageContent() {
     }
     return map;
   }, [result]);
+
+  const metricCards = useMemo(() => (result ? buildMetricCards(result.metrics) : []), [result]);
+  const summaryFacts = useMemo(() => (result ? buildSummaryFacts(result.metrics) : []), [result]);
+  const visibleMetricCards = showAllMetrics ? metricCards : metricCards.slice(0, METRIC_CARDS_SHOWN);
 
   const activeNodeId = hoveredNodeId ?? selectedNodeId;
 
@@ -1238,65 +1247,96 @@ function DependenciesPageContent() {
             </details>
           </section>
 
-          {/* 3. Deterministic Python Dependency Metrics */}
-          {result.metrics.length > 0 && (
+          {/* 4. Key numbers: one plain-English card per subject (% and company count together) */}
+          {(metricCards.length > 0 || summaryFacts.length > 0) && (
             <section
-              aria-label="Deterministic dependency metrics"
+              aria-label="Key dependency numbers"
               className="flex flex-col gap-3 rounded-3xl border border-border-button-default bg-background-secondary-default p-5"
             >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-headline-small text-text-primary">
-                  Deterministic Portfolio Dependency Metrics
-                </h3>
-                <span className="text-caption-1-regular text-text-tertiary">
-                  Computed in Python (unioned per holding so exposure is never double-counted)
-                </span>
+              <div className="flex flex-col gap-1">
+                <h3 className="text-headline-small text-text-primary">Key numbers</h3>
+                <p className="text-body-2-regular text-text-secondary">
+                  Calculated directly from the verified filing quotes, not by the AI. Each of your
+                  companies is counted once, so the percentages never double-count.
+                </p>
               </div>
+              {summaryFacts.length > 0 && (
+                <ul className="flex flex-wrap gap-x-5 gap-y-1">
+                  {summaryFacts.map(({ metric, text }) => (
+                    <li key={metric.metric_id} className="text-body-2-regular text-text-secondary">
+                      <span className="text-body-semibold text-text-primary tabular-nums">
+                        {formatMetricValue(metric)}
+                      </span>{" "}
+                      {text}
+                    </li>
+                  ))}
+                </ul>
+              )}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {result.metrics.map((metric) => (
+                {visibleMetricCards.map((card) => (
                   <div
-                    key={metric.metric_id}
+                    key={card.share.metric_id}
                     className="flex flex-col justify-between gap-2 rounded-2xl border border-separator-border bg-background-primary-default p-4"
                   >
                     <div className="flex flex-col gap-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-mono text-caption-1-regular text-text-tertiary">
-                          {metric.metric_id}
-                        </span>
-                        <Chip variant="caption" color="neutral">
-                          {metric.unit}
-                        </Chip>
-                      </div>
-                      <span className="text-display-4-medium text-text-primary tabular-nums">
-                        {formatMetricValue(metric)}
-                      </span>
-                      <p className="text-body-2-regular text-text-secondary">{metric.label}</p>
-                    </div>
-                    {metric.supporting_edge_ids.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-1.5 border-t border-separator-border pt-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="text-caption-1-regular text-text-tertiary">
-                          Evidence ({metric.supporting_edge_ids.length}):
+                          {card.category}
                         </span>
-                        {metric.supporting_edge_ids.map((edgeId) => {
-                          const edge = edgeById.get(edgeId);
-                          return (
-                            <button
-                              key={edgeId}
-                              type="button"
-                              onClick={() => selectEdge(edgeId, true)}
-                              className="cursor-pointer rounded-md border border-border-button-default bg-background-secondary-default px-2 py-0.5 font-mono text-caption-1-regular text-text-primary hover:bg-background-primary-hover"
-                            >
-                              {edge
-                                ? `${edge.source_company_name} → ${edge.target_name}`
-                                : edgeId}
-                            </button>
-                          );
-                        })}
+                        {card.singlePoint && (
+                          <Chip variant="caption" color="orange">
+                            Single point of failure
+                          </Chip>
+                        )}
                       </div>
+                      <p className="text-body-semibold text-text-primary">{card.subject}</p>
+                      <p className="text-body-2-regular text-text-secondary">
+                        <span className="text-display-4-medium text-text-primary tabular-nums">
+                          {formatMetricValue(card.share)}
+                        </span>{" "}
+                        {card.explanation}
+                      </p>
+                    </div>
+                    {card.supportingEdgeIds.length > 0 && (
+                      <details className="border-t border-separator-border pt-2">
+                        <summary className="cursor-pointer text-caption-1-regular text-text-tertiary">
+                          {card.supportingEdgeIds.length === 1
+                            ? "1 source in the filings"
+                            : `${card.supportingEdgeIds.length} sources in the filings`}
+                        </summary>
+                        <div className="flex flex-wrap gap-1.5 pt-2">
+                          {card.supportingEdgeIds.map((edgeId) => {
+                            const edge = edgeById.get(edgeId);
+                            return (
+                              <button
+                                key={edgeId}
+                                type="button"
+                                onClick={() => selectEdge(edgeId, true)}
+                                className="cursor-pointer rounded-md border border-border-button-default bg-background-secondary-default px-2 py-0.5 text-caption-1-regular text-text-primary hover:bg-background-primary-hover"
+                              >
+                                {edge ? `${edge.source_company_name} → ${edge.target_name}` : edgeId}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </details>
                     )}
                   </div>
                 ))}
               </div>
+              {metricCards.length > METRIC_CARDS_SHOWN && (
+                <div>
+                  <Button
+                    variant="ghost"
+                    size="small"
+                    onClick={() => setShowAllMetrics((shown) => !shown)}
+                  >
+                    {showAllMetrics
+                      ? "Show only the largest"
+                      : `Show all ${metricCards.length} numbers`}
+                  </Button>
+                </div>
+              )}
             </section>
           )}
 
