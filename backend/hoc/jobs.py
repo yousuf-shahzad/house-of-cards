@@ -35,6 +35,11 @@ from hoc.contract import (
     ErrorBody,
     JobNotFoundError,
     PortfolioRequest,
+    PortfolioValidationError,
+    ResearchFinding,
+    ResearchJob,
+    ResearchNotFoundError,
+    ResearchRequest,
     SourceError,
     VerifiedEdge,
 )
@@ -362,6 +367,21 @@ class DependencyJobs:
                                                                                       "missing_api_key")
         return missed or no_live_insights
 
+    def finished(self, job_id: str) -> tuple[AnalysisResponse, DependencyResult]:
+        """The analysis and result of a finished job, for the research loop. Raises JobNotFoundError (404), or
+        PortfolioValidationError (422) while the job is still running or if it failed."""
+        with self._lock:
+            self._evict()
+            job = self._jobs.get(job_id)
+            if job is None:
+                raise JobNotFoundError(f"No dependency job {job_id} (unknown, or finished over an hour ago)",
+                                       {"job_id": job_id})
+            if job.status != "done" or job.result is None:
+                raise PortfolioValidationError(
+                    "VALIDATION_ERROR", "Research starts once Find dependencies has finished for this portfolio.",
+                    {"job_id": job_id, "status": job.status})
+            return job.analysis, job.result
+
     def _evict(self) -> None:
         cutoff = time.monotonic() - JOB_RETENTION_SECONDS
         for job_id in [j for j, job in self._jobs.items() if job.finished_at and job.finished_at < cutoff]:
@@ -465,3 +485,122 @@ class DependencyJobs:
             return None
         return Extraction(edges=edges, rejected=rejected, quality=forward.quality if forward else None,
                           cached=bool(forward and forward.cached), interpretation_rejected=misread)
+
+
+# ---------- v3 A-RES: research jobs (I-API) ----------
+
+
+class ResearchRunner(Protocol):
+    """A-RES (hoc.research) behind one seam. `run` investigates up to `max_items` uncertain findings of a finished
+    dependency result and returns the findings plus the result with them merged in (metrics and insights
+    recomputed). It reports progress through `progress(done, total, findings_so_far)`; an item that fails becomes
+    an 'unresolved' finding rather than an exception."""
+
+    prompt_version: str
+
+    def run(self, result: DependencyResult, analysis: AnalysisResponse, *, max_items: int, cache_only: bool,
+            progress: Callable[[int, int, list[ResearchFinding]], None]
+            ) -> tuple[list[ResearchFinding], DependencyResult]: ...
+
+
+class NotWiredResearch:
+    """Until A-RES is wired in: every research job ends as an error with a clear message (never a 500)."""
+
+    prompt_version = "not-wired"
+
+    def run(self, result, analysis, *, max_items, cache_only, progress):
+        raise RuntimeError("The research loop is not available on this server yet.")
+
+
+def research_id_for(dependency_job_id: str, request: ResearchRequest, prompt_version: str) -> str:
+    """Idempotent: researching the same dependency result twice joins one job (no double Gemini spend)."""
+    payload = json.dumps({"job": dependency_job_id, "max_items": request.max_items, "prompt": prompt_version},
+                         sort_keys=True)
+    return hashlib.sha256(payload.encode()).hexdigest()
+
+
+@dataclass
+class _Research:
+    research_id: str
+    dependency_job_id: str
+    status: JobStatus = "queued"
+    progress_done: int = 0
+    progress_total: int = 0
+    findings: list[ResearchFinding] = field(default_factory=list)
+    result: DependencyResult | None = None
+    error: ErrorBody | None = None
+    finished_at: float | None = None
+    future: Future | None = field(default=None, repr=False)
+
+
+class ResearchJobs:
+    def __init__(self, dependency_jobs: DependencyJobs, runner: ResearchRunner, *,
+                 executor: Executor | None = None) -> None:
+        self.dependency_jobs = dependency_jobs
+        self.runner = runner
+        self._executor = executor or ThreadPoolExecutor(1, thread_name_prefix="hoc-research")
+        self._jobs: dict[str, _Research] = {}
+        self._lock = threading.Lock()
+
+    def submit(self, dependency_job_id: str, request: ResearchRequest, *, cache_only: bool = False,
+               wait: float = SUBMIT_WAIT_SECONDS) -> ResearchJob:
+        """Start (or join) research on a finished dependency job. Raises JobNotFoundError (404) or
+        PortfolioValidationError (422, the dependency job hasn't finished)."""
+        analysis, result = self.dependency_jobs.finished(dependency_job_id)
+        research_id = research_id_for(dependency_job_id, request, self.runner.prompt_version)
+        with self._lock:
+            self._evict()
+            job = self._jobs.get(research_id)
+            start = job is None or job.status == "error"  # a failed run may be retried
+            if start:
+                job = _Research(research_id=research_id, dependency_job_id=dependency_job_id)
+                self._jobs[research_id] = job
+        if start:  # outside the lock: an inline executor runs _run right here
+            job.future = self._executor.submit(self._run, job, analysis, result, request, cache_only)
+        if wait > 0 and job.future is not None:
+            try:
+                job.future.result(timeout=wait)
+            except FutureTimeout:
+                pass
+        return self.get(research_id)
+
+    def get(self, research_id: str) -> ResearchJob:
+        with self._lock:
+            self._evict()
+            job = self._jobs.get(research_id)
+            if job is None:
+                raise ResearchNotFoundError(f"No research job {research_id} (unknown, or finished over an hour ago)",
+                                            {"research_id": research_id})
+            return ResearchJob(research_id=job.research_id, dependency_job_id=job.dependency_job_id,
+                               status=job.status, progress_done=job.progress_done,
+                               progress_total=job.progress_total, findings=list(job.findings),
+                               result=job.result, error=job.error)
+
+    def _run(self, job: _Research, analysis: AnalysisResponse, result: DependencyResult,
+             request: ResearchRequest, cache_only: bool) -> None:
+        def progress(done: int, total: int, findings: list[ResearchFinding]) -> None:
+            with self._lock:
+                job.progress_done, job.progress_total, job.findings = done, total, list(findings)
+
+        with self._lock:
+            job.status = "running"
+        try:
+            findings, merged = self.runner.run(result, analysis, max_items=request.max_items,
+                                               cache_only=cache_only, progress=progress)
+            with self._lock:
+                job.findings, job.result, job.status = list(findings), merged, "done"
+                job.progress_done = job.progress_total = max(job.progress_total, len(findings))
+        except Exception as exc:  # the research job fails visibly (status error), never the server
+            log.exception("research job %s failed", job.research_id)
+            with self._lock:
+                job.status = "error"
+                job.error = ErrorBody(code="INTERNAL_ERROR", message=str(exc) or "Research failed",
+                                      details={"type": type(exc).__name__})
+        finally:
+            with self._lock:
+                job.finished_at = time.monotonic()
+
+    def _evict(self) -> None:
+        cutoff = time.monotonic() - JOB_RETENTION_SECONDS
+        for research_id in [r for r, job in self._jobs.items() if job.finished_at and job.finished_at < cutoff]:
+            del self._jobs[research_id]
