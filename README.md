@@ -12,11 +12,12 @@ foundries, customers, facilities), keeping only facts quoted word for word from 
 Version 3 turns the dependency graph into a decision and verification workflow: **Compare** tests a
 before/after ETF swap against cached filings in one click (no new AI calls), **Relationship importance**
 scores every edge (`critical` / `high` / `medium` / `low`) and computes `critical.*` exposure, **Interpretation
-checks** (rules + an independent Flash judge on ±300 chars of filing context) catch negated, competitor or
-tentative mentions, **Coverage reporting** accounts for 100% of portfolio weight across five buckets plus
-per-ETF verified shares and plain-English gaps, **Investigate gaps** runs a bounded multi-step agentic
-research loop over SEC filings, and an offline/live **Eval harness** measures precision and recall against an
-adjudicated 10-company gold benchmark.
+checks** (deterministic rules on ±300 chars of filing context + an independent Flash judge on rules-flagged
+edges and a 20% sample of unflagged edges) catch negated, competitor or tentative mentions, **Coverage
+reporting** accounts for 100% of portfolio weight across five buckets plus per-ETF verified shares and
+plain-English gaps, **Investigate gaps** (`A-RES`) runs a bounded multi-step agentic research loop over SEC
+filings, and an offline/live **Eval harness** measures precision and recall against an adjudicated 10-company
+gold benchmark.
 
 This is a proof of concept, not investment advice, and it does not trade or simulate risk.
 
@@ -214,24 +215,26 @@ cd frontend && npm run build             # type-checks and builds the UI
 House of Cards includes an adjudicated benchmark of **10 held-out SEC 10-K filings** outside the default demo
 top-15 (`NKE`, `F`, `GM`, `BA`, `SWKS`, `QRVO`, `GLW`, `PFE`, `DE`, `SBUX`) in
 [`backend/tests/eval/gold/`](backend/tests/eval/gold/) (documented in
-[`docs/hoc/eval/ADJUDICATION.md`](docs/hoc/eval/ADJUDICATION.md)): **115 core** relationships, **97 extended**
-relationships, and **79 hard negatives** (competitor lists, negated claims, hypotheticals, generic groups).
+[`docs/hoc/eval/ADJUDICATION.md`](docs/hoc/eval/ADJUDICATION.md)): **115 core** relationships (`81` agreed by both
+independent annotators, `26` Annotator A, `8` Annotator B; **inter-annotator F1 = 0.49**), **107 extended**
+relationships (`97` blind + `10` pooled; **222 total**), and **79 hard negatives** (competitor lists, negated
+claims, hypotheticals, generic groups).
 
 Run the evaluation harness from `backend/`:
 
 ```bash
 # Offline replay (default: deterministic verifier + V-INT + R-IMP against recorded predictions; zero API calls)
-cd backend && uv run python -m hoc.cli eval
+cd backend && uv run hoc eval
 
 # Live (runs Gemini extractor + V-INT Flash judge on the 10 held-out 10-Ks and updates docs/hoc/EVAL.md)
-cd backend && uv run python -m hoc.cli eval --live
+cd backend && uv run hoc eval --live
 ```
 
 - **Benchmark results ([`docs/hoc/EVAL.md`](docs/hoc/EVAL.md)):**
-  - **Micro precision:** **88.4% [83.0%, 92.9%]** blind (114/129) and **96.1%** after blind pooled adjudication (124/129; 10 of 14 unmatched predictions confirmed verbatim in the filings as extended relationships).
-  - **Core recall (`tier='core'`):** **57.4% [35.3%, 76.0%]** (66/115 core relationships; misses are mainly multi-site facility countries, 23/49, and Pfizer co-development alliances).
-  - **Hard-negative false-positive rate:** **1.3%** (1/79 across 27 competitor, 11 negated, 9 hypothetical, 7 unrelated, and 25 generic passages), **100.0% direction accuracy**, and **100.0% facility-country accuracy** (39/39).
-  - **Honest V-INT note:** On the 10 held-out filings, the extractor + verbatim quote check already rejected 78/79 hard negatives so V-INT filtered 0 additional edges there; on the live `us-core-tilt` portfolio run, V-INT's 20% judge sample caught and flagged 1 real tentative overclaim (`Nvidia -> OpenAI`). Supplier precision is the weakest relationship type.
+  - **Micro precision:** **88.4% [83.2%, 92.5%]** blind (114/129; **Micro F1 = 69.6% [51.9%, 82.7%]**) and **96.1% [89.6%, 100.0%]** after blind pooled adjudication (124/129; **Micro F1 = 71.9% [53.3%, 85.1%]**, with 10 of 14 unmatched predictions confirmed verbatim in the filings as extended relationships).
+  - **Core recall (`tier='core'`, blind denominator):** **57.4% [35.3%, 76.0%]** (66/115 core relationships; misses are mainly multi-site facility countries, 23/49, and Pfizer co-development alliances, 18/49).
+  - **Hard-negative false-positive rate:** **1.3% [0.0%, 3.9%]** (**1/79** across 27 competitor, 11 negated, 9 hypothetical, 7 unrelated, and 25 generic passages), **100.0% [100.0%, 100.0%] direction accuracy** (124/124), **100.0% [100.0%, 100.0%] facility-country accuracy** (**39/39**), and **importance-tier agreement** quadratic weighted Cohen's $\kappa = \mathbf{0.475\ [0.382,\ 0.631]}$ (54/79).
+  - **Honest V-INT note:** On the 10 held-out filings, the extractor + verbatim quote check already rejected 78/79 hard negatives so **V-INT filtered 0 edges on the held-out set** (`129 -> 129`); on the live `us-core-tilt` portfolio run, V-INT's rules + 20% judge sample caught and flagged 1 real tentative overclaim (`Nvidia -> OpenAI`). Supplier precision is the weakest relationship type (16.7% blind / 50.0% pooled, 3/6).
 
 The unit tests cover weighted exposure, duplicate and overlapping holdings, share-class merging, allocation
 validation, weighted overlap, incomplete and missing data, the source adapters' parsing, relationship
