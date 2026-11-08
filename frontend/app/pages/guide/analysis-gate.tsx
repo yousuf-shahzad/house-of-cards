@@ -1,18 +1,22 @@
 "use client";
-// FIX-47: what guide steps 2-3 show when there's no current analysis to display. They never show an earlier
-// portfolio's results as current: a failed analysis shows the error, and an edited but unfinished portfolio
-// says so and points back to Step 1.
+// FIX-47/FIX-59: what guide steps 2-5 show when there's no current analysis to display. They never show an
+// earlier portfolio's results as current: a failed analysis shows the error, and an edited but unfinished
+// portfolio says so and points back to Step 1.
 
 import type { ReactNode } from "react";
 import { useAnalysis } from "@/app/analysis";
+import { useExperience } from "@/app/experience";
 import { ServerError } from "@/app/ui/draft-editor";
 import { Button } from "@/components/base/buttons/button";
 import { Spinner } from "@/components/base/spinner/spinner";
 import { guideAnalysisView } from "./auto-run";
 
 /** Returns the screen to show instead of the step's results, or null when the current analysis is ready. */
-export function useGuideAnalysisGate(onBack: () => void, loadingText: string): ReactNode | null {
+export function useGuideAnalysisGate(loadingText: string): ReactNode | null {
   const { analysis, status, stale, error, retry, valuation } = useAnalysis();
+  const { setStep } = useExperience();
+  // Every "Back to Step 1" button really goes to Step 1 (the stepper's Back only goes one step back).
+  const onBack = () => setStep(1);
   // Shares mode: an ETF that can't be priced or found blocks the analysis, so say that rather than "unfinished".
   const cantPrice = valuation.status === "blocked" || valuation.status === "error";
   const view = guideAnalysisView({ status, stale, hasAnalysis: analysis !== null, hasError: error !== null });

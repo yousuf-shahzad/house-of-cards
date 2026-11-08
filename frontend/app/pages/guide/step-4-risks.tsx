@@ -24,6 +24,7 @@ import type {
   ResearchOutcome,
 } from "@/api/types";
 import { useAutoDependencies } from "./use-auto-dependencies";
+import { useGuideAnalysisGate } from "./analysis-gate";
 import { RISKS_COPY } from "./copy";
 import {
   formatFindingOneLiner,
@@ -313,6 +314,8 @@ export default function RisksStep({ showLearnMore = true }: RiskStepProps) {
   const { status: analysisStatus } = useAnalysis();
   const { status, job, stale, error, depth, goDeeper } = useDependencies();
   const { openExpertPage } = useExperience();
+  // FIX-59: with an unfinished edit, a failed analysis or no portfolio, say so instead of an endless progress bar.
+  const gate = useGuideAnalysisGate("Checking your portfolio…");
 
   // Keep existing result visible in place while "Go deeper" polls on the same portfolio.
   const result = !stale ? job?.result ?? null : null;
@@ -385,6 +388,8 @@ export default function RisksStep({ showLearnMore = true }: RiskStepProps) {
       )}
     </div>
   ) : null;
+
+  if (gate) return gate;
 
   let body;
   if (result) {
