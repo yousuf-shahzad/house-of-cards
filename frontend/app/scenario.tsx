@@ -28,7 +28,8 @@ const rowsSignature = (rows: readonly DraftRow[], mode: InputMode) =>
   JSON.stringify([mode, rows.map((row) => [row.ticker, row.allocationPct, row.shares, row.pinned])]);
 
 export function ScenarioProvider({ children }: { children: ReactNode }) {
-  const { draft: current } = useAnalysis();
+  const { draft: current, analysis, status: analysisStatus, stale: analysisStale, error: analysisError } = useAnalysis();
+  const baselineReady = analysisStatus === "ready" && analysis !== null && !analysisStale && !analysisError && current.inputs !== null;
   const scenario = usePortfolioDraft();
   const [compareStatus, setCompareStatus] = useState<CompareStatus>("idle");
   const [result, setResult] = useState<CompareResponse | null>(null);
@@ -52,8 +53,18 @@ export function ScenarioProvider({ children }: { children: ReactNode }) {
   }, [untouched, currentSignature, resetToCurrent]);
 
   const pairKey = `${current.key}|${scenario.key}`;
+  // A changed or unverified baseline invalidates the pending answer immediately, including while
+  // Try a change is unmounted. The next successful analysis can start a fresh comparison.
+  useEffect(() => {
+    controller.current?.abort();
+    setCompareStatus("idle");
+    setError(null);
+    setComparedKey(null);
+    return () => controller.current?.abort();
+  }, [baselineReady, pairKey]);
+
   const compare = useCallback(() => {
-    if (!current.inputs || !scenario.inputs) return;
+    if (!baselineReady || !current.inputs || !scenario.inputs) return;
     controller.current?.abort();
     const next = new AbortController();
     controller.current = next;
@@ -63,11 +74,13 @@ export function ScenarioProvider({ children }: { children: ReactNode }) {
     api
       .compare(current.inputs, scenario.inputs, undefined, next.signal)
       .then((response) => {
+        if (next.signal.aborted) return;
         setResult(response);
         setComparedKey(key);
         setCompareStatus("ready");
       })
       .catch((cause: unknown) => {
+        if (next.signal.aborted) return;
         if (cause instanceof DOMException && cause.name === "AbortError") return;
         setError(
           cause instanceof ApiError
@@ -76,9 +89,7 @@ export function ScenarioProvider({ children }: { children: ReactNode }) {
         );
         setCompareStatus("error");
       });
-  }, [current.inputs, scenario.inputs, pairKey]);
-
-  useEffect(() => () => controller.current?.abort(), []);
+  }, [baselineReady, current.inputs, scenario.inputs, pairKey]);
 
   const value = useMemo<ScenarioContextValue>(
     () => ({
@@ -88,9 +99,9 @@ export function ScenarioProvider({ children }: { children: ReactNode }) {
       compareStatus,
       result,
       error,
-      stale: result !== null && comparedKey !== pairKey,
+      stale: result !== null && (!baselineReady || comparedKey !== pairKey),
     }),
-    [scenario, resetToCurrent, compare, compareStatus, result, error, comparedKey, pairKey],
+    [scenario, resetToCurrent, compare, compareStatus, result, error, comparedKey, pairKey, baselineReady],
   );
   return <ScenarioContext.Provider value={value}>{children}</ScenarioContext.Provider>;
 }

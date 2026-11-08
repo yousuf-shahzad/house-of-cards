@@ -2,14 +2,16 @@
 // which compares automatically through POST /api/compare (cache-only, no Gemini). Owner: Yousuf's Claude.
 import { RiArrowRightLine } from "@remixicon/react";
 import { useAnalysis } from "@/app/analysis";
-import { normTicker } from "@/app/ui/draft-editor";
+import { normTicker, ServerError } from "@/app/ui/draft-editor";
 import { TryAChange } from "@/app/ui/try-a-change";
 import { ButtonLink } from "@/components/base/buttons/button";
+import { Spinner } from "@/components/base/spinner/spinner";
 
 const tabular = { fontVariantNumeric: "tabular-nums" } as const;
 
 function CurrentSummary() {
-  const { rows, effectivePct, validation } = useAnalysis();
+  const { rows, effectivePct, status, stale, error, retry, valuation } = useAnalysis();
+  const currentError = error ?? valuation.error;
   return (
     <section className="suite-card" aria-label="Current portfolio">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -33,11 +35,17 @@ function CurrentSummary() {
           })}
         </ul>
       )}
-      {!validation.valid && rows.length > 0 && (
-        <p className="text-body-2-regular text-text-error-primary">
-          Your current portfolio isn't complete yet. Fix it on the Portfolio page first.
+      {currentError ? (
+        <ServerError error={currentError} retry={retry} />
+      ) : status === "loading" ? (
+        <div role="status" className="flex items-center gap-2 text-body-2-regular text-text-secondary">
+          <Spinner size="sm" aria-label="Checking current portfolio" /> Checking your current portfolio…
+        </div>
+      ) : (status !== "ready" || stale) && rows.length > 0 ? (
+        <p role="status" className="text-body-2-regular text-text-secondary">
+          Your current portfolio isn't ready to compare. Finish it on the Portfolio page first.
         </p>
-      )}
+      ) : null}
     </section>
   );
 }
