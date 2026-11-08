@@ -185,3 +185,21 @@ def test_a_slow_run_is_202_then_polls_to_done(setup, monkeypatch):
             break
         threading.Event().wait(0.02)
     assert polled["status"] == "done" and len(polled["findings"]) == 2
+
+
+def test_real_research_loop_runner_with_fake_client_finishes_done_and_merges(setup):
+    from hoc.ai.client import FakeGeminiClient
+    from hoc.research import AgenticResearchRunner
+
+    runner = AgenticResearchRunner(client=FakeGeminiClient())
+    client, _, _ = setup(runner)
+    job_id = finished_dependency_job(client)
+    response = client.post(f"/api/dependencies/{job_id}/research", json={"max_items": 2})
+    assert response.status_code == 200, response.text
+    research = response.json()
+    assert research["status"] == "done"
+    assert research["dependency_job_id"] == job_id
+    assert len(research["findings"]) >= 1
+    assert research["findings"][0]["steps"][-1]["action"] == "conclude"
+    assert research["result"] is not None
+    assert len(research["result"]["edges"]) >= 1

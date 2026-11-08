@@ -324,7 +324,8 @@ class FakeGeminiClient:
     - By default, emits both valid verbatim quotes (matching the passed filing text)
       AND mutated/hallucinated quotes so offline unit tests and Tier B E2E tests
       verify that Python quote verification rejects unverified edges (`rejected > 0`).
-    - Also handles V-INT judge prompts (`JUDGE_SCHEMA` with `"verdicts"`).
+    - Also handles V-INT judge prompts (`JUDGE_SCHEMA` with `"verdicts"`) and
+      A-RES research step prompts (`RESEARCH_STEP_SCHEMA` with `"action"` and `"outcome"`).
     """
 
     def __init__(
@@ -380,6 +381,8 @@ class FakeGeminiClient:
                 return canned, used_model
 
         props = schema.get("properties", {}) if isinstance(schema, Mapping) else {}
+        if "action" in props and "outcome" in props:
+            return self._default_research_step_response(prompt), used_model
         if "verdicts" in props:
             return self._default_judge_response(prompt), used_model
         if "suggestions" in props or "flaws" in props:
@@ -521,6 +524,147 @@ class FakeGeminiClient:
                 "reason": reason,
             })
         return {"verdicts": verdicts}
+
+    def _default_research_step_response(self, prompt: str) -> dict[str, Any]:
+        """Deterministic multi-step response for `hoc-v3-research-1` prompts."""
+        step_match = re.search(r"STEP_INDEX:\s*(\d+)", prompt)
+        step_idx = int(step_match.group(1)) if step_match else 1
+        kind_match = re.search(r"ITEM_KIND:\s*([^\r\n]+)", prompt)
+        item_kind = kind_match.group(1).strip() if kind_match else "flagged_edge"
+        cik_match = re.search(r"SUBJECT_CIK:\s*([^\r\n]+)", prompt)
+        cik = cik_match.group(1).strip() if cik_match else ""
+        target_match = re.search(r"TARGET_NAME:\s*([^\r\n]+)", prompt)
+        target_name = target_match.group(1).strip() if target_match else ""
+        subject_match = re.search(r"SUBJECT_NAME:\s*([^\r\n]+)", prompt)
+        subject_name = subject_match.group(1).strip() if subject_match else ""
+
+        if step_idx == 1:
+            if item_kind in ("undisclosed_customer", "single_source"):
+                return {
+                    "action": "search_filings",
+                    "query": target_name if target_name and target_name != "None" else subject_name,
+                    "cik": cik,
+                    "section": "1",
+                    "outcome": "unresolved",
+                    "explanation": "",
+                    "candidate_edges": [],
+                }
+            return {
+                "action": "find_in_filing",
+                "query": target_name if target_name and target_name != "None" else "supplier",
+                "cik": cik,
+                "section": "1",
+                "outcome": "unresolved",
+                "explanation": "",
+                "candidate_edges": [],
+            }
+
+        observed_quotes = re.findall(r'OBSERVED_QUOTE:\s*"([^"]+)"', prompt)
+        if step_idx == 2 and not observed_quotes:
+            return {
+                "action": "read_section",
+                "query": target_name or subject_name or "supplier",
+                "cik": cik,
+                "section": "1",
+                "outcome": "unresolved",
+                "explanation": "",
+                "candidate_edges": [],
+            }
+
+        best_quote = observed_quotes[0] if observed_quotes else ""
+        quote_lower = best_quote.lower()
+        if item_kind == "flagged_edge":
+            if any(
+                phrase in quote_lower
+                for phrase in ("do not rely", "no assurance", "primary competitors include", "compete with")
+            ):
+                return {
+                    "action": "conclude",
+                    "query": "",
+                    "cik": cik,
+                    "section": "1",
+                    "outcome": "rejected",
+                    "explanation": (
+                        f'Filing evidence "{best_quote}" contradicts or negates an active dependency.'
+                        if best_quote
+                        else "Filing context contradicts an active dependency."
+                    ),
+                    "candidate_edges": [],
+                }
+            return {
+                "action": "conclude",
+                "query": "",
+                "cik": cik,
+                "section": "1",
+                "outcome": "confirmed",
+                "explanation": (
+                    f'Verified filing passage "{best_quote}" confirms the operational relationship.'
+                    if best_quote
+                    else "Verified filing context confirms the operational relationship."
+                ),
+                "candidate_edges": [],
+            }
+
+        if item_kind == "single_source":
+            return {
+                "action": "conclude",
+                "query": "",
+                "cik": cik,
+                "section": "1",
+                "outcome": "confirmed",
+                "explanation": (
+                    f'Corroborated sole-source dependency in filing text "{best_quote}".'
+                    if best_quote
+                    else "Corroborated sole-source dependency in filing text."
+                ),
+                "candidate_edges": [],
+            }
+
+        candidate_edges: list[dict[str, Any]] = []
+        if best_quote:
+            inferred_target = target_name if target_name and target_name != "None" else "TSMC"
+            for candidate_token in ("TSMC", "Taiwan Semiconductor Manufacturing", "ZZFAB", "ZZSUP", "Samsung Electronics"):
+                if candidate_token.lower() in best_quote.lower():
+                    inferred_target = candidate_token
+                    break
+            candidate_edges.append({
+                "edge_type": "foundry" if "foundry" in quote_lower or "wafer" in quote_lower else "supplier",
+                "target_name": inferred_target,
+                "target_kind": "company",
+                "sole_source": "sole" in quote_lower or "exclusively" in quote_lower,
+                "qualifier": "verified via research loop",
+                "section": "Item 1",
+                "evidence_quote": best_quote,
+            })
+            if self.include_mutated_quotes:
+                candidate_edges.append({
+                    "edge_type": "supplier",
+                    "target_name": "Hallucinated Research Counterparty",
+                    "target_kind": "company",
+                    "sole_source": True,
+                    "qualifier": "unverified quote",
+                    "section": "Item 1",
+                    "evidence_quote": "We purchase 99% of our quantum flux capacitors from Hallucinated Research Counterparty.",
+                })
+            return {
+                "action": "conclude",
+                "query": "",
+                "cik": cik,
+                "section": "1",
+                "outcome": "new_evidence",
+                "explanation": f'Discovered verified operational disclosure "{best_quote}" in the filing.',
+                "candidate_edges": candidate_edges,
+            }
+
+        return {
+            "action": "conclude",
+            "query": "",
+            "cik": cik,
+            "section": "1",
+            "outcome": "unresolved",
+            "explanation": "No additional verbatim dependency disclosure was found in the inspected sections.",
+            "candidate_edges": [],
+        }
 
     @staticmethod
     def _default_orchestrator_response() -> dict[str, Any]:

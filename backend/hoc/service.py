@@ -95,6 +95,7 @@ class EtfService:
         from hoc.core.cache import DiskCache
         from hoc.core.http import CachedHttpClient
         from hoc.identity.resolver import load_aliases
+        from hoc.research import AgenticResearchRunner
         from hoc.sources.registry import build_registry
         from hoc.sources.tickerinside.adapter import TickerInsideAdapter
         from hoc.sources.tickerinside.reference import TickerInsideReference
@@ -103,6 +104,7 @@ class EtfService:
         service = cls(build_registry(settings, http), TickerInsideReference(http, settings), load_aliases(), settings)
         service.quotes = TickerInsideAdapter(http, settings)
         service.dependency_pipeline = LivePipeline.from_settings(http, settings)
+        service.research_runner = AgenticResearchRunner.from_settings(http, settings)
         return service
 
     def valuation(self, request: ValuationRequest) -> ValuationResponse:
