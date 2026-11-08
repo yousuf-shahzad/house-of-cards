@@ -20,7 +20,7 @@ export function ScanActivity({
   className?: string;
 }) {
   const running = starting || job?.status === "queued" || job?.status === "running";
-  const elapsed = useElapsed(running, job?.job_id ?? null);
+  const elapsed = useElapsed(running, starting);
   if (!running) return null;
   const { now, count } = scanActivity(job, starting);
   const parts = [now, count, elapsed !== null ? formatElapsed(elapsed) : null].filter(Boolean);
@@ -37,20 +37,19 @@ export function ScanActivity({
   );
 }
 
-/** Milliseconds since this run started, ticking once a second; null when not running. */
-function useElapsed(running: boolean, jobId: string | null): number | null {
-  const started = useRef<{ jobId: string | null; at: number } | null>(null);
+/**
+ * Milliseconds since this run started, ticking once a second; null when not running.
+ * The clock starts when the scan starts (running or starting turns on) and is not reset when the
+ * job id changes: on a re-scan the store briefly keeps the previous job's id.
+ */
+function useElapsed(running: boolean, starting: boolean): number | null {
+  const started = useRef<number | null>(null);
+  const wasStarting = useRef(false);
   const [now, setNow] = useState(() => Date.now());
 
-  if (!running) {
-    started.current = null;
-  } else if (!started.current || (jobId !== null && started.current.jobId !== null && started.current.jobId !== jobId)) {
-    // A new run, or a different job than the one we were timing.
-    started.current = { jobId, at: Date.now() };
-  } else if (started.current.jobId === null && jobId !== null) {
-    // The click came first; keep its start time once the job id arrives.
-    started.current = { jobId, at: started.current.at };
-  }
+  if (!running) started.current = null;
+  else if (started.current === null || (starting && !wasStarting.current)) started.current = Date.now();
+  wasStarting.current = starting;
 
   useEffect(() => {
     if (!running) return;
@@ -59,5 +58,5 @@ function useElapsed(running: boolean, jobId: string | null): number | null {
     return () => window.clearInterval(timer);
   }, [running]);
 
-  return running && started.current ? Math.max(0, now - started.current.at) : null;
+  return running && started.current !== null ? Math.max(0, now - started.current) : null;
 }

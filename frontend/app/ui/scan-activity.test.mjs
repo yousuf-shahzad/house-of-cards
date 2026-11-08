@@ -116,3 +116,16 @@ test("formatElapsed", () => {
   assert.equal(formatElapsed(65_000), "1 min 05 s");
   assert.equal(formatElapsed(-5), "0 s");
 });
+
+test("a re-scan never shows the previous run's count", () => {
+  // restartedJob() keeps the old job's companies, with status/phase set to queued.
+  const old = [company("Apple Inc.", "done", 0.06), company("Tesla, Inc.", "cached", 0.02)];
+  const restarted = job({ status: "queued", phase: "queued", companies: old });
+  assert.deepEqual(scanActivity(restarted, true), { now: "Starting the scan…", count: null });
+  assert.deepEqual(scanActivity(restarted), { now: "Getting ready to read the annual reports…", count: null });
+  assert.deepEqual(scanActivity(job({ status: "done", phase: "done", companies: old }), true), {
+    now: "Starting the scan…",
+    count: null,
+  });
+  assert.equal(scanBarIndeterminate(restarted, 0, true), true);
+});

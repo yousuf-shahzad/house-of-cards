@@ -41,7 +41,8 @@ const biggestFirst = (a: CompanyRunStatus, b: CompanyRunStatus) =>
 const andMore = (n: number) => (n > 0 ? ` and ${n} more` : "");
 
 export function scanActivity(job: DependencyJob | null | undefined, starting = false): ScanActivity {
-  if (!job) return { now: starting ? "Starting the scan…" : null, count: null };
+  // While starting, the store still holds the previous job (restartedJob keeps its companies), so ignore it.
+  if (!job || starting) return { now: starting ? "Starting the scan…" : null, count: null };
   if (job.status === "done" || job.status === "error") {
     return { now: null, count: job.companies.length > 0 ? readCount(job.companies) : null };
   }
@@ -59,7 +60,8 @@ export function scanActivity(job: DependencyJob | null | undefined, starting = f
   }
 
   if (job.status === "queued" || job.phase === "queued" || companies.length === 0) {
-    return { now: "Getting ready to read the annual reports…", count };
+    // A queued job's company statuses may still be the previous run's, so no count yet.
+    return { now: "Getting ready to read the annual reports…", count: null };
   }
 
   const reading = companies.filter((c) => c.status === "extracting").sort(biggestFirst);
