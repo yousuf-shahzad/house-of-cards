@@ -56,10 +56,6 @@ Kendrick's Claude is free again. In order:
 - Report results on the board. Add findings under **New** (FIX-37 rules). Don't edit other owners' files; fixes go to their owners via the lead.
 - **Owner:** Kendrick's Claude · **Status:** assigned · **PAUSED 11:04 (Gawyn): moved to FIX-63**
 
-### FIX-58 · medium · Benchmark: system output vs independent calculations (Yousuf's request, 10:27)
-Default ETF portfolios plus 10 frozen, unseen non-tech combinations, compared with independent by-hand calculations, TickerInside overlap/correlation and issuer files where the dates align. Shared-source parity (TickerInside is also an upstream source) is reported separately from independent accuracy. No tuning on the holdout. Reuse `scripts/crosscheck_tickerinside.py` where useful.
-- **Owner:** Yousuf's Codex (foreground, Yousuf's direct task) · **Status:** in progress
-
 ### FIX-40 · high · BUG: guide steps 1–3 "Learn more in the full …" links land on the Simple page
 Found by Bekarys's Gemini (QA). Since #221, these links only change the hash, so they open the Simple version instead of Full view. Repro: `#/guide`, Step 1, "Learn more in the full Portfolio builder".
 - Fix: use `openExpertPage(...)` in `guide/copy.ts:95`, `steps/pick.tsx:195`, `steps/own.tsx:127` and `steps/spread.tsx:151`.
@@ -83,6 +79,11 @@ For each **confirmed** bug, add one line under **New** in FIXES.md: `BUG: <what 
 
 ## Done (checked on `main` by the lead)
 
+- FIX-58 independent benchmark (Yousuf's request), in `backend/tests/live/etf_accuracy/`. The lead checked the saved `summary.json` / `verification.json`:
+  - all 12 portfolios and 23 overlap pairs reconcile (worst top-10 error ~0 pp);
+  - 11 same-date issuer funds / 2,120 rows match within 0.00005 pp;
+  - 156-week return correlations are within 0.0003071;
+  - no app code changed. The 13-page PDF is in Yousuf's output — #256
 - FIX-61 no "counterparty" left on Dependencies or guide Step 4: plain "supplier or partner" wording, with capital letters kept (lead, live scan: 0 hits in 79k chars, collapsed sections included) — #252
 - FIX-60 Full Compare and Try a change need a current, analysed baseline. With ZZZZ in place of EEM: Current says "isn't ready to compare", Try a change shows a notice with Edit portfolio, and no /api/compare or /api/change-ideas requests fire. Restored: requests resume (lead, browser) — #253
 - FIX-59 guide: Step 1 Next needs a current analysis, with a "Finish or fix your ETFs" hint. Steps 4–5 show the analysis gate instead of an endless bar or "Still checking". "Back to Step 1" really goes to Step 1 (lead, browser: ZZZZ in place of EEM, then restored) — #251
