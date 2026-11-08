@@ -1,7 +1,7 @@
 {
   "schema_version": "hoc-eval-v3.2",
   "mode": "replay",
-  "git_commit": "cc1d0bb",
+  "git_commit": "ee1c795",
   "extractor_prompt_version": "hoc-v2-extract-1",
   "judge_prompt_version": "hoc-v3-judge-1",
   "bootstrap_iterations": 2000,
