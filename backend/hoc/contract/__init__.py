@@ -44,6 +44,7 @@ from .dependencies import (
     VerifiedEdge,
 )
 from .errors import (
+    CompanyUnavailable,
     EtfNotFoundError,
     HocError,
     JobNotFoundError,

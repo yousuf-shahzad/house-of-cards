@@ -81,3 +81,17 @@ class SourcesUnavailableError(HocError):
 
     code = "SOURCES_UNAVAILABLE"
     status = 503
+
+
+# ---------- v2 dependency pipeline ----------
+
+
+class CompanyUnavailable(Exception):
+    """One company can't be analysed (v2). Raised by hoc.filings / hoc.ai, caught by the job runner, which records
+    `status` on that company's CompanyRunStatus and carries on with the others. Never becomes an HTTP error."""
+
+    def __init__(self, status: str, message: str) -> None:
+        # status is one of: no_sec_filing, unsupported_form, sec_contact_missing, missing_api_key, error
+        super().__init__(message)
+        self.status = status
+        self.message = message

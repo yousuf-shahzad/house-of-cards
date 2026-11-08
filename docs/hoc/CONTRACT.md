@@ -148,7 +148,13 @@ Routes are wired by I-API (Bekarys's Claude); the OpenAPI snapshot updates with 
   and go to `/api/analysis` unchanged.
 - **`POST /api/dependencies`** `DependencyRequest {holdings, top_n=15 (1..30)}` → `DependencyJob` (HTTP 200 if done from
   cache, 202 otherwise). **`GET /api/dependencies/{job_id}`** → `DependencyJob`; unknown id → 404 `JOB_NOT_FOUND`.
-  `job_id` = sha256(top-N company keys + filing accessions + prompt versions + allocations hash) → idempotent.
+  `job_id` = sha256(top-N company keys + allocations + prompt_version + top_n) → idempotent (filing accessions are only known
+  once the job runs; per-company extraction caches key on accession, so a new filing still re-extracts).
+- **Pipeline seams** (called by `hoc/jobs.py`, I-API): `filing(company) -> FilingRef` (G-DOC), `extract(company, filing, *,
+  cache_only) -> Extraction` (G-AI), `insights(analysis, edges, *, cache_only) -> (metrics, Insights)` (G-ORCH), plus each
+  module's `prompt_version`. A company that can't be analysed raises `hoc.contract.CompanyUnavailable(status, message)`
+  (status: `no_sec_filing | unsupported_form | sec_contact_missing | missing_api_key | error`); insights never raises
+  for those, it returns the matching `Insights.status`.
 - **Statuses are enums.** Company: `queued fetching extracting cached done no_sec_filing unsupported_form
   sec_contact_missing missing_api_key error` (+ `extraction_quality sections|fallback`). Insights:
   `ok metrics_only missing_api_key no_verified_edges error`. Missing key/contact is a status, never a 500.
