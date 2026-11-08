@@ -97,6 +97,7 @@ def test_missing_dependency_on_candidate_side_is_unknown_never_a_reduction():
     from hoc.contract import CompareResponse, ConcentrationDelta, MetricDelta
 
     request, baseline, _, scenarios = setup()
+    baseline.sectors = []
     baseline.coverage.sector_known_weight = 0
     concentration = [ConcentrationDelta(name=name, baseline=1, candidate=1, delta=0)
                      for name in ("top5", "top10", "top20", "effective_n", "largest_company", "top_sector")]
