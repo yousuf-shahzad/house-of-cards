@@ -50,10 +50,12 @@ log = logging.getLogger("hoc.jobs")
 
 WORKERS = 4
 """Per-company work in flight across all jobs (matches G-AI's Gemini concurrency cap)."""
+RESEARCH_WORKERS = 8
+"""Per-company research agents in flight across all jobs (FIX-22)."""
 JOB_RETENTION_SECONDS = 3600
 """Finished jobs are forgotten after an hour; their per-company results stay in the disk caches."""
 SUBMIT_WAIT_SECONDS = 1.5
-RESEARCH_BUDGET_SECONDS = {"light": 60.0, "thorough": 180.0}
+RESEARCH_BUDGET_SECONDS = {"light": 50.0, "thorough": 95.0}
 """v3.1 A2: a company's research agent not started this long after reading ended is skipped (it says so).
 Reading (fetch + extract + reverse links) is never cut; an agent that has started finishes its own steps."""
 RESEARCH_STEPS_ESTIMATE = {depth: items * steps for depth, (items, steps) in RESEARCH_DEPTH_PRESETS.items()}
@@ -333,11 +335,15 @@ class _Job:
 
 class DependencyJobs:
     def __init__(self, analyse: Callable[[PortfolioRequest], AnalysisResponse], pipeline: DependencyPipeline, *,
-                 runner: Executor | None = None, workers: Executor | None = None) -> None:
+                 runner: Executor | None = None, workers: Executor | None = None,
+                 research_workers: Executor | None = None) -> None:
         self._analyse = analyse
         self.pipeline = pipeline
         self._runner = runner or ThreadPoolExecutor(2, thread_name_prefix="hoc-deps-job")
         self._workers = workers or ThreadPoolExecutor(WORKERS, thread_name_prefix="hoc-deps")
+        self._research_workers = research_workers or workers or ThreadPoolExecutor(
+            RESEARCH_WORKERS, thread_name_prefix="hoc-deps-research"
+        )
         self._jobs: dict[str, _Job] = {}
         self._lock = threading.Lock()
 
@@ -502,7 +508,7 @@ class DependencyJobs:
             return extractions, [], False
         self._set(job, phase="researching")
         deadline = time.monotonic() + RESEARCH_BUDGET_SECONDS[job.request.depth]
-        futures = {i: self._workers.submit(self._research, job, i, job.top[i], extractions[i], deadline)
+        futures = {i: self._research_workers.submit(self._research, job, i, job.top[i], extractions[i], deadline)
                    for i in targets}
         findings, ran = [], False
         extractions = list(extractions)
