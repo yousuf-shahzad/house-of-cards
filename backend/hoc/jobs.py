@@ -436,7 +436,8 @@ class DependencyJobs:
         reverse = getattr(self.pipeline, "reverse", None)
         if reverse is None:
             return None, None
-        if time.monotonic() - started > REVERSE_BUDGET_SECONDS:
+        # The budget caps Gemini spend on a live click; a cache-only replay spends nothing, so it always runs.
+        if not job.cache_only and time.monotonic() - started > REVERSE_BUDGET_SECONDS:
             return None, "Reverse links skipped: the run's time budget was used up."
         self._set_company(job, index, status="extracting")
         try:
