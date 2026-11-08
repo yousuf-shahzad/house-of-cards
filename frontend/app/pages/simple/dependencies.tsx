@@ -12,6 +12,15 @@ const RELATION: Record<EdgeType, string> = {
 };
 const TIER: Record<ImportanceTier, string> = { critical: "Critical", high: "High", medium: "Medium", low: "Low" };
 
+function formatSimpleSection(section: string): string {
+  const trimmed = section.trim();
+  if (!trimmed) return "Annual report";
+  if (/^item\s+/i.test(trimmed)) return trimmed;
+  if (/^concentration_\d+$/i.test(trimmed)) return "Concentration note";
+  if (/^(\d+[A-Z]?|\d+\.[A-Z])\b/i.test(trimmed)) return `Item ${trimmed}`;
+  return trimmed;
+}
+
 /** Same scan/progress as the guide, with filing evidence available on this page. */
 export function SimpleDependencies() {
   const { job, stale } = useDependencies();
@@ -35,8 +44,8 @@ export function SimpleDependencies() {
           <details className="mt-2 text-body-2-regular text-text-secondary">
             <summary className="cursor-pointer text-text-primary">Read filing evidence</summary>
             <blockquote className="my-3 border-s-4 border-separator-border ps-3 text-text-primary">{edge.evidence_quote}</blockquote>
-            {edge.importance && <p className="my-2">Why this tier: {edge.importance.reasons.join(" · ")}</p>}
-            <a href={edge.filing.url} target="_blank" rel="noreferrer" className="underline">SEC {edge.filing.form}, {edge.section}, filed {edge.filing.filed}</a>
+            {edge.importance && <p className="my-2">Why this matters: {edge.importance.reasons.join(" · ")}</p>}
+            <a href={edge.filing.url} target="_blank" rel="noreferrer" className="underline">Annual report ({edge.filing.form}), {formatSimpleSection(edge.section)}, filed {edge.filing.filed}</a>
           </details>
         </li>)}
       </ul>
