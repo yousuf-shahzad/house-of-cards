@@ -10,12 +10,6 @@
 
 <p align="center">
   <a href="https://house-of-cards-pink.vercel.app/"><strong>Live demo → house-of-cards-pink.vercel.app</strong></a>
-  &nbsp;·&nbsp;
-  <a href="docs/hoc/DEMO.md">3-minute walkthrough</a>
-  &nbsp;·&nbsp;
-  <a href="docs/hoc/CONTRACT.md">API &amp; Contract</a>
-  &nbsp;·&nbsp;
-  <a href="docs/hoc/EVAL.md">Gold Benchmark</a>
 </p>
 
 > **Note:** House of Cards is a proof of concept, not investment advice, and it does not trade or execute orders.
