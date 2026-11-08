@@ -29,11 +29,29 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 ## New
 
 <!-- Add new problems below this line, one per line. -->
-- BUG: `#/guide` Step 1 ("Your ETFs") keeps "Next: What you own" enabled when the portfolio draft becomes stale/invalid (`canProceedFromStep1` checks `status === "ready" && Boolean(analysis)` without `&& !stale`), and `#/guide` Steps 4–5 do not use `useGuideAnalysisGate`, so when Step 1 is invalid/stale while a previous analysis exists, Step 4 shows an endless "Reading company reports…" progress bar (`running` is true from `stale && analysisStatus === "ready"`) and Step 5 shows "Still checking the reports — come back in a moment…" forever — repro: on `#/guide` Step 1, load the sample portfolio, click "Add ETF" (leaving a blank row) or clear a share count, then click "Next: What you own" or open Step 4 / Step 5 — where: `frontend/app/pages/guide/index.tsx:117`, `frontend/app/pages/guide/step-4-risks.tsx:319`, `frontend/app/pages/guide/step-5-next.tsx:14` (Kendrick's Gemini)
-- BUG: Full `#/compare` (`CurrentSummary` and `TryAChange` / `ChangeIdeas`) ignores `useAnalysis().status === "error"` and `useAnalysis().stale` (`CurrentSummary` only checks `!validation.valid`, and `TryAChange` / `useChangeIdeas` only check `current.inputs !== null`), so when the current portfolio has an unknown ticker in `%` mode (`validation.valid` is true on the client while `/api/analysis` failed with `422 UNKNOWN_TICKER`), `Current` shows `ZZZZ — 100.00%` with no error notice and `ChangeIdeas` / `What changes` fire `/api/change-ideas` and `/api/compare` with `ZZZZ` in `baseline`, failing with `We couldn't find ZZZZ in any data source` even after removing `ZZZZ` from `Your new mix` — repro: in Full view on `#/portfolio`, switch to `%` mode, set `ZZZZ` at `100%`, open `#/compare`, and replace `ZZZZ` with `IVV` in `Your new mix` — where: `frontend/app/pages/compare/index.tsx:12,36`, `frontend/app/ui/try-a-change.tsx:289,523` (Kendrick's Gemini)
 
 
 ## Open
+
+### FIX-59 · high · BUG: guide Step 1 "Next" stays enabled while stale, and steps 4–5 have no stale/error state (bug hunt batch 3)
+- `guide/index.tsx` `canProceedFromStep1` checks `status === "ready" && analysis` without `!stale`, so you can move on with an invalid draft.
+- Steps 4–5 (`step-4-risks.tsx` ~319, `step-5-next.tsx` ~14) don't use the FIX-47 `useGuideAnalysisGate`. With an invalid or stale draft plus an older analysis, Step 4 shows an endless "Reading company reports" bar and Step 5 says "Still checking" forever.
+- Fix: add `!stale` to Step 1's condition, and apply the gate in steps 4–5.
+- **Owner:** Gawyn's Claude (lead), after #248 merges (same files) · **Status:** assigned
+
+### FIX-60 · high · BUG: Full Compare ignores error/stale and sends failing requests (bug hunt batch 3)
+`CurrentSummary` (`compare/index.tsx` ~12, 36) checks only `!validation.valid`, and `TryAChange` / `useChangeIdeas` (`try-a-change.tsx` ~289, 523) ignore `useAnalysis().status === "error"` and `stale`. With ZZZZ 100% in % mode, Current shows as valid and `/api/change-ideas` and `/api/compare` keep firing with ZZZZ in the baseline, even after it's removed from "Your new mix".
+- Fix: treat error or stale as "not comparable yet", show the state, and don't send requests until the current portfolio is valid and analysed.
+- **Owner:** Yousuf's Codex (`pages/compare/`, `app/ui/try-a-change.tsx`) · **Status:** assigned
+
+### FIX-61 · low · Wording: "counterparty" still shows on Dependencies (from the lead's #248 review)
+It appears in the coverage note ("Filing leaves specific counterparty identities undisclosed") and in one-liners like "Checked: Broadcom counterparty TSMC — updated".
+- Fix: say "partner" or "link to" (map it in `formatFindingOneLiner`).
+- **Owner:** Yousuf's Gemini · **Status:** assigned (after #248)
+
+### FIX-58 · medium · Benchmark: system output vs independent calculations (Yousuf's request, 10:27)
+Default ETF portfolios plus 10 frozen, unseen non-tech combinations, compared with independent by-hand calculations, TickerInside overlap/correlation and issuer files where the dates align. Shared-source parity (TickerInside is also an upstream source) is reported separately from independent accuracy. No tuning on the holdout. Reuse `scripts/crosscheck_tickerinside.py` where useful.
+- **Owner:** Yousuf's Codex (foreground, Yousuf's direct task) · **Status:** in progress
 
 ### FIX-57 · low · BUG: unknown API routes and wrong methods return FastAPI's default error shape (Bekarys's Claude, API hunt)
 `GET /api/nope` returns 404 `{"detail":"Not Found"}`, and `GET /api/analysis` returns 405 `{"detail":"Method Not Allowed"}`. CONTRACT.md says errors are always `{"error": {code, message, details}}`.
