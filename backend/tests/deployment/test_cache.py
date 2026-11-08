@@ -62,6 +62,34 @@ def test_expired_request_budget_prevents_another_provider_call():
         client.request("GET", "https://example.invalid")
 
 
+@pytest.mark.parametrize("delivery_etag", ['"version-1"', 'W/"version-1"'])
+def test_conditional_delete_accepts_cdn_etag_without_losing_version_check(monkeypatch, delivery_etag):
+    blob = pytest.importorskip("vercel.blob.sync")
+    deleted, heads = [], []
+    monkeypatch.setattr(blob, "head_blob", lambda path: heads.append(path) or SimpleNamespace(etag='"version-1"'))
+
+    def delete(path, *, if_match):
+        # The write API requires a strong ETag; private downloads may supply W/.
+        assert if_match == '"version-1"'
+        deleted.append(path)
+
+    monkeypatch.setattr(blob, "delete_blob", delete)
+    store = BlobStore("synthetic")
+    store.delete("jobs/expired.json", etag=delivery_etag)
+    assert deleted == [store._path("jobs/expired.json")]
+    assert len(heads) == (1 if delivery_etag.startswith("W/") else 0)
+
+
+def test_conditional_delete_does_not_remove_a_newer_scan(monkeypatch):
+    blob = pytest.importorskip("vercel.blob.sync")
+    from vercel.blob import BlobPreconditionFailedError
+
+    monkeypatch.setattr(blob, "head_blob", lambda path: SimpleNamespace(etag='"version-2"'))
+    monkeypatch.setattr(blob, "delete_blob", lambda *a, **kw: pytest.fail("must preserve newer scan"))
+    with pytest.raises(BlobPreconditionFailedError):
+        BlobStore("synthetic").delete("jobs/expired.json", etag='W/"version-1"')
+
+
 @pytest.mark.parametrize(
     "payload",
     [

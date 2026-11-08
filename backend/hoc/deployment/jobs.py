@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import time
 import uuid
@@ -28,6 +29,7 @@ from hoc.jobs import JOB_RETENTION_SECONDS, job_id_for, research_id_for
 WORK_TOPIC = "hoc-work"
 PROGRESS_TOPIC = "hoc-progress"
 MAX_RUN_SECONDS = 1800
+log = logging.getLogger(__name__)
 
 
 class Publisher(Protocol):
@@ -95,7 +97,8 @@ class JobStore:
                     return existing
                 try:
                     self.objects.delete(path, etag=previous.etag)
-                except Exception:
+                except Exception as exc:
+                    log.debug("Scan replacement conflicted: %s", type(exc).__name__)
                     if self.objects.get(path) is not None:
                         continue
                     raise
@@ -113,6 +116,7 @@ class JobStore:
             if self.objects.put(path, encode(record), overwrite=False):
                 self._dispatch(record)
                 return record
+        log.warning("Could not replace a scan pointer after three attempts.")
         raise SourcesUnavailableError("The scan is busy. Please try again.")
 
     def _dispatch(self, record: dict) -> None:
