@@ -92,7 +92,14 @@ export function concentrationVerdict(
 }
 
 /** Switches from Simple view (#/guide) to Full view on the target route. */
-export function openInFullView(href: string): void {
+export function openInFullView(
+  href: string,
+  openExpertPage?: (hash?: string) => void,
+): void {
+  if (openExpertPage) {
+    openExpertPage(href);
+    return;
+  }
   if (typeof window === "undefined") return;
   window.location.hash = href;
 }

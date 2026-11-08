@@ -13,10 +13,11 @@ import {
 import { api } from "@/api/client";
 import type { EtfReport, ExamplePortfolio } from "@/api/types";
 import { useAnalysis } from "@/app/analysis";
+import { useExperience } from "@/app/experience";
 import { DraftEditor, normTicker, ServerError } from "@/app/ui/draft-editor";
 import { Button } from "@/components/base/buttons/button";
 import { Spinner } from "@/components/base/spinner/spinner";
-import { GUIDE_STEP_META, openInFullView } from "../copy";
+import { GUIDE_STEP_META } from "../copy";
 import type { GuideStepProps } from "../index";
 
 const STEP_META = GUIDE_STEP_META[0];
@@ -33,6 +34,7 @@ export function StepPick(_props: GuideStepProps) {
     error,
     retry,
   } = useAnalysis();
+  const { openExpertPage } = useExperience();
 
   const [examples, setExamples] = useState<ExamplePortfolio[]>([]);
   const [loadingExamples, setLoadingExamples] = useState(true);
@@ -192,7 +194,7 @@ export function StepPick(_props: GuideStepProps) {
       <div className="flex justify-end">
         <button
           type="button"
-          onClick={() => openInFullView(STEP_META.learnMoreHref)}
+          onClick={() => openExpertPage(STEP_META.learnMoreHref)}
           className="inline-flex items-center gap-1 text-caption-1-medium text-text-secondary underline hover:text-text-primary"
         >
           <span>{STEP_META.learnMoreLabel}</span>

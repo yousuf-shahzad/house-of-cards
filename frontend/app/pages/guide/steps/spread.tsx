@@ -6,12 +6,12 @@
 
 import { RiArrowRightUpLine, RiPieChart2Line, RiScales3Line } from "@remixicon/react";
 import { useAnalysis } from "@/app/analysis";
+import { useExperience } from "@/app/experience";
 import { diversificationVerdict } from "@/app/ui/concentration";
 import { Pct } from "@/app/ui/pct";
 import { Chip } from "@/components/base/badges/chip";
 import {
   GUIDE_STEP_META,
-  openInFullView,
   plainSectorName,
 } from "../copy";
 import type { GuideStepProps } from "../index";
@@ -21,6 +21,7 @@ const STEP_META = GUIDE_STEP_META[2];
 
 export function StepSpread({ onBack }: GuideStepProps) {
   const { analysis } = useAnalysis();
+  const { openExpertPage } = useExperience();
   // FIX-47: never show an earlier portfolio's results as current (loading, error, unfinished edit, empty).
   const gate = useGuideAnalysisGate(onBack, "Checking how spread out your money is…");
   if (gate || !analysis) return gate;
@@ -128,7 +129,7 @@ export function StepSpread({ onBack }: GuideStepProps) {
       <div className="flex justify-end">
         <button
           type="button"
-          onClick={() => openInFullView(STEP_META.learnMoreHref)}
+          onClick={() => openExpertPage(STEP_META.learnMoreHref)}
           className="inline-flex items-center gap-1 text-caption-1-medium text-text-secondary underline hover:text-text-primary"
         >
           <span>{STEP_META.learnMoreLabel}</span>
