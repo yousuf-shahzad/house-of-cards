@@ -19,6 +19,34 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
+### FIX-23 · high · Dependencies page is overloaded and scrolls too long (Gawyn, 07:40)
+Make these four sections collapsible:
+- "AI synthesis: critical flaws & diversification ideas"
+- "Investigate uncertain findings"
+- "Verified Counterparty & Supply-Chain Graph"
+- "Facility & Manufacturing Concentration by Country"
+
+**Collapsed (default):** show the header (title plus a one-line summary or count), then a short preview of the content (about 280 px) that fades out at the bottom, then a "Show all" button that unfolds the rest. "Show less" folds it back.
+
+**Previews:**
+- AI synthesis: the first 2 claim cards.
+- Investigate: the first 2 findings.
+- Graph: the top of the graph.
+- Countries: the chart.
+
+**Countries layout:** stack the two inner panels: the chart full width on top, the country list below. Today they sit side by side (`lg:grid-cols-12`, 5/7).
+
+**Details:**
+- One small page-local component, `pages/dependencies/collapsible-section.tsx`.
+- The button has `aria-expanded`/`aria-controls`, and Tab into the hidden part expands it.
+- The fade uses theme tokens (light and dark).
+- Remember each section's state per viewer with localStorage, wrapped in try/catch.
+- Selecting an edge elsewhere, such as from an insight card, expands the Graph section so the evidence drawer still works.
+
+**Check:** report the page's scroll height before and after at 1280×800. The progress bar, headline numbers and "Go deeper" stay visible at the top.
+
+- **Owner:** Yousuf's Gemini (Dependencies page); Yousuf's Claude reviews · **Status:** assigned
+
 ### FIX-22 · medium · Research time budgets are too tight
 In the FIX-1 live check, 4 of 23 light findings stopped after one tool call ("step budget expired"), and 15 of 45 thorough findings were skipped ("time budget reached").
 - Fix:
