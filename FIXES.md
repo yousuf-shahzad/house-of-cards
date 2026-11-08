@@ -12,6 +12,7 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
   - Put the ID in your branch and PR title, e.g. `28-fix-3-plain-cards` and "FIX-3: …".
   - Post on the board when you start and when you merge, as usual.
   - Don't edit this file: tell the lead on the board, and the lead updates it.
+  - Exception: the bug hunter (FIX-37) and QA (FIX-9) may add one line per confirmed bug under **New**, straight to `main` (pull first, touch only New). The lead triages it into Open.
 
 ## Temporary handoffs
 
@@ -31,18 +32,49 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
-### FIX-34 · high · An unsupported "sole source" flag can make an ordinary supplier critical (issue #216, B)
-`extractor.verify_and_build_edges` copies the model's raw `sole_source=True`. `verify_quote` checks only the quote and name, so "We buy components from ZZ alongside several other vendors" with `sole_source=True` passes with no flags and becomes 0.95 / critical.
-- Fix: ground `sole_source`, and any revenue-share qualifier, in the target-specific quote (sole/single/only source wording near the target) before it can raise importance. If it's unsupported, keep the ordinary supplier link, drop the flag, and add a rules flag. Add tests from the issue.
-- **Owner:** Kendrick's Gemini (`hoc/ai/extractor.py`, `hoc/ai/interpretation.py`) · **Status:** assigned
+### FIX-36 · high · Independent proof outside the app: QQQ vs XLK overlap, and dependencies vs price history (Gawyn, 09:22)
+Prove one example without the app's own code or validation.
+
+**Part 1, overlap.**
+- Download QQQ's and XLK's holdings straight from the issuers (Invesco for QQQ, State Street for XLK). Record the URL, as-of date and file hash.
+- Compute the company-level weighted overlap O = Σ_c min(w_QQQ,c, w_XLK,c), as defined in `docs/hoc/CONTRACT.md` (share classes such as GOOG/GOOGL merged by issuer), plus the shared-company count and the top shared names.
+- Compare with the app's 50.11% / 35 shared, and explain any gap (the app's QQQ is the N-PORT file as of 2026-06-30). Use the issuer file closest to that date if one exists.
+
+**Part 2, dependencies vs history.**
+- Hypotheses: the app's predicted links between companies in these ETFs. Use pairs where both sides have US-listed price history, ADRs included, e.g. Nvidia/AMD/Broadcom/Intel → TSMC (TSM) and Intel → ASML. Export them from an app result JSON; that's the thing being tested, not the evidence.
+- Data: about 3 years of daily adjusted prices from a public source the app doesn't use (e.g. Yahoo Finance or Stooq). Record the source and dates.
+- Method:
+  - Take residual returns after the market (SPY) and the sector (e.g. SOXX/XLK).
+  - Compare residual correlation for predicted-link pairs against matched same-sector pairs with no predicted link, using a permutation or bootstrap CI.
+  - Add an event study: on the target's |z| > 2 days, check whether linked companies move the same way more often than controls.
+- Report the effect sizes with CIs, honestly: correlation isn't dependency, and samples are small.
+
+**Deliverables:**
+- A new top-level `validation/` folder with a README (sources, method, results) and standalone Python that does **not** import `hoc`.
+- Small raw-data snapshots, with sources and dates.
+- A `results.json`.
+
+- **Owner:** Gawyn's Gemini (new folder `validation/`) · **Status:** assigned
+
+### FIX-37 · high · Bug hunt across the whole app; report bugs in FIXES.md (Gawyn, 09:23)
+Find real bugs on current `main`, in both views and on every page:
+- Portfolio inputs: empty, one ETF, an unknown ticker, shares vs %, huge numbers.
+- Overlap, Network, Dependencies (Go deeper during a run, collapsing sections, the evidence drawer), Compare / Try a change / change ideas, Risk, and the Simple-mode walkthrough and guide.
+- The API: validation, error codes, and cache-only paths with no key.
+- Mobile width and dark mode.
+
+For each **confirmed** bug, add one line under **New** in FIXES.md: `BUG: <what happens> — repro: <steps> — where: <page/file> (Kendrick's Gemini)`. Skip anything already in Open. Don't fix bugs; the lead assigns them. Post a short board summary every ~10 bugs or 30 minutes.
+
+- **Owner:** Kendrick's Gemini · **Status:** assigned
 
 ### FIX-9 · medium · Final QA of both views
 - Fix: once everything above merges, audit the full and simple views end to end; send problems to their owners.
 - Also test with no AI key or SEC contact: page 4 must say "The AI check couldn't run on this computer" (FIX-4 was checked in code only).
-- **Owner:** Bekarys's Gemini · **Status:** interim QA passed on everything merged through #183, including a live no-key/no-contact test of page 4; final pass after FIX-1 and FIX-17.
+- **Owner:** Bekarys's Gemini · **Status:** START NOW (FIX-34 has landed). Final pass of both views, including the new Simple walkthrough (#221) and change ideas. Add bugs under New.
 
 ## Done (checked on `main` by the lead)
 
+- FIX-34 sole-source and qualifiers grounded in the target's own clause, and exact word-boundary name matching. Lead, live: all 3 remaining sole-source links have explicit sole/single/only wording; 1 mismatched link dropped (129 → 128); TSMC 12.39% unchanged — #222
 - FIX-30 simplified walkthrough of the real app: Simple mode uses the same sidebar and pages with plain-English versions and dismissible tips, and the five-step guide stays reachable. The lead checked it in the browser. Yousuf told Codex to merge it, with the default `BEGINNER_START_PAGE = "#/portfolio"` (the walkthrough). Gawyn confirmed at 09:18 to keep the walkthrough as the default — #221 (audit split into FIX-31, FIX-33, FIX-34)
 - FIX-33 importance: customer shares grounded to the target (live: Applied Materials' customer rated high from its own 19%, not the other's 15%); headquarters low 0.30; reverse customer links capped. On the sample only `critical.CIK:0000804328` (1.43%) drops out; `critical.ALIAS:TSMC` stays 12.39%, so the docs are unchanged — #220
 - FIX-35 main is green again (561 passed) — #218
