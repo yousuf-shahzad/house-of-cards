@@ -58,7 +58,8 @@ class CompareResponse(_Model):
     baseline_top_n_weight: Weight
     candidate_top_n_weight: Weight
     dependency_deltas: list[MetricDelta] = []
-    """Sorted by absolute delta, largest first (metrics present on only one side sort by their value)."""
+    """Fraction metrics first, then count metrics; within each unit by |delta| largest first (a metric
+    present on only one side sorts by its value), ties by metric_id."""
     concentration_deltas: list[ConcentrationDelta] = []
     candidate_unanalysed: list[UnanalysedCompany] = []
     notes: list[str] = []

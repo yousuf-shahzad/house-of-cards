@@ -102,7 +102,11 @@ def test_compare_fixture_invariants():
             assert d.delta is not None and abs(d.delta - (d.candidate - d.baseline)) <= 1e-9
         else:
             assert d.delta is None
-    both = [abs(d.delta) for d in resp.dependency_deltas if d.delta is not None]
-    assert both == sorted(both, reverse=True)
+    units = [d.unit for d in resp.dependency_deltas]
+    assert units == sorted(units, key=lambda u: u != "fraction")  # fractions first, then counts
+    for unit in set(units):
+        mags = [abs(d.delta) if d.delta is not None else abs(d.candidate if d.candidate is not None else d.baseline or 0.0)
+                for d in resp.dependency_deltas if d.unit == unit]
+        assert mags == sorted(mags, reverse=True)
     for c in resp.concentration_deltas:
         assert abs(c.delta - (c.candidate - c.baseline)) <= 1e-9

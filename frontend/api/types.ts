@@ -722,7 +722,7 @@ export interface CompareResponse {
   status: "ok" | "partial";
   baseline_top_n_weight: number;
   candidate_top_n_weight: number;
-  /** Sorted by absolute delta, largest first. */
+  /** Fraction metrics first, then counts; within each unit by |delta| (one-sided: by value), ties by metric_id. */
   dependency_deltas: MetricDelta[];
   concentration_deltas: ConcentrationDelta[];
   candidate_unanalysed: UnanalysedCompany[];

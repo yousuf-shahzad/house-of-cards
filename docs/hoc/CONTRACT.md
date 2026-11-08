@@ -204,5 +204,5 @@ Models: `hoc/contract/dependencies.py` (edge, coverage and research models) and 
   - `POST /api/compare` (`CompareRequest{baseline, candidate, top_n}`) → `CompareResponse`.
   - It is synchronous and cache-only: no Gemini calls and no filing fetches.
   - `delta = candidate − baseline` when both exist, otherwise null.
-  - `dependency_deltas` are sorted by absolute delta, largest first.
+  - `dependency_deltas` list fraction metrics first, then count metrics. Within each unit they are sorted by absolute delta, largest first; a metric on only one side sorts by its value, and ties go by `metric_id`.
   - `status` is `partial` exactly when `candidate_unanalysed` is non-empty.
