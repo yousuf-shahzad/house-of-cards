@@ -7,7 +7,6 @@ import {
   RiCompass3Line,
   RiGridLine,
   RiLinksLine,
-  RiNodeTree,
   RiPieChartLine,
   RiShieldCheckLine,
 } from "@remixicon/react";
@@ -17,7 +16,6 @@ export type PageKey =
   | "portfolio"
   | "exposures"
   | "overlap"
-  | "network"
   | "dependencies"
   | "compare"
   | "risk"
@@ -70,15 +68,6 @@ export const pages: readonly PageDefinition[] = [
     Component: lazy(() => import("./pages/overlap")),
   },
   {
-    key: "network",
-    label: "Network",
-    href: "#/network",
-    icon: RiNodeTree,
-    title: "Where your money flows",
-    description: "Each ETF linked to the largest companies it gives you.",
-    Component: lazy(() => import("./pages/network")),
-  },
-  {
     key: "dependencies",
     label: "Dependencies",
     href: "#/dependencies",
@@ -122,5 +111,6 @@ export const defaultPage = pages[0];
 /** Resolves "#/exposures" style hashes. Anything unknown goes to the default page. */
 export function pageFromHash(hash: string): PageDefinition {
   const key = hash.replace(/^#\/?/, "").split(/[/?]/)[0];
+  if (key === "network") return pages.find((page) => page.key === "exposures") ?? defaultPage;
   return pages.find((page) => page.key === key) ?? defaultPage;
 }
