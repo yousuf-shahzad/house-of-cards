@@ -29,27 +29,48 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 ## New
 
 <!-- Add new problems below this line, one per line. -->
-- BUG: Five-step guide (`#/guide`) Steps 1–3 "Learn more in the full …" links only change `window.location.hash` without switching mode to Full view (`openExpertPage`), so after FIX-30 (#221) they land on the Simple page instead of the Full view — repro: open `#/guide`, click "Learn more in the full Portfolio builder" on Step 1 (or Step 2 / Step 3) — where: `frontend/app/pages/guide/copy.ts:95`, `steps/pick.tsx:195`, `steps/own.tsx:127`, `steps/spread.tsx:151` (Bekarys's Gemini)
 
-- UX: Top bar & Simple navigation — "Simple view / Full view" switch label names both modes at once without showing which one is active, and Simple pages show both a "Show full detail on this page" button and an "Open the five-step guide" button at the bottom — suggest: label the switch "Full view" (or highlight the active mode) and keep a single clear footer action per Simple page (Yousuf's Gemini)
-- UX: Simple Dependencies & Guide Step 4 — Simple Dependencies embeds Guide Step 4 ("RisksStep"), creating duplicate "Learn more" + "See every link and its evidence" buttons at the bottom, and expanded evidence shows raw section codes ("SEC 10-K, 1A") and "Why this tier:" — suggest: hide Step 4's "Learn more" button when embedded in Simple Dependencies, format sections as "Item 1A", and replace "Why this tier:" with "Why this matters:" (Yousuf's Gemini)
-- UX: Guide & "What's here & why" banners (copy.ts) — info banners across Simple/Guided and Full views use technical terms ("SEC N-PORT", "10-K / 20-F", "look-through", "Entity resolution: Merges split share classes by ISIN/CIK", "HHI", "1/HHI", "GICS") — suggest: replace across all banners with plain words ("official fund reports", "company annual reports", "combined company shares", "merges split stock tickers like GOOG + GOOGL", "concentration score", "industry breakdown") (Yousuf's Gemini)
-- UX: Portfolio & DraftEditor (Shares mode) — "Pin" / "Type a % to pin" and "Unpinned shares worth $X" are confusing for a first-time user who just wants to enter shares or percentages — suggest: replace "Type a % to pin" with "Or type a % to fix this row" and show total dollar value for all share-entered ETFs clearly (Yousuf's Gemini)
-- UX: Exposures (Full view) — cards, table columns, and expanded rows expose internal jargon and database IDs ("Look-through coverage", "multi-class issuers merged", "Identity" column/filter with "Resolved / Partial / Unmatched" and raw "CIK:0000320193" / "ALIAS:..." keys, plus raw "Keys: ISIN:..." in expanded ETF cards) — suggest: rename "Look-through coverage" to "Holdings traced to companies", "issuers" to "companies", remove raw CIK/ISIN/ALIAS IDs from table cells and expanded cards, and remove or simplify the "Identity" filter (Yousuf's Gemini)
-- UX: Overlap (Full view) — diagonal heatmap cells say "Covered NAV", the mode toggle says "Company level / Security level", and pair cards say "Issuers held with positive weight" and show raw "CIK:..." keys in the shared holdings table — suggest: replace "Covered NAV" with "Holdings covered", "Security level" with "Exact stock tickers", "Issuers" with "Companies", and remove raw company keys from table rows (Yousuf's Gemini)
-- UX: Risk & data (Full view) — cards and tables expose heavy jargon ("HHI: 0.0201 (201 pts)", "GICS sector exposures", "Line-level (>=95%)", "layer: l1_sec_nport", abbreviated "Excl: / Portfolio cov:", and raw warning codes like "STALE_HOLDINGS:") — suggest: remove raw HHI/pts from the card face, rename "GICS sector exposures" to "Industry breakdown", replace "Line-level (>=95%)" with "From company holdings", remove "layer: ..." and raw warning code prefixes, and spell out "Excluded" and "Portfolio coverage" (Yousuf's Gemini)
-- UX: Dependencies (Full view) — headings, audit bar, graph, and evidence drawer use pipeline jargon ("SEC 10-K / 20-F", "VERIFIED EDGES", "V-INT meaning check", "unresolved counterparty names", "Counterparties, Inputs & Facilities", "Selected Edge Evidence", "R-IMP heuristic rank 0.90 of 1.00", two-letter ISO country chips like "US"/"CN" next to country names, and model/version chips "hoc-orch-v3.0" / "gemini-4-argon") — suggest: replace "edges" with "links", "counterparties" with "suppliers & partners", "10-K / 20-F" with "annual reports", and remove internal codes ("V-INT", "R-IMP", model IDs, accession numbers, and redundant ISO country code chips) (Yousuf's Gemini)
-- UX: Compare / Try a change & Mobile (390px) — in "More details", the table says "Effective number of companies" while the headline row says "Behaves like N holdings"; "Make this my portfolio" is hidden inside "More details" only when unanalysed companies exist; and on 390px mobile width the Dependencies graph header stacks three rows of horizontal-scroll filter pills before the graph — suggest: use "Behaves like (equal holdings)" everywhere, surface "Use this as my portfolio" alongside "Reset to my portfolio", and collapse mobile graph filters into a compact selector (Yousuf's Gemini)
 
 ## Open
 
-### FIX-39 · high · New-user walkthrough: flag confusing UI/UX and jargon that adds little (Gawyn, 09:32)
-Go through the app as someone who has never analysed an ETF: welcome → Simple walkthrough (every page) → the five-step guide → switch to Full view (every page) → Try a change and change ideas. Use mobile width once.
-- Flag anything confusing: unclear buttons, labels or flows, dead ends, too much text, unexplained numbers, and duplicate controls.
-- Flag jargon that doesn't add much: HHI, look-through, effective N, edge, counterparty, 10-K/20-F, N-PORT, V-INT, tier, qualifier, ISO codes, model names, and so on. For each, suggest a plain replacement, or say "remove".
-- Report each finding as one line under **New** in FIXES.md: `UX: <page> — <what's confusing> — suggest: <plain fix> (Yousuf's Gemini)`. Group repeated jargon into one line.
-- Post a short board summary when done. Report only; the lead triages and assigns the fixes.
-- **Owner:** Yousuf's Gemini, right after FIX-38 · **Status:** queued
+### FIX-40 · high · BUG: guide steps 1–3 "Learn more in the full …" links land on the Simple page
+Found by Bekarys's Gemini (QA). Since #221, these links only change the hash, so they open the Simple version instead of Full view. Repro: `#/guide`, Step 1, "Learn more in the full Portfolio builder".
+- Fix: use `openExpertPage(...)` in `guide/copy.ts:95`, `steps/pick.tsx:195`, `steps/own.tsx:127` and `steps/spread.tsx:151`.
+- **Owner:** Yousuf's Gemini (guide) · **Status:** assigned
+
+### FIX-41 · medium · UX: Simple-mode controls (from FIX-39)
+- The top-bar switch says "Simple view / Full view" without showing which is active. Label the state clearly, e.g. "Full view" on or off, or highlight the active mode.
+- Each Simple page has both "Show full detail on this page" and "Open the five-step guide" at the bottom. Keep one clear footer action per page; the guide link can live once in the walkthrough tips.
+- Simple Dependencies embeds Guide Step 4, so it shows duplicate "Learn more" and "See every link and its evidence" buttons. Hide Step 4's "Learn more" when embedded (add a small prop to `step-4-risks.tsx`; lead-approved).
+- **Owner:** Yousuf's Codex (`workspace.tsx`, `pages/simple/`, plus the one prop in `step-4-risks.tsx`) · **Status:** assigned
+
+### FIX-42 · medium · UX: plain words in the info text and on the Dependencies page (from FIX-39)
+- **Info banners (`guide/copy.ts`):** SEC N-PORT → "official fund reports"; 10-K/20-F → "company annual reports"; look-through → "the companies inside your ETFs"; ISIN/CIK merging → "merges share classes like GOOG and GOOGL"; HHI/1-HHI → "concentration score"; GICS → "industry breakdown".
+- **Dependencies (Full view):**
+  - "edges" → "links"; "counterparties" → "suppliers & partners"; "SEC 10-K / 20-F" → "annual reports".
+  - Remove internal codes from the visible UI: V-INT, R-IMP, model and version chips. They can stay in a details tooltip.
+  - Show "Item 1A", not "1A".
+  - "Why this tier:" → "Why this matters:".
+  - Drop the two-letter country chips next to country names.
+- **Mobile 390px:** collapse the three rows of graph filter pills into one compact selector.
+- **Owner:** Yousuf's Gemini (`guide/copy.ts`, `pages/dependencies/`) · **Status:** after FIX-40
+
+### FIX-43 · medium · UX: plain words on Exposures, Overlap, the editor and Compare (from FIX-39)
+- **Exposures:** "Look-through coverage" → "Holdings traced to companies"; "issuers" → "companies". No raw CIK/ISIN/ALIAS keys in table cells or expanded cards. Simplify or remove the "Identity" filter; the detail can sit behind a tooltip.
+- **Overlap:** "Covered NAV" → "Holdings covered"; "Company level / Security level" → "Companies / Exact share classes"; "Issuers held…" → "Companies held…". No raw keys in shared-holdings rows.
+- **Editor (Shares mode):** "Type a % to pin" → "Or type a % to fix this row"; make the total dollar value clear.
+- **Compare / Try a change:**
+  - Use the same wording for "Effective number of companies" and "Behaves like N holdings".
+  - Put "Use this as my portfolio" next to "Reset to my portfolio", not only inside More details.
+- Copy and presentation only; no logic or data changes.
+- **Owner:** Yousuf's Codex. Lead-approved handoffs: `pages/exposures/` from Yousuf's Gemini, `pages/overlap/` from Bekarys's Gemini (busy with QA), `app/ui/draft-editor.tsx` and `app/ui/try-a-change.tsx` (Yousuf's Claude's, held by Yousuf's Gemini) · **Status:** after FIX-41
+
+### FIX-44 · low · UX: plain words on Risk & data (from FIX-39)
+- Remove the raw "HHI 0.0201 (201 pts)" from the card face (keep it in a tooltip).
+- "GICS sector exposures" → "Industry breakdown"; "Line-level (>=95%)" → "From company holdings".
+- Remove "layer: l1_sec_nport" and raw warning-code prefixes such as `STALE_HOLDINGS:`.
+- Spell out "Excluded" and "Portfolio coverage".
+- **Owner:** Gawyn's Gemini (`pages/risk/`), after FIX-36 · **Status:** queued
 
 ### FIX-38 · high · Remove the Network page; Exposures covers it (Gawyn, 09:27)
 - Remove the `network` entry from `frontend/app/registry.tsx` (lead-approved edit), so it leaves the sidebar in both views. Old `#/network` links redirect to `#/exposures`.
@@ -101,6 +122,7 @@ For each **confirmed** bug, add one line under **New** in FIXES.md: `BUG: <what 
 
 ## Done (checked on `main` by the lead)
 
+- FIX-39 new-user UX/jargon review: 9 findings, triaged into FIX-41 to FIX-44 (Yousuf's Gemini)
 - FIX-34 sole-source and qualifiers grounded in the target's own clause, and exact word-boundary name matching. Lead, live: all 3 remaining sole-source links have explicit sole/single/only wording; 1 mismatched link dropped (129 → 128); TSMC 12.39% unchanged — #222
 - FIX-30 simplified walkthrough of the real app: Simple mode uses the same sidebar and pages with plain-English versions and dismissible tips, and the five-step guide stays reachable. The lead checked it in the browser. Yousuf told Codex to merge it, with the default `BEGINNER_START_PAGE = "#/portfolio"` (the walkthrough). Gawyn confirmed at 09:18 to keep the walkthrough as the default — #221 (audit split into FIX-31, FIX-33, FIX-34)
 - FIX-33 importance: customer shares grounded to the target (live: Applied Materials' customer rated high from its own 19%, not the other's 15%); headquarters low 0.30; reverse customer links capped. On the sample only `critical.CIK:0000804328` (1.43%) drops out; `critical.ALIAS:TSMC` stays 12.39%, so the docs are unchanged — #220
