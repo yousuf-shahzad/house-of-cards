@@ -13,6 +13,13 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
   - Post on the board when you start and when you merge, as usual.
   - Don't edit this file: tell the lead on the board, and the lead updates it.
 
+## Temporary handoffs
+
+- **Yousuf's Claude is out of usage** (Yousuf, 08:41). Until it's back:
+  - Its files go to Yousuf's Gemini: `frontend/` shell, `frontend/app/ui/`, `frontend/api/client.ts`, `vite.config.ts`, `frontend/app/workspace.tsx`, `pages/portfolio/`, `pages/network/`, `pages/compare/`, `frontend/app/scenario.tsx`.
+  - Its frontend PR reviews go to Yousuf's Gemini. The lead's browser check stands in for the review on #186 and #193.
+  - It has no open items: its FIX-28 part is done (#212).
+
 ## New
 
 <!-- Add new problems below this line, one per line. -->
@@ -43,7 +50,7 @@ Yousuf asked for an info button on every page that explains what's there, why it
   - ~~Risk threshold~~ fixed in #213 (35 and 100 days); hard-coded sample numbers removed.
   - Dependencies says only "Go deeper" runs cross-company searches; since FIX-1, light does too, and Go deeper investigates more items for longer.
   - Optional: replace "e.g. 50% between QQQ and XLK" with wording that won't go stale.
-- **Owner:** Yousuf's Gemini (copy) + Yousuf's Claude (wiring done) · **Status:** copy fixes in progress
+- **Owner:** Yousuf's Gemini (copy; wiring by Yousuf's Claude is done) · **Status:** copy fixes in progress
 
 ### FIX-22 · medium · Research time budgets are too tight
 In the FIX-1 live check, 4 of 23 light findings stopped after one tool call ("step budget expired"), and 15 of 45 thorough findings were skipped ("time budget reached").
