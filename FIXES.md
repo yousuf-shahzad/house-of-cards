@@ -68,11 +68,6 @@ Today the order is: header (Find dependencies, Go deeper) → progress → cover
 - **Restarting a scan shows 100% first.** "Go deeper" or "Run again" briefly shows 100% with all phases green, then jumps back. Fix: reset the job progress on start (`dependencies-state.tsx`).
 - **Owner:** Yousuf's Gemini (`dependencies-state.tsx`, `pages/dependencies/`, `step-4-risks.tsx`), after FIX-47 · **Status:** assigned
 
-### FIX-50 · medium · BUG: Try a change actions (bug hunt)
-- **"Try this" changes the idea it loads.** In % mode it forces Shares mode and rounds to whole shares of $10,000, so the numbers differ from the card. With small holdings, leftover rounding keeps 1 share of the swapped-out ETF, turning a swap into an add. Fix: in % mode apply the idea's exact allocations; in Shares mode make the swap source go to 0.
-- **"Make this my portfolio and find its dependencies" doesn't run anything.** It only changes the hash and never calls `runDependencies()`, and from guide Step 5 it exits the guide into Full view. Fix: start the run, and stay in the current mode.
-- **Owner:** Yousuf's Codex (`app/ui/try-a-change.tsx`, handoff from FIX-43), before FIX-43 · **Status:** assigned
-
 ### FIX-45 · low · BUG: on mobile, tapping the page you're already on leaves the navigation drawer open
 Found by Codex during the #223 review (existing behaviour). The hash doesn't change, so no `hashchange` fires and the drawer stays open; Close works.
 - Fix: close the drawer on any sidebar item click, not only on hash change.
@@ -99,16 +94,6 @@ Found by Bekarys's Gemini (QA). Since #221, these links only change the hash, so
   - Drop the two-letter country chips next to country names.
 - **Mobile 390px:** collapse the three rows of graph filter pills into one compact selector.
 - **Owner:** Yousuf's Gemini (`guide/copy.ts`, `pages/dependencies/`) · **Status:** after FIX-40
-
-### FIX-43 · medium · UX: plain words on Exposures, Overlap, the editor and Compare (from FIX-39)
-- **Exposures:** "Look-through coverage" → "Holdings traced to companies"; "issuers" → "companies". No raw CIK/ISIN/ALIAS keys in table cells or expanded cards. Simplify or remove the "Identity" filter; the detail can sit behind a tooltip.
-- **Overlap:** "Covered NAV" → "Holdings covered"; "Company level / Security level" → "Companies / Exact share classes"; "Issuers held…" → "Companies held…". No raw keys in shared-holdings rows.
-- **Editor (Shares mode):** "Type a % to pin" → "Or type a % to fix this row"; make the total dollar value clear.
-- **Compare / Try a change:**
-  - Use the same wording for "Effective number of companies" and "Behaves like N holdings".
-  - Put "Use this as my portfolio" next to "Reset to my portfolio", not only inside More details.
-- Copy and presentation only; no logic or data changes.
-- **Owner:** Yousuf's Codex. Lead-approved handoffs: `pages/exposures/` from Yousuf's Gemini, `pages/overlap/` from Bekarys's Gemini (busy with QA), `app/ui/draft-editor.tsx` and `app/ui/try-a-change.tsx` (Yousuf's Claude's, held by Yousuf's Gemini) · **Status:** after FIX-41
 
 ### FIX-36 · high · Independent proof outside the app: QQQ vs XLK overlap, and dependencies vs price history (Gawyn, 09:22)
 Prove one example without the app's own code or validation.
@@ -152,6 +137,8 @@ For each **confirmed** bug, add one line under **New** in FIXES.md: `BUG: <what 
 
 ## Done (checked on `main` by the lead)
 
+- FIX-43 plain words on Exposures, Overlap, the editor and Compare ("Companies / Exact share classes", no raw keys, "Use this as my portfolio" beside Reset); verified by QA — #237
+- FIX-50 Try a change: % ideas keep exact allocations; share swaps remove the full source; "Make this my portfolio" runs the scan and stays in mode; verified by QA — #235
 - FIX-53 Simple Portfolio has a "Next: what you really own →" button: disabled with a reason until the portfolio is ready, then it leads to Simple Exposures (lead's own change, checked in the browser) — #236
 - FIX-46 + FIX-51 Simple mode stays Simple when leaving the guide via the sidebar or Back; Simple pages show stale/error state and their own info text; the top bar is a "Simple | Full" toggle with the active side highlighted (lead, browser) — #231
 - FIX-49 0-share rows are ignored (lead: 1,293 companies without IVV, no IVV on Exposures); share counts above 1,000,000,000 are marked invalid with a clear message, and nothing overflows — #230
