@@ -1,0 +1,970 @@
+{
+  "snapshot_file": "data\\yahoo_adj_close_5y.json",
+  "snapshot_sha256": "1583b3417a3d1959795878bfdc6b6cc4953ecefc8b415bdc1e599487d4474720",
+  "snapshot_bytes": 3284856,
+  "window_days": 21,
+  "history_years": 5,
+  "sectors": [
+    {
+      "kind": "sector",
+      "key": "information_technology",
+      "proxy": "XLK",
+      "name": "Technology Select Sector SPDR Fund",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2026-10-07",
+        "window_end": "2026-11-05",
+        "start_price": 201.389999,
+        "end_price": 162.380005,
+        "return": -0.193704,
+        "drop": 0.193704,
+        "drop_4dp": 0.1937,
+        "drop_pct_1dp": 19.4,
+        "drop_pct_2dp": 19.37
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2026-10-07",
+        "window_end": "2026-11-05",
+        "drop": 0.193704,
+        "drop_pct_1dp": 19.4,
+        "drop_pct_2dp": 19.37
+      },
+      "description": "XLK's worst month in the last 5 years: -19.4% (2026-10-07 to 2026-11-05)"
+    },
+    {
+      "kind": "sector",
+      "key": "financials",
+      "proxy": "XLF",
+      "name": "Financial Select Sector SPDR Fund",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2023-02-15",
+        "window_end": "2023-03-17",
+        "start_price": 34.596306,
+        "end_price": 29.16445,
+        "return": -0.157007,
+        "drop": 0.157007,
+        "drop_4dp": 0.157,
+        "drop_pct_1dp": 15.7,
+        "drop_pct_2dp": 15.7
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2023-02-15",
+        "window_end": "2023-03-17",
+        "drop": 0.157007,
+        "drop_pct_1dp": 15.7,
+        "drop_pct_2dp": 15.7
+      },
+      "description": "XLF's worst month in the last 5 years: -15.7% (2023-02-15 to 2023-03-17)"
+    },
+    {
+      "kind": "sector",
+      "key": "health_care",
+      "proxy": "XLV",
+      "name": "Health Care Select Sector SPDR Fund",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2022-04-08",
+        "window_end": "2022-05-10",
+        "start_price": 132.592102,
+        "end_price": 117.776085,
+        "return": -0.111741,
+        "drop": 0.111741,
+        "drop_4dp": 0.1117,
+        "drop_pct_1dp": 11.2,
+        "drop_pct_2dp": 11.17
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2022-04-08",
+        "window_end": "2022-05-10",
+        "drop": 0.111741,
+        "drop_pct_1dp": 11.2,
+        "drop_pct_2dp": 11.17
+      },
+      "description": "XLV's worst month in the last 5 years: -11.2% (2022-04-08 to 2022-05-10)"
+    },
+    {
+      "kind": "sector",
+      "key": "consumer_discretionary",
+      "proxy": "XLY",
+      "name": "Consumer Discretionary Select Sector SPDR Fund",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2022-04-19",
+        "window_end": "2022-05-18",
+        "start_price": 88.556808,
+        "end_price": 68.679268,
+        "return": -0.224461,
+        "drop": 0.224461,
+        "drop_4dp": 0.2245,
+        "drop_pct_1dp": 22.4,
+        "drop_pct_2dp": 22.45
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2022-04-19",
+        "window_end": "2022-05-18",
+        "drop": 0.224461,
+        "drop_pct_1dp": 22.4,
+        "drop_pct_2dp": 22.45
+      },
+      "description": "XLY's worst month in the last 5 years: -22.4% (2022-04-19 to 2022-05-18)"
+    },
+    {
+      "kind": "sector",
+      "key": "communication_services",
+      "proxy": "XLC",
+      "name": "Communication Services Select Sector SPDR Fund",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2022-03-30",
+        "window_end": "2022-04-29",
+        "start_price": 66.795914,
+        "end_price": 56.268242,
+        "return": -0.15761,
+        "drop": 0.15761,
+        "drop_4dp": 0.1576,
+        "drop_pct_1dp": 15.8,
+        "drop_pct_2dp": 15.76
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2022-03-30",
+        "window_end": "2022-04-29",
+        "drop": 0.157609,
+        "drop_pct_1dp": 15.8,
+        "drop_pct_2dp": 15.76
+      },
+      "description": "XLC's worst month in the last 5 years: -15.8% (2022-03-30 to 2022-04-29)"
+    },
+    {
+      "kind": "sector",
+      "key": "industrials",
+      "proxy": "XLI",
+      "name": "Industrial Select Sector SPDR Fund",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2022-08-25",
+        "window_end": "2022-09-26",
+        "start_price": 92.860588,
+        "end_price": 79.075943,
+        "return": -0.148445,
+        "drop": 0.148445,
+        "drop_4dp": 0.1484,
+        "drop_pct_1dp": 14.8,
+        "drop_pct_2dp": 14.84
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2022-08-25",
+        "window_end": "2022-09-26",
+        "drop": 0.152501,
+        "drop_pct_1dp": 15.3,
+        "drop_pct_2dp": 15.25
+      },
+      "description": "XLI's worst month in the last 5 years: -14.8% (2022-08-25 to 2022-09-26)"
+    },
+    {
+      "kind": "sector",
+      "key": "consumer_staples",
+      "proxy": "XLP",
+      "name": "Consumer Staples Select Sector SPDR Fund",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2022-04-20",
+        "window_end": "2022-05-19",
+        "start_price": 71.385674,
+        "end_price": 62.50787,
+        "return": -0.124364,
+        "drop": 0.124364,
+        "drop_4dp": 0.1244,
+        "drop_pct_1dp": 12.4,
+        "drop_pct_2dp": 12.44
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2022-04-20",
+        "window_end": "2022-05-19",
+        "drop": 0.124364,
+        "drop_pct_1dp": 12.4,
+        "drop_pct_2dp": 12.44
+      },
+      "description": "XLP's worst month in the last 5 years: -12.4% (2022-04-20 to 2022-05-19)"
+    },
+    {
+      "kind": "sector",
+      "key": "energy",
+      "proxy": "XLE",
+      "name": "Energy Select Sector SPDR Fund",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2022-06-08",
+        "window_end": "2022-07-11",
+        "start_price": 39.57774,
+        "end_price": 30.475908,
+        "return": -0.229974,
+        "drop": 0.229974,
+        "drop_4dp": 0.23,
+        "drop_pct_1dp": 23.0,
+        "drop_pct_2dp": 23.0
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2022-06-08",
+        "window_end": "2022-07-11",
+        "drop": 0.238513,
+        "drop_pct_1dp": 23.9,
+        "drop_pct_2dp": 23.85
+      },
+      "description": "XLE's worst month in the last 5 years: -23.0% (2022-06-08 to 2022-07-11)"
+    },
+    {
+      "kind": "sector",
+      "key": "utilities",
+      "proxy": "XLU",
+      "name": "Utilities Select Sector SPDR Fund",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2022-09-13",
+        "window_end": "2022-10-12",
+        "start_price": 33.459187,
+        "end_price": 27.253435,
+        "return": -0.185472,
+        "drop": 0.185472,
+        "drop_4dp": 0.1855,
+        "drop_pct_1dp": 18.5,
+        "drop_pct_2dp": 18.55
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2022-09-13",
+        "window_end": "2022-10-12",
+        "drop": 0.190952,
+        "drop_pct_1dp": 19.1,
+        "drop_pct_2dp": 19.1
+      },
+      "description": "XLU's worst month in the last 5 years: -18.5% (2022-09-13 to 2022-10-12)"
+    },
+    {
+      "kind": "sector",
+      "key": "real_estate",
+      "proxy": "XLRE",
+      "name": "Real Estate Select Sector SPDR Fund",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2022-09-09",
+        "window_end": "2022-10-10",
+        "start_price": 37.127373,
+        "end_price": 29.718107,
+        "return": -0.199563,
+        "drop": 0.199563,
+        "drop_4dp": 0.1996,
+        "drop_pct_1dp": 20.0,
+        "drop_pct_2dp": 19.96
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2022-09-09",
+        "window_end": "2022-10-10",
+        "drop": 0.206784,
+        "drop_pct_1dp": 20.7,
+        "drop_pct_2dp": 20.68
+      },
+      "description": "XLRE's worst month in the last 5 years: -20.0% (2022-09-09 to 2022-10-10)"
+    },
+    {
+      "kind": "sector",
+      "key": "materials",
+      "proxy": "XLB",
+      "name": "Materials Select Sector SPDR Fund",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2022-06-07",
+        "window_end": "2022-07-08",
+        "start_price": 40.248741,
+        "end_price": 33.582664,
+        "return": -0.165622,
+        "drop": 0.165622,
+        "drop_4dp": 0.1656,
+        "drop_pct_1dp": 16.6,
+        "drop_pct_2dp": 16.56
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2022-06-07",
+        "window_end": "2022-07-08",
+        "drop": 0.171357,
+        "drop_pct_1dp": 17.1,
+        "drop_pct_2dp": 17.14
+      },
+      "description": "XLB's worst month in the last 5 years: -16.6% (2022-06-07 to 2022-07-08)"
+    }
+  ],
+  "primary_countries": [
+    {
+      "kind": "country",
+      "key": "TW",
+      "proxy": "EWT",
+      "name": "iShares MSCI Taiwan ETF",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2026-10-07",
+        "window_end": "2026-11-05",
+        "start_price": 116.239998,
+        "end_price": 85.879997,
+        "return": -0.261184,
+        "drop": 0.261184,
+        "drop_4dp": 0.2612,
+        "drop_pct_1dp": 26.1,
+        "drop_pct_2dp": 26.12
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2026-10-07",
+        "window_end": "2026-11-05",
+        "drop": 0.261184,
+        "drop_pct_1dp": 26.1,
+        "drop_pct_2dp": 26.12
+      },
+      "description": "EWT's worst month in the last 5 years: -26.1% (2026-10-07 to 2026-11-05)"
+    },
+    {
+      "kind": "country",
+      "key": "CN",
+      "proxy": "MCHI",
+      "name": "iShares MSCI China ETF",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2022-02-10",
+        "window_end": "2022-03-14",
+        "start_price": 57.11129,
+        "end_price": 40.985218,
+        "return": -0.282362,
+        "drop": 0.282362,
+        "drop_4dp": 0.2824,
+        "drop_pct_1dp": 28.2,
+        "drop_pct_2dp": 28.24
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2022-02-10",
+        "window_end": "2022-03-14",
+        "drop": 0.282362,
+        "drop_pct_1dp": 28.2,
+        "drop_pct_2dp": 28.24
+      },
+      "description": "MCHI's worst month in the last 5 years: -28.2% (2022-02-10 to 2022-03-14)"
+    },
+    {
+      "kind": "country",
+      "key": "JP",
+      "proxy": "EWJ",
+      "name": "iShares MSCI Japan ETF",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2025-03-07",
+        "window_end": "2025-04-07",
+        "start_price": 66.733467,
+        "end_price": 58.316891,
+        "return": -0.126122,
+        "drop": 0.126122,
+        "drop_4dp": 0.1261,
+        "drop_pct_1dp": 12.6,
+        "drop_pct_2dp": 12.61
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2025-03-07",
+        "window_end": "2025-04-07",
+        "drop": 0.126122,
+        "drop_pct_1dp": 12.6,
+        "drop_pct_2dp": 12.61
+      },
+      "description": "EWJ's worst month in the last 5 years: -12.6% (2025-03-07 to 2025-04-07)"
+    },
+    {
+      "kind": "country",
+      "key": "KR",
+      "proxy": "EWY",
+      "name": "iShares MSCI South Korea ETF",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2026-10-07",
+        "window_end": "2026-11-05",
+        "start_price": 183.690002,
+        "end_price": 131.649994,
+        "return": -0.283303,
+        "drop": 0.283303,
+        "drop_4dp": 0.2833,
+        "drop_pct_1dp": 28.3,
+        "drop_pct_2dp": 28.33
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2026-10-07",
+        "window_end": "2026-11-05",
+        "drop": 0.283303,
+        "drop_pct_1dp": 28.3,
+        "drop_pct_2dp": 28.33
+      },
+      "description": "EWY's worst month in the last 5 years: -28.3% (2026-10-07 to 2026-11-05)"
+    },
+    {
+      "kind": "country",
+      "key": "US",
+      "proxy": "SPY",
+      "name": "SPDR S&P 500 ETF Trust",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2022-08-25",
+        "window_end": "2022-09-26",
+        "start_price": 396.676575,
+        "end_price": 345.896088,
+        "return": -0.128015,
+        "drop": 0.128015,
+        "drop_4dp": 0.128,
+        "drop_pct_1dp": 12.8,
+        "drop_pct_2dp": 12.8
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2022-08-25",
+        "window_end": "2022-09-26",
+        "drop": 0.131582,
+        "drop_pct_1dp": 13.2,
+        "drop_pct_2dp": 13.16
+      },
+      "description": "SPY's worst month in the last 5 years: -12.8% (2022-08-25 to 2022-09-26)"
+    }
+  ],
+  "additional_countries": [
+    {
+      "kind": "country",
+      "key": "NL",
+      "proxy": "EWN",
+      "name": "iShares MSCI Netherlands ETF",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2022-02-03",
+        "window_end": "2022-03-07",
+        "start_price": 40.739639,
+        "end_price": 33.041519,
+        "return": -0.188959,
+        "drop": 0.188959,
+        "drop_4dp": 0.189,
+        "drop_pct_1dp": 18.9,
+        "drop_pct_2dp": 18.9
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2022-02-03",
+        "window_end": "2022-03-07",
+        "drop": 0.188959,
+        "drop_pct_1dp": 18.9,
+        "drop_pct_2dp": 18.9
+      },
+      "description": "EWN's worst month in the last 5 years: -18.9% (2022-02-03 to 2022-03-07)"
+    },
+    {
+      "kind": "country",
+      "key": "DE",
+      "proxy": "EWG",
+      "name": "iShares MSCI Germany ETF",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2022-02-03",
+        "window_end": "2022-03-07",
+        "start_price": 28.515652,
+        "end_price": 22.095852,
+        "return": -0.225132,
+        "drop": 0.225132,
+        "drop_4dp": 0.2251,
+        "drop_pct_1dp": 22.5,
+        "drop_pct_2dp": 22.51
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2022-02-03",
+        "window_end": "2022-03-07",
+        "drop": 0.225133,
+        "drop_pct_1dp": 22.5,
+        "drop_pct_2dp": 22.51
+      },
+      "description": "EWG's worst month in the last 5 years: -22.5% (2022-02-03 to 2022-03-07)"
+    },
+    {
+      "kind": "country",
+      "key": "GB",
+      "proxy": "EWU",
+      "name": "iShares MSCI United Kingdom ETF",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2022-08-25",
+        "window_end": "2022-09-26",
+        "start_price": 26.191753,
+        "end_price": 22.182112,
+        "return": -0.153088,
+        "drop": 0.153088,
+        "drop_4dp": 0.1531,
+        "drop_pct_1dp": 15.3,
+        "drop_pct_2dp": 15.31
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2022-08-25",
+        "window_end": "2022-09-26",
+        "drop": 0.153088,
+        "drop_pct_1dp": 15.3,
+        "drop_pct_2dp": 15.31
+      },
+      "description": "EWU's worst month in the last 5 years: -15.3% (2022-08-25 to 2022-09-26)"
+    },
+    {
+      "kind": "country",
+      "key": "FR",
+      "proxy": "EWQ",
+      "name": "iShares MSCI France ETF",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2022-02-03",
+        "window_end": "2022-03-07",
+        "start_price": 33.085888,
+        "end_price": 26.741245,
+        "return": -0.191763,
+        "drop": 0.191763,
+        "drop_4dp": 0.1918,
+        "drop_pct_1dp": 19.2,
+        "drop_pct_2dp": 19.18
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2022-02-03",
+        "window_end": "2022-03-07",
+        "drop": 0.191763,
+        "drop_pct_1dp": 19.2,
+        "drop_pct_2dp": 19.18
+      },
+      "description": "EWQ's worst month in the last 5 years: -19.2% (2022-02-03 to 2022-03-07)"
+    },
+    {
+      "kind": "country",
+      "key": "CH",
+      "proxy": "EWL",
+      "name": "iShares MSCI Switzerland ETF",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2022-04-11",
+        "window_end": "2022-05-11",
+        "start_price": 45.238213,
+        "end_price": 39.112206,
+        "return": -0.135417,
+        "drop": 0.135417,
+        "drop_4dp": 0.1354,
+        "drop_pct_1dp": 13.5,
+        "drop_pct_2dp": 13.54
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2022-04-11",
+        "window_end": "2022-05-11",
+        "drop": 0.135417,
+        "drop_pct_1dp": 13.5,
+        "drop_pct_2dp": 13.54
+      },
+      "description": "EWL's worst month in the last 5 years: -13.5% (2022-04-11 to 2022-05-11)"
+    },
+    {
+      "kind": "country",
+      "key": "CA",
+      "proxy": "EWC",
+      "name": "iShares MSCI Canada ETF",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2022-08-25",
+        "window_end": "2022-09-26",
+        "start_price": 33.039051,
+        "end_price": 28.344225,
+        "return": -0.142099,
+        "drop": 0.142099,
+        "drop_4dp": 0.1421,
+        "drop_pct_1dp": 14.2,
+        "drop_pct_2dp": 14.21
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2022-08-25",
+        "window_end": "2022-09-26",
+        "drop": 0.142099,
+        "drop_pct_1dp": 14.2,
+        "drop_pct_2dp": 14.21
+      },
+      "description": "EWC's worst month in the last 5 years: -14.2% (2022-08-25 to 2022-09-26)"
+    },
+    {
+      "kind": "country",
+      "key": "AU",
+      "proxy": "EWA",
+      "name": "iShares MSCI Australia ETF",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2022-06-02",
+        "window_end": "2022-07-05",
+        "start_price": 21.375578,
+        "end_price": 18.113163,
+        "return": -0.152623,
+        "drop": 0.152623,
+        "drop_4dp": 0.1526,
+        "drop_pct_1dp": 15.3,
+        "drop_pct_2dp": 15.26
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2022-06-02",
+        "window_end": "2022-07-05",
+        "drop": 0.178374,
+        "drop_pct_1dp": 17.8,
+        "drop_pct_2dp": 17.84
+      },
+      "description": "EWA's worst month in the last 5 years: -15.3% (2022-06-02 to 2022-07-05)"
+    },
+    {
+      "kind": "country",
+      "key": "IN",
+      "proxy": "INDA",
+      "name": "iShares MSCI India ETF",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2026-02-27",
+        "window_end": "2026-03-30",
+        "start_price": 52.27,
+        "end_price": 45.419998,
+        "return": -0.13105,
+        "drop": 0.13105,
+        "drop_4dp": 0.1311,
+        "drop_pct_1dp": 13.1,
+        "drop_pct_2dp": 13.11
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2026-02-27",
+        "window_end": "2026-03-30",
+        "drop": 0.13105,
+        "drop_pct_1dp": 13.1,
+        "drop_pct_2dp": 13.11
+      },
+      "description": "INDA's worst month in the last 5 years: -13.1% (2026-02-27 to 2026-03-30)"
+    },
+    {
+      "kind": "country",
+      "key": "IE",
+      "proxy": "EIRL",
+      "name": "iShares MSCI Ireland ETF",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2022-02-03",
+        "window_end": "2022-03-07",
+        "start_price": 51.020962,
+        "end_price": 39.576237,
+        "return": -0.224314,
+        "drop": 0.224314,
+        "drop_4dp": 0.2243,
+        "drop_pct_1dp": 22.4,
+        "drop_pct_2dp": 22.43
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2022-02-03",
+        "window_end": "2022-03-07",
+        "drop": 0.224314,
+        "drop_pct_1dp": 22.4,
+        "drop_pct_2dp": 22.43
+      },
+      "description": "EIRL's worst month in the last 5 years: -22.4% (2022-02-03 to 2022-03-07)"
+    },
+    {
+      "kind": "country",
+      "key": "IL",
+      "proxy": "EIS",
+      "name": "iShares MSCI Israel ETF",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2023-09-28",
+        "window_end": "2023-10-27",
+        "start_price": 51.983707,
+        "end_price": 42.875538,
+        "return": -0.175212,
+        "drop": 0.175212,
+        "drop_4dp": 0.1752,
+        "drop_pct_1dp": 17.5,
+        "drop_pct_2dp": 17.52
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2023-09-28",
+        "window_end": "2023-10-27",
+        "drop": 0.175212,
+        "drop_pct_1dp": 17.5,
+        "drop_pct_2dp": 17.52
+      },
+      "description": "EIS's worst month in the last 5 years: -17.5% (2023-09-28 to 2023-10-27)"
+    },
+    {
+      "kind": "country",
+      "key": "HK",
+      "proxy": "EWH",
+      "name": "iShares MSCI Hong Kong ETF",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2025-03-10",
+        "window_end": "2025-04-08",
+        "start_price": 16.751829,
+        "end_price": 14.185392,
+        "return": -0.153203,
+        "drop": 0.153203,
+        "drop_4dp": 0.1532,
+        "drop_pct_1dp": 15.3,
+        "drop_pct_2dp": 15.32
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2025-03-10",
+        "window_end": "2025-04-08",
+        "drop": 0.153203,
+        "drop_pct_1dp": 15.3,
+        "drop_pct_2dp": 15.32
+      },
+      "description": "EWH's worst month in the last 5 years: -15.3% (2025-03-10 to 2025-04-08)"
+    },
+    {
+      "kind": "country",
+      "key": "SG",
+      "proxy": "EWS",
+      "name": "iShares MSCI Singapore ETF",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2022-02-10",
+        "window_end": "2022-03-14",
+        "start_price": 18.314199,
+        "end_price": 15.54979,
+        "return": -0.150943,
+        "drop": 0.150943,
+        "drop_4dp": 0.1509,
+        "drop_pct_1dp": 15.1,
+        "drop_pct_2dp": 15.09
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2022-02-10",
+        "window_end": "2022-03-14",
+        "drop": 0.150943,
+        "drop_pct_1dp": 15.1,
+        "drop_pct_2dp": 15.09
+      },
+      "description": "EWS's worst month in the last 5 years: -15.1% (2022-02-10 to 2022-03-14)"
+    },
+    {
+      "kind": "country",
+      "key": "SE",
+      "proxy": "EWD",
+      "name": "iShares MSCI Sweden ETF",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2022-02-03",
+        "window_end": "2022-03-07",
+        "start_price": 37.186413,
+        "end_price": 29.025042,
+        "return": -0.219472,
+        "drop": 0.219472,
+        "drop_4dp": 0.2195,
+        "drop_pct_1dp": 21.9,
+        "drop_pct_2dp": 21.95
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2022-02-03",
+        "window_end": "2022-03-07",
+        "drop": 0.219472,
+        "drop_pct_1dp": 21.9,
+        "drop_pct_2dp": 21.95
+      },
+      "description": "EWD's worst month in the last 5 years: -21.9% (2022-02-03 to 2022-03-07)"
+    },
+    {
+      "kind": "country",
+      "key": "IT",
+      "proxy": "EWI",
+      "name": "iShares MSCI Italy ETF",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2022-02-03",
+        "window_end": "2022-03-07",
+        "start_price": 27.807611,
+        "end_price": 21.733131,
+        "return": -0.218447,
+        "drop": 0.218447,
+        "drop_4dp": 0.2184,
+        "drop_pct_1dp": 21.8,
+        "drop_pct_2dp": 21.84
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2022-02-03",
+        "window_end": "2022-03-07",
+        "drop": 0.218447,
+        "drop_pct_1dp": 21.8,
+        "drop_pct_2dp": 21.84
+      },
+      "description": "EWI's worst month in the last 5 years: -21.8% (2022-02-03 to 2022-03-07)"
+    },
+    {
+      "kind": "country",
+      "key": "ES",
+      "proxy": "EWP",
+      "name": "iShares MSCI Spain ETF",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2022-02-03",
+        "window_end": "2022-03-07",
+        "start_price": 23.361048,
+        "end_price": 19.519688,
+        "return": -0.164434,
+        "drop": 0.164434,
+        "drop_4dp": 0.1644,
+        "drop_pct_1dp": 16.4,
+        "drop_pct_2dp": 16.44
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2022-02-03",
+        "window_end": "2022-03-07",
+        "drop": 0.164435,
+        "drop_pct_1dp": 16.4,
+        "drop_pct_2dp": 16.44
+      },
+      "description": "EWP's worst month in the last 5 years: -16.4% (2022-02-03 to 2022-03-07)"
+    },
+    {
+      "kind": "country",
+      "key": "BR",
+      "proxy": "EWZ",
+      "name": "iShares MSCI Brazil ETF",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2026-10-05",
+        "window_end": "2026-11-03",
+        "start_price": 42.98,
+        "end_price": 31.73,
+        "return": -0.26175,
+        "drop": 0.26175,
+        "drop_4dp": 0.2617,
+        "drop_pct_1dp": 26.2,
+        "drop_pct_2dp": 26.17
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2026-10-05",
+        "window_end": "2026-11-03",
+        "drop": 0.26175,
+        "drop_pct_1dp": 26.2,
+        "drop_pct_2dp": 26.17
+      },
+      "description": "EWZ's worst month in the last 5 years: -26.2% (2026-10-05 to 2026-11-03)"
+    },
+    {
+      "kind": "country",
+      "key": "MX",
+      "proxy": "EWW",
+      "name": "iShares MSCI Mexico ETF",
+      "adj_close_worst_21d": {
+        "window_days": 21,
+        "trading_days": 1255,
+        "series_start": "2021-11-08",
+        "series_end": "2026-11-06",
+        "window_start": "2024-05-16",
+        "window_end": "2024-06-17",
+        "start_price": 62.716133,
+        "end_price": 51.047703,
+        "return": -0.186051,
+        "drop": 0.186051,
+        "drop_4dp": 0.1861,
+        "drop_pct_1dp": 18.6,
+        "drop_pct_2dp": 18.61
+      },
+      "unadjusted_close_worst_21d": {
+        "window_start": "2024-05-16",
+        "window_end": "2024-06-17",
+        "drop": 0.19275,
+        "drop_pct_1dp": 19.3,
+        "drop_pct_2dp": 19.28
+      },
+      "description": "EWW's worst month in the last 5 years: -18.6% (2024-05-16 to 2024-06-17)"
+    }
+  ]
+}
