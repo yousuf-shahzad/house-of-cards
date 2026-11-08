@@ -52,7 +52,8 @@ function canonicalSupplierTarget(
 /**
  * Extract up to `limit` (default 15) supplier shock options from a completed `DependencyResult`.
  *
- * - Considers verified `supplier`, `foundry`, `contract_manufacturer`, and `key_input` edges.
+ * - Considers verified `supplier`, `foundry`, `contract_manufacturer`, and `key_input` edges
+ *   whose target is a company (`target_kind === "company"`): no countries, regions or materials.
  * - Unions dependent portfolio companies per supplier target so no company is double-counted.
  * - `companyKeys` = sorted dependent company keys + the supplier's own key if held in the portfolio.
  * - Sorted descending by dependent portfolio weight, then dependent count, then key.
@@ -85,6 +86,9 @@ export function supplierOptions(
 
   for (const edge of result.edges) {
     if (!SUPPLIER_EDGE_TYPES.has(edge.edge_type)) continue;
+    // Only a company can "fail" as a supplier. Key inputs also point at countries, regions,
+    // materials and facilities ("China", "rare earths"); countries have their own tab.
+    if (edge.target_kind !== "company") continue;
     if (edge.interpretation?.status === "rejected") continue;
 
     const srcKey = edge.source_company_key?.trim();

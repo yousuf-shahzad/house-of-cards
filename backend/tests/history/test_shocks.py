@@ -123,7 +123,7 @@ def test_falls_back_to_a_simulated_ten_percent(kind, key, provider, needle):
     assert basis.drop == DEFAULT_SHOCK_DROP
     assert basis.proxy is None
     assert needle in basis.description
-    assert "10%" in basis.description
+    assert DEFAULT_SHOCK_DROP == 0.20 and "20%" in basis.description
 
 
 def test_user_chosen_drop_wins():

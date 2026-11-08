@@ -306,7 +306,7 @@ It returns a `StressResponse`. The same 422/503 analysis errors as `/api/compare
 - **Historical** when a proxy ETF has price history: the worst 21-trading-day return in the last 5 years of daily adjusted closes.
   - Sector proxies are the SPDR sector ETFs: information_technology XLK, financials XLF, health_care XLV, consumer_discretionary XLY, communication_services XLC, industrials XLI, consumer_staples XLP, energy XLE, utilities XLU, real_estate XLRE, materials XLB.
   - Country proxies are iShares MSCI country ETFs (e.g. TW EWT, CN MCHI, JP EWJ, KR EWY); US uses SPY.
-- **Otherwise simulated:** `DEFAULT_SHOCK_DROP` = 10%, with `source="simulated"` and a description saying why.
+- **Otherwise simulated:** `DEFAULT_SHOCK_DROP` = 20% (raised from 10% at Gawyn's request, 2026-11-08), with `source="simulated"` and a description saying why.
 - `supplier` is always simulated unless `drop` is given.
 
 **Each side (`StressSide`).**

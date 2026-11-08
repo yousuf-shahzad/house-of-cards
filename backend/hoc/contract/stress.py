@@ -4,7 +4,7 @@
 `basis.drop` of its value:
 - the drop comes from history when we can get it: the proxy ETF's worst one-month fall
   (SHOCK_WINDOW_DAYS trading days) in the last HISTORY_YEARS years of daily adjusted closes;
-- otherwise it is a simulated DEFAULT_SHOCK_DROP (10%) fall, and `basis.source` says so.
+- otherwise it is a simulated DEFAULT_SHOCK_DROP (20%) fall, and `basis.source` says so.
 
 The API returns fractions of the portfolio. The UI turns them into money: before = the portfolio's
 value (shares mode) or a notional $10,000 (percent mode), after = before * (1 - loss_fraction).
@@ -27,7 +27,7 @@ that rely on it in the dependencies result)."""
 
 ShockSource = Literal["historical", "simulated"]
 
-DEFAULT_SHOCK_DROP = 0.10
+DEFAULT_SHOCK_DROP = 0.20
 HISTORY_YEARS = 5
 SHOCK_WINDOW_DAYS = 21
 MAX_AFFECTED_LISTED = 10
@@ -68,7 +68,7 @@ class ShockBasis(_Model):
     """The worst window's first and last close (historical only)."""
     description: str
     """One plain-English line, e.g. "XLK's worst month in the last 5 years: -19.3% (2022-08-16 to
-    2022-09-15)" or "No price history for this group, so we simulated a 10% fall"."""
+    2022-09-15)" or "No price history for this group, so we simulated a 20% fall"."""
 
 
 class AffectedCompany(_Model):

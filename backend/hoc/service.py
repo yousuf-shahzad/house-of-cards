@@ -127,7 +127,7 @@ class EtfService:
         """Lazy proposer, replaceable in tests. It never uses dependency jobs or the research runner."""
         self.history = HistoricalShocks(None)
         """FIX-63: where a shock's historical drop comes from. Production: HistoricalShocks(YahooHistory(http));
-        without a provider every shock is the simulated 10% fall, so tests never touch the network."""
+        without a provider every shock is the simulated DEFAULT_SHOCK_DROP (20%) fall, so tests never touch the network."""
 
     @classmethod
     def from_settings(cls, settings) -> EtfService:
@@ -185,7 +185,7 @@ class EtfService:
 
     def _shock_basis(self, shock: ShockSpec) -> ShockBasis:
         """The fall each affected company takes: the user's override, else history (hoc.history), else a
-        simulated 10%. A supplier never has its own history, so it never asks the provider."""
+        simulated DEFAULT_SHOCK_DROP (20%). A supplier never has its own history, so it never asks the provider."""
         if shock.drop is not None:
             return simulated_basis(f"You chose a {shock.drop:.0%} fall.", drop=shock.drop)
         if shock.kind == "supplier":

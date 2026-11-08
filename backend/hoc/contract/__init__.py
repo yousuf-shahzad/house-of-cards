@@ -31,20 +31,6 @@ from .api import (
     TopShared,
 )
 from .compare import CompareRequest, CompareResponse, ConcentrationDelta, MetricDelta
-from .stress import (
-    DEFAULT_SHOCK_DROP,
-    HISTORY_YEARS,
-    MAX_AFFECTED_LISTED,
-    SHOCK_WINDOW_DAYS,
-    AffectedCompany,
-    ShockBasis,
-    ShockKind,
-    ShockSource,
-    ShockSpec,
-    StressRequest,
-    StressResponse,
-    StressSide,
-)
 from .dependencies import (
     DEFAULT_RESEARCH_ITEMS,
     DEFAULT_TOP_N,
@@ -87,6 +73,20 @@ from .errors import (
 from .holdings import EtfFailure, EtfHoldings, ExcludedLine, NormalisedHolding, Notice, SourceAttempt
 from .ideas import ChangeIdea, ChangeIdeasRequest, ChangeIdeasResponse, RejectedIdeaProposal
 from .raw import PriceQuote, RawEtfHoldings, RawHolding, SecurityInfo
+from .stress import (
+    DEFAULT_SHOCK_DROP,
+    HISTORY_YEARS,
+    MAX_AFFECTED_LISTED,
+    SHOCK_WINDOW_DAYS,
+    AffectedCompany,
+    ShockBasis,
+    ShockKind,
+    ShockSource,
+    ShockSpec,
+    StressRequest,
+    StressResponse,
+    StressSide,
+)
 from .units import (
     ALLOCATION_TOLERANCE,
     EXCLUDED_ASSET_CLASSES,
