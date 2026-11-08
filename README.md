@@ -9,6 +9,15 @@ Version 2 adds two things: you can enter **shares** instead of percentages, and 
 reads your largest companies' SEC annual reports with AI sub-agents to show who they depend on (suppliers,
 foundries, customers, facilities), keeping only facts quoted word for word from the filings.
 
+Version 3 turns the dependency graph into a decision and verification workflow: **Compare** tests a
+before/after ETF swap against cached filings in one click (no new AI calls), **Relationship importance**
+scores every edge (`critical` / `high` / `medium` / `low`) and computes `critical.*` exposure, **Interpretation
+checks** (rules + an independent Flash judge on ±300 chars of filing context) catch negated, competitor or
+tentative mentions, **Coverage reporting** accounts for 100% of portfolio weight across five buckets plus
+per-ETF verified shares and plain-English gaps, **Investigate gaps** runs a bounded multi-step agentic
+research loop over SEC filings, and an offline/live **Eval harness** measures precision and recall against an
+adjudicated 10-company gold benchmark.
+
 This is a proof of concept, not investment advice, and it does not trade or simulate risk.
 
 ## What it shows
@@ -26,11 +35,21 @@ This is a proof of concept, not investment advice, and it does not trade or simu
 - **Network**: each ETF linked to the largest companies it gives you.
 - **Risk & data**: top-5 and top-10 concentration, the effective number of companies, sector allocation,
   how much of the portfolio the data covers, each fund's source and disclosure date, and any data gaps.
-- **Dependencies** (v2): **Find dependencies** takes your 15 largest company exposures, fetches each one's
+- **Dependencies** (v2/v3): **Find dependencies** takes your 15 largest company exposures, fetches each one's
   latest SEC 10-K or 20-F, and shows a supplier/customer graph, the portfolio weight that depends on each
-  supplier (e.g. "12.39% of your portfolio depends on TSMC, through 4 companies"), facility concentration by
-  country, single points of failure, and an AI synthesis of critical flaws and diversification ideas. Every
-  edge opens its evidence: the verbatim quote, the section, the form and filing date, and a link to the filing.
+  supplier (e.g. "12.39% of your portfolio depends on TSMC, through 4 companies"), **critical dependency**
+  exposure (`critical.*`), facility concentration by country, single points of failure, a 5-bucket **coverage
+  breakdown** (summing to 100% of the portfolio, with per-ETF verified shares and plain-English coverage gaps),
+  and an AI synthesis of critical flaws and diversification ideas. Every edge carries a deterministic
+  **importance tier** (`critical`, `high`, `medium`, `low`) and an **interpretation check** (`confirmed` or
+  `flagged`), and opens its evidence: the verbatim quote, the section, the form and filing date, the
+  importance reasons, and a link to the filing. Clicking **Investigate gaps** runs a bounded multi-step
+  agentic research loop across SEC filings to follow up on flagged edges, unnamed customers, single-source
+  bottlenecks, and zero-disclosure holdings.
+- **Compare** (v3): edit a candidate **Scenario** (in % or shares) alongside your current portfolio and press
+  **Compare** to see which supplier, critical, and country dependencies go down or up (e.g. swapping 15 pts of
+  QQQ + 15 pts of XLK into 30% VTV cuts TSMC dependency from **12.39% to 4.69%, -7.71 pts**, and top-10
+  concentration from **37.14% to 24.98%**), using cached verified extractions with zero Gemini calls.
 
 Every number comes from deterministic Python on the backend. The only LLM use is the Dependencies page,
 and even there the model never produces a number or a company match (see "How it works").
@@ -132,8 +151,35 @@ setting is missing.
   verified edges is dropped.
 - **Reverse links.** EDGAR full-text search finds other companies' current annual reports that name a
   holding (e.g. Qualcomm's 10-K naming Samsung as a foundry), so companies without SEC filings still appear.
+- **Interpretation verification (v3 `V-INT`).** Verbatim quotes can still be misread (a competitor list, a
+  negated sentence, or a tentative deal). Python rules scan the quote and ±300 characters of surrounding
+  filing text for `competitor_mention`, `negated`, `hypothetical`, `direction_mismatch`, `generic_reference`,
+  and `subject_mismatch`, then an independent `gemini-3.8-flash` judge (`hoc-v3-judge-1`) reviews every
+  rules-flagged edge plus a deterministic 20% sample of unflagged edges. Contradicted or competitor edges are
+  removed and counted in `interpretation_rejected`; uncertain edges stay `flagged` (e.g. `Nvidia -> OpenAI` on
+  `us-core-tilt`: *"agreement being finalized... no assurance"*).
+- **Relationship importance (v3 `R-IMP`).** Python deterministically scores every edge in `[0, 1]` and assigns
+  a tier (`critical >= 0.8`, `high >= 0.6`, `medium >= 0.4`, `low < 0.4`) from the relationship type, customer
+  revenue share (`>=20%` critical, `10-20%` high), facility role (production vs HQ/office/R&D), and verbatim
+  concentration cues (`sole`, `substantially all`, `one of several`). Any edge marked `flagged` by V-INT is
+  capped at `medium` so tentative disclosures never inflate `critical.<key>` portfolio exposure.
+- **Honest coverage reporting (v3 `C-COV`).** Python partitions 100% of portfolio weight into five mutually
+  exclusive buckets (`verified`, `no_disclosures`, `no_sec_filing`, `not_analysed`, `outside_top_n`), computes
+  each ETF's verified share (`by_etf`), lists the top 10 unanalysed companies outside the cutoff, and generates
+  plain-English `CoverageGap`s (`outside_top_n`, `unnamed_customers`, `non_sec_counterparties`, `old_filings`,
+  `region_only_facilities`).
+- **Agentic research loop (v3 `A-RES`).** Clicking **Investigate gaps** (`POST /api/dependencies/{job_id}/research`)
+  picks up to 6 open questions from the dependency result and runs a bounded tool loop (`search_filings`,
+  `read_section`, `find_in_filing`, `conclude`; at most 4 steps per item). Every candidate edge proposed by the
+  research agent passes through the exact same `verify_quote`, `V-INT` interpretation check, and `R-IMP`
+  importance scoring before merging into the graph and recomputing metrics.
+- **Before/after scenario comparison (v3 `X-API` / `X-UI`).** `POST /api/compare` runs look-through analyses on
+  both the baseline and candidate portfolios, loads cached verified edges for the union of their top-N
+  holdings, re-resolves counterparty keys per portfolio, and computes before/after deltas for supplier
+  dependencies (`dep.*`), critical dependencies (`critical.*`), facility countries (`facility.*`), and
+  concentration without making any SEC or Gemini calls.
 - Filings and AI results are cached on disk (filings by accession, forever; extractions per company,
-  filing and prompt version), so a repeat click replays without new AI calls.
+  filing and prompt version; judge verdicts per edge), so a repeat click replays without new AI calls.
 
 The exact definitions, identity rules, API and error codes are in
 [`docs/hoc/CONTRACT.md`](docs/hoc/CONTRACT.md). The backend is laid out so a corporate dependency graph can
@@ -155,7 +201,7 @@ repository: holdings are downloaded at runtime and cached locally. The only data
 labelled synthetic test data (`backend/tests/fixtures/synthetic/`, `frontend/api/__fixtures__/`).
 Data-source research notes are in [`docs/hoc/research/`](docs/hoc/research/).
 
-## Tests
+## Tests & Evaluation
 
 ```bash
 cd backend && uv run pytest              # offline: the network is blocked in tests
@@ -163,9 +209,31 @@ cd backend && HOC_LIVE=1 uv run pytest   # also runs live smoke tests against th
 cd frontend && npm run build             # type-checks and builds the UI
 ```
 
-The tests cover weighted exposure, duplicate and overlapping holdings, share-class merging, allocation
-validation, weighted overlap, incomplete and missing data, the source adapters' parsing, and the API
-contract. They use synthetic fixtures only.
+### Gold Extraction & Verification Benchmark (v3 `E-GOLD` / `E-RUN`)
+
+House of Cards includes an adjudicated benchmark of **10 held-out SEC 10-K filings** outside the default demo
+top-15 (`NKE`, `F`, `GM`, `BA`, `SWKS`, `QRVO`, `GLW`, `PFE`, `DE`, `SBUX`) in
+[`backend/tests/eval/gold/`](backend/tests/eval/gold/) (documented in
+[`docs/hoc/eval/ADJUDICATION.md`](docs/hoc/eval/ADJUDICATION.md)): **115 core** relationships, **97 extended**
+relationships, and **79 hard negatives** (competitor lists, negated claims, hypotheticals, generic groups).
+
+Run the evaluation harness from `backend/`:
+
+```bash
+# Offline (deterministic verifier + V-INT rules + R-IMP against cached/fixture predictions; zero API calls)
+cd backend && uv run hoc eval
+# or: uv run python -m hoc.cli eval
+
+# Live (runs Gemini extractor + V-INT Flash judge on the 10 held-out 10-Ks and writes docs/hoc/eval/RESULTS.md)
+cd backend && uv run hoc eval --live
+```
+
+- **Benchmark results (`docs/hoc/eval/RESULTS.md`):** `TODO (pending E-RUN --live report: precision, core recall, quote-verification survival rate, and hard-negative rejection rate before vs after V-INT)`.
+
+The unit tests cover weighted exposure, duplicate and overlapping holdings, share-class merging, allocation
+validation, weighted overlap, incomplete and missing data, the source adapters' parsing, relationship
+importance, interpretation rules and judge decisions, 5-bucket coverage reporting, portfolio comparison, and
+the API contract.
 
 ## Known limits
 
@@ -176,14 +244,19 @@ contract. They use synthetic fixtures only.
 - Company sectors come from TickerInside's per-stock files for each fund's heaviest ~150 holdings; local
   non-US listings have no such file, so they show as Unknown. Portfolio sector allocation falls back to each
   fund's own reported breakdown when line-level sectors cover less than 95% of a fund.
-- **Dependencies only see what companies disclose.** In the live us-core-tilt run, 14 of the top 15 companies
-  had a 10-K or 20-F. Samsung has no SEC filing, so it appears only through other filers' links (e.g.
-  Qualcomm's 10-K). About 45% of the portfolio is covered by verified disclosures; the rest is not analysed.
+- **Dependencies only see what companies disclose.** In the live `us-core-tilt` run (top 15 holdings), 13
+  companies (`40.43%` of portfolio weight) have verified dependencies, 1 (`1.50%`, Meta) has a 10-K that names
+  no counterparties, 1 (`1.43%`, Samsung) has no SEC filing of its own and appears through reverse links from
+  other filers, and `56.64%` sits outside the top-15 cutoff (the coverage bar and per-ETF verified shares —
+  **XLK 63% / QQQ 52% / IVV 37% / EEM 15%** — show this directly on screen).
 - **Big customers are usually anonymous** in filings ("one customer was 22% of revenue"), so they show as
-  undisclosed customers, not named companies. Some large companies (Apple, Microsoft) name no suppliers at all.
-- **Annual reports can be up to a year old**, so every edge shows its form and filing date.
-- **Named sites aren't mapped to countries.** Facility concentration by country counts only facilities a filing
-  states by country; a named site (e.g. Gigafactory Shanghai) is listed under its company but isn't in China's %.
+  undisclosed customers (`unnamed_customers` coverage gap), not named companies.
+- **Annual reports can be up to a year old**, so every edge shows its form and filing date, and filings older
+  than 15 months trigger an `old_filings` coverage gap.
+- **Region-only facility disclosures stay unplaced.** Named sites, US states, Canadian provinces, major cities,
+  and single-country evidence quotes resolve deterministically to ISO-2 countries (`188 / 189` cached facility
+  edges across the example portfolios), while broad macro-region disclosures (e.g. `"Asia"`) are counted in
+  `facility.unplaced.count` and flagged under `region_only_facilities` rather than assigned to a guessed country.
 - **A first, uncached Find dependencies click takes about 2 minutes** (about 15 filings, the AI calls and the
   reverse search). Run it once before a demo; after that it replays from the cache.
 - **Share prices are exchange closes**, not NAV, and only USD-priced ETFs can be valued by shares; others
