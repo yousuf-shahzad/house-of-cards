@@ -29,6 +29,7 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 ## New
 
 <!-- Add new problems below this line, one per line. -->
+- BUG: Five-step guide (`#/guide`) Steps 1–3 "Learn more in the full …" links only change `window.location.hash` without switching mode to Full view (`openExpertPage`), so after FIX-30 (#221) they land on the Simple page instead of the Full view — repro: open `#/guide`, click "Learn more in the full Portfolio builder" on Step 1 (or Step 2 / Step 3) — where: `frontend/app/pages/guide/copy.ts:95`, `steps/pick.tsx:195`, `steps/own.tsx:127`, `steps/spread.tsx:151` (Bekarys's Gemini)
 
 - UX: Top bar & Simple navigation — "Simple view / Full view" switch label names both modes at once without showing which one is active, and Simple pages show both a "Show full detail on this page" button and an "Open the five-step guide" button at the bottom — suggest: label the switch "Full view" (or highlight the active mode) and keep a single clear footer action per Simple page (Yousuf's Gemini)
 - UX: Simple Dependencies & Guide Step 4 — Simple Dependencies embeds Guide Step 4 ("RisksStep"), creating duplicate "Learn more" + "See every link and its evidence" buttons at the bottom, and expanded evidence shows raw section codes ("SEC 10-K, 1A") and "Why this tier:" — suggest: hide Step 4's "Learn more" button when embedded in Simple Dependencies, format sections as "Item 1A", and replace "Why this tier:" with "Why this matters:" (Yousuf's Gemini)
