@@ -76,7 +76,16 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--json", action="store_true", help="print the full AnalysisResponse JSON")
     warm = sub.add_parser("warm", help="prefetch reference data and example ETFs into the cache")
     warm.add_argument("--example", default="us-core-tilt")
+    from hoc.eval import build_eval_arg_parser, run_eval_from_args
+
+    build_eval_arg_parser(sub.add_parser(
+        "eval", help="score dependency extraction against the held-out answer key (offline replay by default)",
+        description="House of Cards v3 unseen-data evaluation (E-RUN). --replay (default) scores the recorded "
+                    "predictions offline with no network or Gemini calls; --live re-extracts the 10 held-out "
+                    "10-Ks (needs GEMINI_API_KEY and HOC_SEC_CONTACT) and records them."))
     args = parser.parse_args(argv)
+    if args.command == "eval":
+        return run_eval_from_args(args)
 
     try:
         if args.command == "warm":
