@@ -45,6 +45,8 @@ from hoc.contract import (
     ResearchJob,
     ResearchRequest,
     SourceName,
+    StressRequest,
+    StressResponse,
     ValuationRequest,
     ValuationResponse,
 )
@@ -171,6 +173,13 @@ def compare(service: Service, request: CompareRequest) -> CompareResponse:
     """Before/after comparison of two portfolios. Cache-only: never fetches a filing or calls Gemini; status
     is 'partial' when some of the candidate's top companies have no cached extraction yet."""
     return service.compare(request)
+
+
+@router.post("/stress", response_model=StressResponse, responses={k: ERRORS[k] for k in (422, 503)})
+def stress(service: Service, request: StressRequest) -> StressResponse:
+    """FIX-63 failure simulator: one industry, country or supplier fails; the share of each portfolio's value
+    lost. Same 422/503 analysis errors as /api/compare; no filing fetch or model call."""
+    return service.stress(request)
 
 
 @router.post("/change-ideas", response_model=ChangeIdeasResponse,
