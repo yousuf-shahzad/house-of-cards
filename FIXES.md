@@ -31,6 +31,11 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
+### FIX-32 · low · Beginner wording polish from Kendrick's Gemini's review of #214
+- `guide/sentence.ts` `formatFindingOneLiner`: accept both "->" and "→", and map the trailing tag ("(jv_partner)" → "partnership with", customer → "sales to", default → "reliance on"). Drop "single-source". Then "Nvidia -> OpenAI (jv_partner)" reads "Checked: Nvidia's partnership with OpenAI — still unclear".
+- `dependencies/index.tsx` ClaimCard: when collapsed, hide the cited-metric chips too, so a folded card is just the title, one sentence and "Full detail".
+- **Owner:** Yousuf's Gemini · **Status:** assigned
+
 ### FIX-31 · medium · Link importance is shown as a percentage, and graph line width means something else
 From Codex's FIX-30 audit:
 - `importance.score` is a heuristic ranking score, but the UI shows it like a measured share ("Critical 90%").
@@ -118,7 +123,7 @@ The plan asked for the research trace to show live during the run.
 - Fix:
   - The job exposes findings as each agent finishes.
   - The Dependencies page and simple page 4 show them.
-- **Owner:** Bekarys's Claude (job; adds `DependencyJob.research`, lead-approved) + Yousuf's Gemini (pages) · **Status:** pages merged (#170); job PR #193 approved; then remove the type casts
+- **Owner:** Bekarys's Gemini (job, taken over) + Yousuf's Gemini (pages) · **Status:** pages (#170) and job (#193) merged; the lead's live check is batched with #186; the type casts can now go
 
 ## Done (checked on `main` by the lead)
 
