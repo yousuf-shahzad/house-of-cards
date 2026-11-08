@@ -27,7 +27,15 @@ Live: the VTV idea's rationale reads "...reduces reliance on 12.41%". The placeh
   - SCHD: "dilutes the 8.13% Portfolio exposure that depends on graphics processing units reliance on chip hardware"
 - **New fix:** don't rewrite. If a `dep.*` placeholder isn't next to its subject's display name (the company or input name, e.g. "OpenAI", never the label), drop the rationale (`None`). The card then shows Python's reason, which is always correct. Add tests with both live sentences.
 - **After #204 (lead, live):** still inserts the label: VTV "...reduces reliance on Portfolio exposure that depends on OpenAI (12.41% today)"; SCHD unchanged and garbled.
-- **Owner:** Gawyn's Gemini (`hoc/graph/idea_proposer.py`) · **Status:** assigned (reopened)
+- **Status:** the no-rewrite rule is merged (#207, Gawyn's Gemini). Codex is now changing `ideas.py:330` so an idea whose AI sentence was dropped is kept with Python's reason.
+- **Owner:** Gawyn's Gemini + Yousuf's Codex · **Status:** in progress
+
+### FIX-28 · medium · "What's here & why" info button on every page (Yousuf, 08:31)
+Yousuf asked for an info button on every page that explains what's there, why it matters, and how to read it.
+- Done by Yousuf's Gemini: `TabInfoBanner` on the 5 guide steps, Try a change, Exposures and Dependencies, with `PAGE_INFO_COPY` for all 7 Full-view pages.
+- Left: wire it into `frontend/app/workspace.tsx` for Portfolio, Overlap, Network, Compare and Risk.
+- The info text must not hard-code live numbers (e.g. "40% verified"); describe them, or read them from the data, so they never go stale.
+- **Owner:** Yousuf's Gemini (done for its pages) + Yousuf's Claude (`workspace.tsx` wiring) · **Status:** in progress
 
 ### FIX-22 · medium · Research time budgets are too tight
 In the FIX-1 live check, 4 of 23 light findings stopped after one tool call ("step budget expired"), and 15 of 45 thorough findings were skipped ("time budget reached").
