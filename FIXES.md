@@ -35,13 +35,10 @@ Seen by Bekarys's Gemini on NKE: the agent added a new link "Three largest custo
 - Fix: when merging an agent's new links, skip an `unnamed_customer` link whose source, link type and normalised quote already match an existing link. Treat groups like "three largest customers" as not a link.
 - **Owner:** Kendrick's Gemini (fold into A1-fix) · **Status:** assigned
 
-### FIX-20 · high · Compare overstates drops: each side counts a different set of companies
-Found by the lead in the FIX-17 live check. Compare (Try a change and change ideas) measures each portfolio on its own top-15 companies. A TSMC-dependent company that falls out of the new portfolio's top 15 (e.g. Intel after adding 20% XLU) stops counting, so the drop looks bigger than it is.
-- **Adding 20% XLU:** shows TSMC 12.5% → 9.0%. With a 30-company window it is 9.9%, about what pure dilution gives.
-- **The XLK → VTV swap in README, DEMO and the pitch deck:** shows "12.39% → 4.69%". With a 30-company window it is 12.89% → 6.30%.
-- Fix: measure both sides on the same company set, the union of both portfolios' top-N companies, so a company counts on both sides at its own weight. Unanalysed companies stay "not checked yet". Add a test where a dependent company drops out of one side's top N.
-- Then update the 12.39% → 4.69% figure everywhere it's quoted (README, DEMO, PITCH_DECK).
-- **Owner:** Yousuf's Codex (`portfolio/compare.py`, `portfolio/ideas.py`), then Gawyn's Gemini (docs numbers) · **Status:** PR #183 approved after the lead's live A/B (+20% XLU: 9.92%, exact dilution; swap: 12.39% → 6.30%); then the docs change to "12.39% → 6.30% (−6.10 pts)"
+### FIX-21 · medium · Docs quote the old swap figure
+After FIX-20, the XLK → VTV swap is 12.39% → 6.30% (−6.10 pts), not 4.69% (−7.71 pts).
+- Fix: update README.md, docs/hoc/DEMO.md and PITCH_DECK.md.
+- **Owner:** Gawyn's Gemini · **Status:** assigned
 
 ### FIX-17 · high · Change ideas: AI proposes, Python verifies (Gawyn, 07:08)
 Gawyn wants concrete ideas ("add this ETF to help fix this diversification issue") on screen 5 and in Try a change, in both views. **The AI proposes the changes and Python verifies them**, the same pattern as the AI summaries.
@@ -112,6 +109,7 @@ The plan asked for the research trace to show live during the run.
 
 ## Done (checked on `main` by the lead)
 
+- FIX-20 compare measures both sides on the same companies (+20% XLU: 9.92%, exact dilution; swap: 12.39% → 6.30%) — #183
 - FIX-7 README and DEMO cover v3.1 (shares default, simple view, Try a change, change ideas "coming") with verified numbers — #132. The FIX-8 numbers follow in a small PR from Gawyn's Gemini.
 - FIX-18 progress bar never goes down: the total is set up front and only lowered (live: 106 → 100 → 65; 0% → 15% → 98% → 100%), and the pages never show a lower % — #172, #174
 - FIX-16 screen 2 names the most overlapping pair (QQQ and XLK, 50.11%) — #174
