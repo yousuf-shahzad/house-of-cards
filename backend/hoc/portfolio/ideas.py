@@ -327,8 +327,9 @@ def rank_change_ideas(
                 proposal.rationale_template, metrics_by_id=issue_facts,
                 allowed_tickers=allowed_tickers, allowed_entities=allowed_entities,
             )
-            if error is not None or not rationale:
-                reject(_explain_rejection(error or "empty_rationale"))
+            # A dropped sentence is valid: the card can display Python's reason.
+            if error is not None:
+                reject(_explain_rejection(error))
                 continue
             if (not proposal.title.strip() or len(proposal.title.split()) > 8
                     or any(c.isdigit() for c in proposal.title)):

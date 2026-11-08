@@ -3,7 +3,7 @@ from dataclasses import replace
 
 import pytest
 
-from hoc.contract import PortfolioItem, PortfolioRequest, Sector
+from hoc.contract import ChangeIdeasRequest, PortfolioItem, PortfolioRequest, Sector
 from hoc.graph.idea_proposer import (
     EtfUniverseEntry,
     IdeaProposerResult,
@@ -13,6 +13,7 @@ from hoc.graph.idea_proposer import (
 from hoc.portfolio.analyse import analyse
 from hoc.portfolio.ideas import (
     baseline_idea_metrics,
+    build_idea_scenarios,
     build_proposal_scenarios,
     rank_change_ideas,
     verify_change_ideas,
@@ -65,6 +66,7 @@ def test_ai_add_and_swap_use_exact_allocations_and_python_rendered_rationale():
     {'swap_from': 'ZZBASE'}, {'issue_id': 'invented'}, {'metric_id': 'dep.invented'},
     {'rationale_template': 'This falls to 5%.'}, {'rationale_template': 'Use {{metric:invented}}.'},
     {'rationale_template': 'Adding ZZADD reduces reliance on Cyberdyne.'},
+    {'rationale_template': ''}, {'rationale_template': '   '},
     {'title': 'Add 20 percent'}, {'title': 'Add MSFT'},
 ])
 def test_invalid_proposals_are_explained_and_fall_back_to_rules(updates):
@@ -73,6 +75,52 @@ def test_invalid_proposals_are_explained_and_fall_back_to_rules(updates):
     result = verify(request, baseline, loaded, scenarios, [proposal])
     assert result.rejected_proposals and result.rejected_proposals[0].reason
     assert result.ideas and all(i.proposed_by == 'rules' for i in result.ideas)
+
+
+@pytest.mark.parametrize('ticker,target,action,addresses,template', [
+    ('VTV', 'OpenAI', 'swap', 'top_sector',
+     ('Moving part of QQQ into large value companies led by financials cuts the '
+      '{{metric:top_sector}} technology weight and reduces reliance on {{metric:dependency}}.')),
+    ('SCHD', 'graphics processing units', 'add', 'dependency',
+     ('Adding dividend-paying healthcare and consumer companies dilutes the '
+      '{{metric:dependency}} reliance on chip hardware and cuts the {{metric:top_sector}} technology share.')),
+])
+def test_live_rationale_drops_keep_verified_ai_ideas_with_python_reason(ticker, target, action,
+                                                                     addresses, template):
+    base = fund('QQQ', [.51, .49], [Sector.information_technology, Sector.health_care])
+    candidate = fund(ticker, [.01] * 100)
+    loaded = {'QQQ': base, ticker: candidate}
+    request = ChangeIdeasRequest(holdings=[PortfolioItem(ticker='QQQ', allocation=1)], top_n=30)
+    baseline = analyse(PortfolioRequest(holdings=request.holdings), loaded, {},
+                       today=base.as_of, generated_at=base.retrieved_at)
+    scenarios = build_idea_scenarios(request, baseline, loaded, [ticker])
+    cache = {holding.company_key: [] for etf in loaded.values() for holding in etf.holdings}
+    cache['QQQ:0'] = [edge(source='QQQ:0', target=target, target_key=None)]
+    dependency = next(f for f in baseline_idea_metrics(request, baseline, cache)
+                      if f.metric_id.startswith('dep.') and f.unit == 'fraction')
+    proposal = proposal_for(
+        request, baseline, loaded, cache, ticker=ticker, action=action,
+        swap_from='QQQ' if action == 'swap' else None, title=f'Consider {ticker} for broader exposure',
+        issue_id=dependency.metric_id if addresses == 'dependency' else 'top_sector',
+        addresses=addresses, metric_id=dependency.metric_id if addresses == 'dependency' else None,
+        rationale_template=template.replace('{{metric:dependency}}', '{{metric:' + dependency.metric_id + '}}'),
+        cited_metric_ids=('top_sector', dependency.metric_id),
+    )
+
+    result = verify(request, baseline, loaded, scenarios, [proposal], cache)
+
+    assert not result.rejected_proposals
+    assert len(result.ideas) == 1
+    idea = result.ideas[0]
+    assert (idea.ticker, idea.proposed_by, idea.action, idea.addresses) == (ticker, 'ai', action, addresses)
+    assert idea.rationale is None
+    metric = (idea.biggest_dependency_delta if addresses == 'dependency'
+              else next(d for d in idea.concentration_deltas if d.name == 'top_sector'))
+    expected_after = .408 if addresses == 'dependency' else .428
+    assert (metric.baseline, metric.candidate) == pytest.approx((.51, expected_after))
+    assert f'51.0% to {expected_after:.1%}' in idea.reason
+    assert (target if addresses == 'dependency' else 'Technology') in idea.reason
+    assert '{{' not in idea.reason
 
 
 def test_swap_cannot_move_more_than_the_source_allocation_or_exceed_etf_limit():
