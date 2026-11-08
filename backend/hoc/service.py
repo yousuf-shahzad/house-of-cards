@@ -7,11 +7,13 @@ these methods.
 
 from __future__ import annotations
 
+import json
 import logging
 import threading
 import time
 from collections.abc import Sequence
 from concurrent.futures import Future, ThreadPoolExecutor, TimeoutError
+from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 
 from hoc import __version__
@@ -56,7 +58,14 @@ from hoc.jobs import (
 from hoc.normalise.pipeline import normalise_etf
 from hoc.portfolio.analyse import analyse
 from hoc.portfolio.compare import compare_portfolios, read_cached_extractions
-from hoc.portfolio.ideas import IDEA_TICKERS, build_idea_scenarios, rank_change_ideas
+from hoc.portfolio.ideas import (
+    IDEA_TICKERS,
+    baseline_idea_metrics,
+    build_idea_scenarios,
+    build_proposal_scenarios,
+    rank_change_ideas,
+    verify_change_ideas,
+)
 from hoc.portfolio.validation import validate_request
 from hoc.portfolio.valuation import value_portfolio
 
@@ -67,6 +76,14 @@ log = logging.getLogger("hoc.service")
 IDEAS_WAIT_SECONDS = 9.0
 IDEAS_TTL_SECONDS = 60.0
 IDEAS_MAX_KEYS = 32
+IDEAS_AI_TIMEOUT_SECONDS = 90.0
+
+
+@dataclass
+class _IdeaContext:
+    baseline: AnalysisResponse
+    loaded: dict[str, EtfHoldings]
+    cached: dict[str, list[VerifiedEdge]]
 
 
 def _clock() -> float:
@@ -97,12 +114,18 @@ class EtfService:
         self._research: ResearchJobs | None = None
         self._ideas_pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="hoc-ideas")
         self._ideas: dict[tuple, tuple[float, Future]] = {}
+        self._idea_contexts: dict[tuple, _IdeaContext] = {}
+        self._idea_ai_pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="hoc-idea-proposals")
+        self._idea_ai_jobs: dict[tuple, tuple[float, Future]] = {}
+        self.idea_proposer = None
+        """Lazy proposer, replaceable in tests. It never uses dependency jobs or the research runner."""
 
     @classmethod
     def from_settings(cls, settings) -> EtfService:
         """Production wiring: DiskCache + CachedHttpClient + build_registry + TickerInsideReference."""
         from hoc.core.cache import DiskCache
         from hoc.core.http import CachedHttpClient
+        from hoc.graph.idea_proposer import IdeaProposer
         from hoc.identity.resolver import load_aliases
         from hoc.research import AgenticResearchRunner
         from hoc.sources.registry import build_registry
@@ -111,6 +134,7 @@ class EtfService:
 
         http = CachedHttpClient(settings, DiskCache(settings.cache_dir))
         service = cls(build_registry(settings, http), TickerInsideReference(http, settings), load_aliases(), settings)
+        service.idea_proposer = IdeaProposer(http, settings)
         service.quotes = TickerInsideAdapter(http, settings)
         service.dependency_pipeline = LivePipeline.from_settings(http, settings)
         service.research_runner = AgenticResearchRunner.from_settings(http, settings)
@@ -174,6 +198,7 @@ class EtfService:
             now = _clock()
             self._ideas = {k: v for k, v in self._ideas.items()
                            if not v[1].done() or now - v[0] < IDEAS_TTL_SECONDS}
+            self._idea_contexts = {k: v for k, v in self._idea_contexts.items() if k in self._ideas}
             entry = self._ideas.get(key)
             if entry is None:
                 # Never let many distinct cold portfolios create an unbounded queue.
@@ -185,7 +210,7 @@ class EtfService:
             else:
                 future = entry[1]
         try:
-            return future.result(timeout=IDEAS_WAIT_SECONDS).model_copy(deep=True)
+            rules = future.result(timeout=IDEAS_WAIT_SECONDS).model_copy(deep=True)
         except TimeoutError:
             return ChangeIdeasResponse(status="partial", notes=[
                 "ETF data is still loading; try again shortly. Skipped candidates for this response: "
@@ -194,6 +219,7 @@ class EtfService:
             with self._locks_guard:
                 self._ideas.pop(key, None)
             raise
+        return self._with_ai_ideas(request, rules)
 
     def _compute_change_ideas(self, request: ChangeIdeasRequest) -> ChangeIdeasResponse:
         baseline = self.analyse(PortfolioRequest(holdings=request.holdings))
@@ -214,7 +240,138 @@ class EtfService:
                 notes.append(f"Skipped {ticker}: less than 95% of the fund has usable company holdings.")
         scenarios = build_idea_scenarios(request, baseline, loaded, candidates)
         cached = self._comparison_cache([baseline, *(s.analysis for s in scenarios)], request.top_n)
+        key = (tuple(sorted((h.ticker, h.allocation) for h in request.holdings)), request.top_n)
+        with self._locks_guard:
+            self._idea_contexts[key] = _IdeaContext(baseline, loaded, cached)
         return rank_change_ideas(request, baseline, scenarios, cached, aliases=self.aliases, notes=notes)
+
+    def _with_ai_ideas(self, request: ChangeIdeasRequest, rules: ChangeIdeasResponse) -> ChangeIdeasResponse:
+        """Return rules immediately while one separately bounded proposal job runs."""
+        from hoc.graph.idea_proposer import IdeaProposer, build_portfolio_issues
+
+        holdings_key = (tuple(sorted((h.ticker, h.allocation) for h in request.holdings)), request.top_n)
+        with self._locks_guard:
+            context = self._idea_contexts.get(holdings_key)
+            if self.idea_proposer is None:
+                self.idea_proposer = IdeaProposer(settings=self.settings)
+            proposer = self.idea_proposer
+        if context is None or context.baseline.coverage.missing_allocation > 0:
+            return rules
+        facts = baseline_idea_metrics(request, context.baseline, context.cached, aliases=self.aliases)
+        issues = build_portfolio_issues(context.baseline, facts)
+        # Issue facts include values: a refreshed extraction snapshot cannot share stale work.
+        key = (holdings_key, tuple((i.issue_id, i.metric_id, i.value) for i in issues),
+               self.settings.gemini_orchestrator_model, proposer.prompt_version)
+        with self._locks_guard:
+            now = _clock()
+            self._idea_ai_jobs = {k: v for k, v in self._idea_ai_jobs.items()
+                                 if not v[1].done() or now - v[0] < IDEAS_TTL_SECONDS}
+            entry = self._idea_ai_jobs.get(key)
+        if entry is None:
+            universe = self._read_idea_universe(proposer)
+            cached_result = proposer.read_cached(request.holdings, issues, universe=universe,
+                                                 analysis=context.baseline,
+                                                 edges=[e for edges in context.cached.values() for e in edges])
+            if cached_result is None and (not self.settings.gemini_api_key or self.settings.offline):
+                rules.ai_status = "missing_api_key" if not self.settings.gemini_api_key else "not_used"
+                return rules
+            rules.model = self.settings.gemini_orchestrator_model
+            rules.prompt_version = proposer.prompt_version
+            with self._locks_guard:
+                entry = self._idea_ai_jobs.get(key)
+                if entry is None:
+                    if len(self._idea_ai_jobs) >= IDEAS_MAX_KEYS:
+                        rules.ai_status = "not_used"
+                        rules.notes.append("AI ideas are busy; showing checked rules ideas.")
+                        return rules
+                    job = self._idea_ai_pool.submit(self._run_ai_ideas, key, request.model_copy(deep=True),
+                                                   context, rules.model_copy(deep=True), issues, cached_result)
+                    entry = (now, job)
+                    self._idea_ai_jobs[key] = entry
+        rules.model = self.settings.gemini_orchestrator_model
+        rules.prompt_version = proposer.prompt_version
+        future = entry[1]
+        if not future.done():
+            rules.ai_status = "pending"
+            return rules
+        try:
+            return future.result().model_copy(deep=True)
+        except Exception:
+            # Keep the completed failed entry for the memo interval; polling cannot
+            # trigger a retry storm. No raw provider exception/key goes into the API.
+            log.warning("AI change idea verification failed", exc_info=True)
+            rules.ai_status = "failed"
+            return rules
+
+    def _run_ai_ideas(self, key, *args):
+        try:
+            return self._compute_ai_ideas(*args)
+        finally:
+            # A slow Argon call gets the whole memo interval after it finishes.
+            # Submission holds this lock until its future is stored, so even an
+            # immediately completed task can safely update the matching entry.
+            with self._locks_guard:
+                entry = self._idea_ai_jobs.get(key)
+                if entry is not None:
+                    self._idea_ai_jobs[key] = (_clock(), entry[1])
+
+    def _compute_ai_ideas(self, request, context, rules, issues, cached_result):
+        """Load the universe and propose off the HTTP path, then measure on cached edges."""
+        from hoc.graph.idea_proposer import PINNED_ETF_UNIVERSE, enrich_universe_from_loaded
+
+        proposer = self.idea_proposer
+        # Cache hits only need their proposed funds. Cold proposals see the entire
+        # successfully loaded, Python-enriched universe, never invented source data.
+        wanted = ([p.ticker for p in cached_result.proposals] if cached_result is not None
+                  else [entry.ticker for entry in PINNED_ETF_UNIVERSE])
+        results = self._load_many(sorted(set(wanted) | {h.ticker for h in request.holdings}))
+        loaded = {**context.loaded, **{t: r for t, r in results.items() if isinstance(r, EtfHoldings)}}
+        notes = [f"Skipped {t}: {r.message}" for t, r in results.items() if isinstance(r, EtfFailure)]
+        universe = (self._read_idea_universe(proposer) if cached_result is not None
+                    else enrich_universe_from_loaded(loaded, PINNED_ETF_UNIVERSE, notes=notes))
+        if cached_result is None:
+            self._write_idea_universe(proposer, universe)
+        proposal_result = cached_result or proposer.propose(
+            request.holdings, issues, universe=universe, analysis=context.baseline,
+            edges=[e for edges in context.cached.values() for e in edges],
+            timeout_s=IDEAS_AI_TIMEOUT_SECONDS,
+        )
+        scenarios, _ = build_proposal_scenarios(request, context.baseline, loaded,
+                                               proposal_result.proposals, PINNED_ETF_UNIVERSE)
+        cached = (self._comparison_cache([context.baseline, *(s.analysis for s in scenarios)], request.top_n)
+                  if scenarios else context.cached)
+        response = verify_change_ideas(request, context.baseline, loaded, cached, proposal_result,
+                                       PINNED_ETF_UNIVERSE, fallback=rules, aliases=self.aliases)
+        response.notes.extend(notes)
+        if notes:
+            response.status = "partial"
+        return response
+
+    def _read_idea_universe(self, proposer):
+        """Reuse the exact Python-enriched prompt metadata across process restarts."""
+        from hoc.core.cache import DiskCache
+        from hoc.graph.idea_proposer import PINNED_ETF_UNIVERSE, EtfUniverseEntry
+
+        entry = DiskCache(self.settings.cache_dir).get("idea_universe", proposer.prompt_version)
+        if entry is not None:
+            try:
+                rows = [EtfUniverseEntry(**row) for row in json.loads(entry.body)]
+                allowed = {u.ticker for u in PINNED_ETF_UNIVERSE}
+                if rows and all(row.ticker in allowed for row in rows):
+                    return rows
+            except (ValueError, TypeError, KeyError):
+                pass
+        return PINNED_ETF_UNIVERSE
+
+    def _write_idea_universe(self, proposer, universe):
+        from hoc.core.cache import DiskCache
+
+        try:
+            DiskCache(self.settings.cache_dir).put("idea_universe", proposer.prompt_version,
+                                                   json.dumps([asdict(u) for u in universe]).encode(),
+                                                   {"status": 200, "content_type": "application/json"})
+        except OSError:
+            log.warning("Could not cache ETF idea universe metadata")
 
     @property
     def dependency_jobs(self) -> DependencyJobs:
