@@ -223,3 +223,42 @@ def test_findings_are_visible_while_the_job_runs(jobs):
     keys = [c.company_key for c in job.companies]
     assert [] in seen and [f"f-{keys[0]}"] in seen  # nothing yet, then the first agent's findings mid-run
     assert [f.finding_id for f in job.research] == [f.finding_id for f in job.result.research]
+
+
+def test_fix_22_separate_research_pool_and_start_deadlines(make_service):
+    """FIX-22: research agents run on a separate 8-worker pool with 50 s (light) and 95 s (thorough) start deadlines."""
+    from hoc.jobs import RESEARCH_BUDGET_SECONDS, RESEARCH_WORKERS
+
+    assert RESEARCH_WORKERS == 8
+    assert RESEARCH_BUDGET_SECONDS == {"light": 50.0, "thorough": 95.0}
+
+    read_tasks: list[str] = []
+    research_tasks: list[str] = []
+
+    class TrackingExecutor(InlineExecutor):
+        def __init__(self, bucket: list[str]) -> None:
+            self.bucket = bucket
+
+        def submit(self, fn, /, *args, **kwargs):
+            self.bucket.append(getattr(fn, "__name__", str(fn)))
+            return super().submit(fn, *args, **kwargs)
+
+    service, _ = make_service()
+    pipeline = AgenticPipeline()
+    service.dependency_pipeline = pipeline
+    default_jobs = DependencyJobs(service.analyse, pipeline)
+    assert getattr(default_jobs._research_workers, "_max_workers", None) == 8
+    assert default_jobs._research_workers is not default_jobs._workers
+
+    service._jobs = DependencyJobs(
+        service.analyse,
+        pipeline,
+        runner=InlineExecutor(),
+        workers=TrackingExecutor(read_tasks),
+        research_workers=TrackingExecutor(research_tasks),
+    )
+    job = submit(service, top_n=2)
+    assert job.status == "done"
+    assert read_tasks == ["_forward", "_forward"]
+    assert research_tasks == ["_research", "_research"]
+
