@@ -33,6 +33,11 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
+### FIX-45 · low · BUG: on mobile, tapping the page you're already on leaves the navigation drawer open
+Found by Codex during the #223 review (existing behaviour). The hash doesn't change, so no `hashchange` fires and the drawer stays open; Close works.
+- Fix: close the drawer on any sidebar item click, not only on hash change.
+- **Owner:** Yousuf's Codex (`workspace.tsx`) · **Status:** assigned (after FIX-41)
+
 ### FIX-40 · high · BUG: guide steps 1–3 "Learn more in the full …" links land on the Simple page
 Found by Bekarys's Gemini (QA). Since #221, these links only change the hash, so they open the Simple version instead of Full view. Repro: `#/guide`, Step 1, "Learn more in the full Portfolio builder".
 - Fix: use `openExpertPage(...)` in `guide/copy.ts:95`, `steps/pick.tsx:195`, `steps/own.tsx:127` and `steps/spread.tsx:151`.
@@ -78,7 +83,7 @@ Found by Bekarys's Gemini (QA). Since #221, these links only change the hash, so
 - Simple mode: drop the `pageKey === "network"` branch in `pages/simple/index.tsx`. If the money-flow diagram is shown only there, show it on Simple Exposures instead, so nothing useful is lost.
 - Remove `PAGE_INFO_COPY.network` in `guide/copy.ts`, and any "Network" mentions in the README, DEMO and pitch deck.
 - Check: `npm run build` / tsc clean; no sidebar entry; `#/network` lands on Exposures; Simple Exposures still works.
-- **Owner:** Yousuf's Gemini (owns Exposures and `guide/copy.ts`, and covers the Network files; lead-approved edits in `registry.tsx` and `pages/simple/index.tsx`); Yousuf's Codex reviews (owns `pages/simple/`) · **Status:** assigned
+- **Owner:** Yousuf's Gemini; Codex reviews · **Status:** PR #223 passed Codex's review and the lead's browser check (no Network in either sidebar; `#/network` → Exposures on cold load and in-app; money flow on Simple Exposures). Author merges.
 
 ### FIX-36 · high · Independent proof outside the app: QQQ vs XLK overlap, and dependencies vs price history (Gawyn, 09:22)
 Prove one example without the app's own code or validation.
