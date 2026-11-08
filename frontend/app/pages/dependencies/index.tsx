@@ -36,6 +36,7 @@ import {
   type CompanyRunStatus,
   type CompanyStatus,
   type InsightClaim,
+  type Insights,
   type MetricFact,
   type TargetKind,
   type VerifiedEdge,
@@ -153,6 +154,168 @@ function analysisErrorCopy(error: ApiError): string {
 
 /** Metric cards shown before "Show all": the largest shares, so the page stays short. */
 const METRIC_CARDS_SHOWN = 9;
+
+/** Plain-English status of the AI synthesis step (the contract's InsightsStatus). */
+const INSIGHTS_STATUS_META: Record<Insights["status"], { label: string; chipColor: ChipColor; note: string | null }> = {
+  ok: { label: "Every number checked", chipColor: "lime", note: null },
+  metrics_only: {
+    label: "Numbers only",
+    chipColor: "yellow",
+    note: "The AI step was skipped, so these points come straight from the calculated numbers.",
+  },
+  missing_api_key: {
+    label: "AI not set up",
+    chipColor: "yellow",
+    note: "No Gemini API key is set on the server, so there is no AI synthesis. The numbers below still apply.",
+  },
+  no_verified_edges: {
+    label: "Nothing to reason about",
+    chipColor: "yellow",
+    note: "No dependency could be verified in the filings, so the AI was not asked to speculate.",
+  },
+  error: {
+    label: "AI step failed",
+    chipColor: "rose",
+    note: "The AI synthesis failed this time. The verified links and numbers below are unaffected.",
+  },
+};
+
+type CitationProps = {
+  metricById: ReadonlyMap<string, MetricFact>;
+  edgeById: ReadonlyMap<string, VerifiedEdge>;
+  selectEdge: (edgeId: string, openDrawer: boolean) => void;
+};
+
+const CITATION_CHIP =
+  "inline-flex cursor-pointer items-center gap-1 rounded-md border border-border-button-default bg-background-secondary-default px-2 py-0.5 text-caption-1-regular text-text-primary hover:bg-background-primary-hover focus-visible:outline-2 focus-visible:outline-border-focus-ring";
+
+/** One AI claim: its text, the numbers it cites in plain words, and its filing quotes folded away. */
+function ClaimCard({ claim, metricById, edgeById, selectEdge }: CitationProps & { claim: InsightClaim }) {
+  const sev = CLAIM_SEVERITY_META[claim.severity] ?? CLAIM_SEVERITY_META.warning;
+  const sources = claim.cited_edge_ids.length;
+  return (
+    <article className={cx("flex flex-col gap-2.5 rounded-2xl border bg-background-primary-default p-4", sev.borderClass)}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h5 className="text-body-medium text-text-primary">{claim.title}</h5>
+        <Chip variant="caption" color={sev.chipColor}>
+          {sev.label}
+        </Chip>
+      </div>
+      <p className="text-body-2-regular text-text-secondary">{claim.text}</p>
+      {claim.cited_metric_ids.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {claim.cited_metric_ids.map((metricId) => {
+            const metric = metricById.get(metricId);
+            const firstEdgeId = metric?.supporting_edge_ids[0] ?? null;
+            return (
+              <button
+                key={metricId}
+                type="button"
+                disabled={!firstEdgeId}
+                onClick={() => firstEdgeId && selectEdge(firstEdgeId, true)}
+                className={CITATION_CHIP}
+              >
+                {metric ? `${metricCitationLabel(metric)}: ${formatMetricValue(metric)}` : "Cited number"}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {sources > 0 && (
+        <details>
+          <summary className="cursor-pointer text-caption-1-regular text-text-tertiary">
+            {sources === 1 ? "1 source in the filings" : `${sources} sources in the filings`}
+          </summary>
+          <div className="flex flex-wrap gap-1.5 pt-2">
+            {claim.cited_edge_ids.map((edgeId) => {
+              const edge = edgeById.get(edgeId);
+              return (
+                <button key={edgeId} type="button" onClick={() => selectEdge(edgeId, true)} className={CITATION_CHIP}>
+                  <RiDoubleQuotesL className="size-3" aria-hidden />
+                  <span>
+                    {edge ? `${edge.source_company_name} → ${edge.target_name} (${edge.filing.form})` : "Filing quote"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </details>
+      )}
+    </article>
+  );
+}
+
+/** The AI synthesis: critical flaws and diversification ideas, each citing checked numbers and quotes. */
+function InsightsPanel({ insights, ...citations }: CitationProps & { insights: Insights }) {
+  const status = INSIGHTS_STATUS_META[insights.status] ?? INSIGHTS_STATUS_META.error;
+  const columns = [
+    {
+      key: "flaws",
+      icon: <RiAlertLine className="size-4 text-text-error-primary" aria-hidden />,
+      title: "Critical flaws",
+      claims: insights.flaws,
+      empty: "No critical concentration flaws were flagged in the verified links.",
+    },
+    {
+      key: "suggestions",
+      icon: <RiMindMap className="size-4 text-text-primary" aria-hidden />,
+      title: "Diversification ideas",
+      claims: insights.suggestions,
+      empty: "No diversification changes were suggested from the verified links.",
+    },
+  ];
+  return (
+    <section
+      aria-label="AI synthesis: critical flaws and diversification ideas"
+      className="flex flex-col gap-4 rounded-3xl border border-border-button-default bg-background-secondary-default p-5"
+    >
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <RiSparklingLine className="size-5 text-text-primary" aria-hidden />
+          <h3 className="text-headline-small text-text-primary">AI synthesis: critical flaws &amp; diversification ideas</h3>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Chip variant="caption" color={status.chipColor}>
+            {status.label}
+          </Chip>
+          {insights.model && (
+            <Chip variant="caption" color="purple">
+              {insights.model}
+            </Chip>
+          )}
+          {insights.rejected_claims_count > 0 && (
+            <Chip variant="caption" color="orange">
+              {insights.rejected_claims_count} unchecked {insights.rejected_claims_count === 1 ? "claim" : "claims"} dropped
+            </Chip>
+          )}
+        </div>
+        <p className="text-body-2-regular text-text-secondary">
+          {status.note ??
+            "Written by the AI from the verified filing quotes. Every number in it was checked against the calculated numbers, and claims that failed were dropped. Advisory only, not investment advice."}
+        </p>
+      </div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {columns.map((column) => (
+          <div key={column.key} className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              {column.icon}
+              <h4 className="text-body-semibold text-text-primary">
+                {column.title} ({column.claims.length})
+              </h4>
+            </div>
+            {column.claims.length === 0 ? (
+              <p className="rounded-2xl border border-separator-border bg-background-primary-default p-4 text-body-2-regular text-text-secondary">
+                {column.empty}
+              </p>
+            ) : (
+              column.claims.map((claim) => <ClaimCard key={claim.claim_id} claim={claim} {...citations} />)
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 function formatMetricValue(metric: MetricFact): string {
   if (metric.unit === "fraction") return formatPct(metric.value, 2);
@@ -1247,7 +1410,15 @@ function DependenciesPageContent() {
             </details>
           </section>
 
-          {/* 4. Key numbers: one plain-English card per subject (% and company count together) */}
+          {/* 4. AI synthesis, straight after the audit bar so the key findings come first */}
+          <InsightsPanel
+            insights={result.insights}
+            metricById={metricById}
+            edgeById={edgeById}
+            selectEdge={selectEdge}
+          />
+
+          {/* 5. Key numbers: one plain-English card per subject (% and company count together) */}
           {(metricCards.length > 0 || summaryFacts.length > 0) && (
             <section
               aria-label="Key dependency numbers"
@@ -1340,203 +1511,7 @@ function DependenciesPageContent() {
             </section>
           )}
 
-          {/* 4. Orchestrator Insights Panel (Flaws + Diversification Suggestions) */}
-          <section
-            aria-label="Orchestrator insights and diversification suggestions"
-            className="flex flex-col gap-4 rounded-3xl border border-border-button-default bg-background-secondary-default p-5"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <RiSparklingLine className="size-5 text-text-primary" aria-hidden />
-                <h3 className="text-headline-small text-text-primary">
-                  Orchestrator Synthesis: Critical Flaws & Diversification Suggestions
-                </h3>
-                {result.insights.model && (
-                  <Chip variant="caption" color="purple">
-                    Model: {result.insights.model}
-                  </Chip>
-                )}
-                <Chip
-                  variant="caption"
-                  color={result.insights.status === "ok" ? "lime" : "yellow"}
-                >
-                  Status: {result.insights.status}
-                </Chip>
-                {result.insights.rejected_claims_count > 0 && (
-                  <Chip variant="caption" color="orange">
-                    {result.insights.rejected_claims_count} unverified{" "}
-                    {result.insights.rejected_claims_count === 1 ? "claim" : "claims"} dropped
-                  </Chip>
-                )}
-              </div>
-              <span className="text-caption-1-regular text-text-tertiary">
-                Advisory only (not investment advice) · Click any citation to open the SEC filing quote
-              </span>
-            </div>
-
-            {result.insights.status === "metrics_only" && (
-              <p className="text-body-2-regular text-text-secondary">
-                Showing deterministic metric-backed insights (LLM orchestrator skipped or running in
-                metrics-only mode).
-              </p>
-            )}
-            {result.insights.status === "no_verified_edges" && (
-              <p className="text-body-2-regular text-text-secondary">
-                No verified dependency edges were found for this portfolio, so orchestrator
-                synthesis was skipped to prevent speculation.
-              </p>
-            )}
-
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              {/* Critical Flaws column */}
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2">
-                  <RiAlertLine className="size-4 text-text-error-primary" aria-hidden />
-                  <h4 className="text-body-semibold text-text-primary">
-                    Critical Flaws & Single Points of Failure ({result.insights.flaws.length})
-                  </h4>
-                </div>
-                {result.insights.flaws.length === 0 ? (
-                  <p className="rounded-2xl border border-separator-border bg-background-primary-default p-4 text-body-2-regular text-text-secondary">
-                    No critical concentration flaws flagged across verified edges.
-                  </p>
-                ) : (
-                  result.insights.flaws.map((claim) => {
-                    const sev = CLAIM_SEVERITY_META[claim.severity] ?? CLAIM_SEVERITY_META.warning;
-                    return (
-                      <article
-                        key={claim.claim_id}
-                        className={cx(
-                          "flex flex-col gap-2.5 rounded-2xl border bg-background-primary-default p-4",
-                          sev.borderClass,
-                        )}
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <h5 className="text-body-medium text-text-primary">{claim.title}</h5>
-                          <Chip variant="caption" color={sev.chipColor}>
-                            {sev.label}
-                          </Chip>
-                        </div>
-                        <p className="text-body-2-regular text-text-secondary">{claim.text}</p>
-                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                          {claim.cited_metric_ids.map((mId) => {
-                            const m = metricById.get(mId);
-                            const firstEdgeId = m?.supporting_edge_ids[0] ?? null;
-                            return (
-                              <button
-                                key={mId}
-                                type="button"
-                                onClick={() => {
-                                  if (firstEdgeId) selectEdge(firstEdgeId, true);
-                                }}
-                                className="cursor-pointer rounded-md border border-border-button-default bg-background-secondary-default px-2 py-0.5 text-caption-1-regular text-text-primary hover:bg-background-primary-hover"
-                              >
-                                Metric {mId}
-                                {m ? `: ${formatMetricValue(m)}` : ""}
-                              </button>
-                            );
-                          })}
-                          {claim.cited_edge_ids.map((eId) => {
-                            const edge = edgeById.get(eId);
-                            return (
-                              <button
-                                key={eId}
-                                type="button"
-                                onClick={() => selectEdge(eId, true)}
-                                className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border-button-default bg-background-secondary-default px-2 py-0.5 text-caption-1-regular text-text-primary hover:bg-background-primary-hover"
-                              >
-                                <RiDoubleQuotesL className="size-3" aria-hidden />
-                                <span>
-                                  {edge
-                                    ? `${edge.source_company_name} → ${edge.target_name} (${edge.filing.form})`
-                                    : eId}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </article>
-                    );
-                  })
-                )}
-              </div>
-
-              {/* Diversification Suggestions column */}
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2">
-                  <RiMindMap className="size-4 text-text-primary" aria-hidden />
-                  <h4 className="text-body-semibold text-text-primary">
-                    Diversification Suggestions ({result.insights.suggestions.length})
-                  </h4>
-                </div>
-                {result.insights.suggestions.length === 0 ? (
-                  <p className="rounded-2xl border border-separator-border bg-background-primary-default p-4 text-body-2-regular text-text-secondary">
-                    No structural diversification changes suggested from current verified edges.
-                  </p>
-                ) : (
-                  result.insights.suggestions.map((claim) => {
-                    const sev = CLAIM_SEVERITY_META[claim.severity] ?? CLAIM_SEVERITY_META.info;
-                    return (
-                      <article
-                        key={claim.claim_id}
-                        className={cx(
-                          "flex flex-col gap-2.5 rounded-2xl border bg-background-primary-default p-4",
-                          sev.borderClass,
-                        )}
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <h5 className="text-body-medium text-text-primary">{claim.title}</h5>
-                          <Chip variant="caption" color={sev.chipColor}>
-                            {sev.label}
-                          </Chip>
-                        </div>
-                        <p className="text-body-2-regular text-text-secondary">{claim.text}</p>
-                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                          {claim.cited_metric_ids.map((mId) => {
-                            const m = metricById.get(mId);
-                            const firstEdgeId = m?.supporting_edge_ids[0] ?? null;
-                            return (
-                              <button
-                                key={mId}
-                                type="button"
-                                onClick={() => {
-                                  if (firstEdgeId) selectEdge(firstEdgeId, true);
-                                }}
-                                className="cursor-pointer rounded-md border border-border-button-default bg-background-secondary-default px-2 py-0.5 text-caption-1-regular text-text-primary hover:bg-background-primary-hover"
-                              >
-                                Metric {mId}
-                                {m ? `: ${formatMetricValue(m)}` : ""}
-                              </button>
-                            );
-                          })}
-                          {claim.cited_edge_ids.map((eId) => {
-                            const edge = edgeById.get(eId);
-                            return (
-                              <button
-                                key={eId}
-                                type="button"
-                                onClick={() => selectEdge(eId, true)}
-                                className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border-button-default bg-background-secondary-default px-2 py-0.5 text-caption-1-regular text-text-primary hover:bg-background-primary-hover"
-                              >
-                                <RiDoubleQuotesL className="size-3" aria-hidden />
-                                <span>
-                                  {edge
-                                    ? `${edge.source_company_name} → ${edge.target_name} (${edge.filing.form})`
-                                    : eId}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </article>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          </section>
-
-          {/* 5. Bipartite SVG Dependency Graph + Evidence Inspector */}
+          {/* 6. Bipartite SVG Dependency Graph + Evidence Inspector */}
           <section
             aria-label="Supply-chain and counterparty dependency graph"
             className="flex flex-col gap-4 rounded-3xl border border-border-button-default bg-background-secondary-default p-5"
