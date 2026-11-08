@@ -63,8 +63,8 @@ ORCHESTRATOR_RESPONSE_SCHEMA: dict[str, Any] = {
                 "properties": {
                     "title": {"type": "string"},
                     "text": {"type": "string"},
-                    "plain_title": {"type": "string"},
                     "plain_text": {"type": "string"},
+                    "plain_title": {"type": "string"},
                     "severity": {
                         "type": "string",
                         "enum": ["critical", "warning", "info"],
@@ -85,8 +85,8 @@ ORCHESTRATOR_RESPONSE_SCHEMA: dict[str, Any] = {
                 "required": [
                     "title",
                     "text",
-                    "plain_title",
                     "plain_text",
+                    "plain_title",
                     "severity",
                     "cited_metric_ids",
                     "cited_edge_ids",
@@ -100,8 +100,8 @@ ORCHESTRATOR_RESPONSE_SCHEMA: dict[str, Any] = {
                 "properties": {
                     "title": {"type": "string"},
                     "text": {"type": "string"},
-                    "plain_title": {"type": "string"},
                     "plain_text": {"type": "string"},
+                    "plain_title": {"type": "string"},
                     "severity": {
                         "type": "string",
                         "enum": ["critical", "warning", "info"],
@@ -122,8 +122,8 @@ ORCHESTRATOR_RESPONSE_SCHEMA: dict[str, Any] = {
                 "required": [
                     "title",
                     "text",
-                    "plain_title",
                     "plain_text",
+                    "plain_title",
                     "cited_metric_ids",
                     "cited_edge_ids",
                 ],
@@ -142,9 +142,9 @@ STRICT GROUNDING RULES (claims violating any rule are automatically rejected by 
 2. REQUIRED CITATIONS: Every flaw and suggestion MUST list the `cited_metric_ids` it uses and the supporting `cited_edge_ids` from the provided `verified_edges` list.
 3. ENTITY LOCK: Mention ONLY company names, ETF tickers, countries, and inputs that appear in the provided portfolio holdings or verified edges. Never name outside tickers or companies.
 4. ADVISORY ONLY: Focus on structural diversification dimensions (foundry concentration, single-source bottlenecks, geographic facility clustering across ETFs). Never recommend buying, selling, or shorting specific securities.
-5. BEGINNER PLAIN FIELDS (`plain_title` and `plain_text`):
-   - `plain_title`: <= 8 words, simple everyday English, zero numbers and zero financial jargon (never write HHI, GICS, look-through, 10-K, 20-F, CIK, edges, tier names, or orchestrator).
-   - `plain_text`: <= 25 words, simple everyday English, at most 1 number and ONLY via a cited `{{metric:<metric_id>}}` placeholder (e.g. "{{metric:dep.ALIAS:TSMC}} of your money relies on TSMC to make chips for your companies.").
+5. BEGINNER PLAIN FIELDS (`plain_text` and `plain_title`):
+   - Write `plain_text` first: <= 25 words, simple everyday English, at most 1 number and ONLY via a cited `{{metric:<metric_id>}}` placeholder (e.g. "{{metric:dep.ALIAS:TSMC}} of your money relies on TSMC to make chips for your companies.").
+   - Then write `plain_title` to summarise `plain_text` ONLY (never `title` or `text`): <= 8 words, simple everyday English, zero numbers (no digits, no placeholders, and no count words like "two", "three", "four", or "both"), zero financial jargon (never write HHI, GICS, look-through, 10-K, 20-F, CIK, edges, tier names, or orchestrator), and NEVER name any company, country, or plural count that is not in `plain_text` (e.g. if `plain_text` names only TSMC, write "Heavy reliance on one chip maker", never "two chip makers").
 """
 
 _PLACEHOLDER_RE = re.compile(r"\{\{metric:([A-Za-z0-9_:.\-]+)\}\}")
@@ -229,6 +229,114 @@ _FORBIDDEN_PLAIN_JARGON_RE = re.compile(
     r"\b(?:HHI|GICS|look[- ]through|10-K|20-F|40-F|6-K|8-K|N-PORT|CIK|edges?|orchestrator|critical)\b",
     re.IGNORECASE,
 )
+
+_UNSUPPORTED_PLAIN_TITLE_COUNTS_RE = re.compile(
+    r"\b(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|both|couple|dozen)\b",
+    re.IGNORECASE,
+)
+
+_GENERIC_ENTITY_PREFIXES: frozenset[str] = frozenset(
+    {
+        "united",
+        "american",
+        "general",
+        "advanced",
+        "applied",
+        "international",
+        "national",
+        "first",
+        "standard",
+        "western",
+        "eastern",
+        "northern",
+        "southern",
+        "pacific",
+        "global",
+        "taiwan",
+    }
+)
+
+
+def _build_claim_entity_alias_groups(
+    explicit_entities: Sequence[str],
+    cited_edge_ids: Sequence[str],
+    edges_by_id: Mapping[str, VerifiedEdge],
+) -> list[set[str]]:
+    """Group normalised surface forms (and short brand names / aliases) for entities on a claim."""
+    by_key: dict[str, set[str]] = {}
+
+    def _add_forms(key: str, raw_name: str, *, is_company: bool) -> None:
+        norm = _normalise_entity_token(raw_name)
+        if len(norm) < 3:
+            return
+        forms = by_key.setdefault(key, set())
+        forms.add(norm)
+        if key.startswith("ALIAS:"):
+            alias_tail = key.split(":", 1)[1].lower().replace("_", " ").strip()
+            if len(alias_tail) >= 3:
+                forms.add(alias_tail)
+            if key == "ALIAS:TSMC":
+                forms.add("tsmc")
+            elif key == "ALIAS:SAMSUNG_ELEC":
+                forms.add("samsung")
+        if is_company:
+            tokens = norm.split()
+            if tokens and len(tokens[0]) >= 4 and tokens[0] not in _GENERIC_ENTITY_PREFIXES:
+                forms.add(tokens[0])
+            if "taiwan semiconductor" in norm:
+                forms.add("tsmc")
+                forms.add("taiwan semiconductor")
+
+    for eid in cited_edge_ids:
+        edge = edges_by_id.get(eid)
+        if edge is None:
+            continue
+        _add_forms(edge.source_company_key, edge.source_company_name, is_company=True)
+        tkey = edge.target_key or f"{edge.target_kind}:{_normalise_entity_token(edge.target_name)}"
+        _add_forms(tkey, edge.target_name, is_company=(edge.target_kind == "company"))
+
+    for ent in explicit_entities:
+        norm = _normalise_entity_token(ent)
+        if len(norm) < 3:
+            continue
+        matched_existing = False
+        for forms in by_key.values():
+            if norm in forms or any(norm in f or f in norm for f in forms if len(f) >= 4):
+                forms.add(norm)
+                matched_existing = True
+                break
+        if not matched_existing:
+            by_key.setdefault(f"ENT:{norm}", set()).add(norm)
+
+    return [forms for forms in by_key.values() if forms]
+
+
+def _contains_entity_form(norm_text: str, form: str) -> bool:
+    if len(form) < 3:
+        return False
+    if form == "taiwan":
+        return bool(re.search(r"\btaiwan\b(?!\s+semiconductor)", norm_text))
+    return bool(re.search(rf"\b{re.escape(form)}\b", norm_text))
+
+
+def _is_plain_title_supported_by_text(
+    plain_title: str,
+    support_text: str,
+    entity_groups: Sequence[set[str]],
+) -> bool:
+    """Ensure `plain_title` does not claim counts or entities absent from `support_text` (FIX-10)."""
+    if _UNSUPPORTED_PLAIN_TITLE_COUNTS_RE.search(plain_title):
+        return False
+    title_norm = _normalise_entity_token(plain_title)
+    support_norm = _normalise_entity_token(support_text)
+    if not title_norm:
+        return False
+    for forms in entity_groups:
+        if any(_contains_entity_form(title_norm, f) for f in forms) and not any(
+            _contains_entity_form(support_norm, f) for f in forms
+        ):
+            return False
+    return True
 
 
 def _verify_and_render_plain_field(
@@ -516,17 +624,6 @@ def verify_and_render_claim(
     rendered_title = _PLACEHOLDER_RE.sub(_expand, raw_title)
     rendered_text = _PLACEHOLDER_RE.sub(_expand, raw_text)
 
-    rendered_plain_title = _verify_and_render_plain_field(
-        raw_claim.get("plain_title"),
-        max_words=8,
-        max_numbers=1,
-        cited_metric_ids=all_metric_ids,
-        metrics_by_id=metrics_by_id,
-        allowed_tickers=allowed_tickers,
-        allowed_entities=allowed_entities,
-        resolve_mid=_resolve_mid,
-        expand_fn=_expand,
-    )
     rendered_plain_text = _verify_and_render_plain_field(
         raw_claim.get("plain_text"),
         max_words=25,
@@ -538,6 +635,30 @@ def verify_and_render_claim(
         resolve_mid=_resolve_mid,
         expand_fn=_expand,
     )
+    rendered_plain_title = _verify_and_render_plain_field(
+        raw_claim.get("plain_title"),
+        max_words=8,
+        max_numbers=0,
+        cited_metric_ids=all_metric_ids,
+        metrics_by_id=metrics_by_id,
+        allowed_tickers=allowed_tickers,
+        allowed_entities=allowed_entities,
+        resolve_mid=_resolve_mid,
+        expand_fn=_expand,
+    )
+    if rendered_plain_title is not None:
+        entity_groups = _build_claim_entity_alias_groups(
+            explicit_entities,
+            raw_edge_ids,
+            edges_by_id,
+        )
+        support_text = rendered_plain_text if rendered_plain_text is not None else rendered_text
+        if not _is_plain_title_supported_by_text(
+            rendered_plain_title,
+            support_text,
+            entity_groups,
+        ):
+            rendered_plain_title = None
 
     default_sev = "warning" if kind == "flaw" else "info"
     severity_raw = str(raw_claim.get("severity") or default_sev).lower()
@@ -825,8 +946,9 @@ def build_user_prompt(
         "Analyse the following verified portfolio dependency graph and metrics.\n"
         "Remember: NEVER write literal digits/numbers/percentages in `title`, `text`, `plain_title`, or `plain_text` — "
         "always write `{{metric:<metric_id>}}` placeholders.\n"
-        "For every flaw and suggestion, also provide `plain_title` (<= 8 words, zero numbers, no jargon) and "
-        "`plain_text` (<= 25 words, at most 1 `{{metric:<metric_id>}}` placeholder, everyday English, no jargon).\n\n"
+        "For every flaw and suggestion, first write `plain_text` (<= 25 words, at most 1 `{{metric:<metric_id>}}` "
+        "placeholder, everyday English, no jargon) and then write `plain_title` (<= 8 words, zero numbers and no "
+        "count words like 'two' or 'three', no jargon) summarising ONLY what `plain_text` says.\n\n"
         + json.dumps(payload, indent=2)
     )
 
