@@ -80,6 +80,14 @@ test("monotonicProgressPct never decreases for the same running job_id and reset
   state = monotonicProgressPct(state.jobId, state.pct, "job_1", (49 / 50) * 100, state.status, "running");
   assert.equal(state.pct, 98);
 
+  // FIX-19 guard: Still-running job reaching 100% (e.g. 15/15) must stay at 100% if total grows (15/30)
+  state = monotonicProgressPct(state.jobId, state.pct, "job_1", (15 / 15) * 100, state.status, "running");
+  assert.equal(state.pct, 100);
+  assert.equal(state.status, "running");
+  state = monotonicProgressPct(state.jobId, state.pct, "job_1", (15 / 30) * 100, state.status, "running");
+  assert.equal(state.pct, 100);
+  assert.equal(state.status, "running");
+
   // Finishes at 100% when status is done
   state = monotonicProgressPct(state.jobId, state.pct, "job_1", 100, state.status, "done");
   assert.equal(state.pct, 100);
