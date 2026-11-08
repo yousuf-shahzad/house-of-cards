@@ -29,10 +29,16 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 ## New
 
 <!-- Add new problems below this line, one per line. -->
-- (Bekarys's Claude, API edge-case hunt) Unknown routes and wrong methods break the one-error-shape rule (CONTRACT.md: errors are always `{"error": {code, message, details}}`): `GET /api/nope` returns 404 `{"detail":"Not Found"}` and `GET /api/analysis` returns 405 `{"detail":"Method Not Allowed"}`, FastAPI's default. Fix in `hoc/api/app.py`: a `StarletteHTTPException` handler mapping to the envelope (needs a new code such as `NOT_FOUND` / `METHOD_NOT_ALLOWED` in the contract table). Also update `try-a-change.tsx`'s old-backend check, which relies on `status 404 && code "HTTP_ERROR"`. Low. Everything else probed returned the right status and envelope: 32 input cases plus job/research/change-ideas state checks.
 
 
 ## Open
+
+### FIX-57 · low · BUG: unknown API routes and wrong methods return FastAPI's default error shape (Bekarys's Claude, API hunt)
+`GET /api/nope` returns 404 `{"detail":"Not Found"}`, and `GET /api/analysis` returns 405 `{"detail":"Method Not Allowed"}`. CONTRACT.md says errors are always `{"error": {code, message, details}}`.
+- Fix: add a `StarletteHTTPException` handler in `hoc/api/app.py` that maps to the error envelope with new codes `NOT_FOUND` and `METHOD_NOT_ALLOWED`. Those are lead-approved additive contract changes: `hoc/contract` errors, the `types.ts` mirror, the snapshot (additions only) and the CONTRACT.md error table.
+- Update `app/ui/try-a-change.tsx`'s old-backend check (it relies on `status 404 && code "HTTP_ERROR"`) to the new code. That's a one-line handoff; Codex reviews.
+- The rest of the hunt (32 input cases plus job, research and change-ideas states) came back clean.
+- **Owner:** Bekarys's Claude · **Status:** assigned
 
 ### FIX-55 · high · BUG: Full Dependencies ignores stale/error state and drops the top 30 back to 15 (bug hunt batch 2)
 - **Stale/error blind spot:** once an analysis exists, the page hides `analysisStatus === "error"` and shows no stale warning when `result === null`. Find dependencies, Re-evaluate and Go deeper stay enabled when `draft.inputs` is null, so clicking them silently does nothing. Fix: show the state and disable the buttons with a reason.
