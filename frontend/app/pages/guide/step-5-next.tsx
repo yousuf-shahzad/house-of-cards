@@ -4,20 +4,30 @@
 import { useDependencies } from "@/app/dependencies-state";
 import { useExperience } from "@/app/experience";
 import { Button } from "@/components/base/buttons/button";
-import { ClaimCards, type RiskStepProps, topClaims } from "./step-4-risks";
-import { NEXT_COPY } from "./copy";
+import { ClaimCards, isCoverageNotAnalysed, type RiskStepProps, topClaims } from "./step-4-risks";
+import { NEXT_COPY, RISKS_COPY } from "./copy";
 
 export default function NextStep({ onJumpToStep, onStartOver, onTryChange }: RiskStepProps & { onTryChange?: () => void }) {
-  const { status, job, stale } = useDependencies();
+  const { job, stale } = useDependencies();
   const { openExpertPage, setStep } = useExperience();
-  const result = !stale && status === "done" ? job?.result ?? null : null;
+  const result = !stale ? job?.result ?? null : null;
   const suggestions = result?.insights.status === "ok" ? topClaims(result.insights.suggestions) : [];
+  const notAnalysed = result ? isCoverageNotAnalysed(result) : false;
 
   return (
     <div className="flex flex-col gap-5">
       <p className="text-body-2-regular text-text-secondary">{NEXT_COPY.intro}</p>
       {result ? (
-        <ClaimCards claims={suggestions} empty={NEXT_COPY.none} />
+        notAnalysed ? (
+          <p className="text-body-2-regular text-text-secondary">{RISKS_COPY.couldNotRun}.</p>
+        ) : (
+          <ClaimCards
+            claims={suggestions}
+            metrics={result.metrics}
+            insightsStatus={result.insights.status}
+            empty={result.insights.status === "ok" ? NEXT_COPY.none : undefined}
+          />
+        )
       ) : (
         <p className="text-body-2-regular text-text-secondary">{NEXT_COPY.waiting}</p>
       )}

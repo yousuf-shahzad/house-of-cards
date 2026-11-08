@@ -1,21 +1,25 @@
-// Beginner guide, step 4: hidden risks.
+// Beginner guide, step 4: hidden risks (B-RISKS + v3.1 K1: F5, #151, F7).
 //
 // The supply-chain check has been running in the background since step 2 (useAutoDependencies).
-// This step shows its progress, then three plain findings and the AI's top two concerns. It never
-// blocks: if the check is unavailable or fails, it says so and the user can carry on.
-// Every number is a backend metric or coverage figure, formatted with formatPct.
+// This step shows its phased progress ("Reading reports -> Double-checking findings -> Writing summary"),
+// then three plain findings, the AI's top two concerns (plain_title + plain_text with full text under "Read more"),
+// and a single "Go deeper" button after a light run whose results replace in place.
 
 import { useState } from "react";
 import { useAnalysis } from "@/app/analysis";
 import { useDependencies } from "@/app/dependencies-state";
 import { useExperience } from "@/app/experience";
-import { buildMetricCards } from "@/app/pages/dependencies/metrics";
+import { buildMetricCards, metricKind, metricSubject } from "@/app/pages/dependencies/metrics";
 import { formatPct } from "@/app/ui/pct";
+import { Chip } from "@/components/base/badges/chip";
 import { Button } from "@/components/base/buttons/button";
 import { ProgressBar } from "@/components/base/progress/progress";
-import type { DependencyResult, EdgeType, InsightClaim } from "@/api/types";
+import type { DependencyResult, EdgeType, InsightClaim, InsightsStatus, MetricFact } from "@/api/types";
 import { useAutoDependencies } from "./use-auto-dependencies";
 import { RISKS_COPY } from "./copy";
+import { splitFirstSentence } from "./sentence";
+
+export { splitFirstSentence };
 
 /** Props from the guide stepper (pages/guide/index.tsx). */
 export interface RiskStepProps {
@@ -23,6 +27,7 @@ export interface RiskStepProps {
   onBack: () => void;
   onJumpToStep?: (step: number) => void;
   onStartOver?: () => void;
+  onTryChange?: () => void;
 }
 
 const SUPPLY_EDGE_TYPES = new Set<EdgeType>(["supplier", "foundry", "contract_manufacturer", "key_input"]);
@@ -38,14 +43,44 @@ export function topClaims(claims: readonly InsightClaim[], count = 2): InsightCl
     .map(({ claim }) => claim);
 }
 
-interface Finding {
+export interface Finding {
   key: string;
   text: string;
   note?: string;
 }
 
-/** Up to three plain findings: biggest dependency, biggest factory country, how much we could check. */
+/** True when the run could not analyse companies on this computer (missing AI key or SEC contact). */
+export function isCoverageNotAnalysed(result: DependencyResult): boolean {
+  const verifiedWeight =
+    result.coverage?.buckets.find((bucket) => bucket.kind === "verified")?.weight ??
+    result.metrics.find((metric) => metric.metric_id === "summary.analysed_weight")?.value ??
+    0;
+  const notAnalysedWeight =
+    result.coverage?.buckets.find((bucket) => bucket.kind === "not_analysed")?.weight ?? 0;
+  const allCompaniesBlocked =
+    result.companies.length > 0 &&
+    result.counts.companies_analysed === 0 &&
+    result.companies.some(
+      (c) =>
+        c.status === "missing_api_key" ||
+        c.status === "sec_contact_missing" ||
+        c.status === "error",
+    );
+  return (notAnalysedWeight > 0 && verifiedWeight <= 0) || allCompaniesBlocked;
+}
+
+/** Up to three plain findings: biggest dependency, biggest factory country abroad, and how much we could check. */
 export function buildFindings(result: DependencyResult): Finding[] {
+  if (isCoverageNotAnalysed(result)) {
+    return [
+      {
+        key: "could-not-run",
+        text: RISKS_COPY.couldNotRun,
+        note: RISKS_COPY.couldNotRunNote,
+      },
+    ];
+  }
+
   const cards = buildMetricCards(result.metrics);
   const findings: Finding[] = [];
   // "Relies on" only for real supply links: a partner or customer (e.g. OpenAI as a JV partner) isn't a dependency
@@ -76,25 +111,77 @@ export function buildFindings(result: DependencyResult): Finding[] {
     result.coverage?.buckets.find((bucket) => bucket.kind === "verified")?.weight ??
     result.metrics.find((metric) => metric.metric_id === "summary.analysed_weight")?.value;
   if (typeof verified === "number" && Number.isFinite(verified)) {
-    findings.push({ key: "checked", text: RISKS_COPY.checked(formatPct(verified, 0)), note: RISKS_COPY.checkedNote });
+    const notAnalysedWeight =
+      result.coverage?.buckets.find((bucket) => bucket.kind === "not_analysed")?.weight ?? 0;
+    const unfiledWeight =
+      (result.coverage?.buckets.find((bucket) => bucket.kind === "no_disclosures")?.weight ?? 0) +
+      (result.coverage?.buckets.find((bucket) => bucket.kind === "no_sec_filing")?.weight ?? 0);
+    const note =
+      notAnalysedWeight > 0 && unfiledWeight === 0
+        ? RISKS_COPY.couldNotRunNote
+        : RISKS_COPY.checkedNote;
+    findings.push({ key: "checked", text: RISKS_COPY.checked(formatPct(verified, 0)), note });
   }
   return findings;
 }
 
-/** "First sentence." and the rest, so beginners see a short summary with the detail one click away. */
-export function splitFirstSentence(text: string): [string, string] {
-  const match = /^(.+?[.!?])\s+(?=[A-Z0-9"'(])/.exec(text.trim());
-  return match ? [match[1], text.trim().slice(match[0].length)] : [text.trim(), ""];
+/**
+ * Deterministic one-liner fallback built from the claim's first cited fraction metric
+ * (e.g. "12% of your money depends on Taiwan Semiconductor Manufacturing Co., Ltd.")
+ * when `claim.plain_text` is null.
+ */
+export function claimMetricOneLiner(claim: InsightClaim, metrics: readonly MetricFact[]): string | null {
+  if (!claim.cited_metric_ids.length || !metrics.length) return null;
+  const byId = new Map(metrics.map((m) => [m.metric_id, m]));
+  for (const metricId of claim.cited_metric_ids) {
+    const metric = byId.get(metricId);
+    if (!metric || metric.unit !== "fraction") continue;
+    const kind = metricKind(metric.metric_id);
+    if (kind === "summary") continue;
+    const pct = formatPct(metric.value, 0);
+    const subject = metricSubject(metric);
+    if (kind === "facility") {
+      return `${RISKS_COPY.country(pct, subject)}.`;
+    }
+    return `${RISKS_COPY.dependsOn(pct, subject)}.`;
+  }
+  return null;
 }
 
-function ClaimCard({ claim }: { claim: InsightClaim }) {
+function ClaimCard({ claim, metrics }: { claim: InsightClaim; metrics: readonly MetricFact[] }) {
   const [open, setOpen] = useState(false);
-  const [first, rest] = splitFirstSentence(claim.text);
+  const title = claim.plain_title?.trim() || claim.title;
+  const fullText = claim.text.trim();
+
+  let shortText: string;
+  let restText: string;
+  if (claim.plain_text?.trim()) {
+    shortText = claim.plain_text.trim();
+    restText = fullText && fullText !== shortText ? fullText : "";
+  } else {
+    const oneLiner = claimMetricOneLiner(claim, metrics);
+    if (oneLiner) {
+      shortText = oneLiner;
+      restText = fullText && fullText !== shortText ? fullText : "";
+    } else {
+      const [first, rest] = splitFirstSentence(fullText);
+      shortText = first;
+      restText = rest;
+    }
+  }
+
+  const expandedText =
+    claim.plain_text?.trim() || claimMetricOneLiner(claim, metrics)
+      ? fullText
+      : restText
+        ? `${shortText} ${restText}`
+        : shortText;
+
   return (
     <li className="flex flex-col gap-1 rounded-2xl border border-border-button-default bg-background-secondary-default p-4">
-      <span className="text-body-semibold text-text-primary">{claim.title}</span>
-      <span className="text-body-2-regular text-text-secondary">{open && rest ? `${first} ${rest}` : first}</span>
-      {rest ? (
+      <span className="text-body-semibold text-text-primary">{title}</span>
+      <span className="text-body-2-regular text-text-secondary">{open && restText ? expandedText : shortText}</span>
+      {restText ? (
         <Button variant="ghost" size="xs" className="self-start" aria-expanded={open} onClick={() => setOpen(!open)}>
           {open ? RISKS_COPY.showLess : RISKS_COPY.readMore}
         </Button>
@@ -103,12 +190,36 @@ function ClaimCard({ claim }: { claim: InsightClaim }) {
   );
 }
 
-export function ClaimCards({ claims, empty }: { claims: readonly InsightClaim[]; empty: string }) {
-  if (claims.length === 0) return <p className="text-body-2-regular text-text-secondary">{empty}</p>;
+export function ClaimCards({
+  claims,
+  empty,
+  metrics,
+  insightsStatus,
+}: {
+  claims: readonly InsightClaim[];
+  empty?: string;
+  metrics?: readonly MetricFact[];
+  insightsStatus?: InsightsStatus;
+}) {
+  const { job } = useDependencies();
+  const effectiveMetrics = metrics ?? job?.result?.metrics ?? [];
+  const effectiveStatus = insightsStatus ?? job?.result?.insights.status;
+
+  if (claims.length === 0) {
+    // #151: Never show a "no problems" / "no suggestions" line unless insights.status === "ok".
+    if (effectiveStatus && effectiveStatus !== "ok") {
+      if (effectiveStatus === "missing_api_key") {
+        return <p className="text-body-2-regular text-text-secondary">{RISKS_COPY.noAiKey}</p>;
+      }
+      return null;
+    }
+    if (!empty) return null;
+    return <p className="text-body-2-regular text-text-secondary">{empty}</p>;
+  }
   return (
     <ul className="flex flex-col gap-3">
       {claims.map((claim) => (
-        <ClaimCard key={claim.claim_id} claim={claim} />
+        <ClaimCard key={claim.claim_id} claim={claim} metrics={effectiveMetrics} />
       ))}
     </ul>
   );
@@ -117,17 +228,61 @@ export function ClaimCards({ claims, empty }: { claims: readonly InsightClaim[];
 export default function RisksStep(_props: RiskStepProps) {
   useAutoDependencies(); // safety net if step 2 was skipped
   const { status: analysisStatus } = useAnalysis();
-  const { status, job, stale, error } = useDependencies();
+  const { status, job, stale, error, depth, goDeeper } = useDependencies();
   const { openExpertPage } = useExperience();
-  const result = !stale && status === "done" ? job?.result ?? null : null;
-  const running = !result && !error && (status === "starting" || status === "polling" || stale);
+
+  // Keep existing result visible in place while "Go deeper" polls on the same portfolio.
+  const result = !stale ? job?.result ?? null : null;
+  const running = !error && (status === "starting" || status === "polling" || (stale && analysisStatus === "ready"));
+
+  const activePhase = job?.phase ?? "reading";
+  const stepsDone = job?.steps_done || job?.progress_done || 0;
+  const stepsTotal = job?.steps_total || job?.progress_total || job?.companies.length || 15;
+  const phases: Array<{ id: "reading" | "researching" | "synthesising"; label: string }> = [
+    { id: "reading", label: RISKS_COPY.phaseReading },
+    { id: "researching", label: RISKS_COPY.phaseResearching },
+    { id: "synthesising", label: RISKS_COPY.phaseSynthesising },
+  ];
+  const phaseOrder = { queued: 0, reading: 0, researching: 1, synthesising: 2, done: 3 } as const;
+  const currentPhaseIdx = phaseOrder[activePhase] ?? 0;
+
+  const progressBlock = running ? (
+    <div className="flex flex-col gap-3 rounded-2xl border border-border-button-default bg-background-secondary-default p-4">
+      <div className="flex flex-wrap items-center gap-2">
+        {phases.map((p, idx) => {
+          const isActive = idx === currentPhaseIdx;
+          const isDone = idx < currentPhaseIdx;
+          return (
+            <span key={p.id} className="inline-flex items-center gap-2">
+              {idx > 0 && <span className="text-caption-1-regular text-text-tertiary">→</span>}
+              <Chip variant="caption" color={isActive ? "blue" : isDone ? "lime" : "neutral"}>
+                {p.label}
+              </Chip>
+            </span>
+          );
+        })}
+      </div>
+      <ProgressBar
+        label={RISKS_COPY.phasedProgress}
+        description={RISKS_COPY.readingNote}
+        isIndeterminate={!job?.steps_total && !job?.progress_total}
+        value={stepsDone}
+        maxValue={stepsTotal}
+      />
+    </div>
+  ) : null;
 
   let body;
   if (result) {
+    const notAnalysed = isCoverageNotAnalysed(result);
     const claims = result.insights.status === "ok" ? topClaims(result.insights.flaws) : [];
-    const noKey = result.insights.status === "missing_api_key";
+    const showConcernsSection =
+      !notAnalysed && (result.insights.status === "ok" || result.insights.status === "missing_api_key");
+    const canGoDeeper = !notAnalysed && result.research_depth !== "thorough";
+
     body = (
       <>
+        {progressBlock}
         <ul className="flex flex-col gap-3">
           {buildFindings(result).map((finding) => (
             <li
@@ -139,25 +294,30 @@ export default function RisksStep(_props: RiskStepProps) {
             </li>
           ))}
         </ul>
-        <section className="flex flex-col gap-3" aria-labelledby="guide-risks-concerns">
-          <h3 id="guide-risks-concerns" className="text-body-semibold text-text-primary">
-            {RISKS_COPY.concernsTitle}
-          </h3>
-          <ClaimCards claims={claims} empty={noKey ? RISKS_COPY.noAiKey : RISKS_COPY.noConcerns} />
-        </section>
+        {showConcernsSection && (
+          <section className="flex flex-col gap-3" aria-labelledby="guide-risks-concerns">
+            <h3 id="guide-risks-concerns" className="text-body-semibold text-text-primary">
+              {RISKS_COPY.concernsTitle}
+            </h3>
+            <ClaimCards
+              claims={claims}
+              metrics={result.metrics}
+              insightsStatus={result.insights.status}
+              empty={result.insights.status === "ok" ? RISKS_COPY.noConcerns : undefined}
+            />
+          </section>
+        )}
+        {canGoDeeper && (
+          <div>
+            <Button variant="secondary" size="small" disabled={running} onClick={() => goDeeper()}>
+              {running && depth === "thorough" ? RISKS_COPY.goingDeeper : RISKS_COPY.goDeeper}
+            </Button>
+          </div>
+        )}
       </>
     );
   } else if (running) {
-    const total = job?.progress_total || job?.companies.length || 15;
-    body = (
-      <ProgressBar
-        label={RISKS_COPY.reading(total)}
-        description={RISKS_COPY.readingNote}
-        isIndeterminate={!job?.progress_total}
-        value={job?.progress_done ?? 0}
-        maxValue={total}
-      />
-    );
+    body = progressBlock;
   } else if (status === "error" || error) {
     body = <p className="text-body-2-regular text-text-secondary">{RISKS_COPY.unavailable}</p>;
   } else {
