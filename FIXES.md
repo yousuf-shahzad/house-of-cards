@@ -34,6 +34,39 @@ Seen by Bekarys's Gemini on NKE: the agent added a new link "Three largest custo
 - Fix: when merging an agent's new links, skip an `unnamed_customer` link whose source, link type and normalised quote already match an existing link. Treat groups like "three largest customers" as not a link.
 - **Owner:** Kendrick's Gemini (fold into A1-fix) · **Status:** assigned
 
+### FIX-15 · high · Simple screen 1: shares only, no percent editing
+Gawyn: remove the option to switch to percent on simple screen 1, and make the percent column read-only in shares mode there.
+- Fix:
+  - Add a `DraftEditor` option that hides the Shares | % switch and shows % as plain text (not an input). Use it in `guide/steps/pick.tsx` only; the full view keeps both.
+  - If a sample's prices can't be fetched, load it as shares anyway (or show a short "prices unavailable, try again" message), not as pinned % rows the user can't edit.
+- **Owner:** Yousuf's Claude (owns `app/ui/draft-editor.tsx`; lead-approved one-line change in `pick.tsx`) · **Status:** assigned
+
+### FIX-16 · high · Simple screen 2 shows the first ETF pair, not the most overlapping one
+"Do your ETFs own the same companies?" uses `analysis.overlap.pairs[0]`, but the API returns pairs in input order. For the sample it shows IVV/QQQ (48.82%) when QQQ/XLK overlap most (50.11%).
+- Fix: pick the pair with the highest `weighted_overlap`; add a test.
+- **Owner:** Yousuf's Gemini (`guide/steps/own.tsx`) · **Status:** assigned
+
+### FIX-17 · high · Suggest specific changes on screen 5 and in Try a change (both views)
+Gawyn wants concrete ideas such as "add this ETF to help fix this diversification issue", which the user can pick to load into Try a change, in the simple view and the full view.
+- **Backend (Python owns every number):** a new `POST /api/change-ideas`.
+  - **Input:** the current holdings.
+  - **Candidates:** a pinned list of diversifying ETFs that our sources can load (e.g. equal-weight S&P 500, value, international, under-weighted sectors).
+  - **Testing:** try each at 10% and 20%, using compare in cache-only mode with no AI calls.
+  - **Ranking:** order the ideas by how much they fix the portfolio's worst issue (the largest industry when that's the problem, else the biggest dependency, else top 10 / effective N).
+  - **Output:** the top 3. Each has the ETF, its share, which issue it addresses, a plain title and reason, the full candidate holdings, and the before → after deltas.
+  - **Contract:** new models, lead-approved and additive only: `hoc/contract`, the `types.ts` mirror, a fixture, the snapshot, and `CONTRACT.md` §10.
+- **Frontend:**
+  - **Screen 5:** idea cards ("Add RSP: largest industry 51% → 41%") with a "Try this" button that opens Try a change with the idea loaded. The ETF is added as whole shares worth its share of your portfolio.
+  - **Try a change** (guide and Compare page): an "Ideas" list at the top that loads an idea in one click.
+- **Owner:** Yousuf's Codex (backend + contract) + Bekarys's Claude (frontend; can start on the fixture) · **Status:** assigned
+
+### FIX-18 · high · The progress bar can go down
+`steps_total` grows when the research phase starts (16 → about 50), so the bar drops from about 100% to about 30%. It also changes as agents finish.
+- **Fix:**
+  - **Backend:** set `steps_total` to its full estimate from the start, and only ever lower it.
+  - **Frontend:** never show a lower % than already shown for the same job, on simple screen 4 and the Dependencies page.
+- **Owner:** Bekarys's Claude (`hoc/jobs.py`) + Yousuf's Gemini (both pages) · **Status:** assigned
+
 ### FIX-6 · high · Pitch deck numbers are wrong
 `PITCH_DECK.md` has these errors:
 - Its "unseen annual reports" test is our development portfolio, and it leaves out the real held-out evaluation.
@@ -71,14 +104,11 @@ The plan asked for the research trace to show live during the run.
 
 ### FIX-12 · low · 7 links cite the section "document" instead of a 10-K Item
 These are 6 Microsoft links and 1 Alphabet link. Their quotes are exact, but the evidence panel can't say which part of the report they're from.
-- **Owner:** Yousuf's Codex (filings) · **Status:** in progress (branch `28-fix-12-filing-sections`)
-
-### FIX-13 · low · PR #25 (AgentVerse kit) has been open since 2026-11-07
-- Fix: merge it or close it.
-- **Owner:** Bekarys (whichever agent opened it) · **Status:** on hold (Bekarys asked to leave it open)
+- **Owner:** Yousuf's Codex (filings) · **Status:** merged in PR #169, lead checking live
 
 ## Done (checked on `main` by the lead)
 
+- FIX-13 PR #25 closed by Bekarys (branch kept)
 - FIX-3 short AI cards on simple pages 4–5, "Read more", a splitter that keeps "Co., Ltd." whole; FIX-4 "couldn't run on this computer" (#151, checked in code); FIX-5 page 4 progress bar and "Go deeper" that updates in place — #166
 - Try a change: starts from your portfolio, updates on its own, 4 rows — #156, #163
 - Dependencies page progress bar and a single "Go deeper" — #160, #161
