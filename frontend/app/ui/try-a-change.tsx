@@ -2,9 +2,9 @@
 // (POST /api/compare, cache-only) and the result is four before -> after rows plus "More details".
 // Used by the Compare page (Full view) and the guide's step-5 sub-screen (Simple view).
 // FIX-17: "Ideas" (POST /api/change-ideas, cache-only, no AI) on top, also shown on guide step 5.
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { RiArrowDownLine, RiArrowRightLine, RiArrowUpLine, RiRefreshLine } from "@remixicon/react";
-import { api } from "@/api/client";
+import { api, ApiError } from "@/api/client";
 import type {
   ChangeIdea,
   ChangeIdeasResponse,
@@ -15,6 +15,7 @@ import type {
   MetricFact,
 } from "@/api/types";
 import { useAnalysis } from "@/app/analysis";
+import { triggerDependenciesRun } from "@/app/dependencies-state";
 import { metricCitationLabel } from "@/app/pages/dependencies/metrics";
 import { useScenario } from "@/app/scenario";
 import { DraftEditor, ServerError } from "@/app/ui/draft-editor";
@@ -338,14 +339,19 @@ function useChangeIdeas(): { ideas: IdeasState | null; retry: () => void } {
   return { ideas: inputs && state?.key === key ? state : null, retry };
 }
 
-/** Loads an idea into Try a change. An add keeps your shares and buys whole shares of the new ETF worth
- * f / (1 - f) of your portfolio, which gives it the idea's share. A swap sells f of the portfolio's value from
- * `swap_from` and buys the new ETF with it. Falls back to the idea's own percentages when prices aren't usable. */
+/** Percent mode keeps the idea's exact allocations. Shares mode uses whole shares;
+ * a swap sells the source holding completely and uses its value for the replacement.
+ * Falls back to exact percentages when prices aren't usable. */
 function useLoadIdea(): (idea: ChangeIdea) => Promise<void> {
   const { draft: current } = useAnalysis();
   const { scenario } = useScenario();
   return useCallback(
     async (idea: ChangeIdea) => {
+      const exactRows = idea.holdings.map((row) => ({ id: "", ticker: row.ticker, allocationPct: row.allocation * 100, shares: null, pinned: false }));
+      if (current.mode === "percent") {
+        scenario.copyFrom(exactRows, "percent");
+        return;
+      }
       const valued = current.mode === "shares" && !current.rows.some((row) => row.pinned) ? current.valuation.result : null;
       if (valued && valued.total_value > 0) {
         try {
@@ -354,18 +360,16 @@ function useLoadIdea(): (idea: ChangeIdea) => Promise<void> {
           if (quote && quote.price > 0 && quote.currency === currency) {
             const swap = idea.action === "swap" && idea.swap_from ? idea.swap_from.toUpperCase() : null;
             const moved = valued.total_value * idea.add_fraction;
-            const value = swap ? moved : moved / (1 - idea.add_fraction);
-            const added = { id: "", ticker: idea.ticker, allocationPct: null, shares: Math.max(1, Math.round(value / quote.price)), pinned: false };
             const source = swap ? valued.rows.find((row) => row.ticker.toUpperCase() === swap) : null;
+            const value = swap ? source?.value : moved / (1 - idea.add_fraction);
+            if (value === null || value === undefined || value <= 0) throw new Error("No usable value for this idea");
+            const added = { id: "", ticker: idea.ticker, allocationPct: null, shares: Math.max(1, Math.round(value / quote.price)), pinned: false };
             if (!swap) {
               scenario.copyFrom([...current.rows, added], "shares");
               return;
             }
-            if (source?.price && source.value !== null && source.value >= moved * 0.99) {
-              const left = Math.max(0, Math.round((source.value - moved) / source.price.price));
-              const rows = current.rows
-                .map((row) => (row.ticker.trim().toUpperCase() === swap ? { ...row, shares: left } : row))
-                .filter((row) => row.shares !== 0);
+            if (source?.price) {
+              const rows = current.rows.filter((row) => row.ticker.trim().toUpperCase() !== swap);
               scenario.copyFrom([...rows, added], "shares");
               return;
             }
@@ -374,7 +378,7 @@ function useLoadIdea(): (idea: ChangeIdea) => Promise<void> {
           // No price: use the idea's percentages below.
         }
       }
-      scenario.setRows(idea.holdings.map((row) => ({ ticker: row.ticker, allocationPct: row.allocation * 100 })));
+      scenario.copyFrom(exactRows, "percent");
     },
     [current, scenario],
   );
@@ -515,6 +519,10 @@ export function TryAChange({ editorTitle = "Your new mix" }: { editorTitle?: str
   const { draft: current } = useAnalysis();
   const { scenario, resetToCurrent, compare, compareStatus, result, error, stale } = useScenario();
   const ready = current.inputs !== null && scenario.inputs !== null;
+  const [applying, setApplying] = useState(false);
+  const [applyError, setApplyError] = useState<ApiError | null>(null);
+  const adoptionController = useRef<AbortController | null>(null);
+  useEffect(() => () => adoptionController.current?.abort(), []);
 
   // Auto-compare once the edits settle. compare() aborts the previous request, so a stale answer never lands;
   // a failed comparison is retried only by the user or the next edit.
@@ -524,9 +532,28 @@ export function TryAChange({ editorTitle = "Your new mix" }: { editorTitle?: str
     return () => window.clearTimeout(timer);
   }, [ready, result, stale, compare]);
 
-  const makeScenarioCurrent = () => {
-    current.copyFrom(scenario.rows, scenario.mode);
-    window.location.hash = "#/dependencies";
+  const makeScenarioCurrent = async () => {
+    if (!scenario.inputs || applying) return;
+    const controller = new AbortController();
+    adoptionController.current?.abort();
+    adoptionController.current = controller;
+    const { rows, mode, key, inputs } = scenario;
+    setApplying(true);
+    setApplyError(null);
+    try {
+      // Analyse the captured scenario before adopting it: the shared Current analysis
+      // still describes the old portfolio until its own debounced request completes.
+      const analysis = await api.analyse(inputs, controller.signal);
+      if (controller.signal.aborted) return;
+      current.copyFrom(rows, mode);
+      triggerDependenciesRun(analysis, key);
+      window.location.hash = "#/dependencies";
+    } catch (cause) {
+      if (controller.signal.aborted) return;
+      setApplyError(cause instanceof ApiError ? cause : new ApiError("UNEXPECTED_ERROR", "Couldn't apply this portfolio. Try again.", 0));
+    } finally {
+      if (adoptionController.current === controller) setApplying(false);
+    }
   };
 
   // Only portfolio shares (fractions) are ranked: a count changing by 3 is not "bigger" than a 7.7-point
@@ -559,6 +586,7 @@ export function TryAChange({ editorTitle = "Your new mix" }: { editorTitle?: str
       </div>
 
       <section className="suite-card" aria-label="What changes" aria-busy={busy}>
+        {applyError && <ServerError error={applyError} retry={() => { void makeScenarioCurrent(); }} />}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-headline-small text-text-primary">What changes</h2>
           {busy && (
@@ -648,8 +676,8 @@ export function TryAChange({ editorTitle = "Your new mix" }: { editorTitle?: str
                       ))}
                     </ul>
                     <div>
-                      <Button variant="secondary" size="small" trailingIcon={RiArrowRightLine} onClick={makeScenarioCurrent}>
-                        Make this my portfolio and find its dependencies
+                      <Button variant="secondary" size="small" trailingIcon={RiArrowRightLine} disabled={applying || !ready} onClick={() => { void makeScenarioCurrent(); }}>
+                        {applying ? "Applying portfolio…" : "Make this my portfolio and find its dependencies"}
                       </Button>
                     </div>
                   </>
