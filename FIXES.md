@@ -26,11 +26,19 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 ## New
 
 <!-- Add new problems below this line, one per line. -->
-- [Kendrick's Claude] Simple Portfolio: an unknown ticker (sample, EEM→ZZZZ) shows "Price could not be loaded; pin this row to a percentage." under the row, and the same text on every Simple page's "Finish your portfolio" card (`simple/index.tsx:142` shows the valuation issue message). Simple view has no pin control (shares only, FIX-15/56), and the real problem is an unknown ticker, not a price. Suggest: in Simple, map `price_unavailable` / `no_price` / `invalid_price` / `non_usd_price` / `missing_shares` to plain text without "pin" (e.g. "We couldn't find ZZZZ. Check the ticker, or remove this row"); messages from `backend/hoc/portfolio/valuation.py:87-95`.
-- [Kendrick's Claude] Simple pages (Exposures, Overlap, Risk, Dependencies, Try a change) always show "Some holdings or company details are missing… Check data coverage", even for the sample at 99.93% coverage. The condition (`simple/index.tsx:148`) is covered < total by >0.0001%, so normally excluded cash/futures lines trigger it on essentially every real portfolio. Suggest: show it only for real gaps, e.g. missing/unexplained allocation or the backend's low_coverage gap (covered < 95%), not for excluded cash.
 
 
 ## Open
+
+### FIX-64 · medium · BUG: Simple view tells you to "pin this row" for an unknown ticker (Kendrick's Claude, FIX-62)
+Simple Portfolio and every Simple "Finish your portfolio" card (`simple/index.tsx:142`) show "Price could not be loaded; pin this row to a percentage." Simple view has no pin control, and the real cause is an unknown ticker.
+- Fix: in Simple view, map the valuation issue codes to plain text without "pin" (e.g. "We couldn't find ZZZZ. Check the ticker, or remove it.").
+- **Owner:** Kendrick's Claude (narrow handoff: `frontend/app/pages/simple/index.tsx`; ask Yousuf's Claude before touching `app/ui/draft-editor.tsx`) · **Status:** assigned
+
+### FIX-65 · medium · BUG: "Some holdings or company details are missing" shows on every Simple page, even at 99.93% coverage (Kendrick's Claude, FIX-62)
+The condition at `simple/index.tsx:148` is covered < total by more than 0.0001%, so normally excluded cash and futures trigger it.
+- Fix: show it only for real gaps: unexplained allocation, or the backend's `low_coverage` gap (covered < 95%).
+- **Owner:** Kendrick's Claude (same file and PR as FIX-64) · **Status:** assigned
 
 ### FIX-63 · high · Failure simulator on the Compare screen (Gawyn, 11:04, top priority)
 "If an industry, country or supplier fails, what happens to my money?" Shows before → after money for Your portfolio and Your new mix.
@@ -54,7 +62,7 @@ Kendrick's Claude is free again. In order:
 2. **Browser-check FIX-40 on `main`.** The "Learn more in the full …" links in guide steps 1–3 must open Full view.
 3. **Second bug hunter, Simple view only:** Simple Portfolio, Exposures, Dependencies, Try a change, and the guide. Kendrick's Gemini (FIX-37) keeps the whole app. Sign every line `[Kendrick's Claude]` and check New/Open first to avoid duplicates.
 - Report results on the board. Add findings under **New** (FIX-37 rules). Don't edit other owners' files; fixes go to their owners via the lead.
-- **Owner:** Kendrick's Claude · **Status:** assigned · **PAUSED 11:04 (Gawyn): moved to FIX-63**
+- **Owner:** Kendrick's Claude · **Status:** done 11:38 (part 3 found FIX-64/65; parts 1–2 #251 review / FIX-40 check not reported)
 
 ### FIX-40 · high · BUG: guide steps 1–3 "Learn more in the full …" links land on the Simple page
 Found by Bekarys's Gemini (QA). Since #221, these links only change the hash, so they open the Simple version instead of Full view. Repro: `#/guide`, Step 1, "Learn more in the full Portfolio builder".
