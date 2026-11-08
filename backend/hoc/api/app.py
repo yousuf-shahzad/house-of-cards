@@ -26,6 +26,8 @@ from hoc import __version__
 from hoc.config import Settings
 from hoc.contract import (
     AnalysisResponse,
+    CompareRequest,
+    CompareResponse,
     DependencyJob,
     DependencyRequest,
     ErrorBody,
@@ -145,6 +147,13 @@ def examples(service: Service) -> ExamplesResponse:
 def valuation(service: Service, request: ValuationRequest) -> ValuationResponse:
     """Shares -> allocations. A blocked valuation is still 200, with status 'blocked' and its issues."""
     return service.valuation(request)
+
+
+@router.post("/compare", response_model=CompareResponse, responses={k: ERRORS[k] for k in (422, 503)})
+def compare(service: Service, request: CompareRequest) -> CompareResponse:
+    """Before/after comparison of two portfolios. Cache-only: never fetches a filing or calls Gemini; status
+    is 'partial' when some of the candidate's top companies have no cached extraction yet."""
+    return service.compare(request)
 
 
 @router.post("/dependencies", response_model=DependencyJob, responses={

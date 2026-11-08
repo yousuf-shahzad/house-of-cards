@@ -17,6 +17,8 @@ from datetime import UTC, datetime
 from hoc import __version__
 from hoc.contract import (
     AnalysisResponse,
+    CompareRequest,
+    CompareResponse,
     DependencyJob,
     DependencyRequest,
     EtfFailure,
@@ -41,6 +43,7 @@ from hoc.examples import EXAMPLES
 from hoc.jobs import SUBMIT_WAIT_SECONDS, DependencyJobs, LivePipeline, NotWiredPipeline
 from hoc.normalise.pipeline import normalise_etf
 from hoc.portfolio.analyse import analyse
+from hoc.portfolio.compare import compare_portfolios, read_cached_extractions
 from hoc.portfolio.validation import validate_request
 from hoc.portfolio.valuation import value_portfolio
 
@@ -114,6 +117,22 @@ class EtfService:
         except Exception:  # SourceUnavailable, SourceParseError or a bug: this row only, never a 500
             log.exception("price lookup failed for %s", ticker)
             return "unavailable"
+
+    def compare(self, request: CompareRequest) -> CompareResponse:
+        """Before/after comparison (X-API). Synchronous and cache-only: it runs both analyses, reads the
+        verified extractions already cached for either side's top-N companies, and never fetches a filing
+        or calls Gemini. Analysis errors (422/503) pass through."""
+        from hoc.ai import PROMPT_VERSION
+        from hoc.config import DEFAULT_EXTRACTOR_MODEL, DEFAULT_ORCHESTRATOR_MODEL
+
+        baseline = self.analyse(PortfolioRequest(holdings=request.baseline))
+        candidate = self.analyse(PortfolioRequest(holdings=request.candidate))
+        top = request.top_n
+        keys = {c.company_key for c in baseline.exposures[:top]} | {c.company_key for c in candidate.exposures[:top]}
+        models = tuple(dict.fromkeys((self.settings.gemini_extractor_model, DEFAULT_EXTRACTOR_MODEL,
+                                      DEFAULT_ORCHESTRATOR_MODEL)))
+        cached = read_cached_extractions(self.settings.cache_dir, keys, models=models, prompt_version=PROMPT_VERSION)
+        return compare_portfolios(request, baseline, candidate, cached, aliases=self.aliases)
 
     @property
     def dependency_jobs(self) -> DependencyJobs:

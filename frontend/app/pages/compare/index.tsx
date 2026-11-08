@@ -43,11 +43,11 @@ function formatChange(delta: number, unit: MetricDelta["unit"]): string {
   return `${sign}${size.toFixed(2)}`;
 }
 
-/** "12.39% → 8.10% (−4.29 pts)", or "new: 6.00%" / "gone (was 3.10%)" when one side is missing. */
+/** "12.39% → 8.10% (−4.29 pts)", or "new in the scenario: 6.00%" / "no longer found in the scenario (was 3.10%)". */
 function deltaSentence(delta: MetricDelta): string {
   const { baseline, candidate, unit } = delta;
   if (baseline === null && candidate !== null) return `new in the scenario: ${formatValue(candidate, unit)}`;
-  if (candidate === null && baseline !== null) return `gone in the scenario (was ${formatValue(baseline, unit)})`;
+  if (candidate === null && baseline !== null) return `no longer found in the scenario (was ${formatValue(baseline, unit)})`;
   if (baseline === null || candidate === null) return "no data";
   return `${formatValue(baseline, unit)} → ${formatValue(candidate, unit)} (${formatChange(candidate - baseline, unit)})`;
 }
@@ -214,10 +214,13 @@ export default function ComparePage() {
     );
   }
 
-  const decreases = (result?.dependency_deltas ?? [])
+  // Only portfolio shares (fractions) are ranked: a count changing by 3 is not "bigger" than a 7.7-point
+  // drop, and the ".companies" counts repeat the share metric they belong to.
+  const shares = (result?.dependency_deltas ?? []).filter((delta) => delta.unit === "fraction");
+  const decreases = shares
     .filter((delta) => signedChange(delta) < 0)
     .sort((a, b) => signedChange(a) - signedChange(b));
-  const increases = (result?.dependency_deltas ?? [])
+  const increases = shares
     .filter((delta) => signedChange(delta) > 0)
     .sort((a, b) => signedChange(b) - signedChange(a));
 
