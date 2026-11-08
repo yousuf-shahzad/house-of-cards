@@ -28,3 +28,6 @@ dist/
 !backend/tests/fixtures/**
 !frontend/api/__fixtures__/
 !frontend/api/__fixtures__/**
+.vercel
+.vercel-tools/
+.pytest-vercel/

@@ -130,7 +130,7 @@ class EtfService:
         without a provider every shock is the simulated 10% fall, so tests never touch the network."""
 
     @classmethod
-    def from_settings(cls, settings) -> EtfService:
+    def from_settings(cls, settings, *, http=None) -> EtfService:
         """Production wiring: DiskCache + CachedHttpClient + build_registry + TickerInsideReference."""
         from hoc.core.cache import DiskCache
         from hoc.core.http import CachedHttpClient
@@ -141,7 +141,7 @@ class EtfService:
         from hoc.sources.tickerinside.adapter import TickerInsideAdapter
         from hoc.sources.tickerinside.reference import TickerInsideReference
 
-        http = CachedHttpClient(settings, DiskCache(settings.cache_dir))
+        http = http or CachedHttpClient(settings, DiskCache(settings.cache_dir))
         service = cls(build_registry(settings, http), TickerInsideReference(http, settings), load_aliases(), settings)
         service.idea_proposer = IdeaProposer(http, settings)
         service.history = HistoricalShocks(YahooHistory(http))

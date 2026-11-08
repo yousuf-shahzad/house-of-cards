@@ -12,6 +12,18 @@ dependencies = [
     "defusedxml>=0.7",
 ]
 
+[project.optional-dependencies]
+vercel = [
+    "vercel-blob==0.5.1",
+    "vercel-queue==0.10.1",
+]
+
+[tool.vercel]
+entrypoint = "vercel_app:app"
+
+[[tool.vercel.subscribers]]
+entrypoint = "hoc.deployment.worker"
+
 [dependency-groups]
 dev = [
     "pytest>=8",
