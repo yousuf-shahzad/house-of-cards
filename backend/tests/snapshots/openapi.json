@@ -152,10 +152,20 @@
       "ChangeIdea": {
         "additionalProperties": false,
         "properties": {
+          "action": {
+            "default": "add",
+            "enum": [
+              "add",
+              "swap"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
           "add_fraction": {
             "enum": [
               0.1,
-              0.2
+              0.2,
+              0.3
             ],
             "title": "Add Fraction",
             "type": "number"
@@ -231,6 +241,26 @@
             "title": "Notes",
             "type": "array"
           },
+          "proposed_by": {
+            "default": "rules",
+            "enum": [
+              "ai",
+              "rules"
+            ],
+            "title": "Proposed By",
+            "type": "string"
+          },
+          "rationale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rationale"
+          },
           "reason": {
             "title": "Reason",
             "type": "string"
@@ -242,6 +272,17 @@
             ],
             "title": "Status",
             "type": "string"
+          },
+          "swap_from": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Swap From"
           },
           "ticker": {
             "title": "Ticker",
@@ -296,6 +337,19 @@
       "ChangeIdeasResponse": {
         "additionalProperties": false,
         "properties": {
+          "ai_status": {
+            "default": "not_used",
+            "enum": [
+              "ok",
+              "pending",
+              "missing_api_key",
+              "failed",
+              "timeout",
+              "not_used"
+            ],
+            "title": "Ai Status",
+            "type": "string"
+          },
           "ideas": {
             "default": [],
             "items": {
@@ -305,12 +359,42 @@
             "title": "Ideas",
             "type": "array"
           },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
           "notes": {
             "default": [],
             "items": {
               "type": "string"
             },
             "title": "Notes",
+            "type": "array"
+          },
+          "prompt_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt Version"
+          },
+          "rejected_proposals": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/RejectedIdeaProposal"
+            },
+            "title": "Rejected Proposals",
             "type": "array"
           },
           "status": {
@@ -2580,6 +2664,30 @@
           "source"
         ],
         "title": "PriceQuote",
+        "type": "object"
+      },
+      "RejectedIdeaProposal": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "ticker": {
+            "title": "Ticker",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticker",
+          "action",
+          "reason"
+        ],
+        "title": "RejectedIdeaProposal",
         "type": "object"
       },
       "ResearchFinding": {
