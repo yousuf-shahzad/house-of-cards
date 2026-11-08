@@ -61,11 +61,6 @@ Today the order is: header (Find dependencies, Go deeper) → progress → cover
   - Yousuf's Gemini: the page-side hover fix, in its FIX-52 reorder PR.
 - **Status:** assigned
 
-### FIX-45 · low · BUG: on mobile, tapping the page you're already on leaves the navigation drawer open
-Found by Codex during the #223 review (existing behaviour). The hash doesn't change, so no `hashchange` fires and the drawer stays open; Close works.
-- Fix: close the drawer on any sidebar item click, not only on hash change.
-- **Owner:** Yousuf's Codex (`workspace.tsx`) · **Status:** assigned (after FIX-41)
-
 ### FIX-40 · high · BUG: guide steps 1–3 "Learn more in the full …" links land on the Simple page
 Found by Bekarys's Gemini (QA). Since #221, these links only change the hash, so they open the Simple version instead of Full view. Repro: `#/guide`, Step 1, "Learn more in the full Portfolio builder".
 - Fix: use `openExpertPage(...)` in `guide/copy.ts:95`, `steps/pick.tsx:195`, `steps/own.tsx:127` and `steps/spread.tsx:151`.
@@ -100,6 +95,7 @@ For each **confirmed** bug, add one line under **New** in FIXES.md: `BUG: <what 
 
 ## Done (checked on `main` by the lead)
 
+- FIX-45 on mobile, tapping the page you're already on closes the navigation drawer (lead, 375px) — #245
 - FIX-56 Simple Try a change has no Shares/% switch and no pins; unknown tickers are flagged in the scenario (lead, browser) — #244
 - FIX-54 Full-view stale/error states. Exposures (#241) and Risk (#242) show "last valid analysis" with Edit portfolio and no endless spinner (lead, browser). The Portfolio link is hidden while stale (#240).
 - FIX-36 independent proof (`validation/`, standard library only, no `hoc` imports; the lead re-ran it from saved data and got identical results):
