@@ -856,3 +856,66 @@ def test_f4_refound_existing_edge_counts_as_confirmed_not_new_evidence() -> None
     assert findings[0].new_edges == []
     assert edge.edge_id in findings[0].confirmed_edge_ids
     assert len(merged.edges) == 1
+
+
+def test_s2_merge_preserves_fresh_flagged_judge_unclear_verdict() -> None:
+    from hoc.ai.interpretation import verify_edge_interpretation
+
+    quote = "If demand increases, we could consider ZZFAB as a potential foundry."
+    edge = _make_edge(
+        edge_id="unclear_flagged",
+        quote=quote,
+        interp_status="flagged",
+        interp_flags=["hypothetical"],
+    )
+    analysis, result = _one_edge(edge)
+    filing = _sample_filing(text="ITEM 1. BUSINESS\n" + quote)
+    client = FakeGeminiClient()
+    verdict = verify_edge_interpretation(
+        edge.model_copy(update={"interpretation": None}),
+        filing.text,
+        client=client,
+    )
+    assert verdict.status == "flagged"
+    assert "judge_unclear" in verdict.flags
+    _, merged = ResearchLoop(
+        client=client,
+        filings_by_key={edge.source_company_key: filing},
+    ).run(result, analysis, max_items=1)
+    assert merged.edges[0].interpretation == verdict
+
+
+def test_f3_multiword_phrase_and_miss_behavior() -> None:
+    analysis, _result = _sample_analysis_and_result()
+    filing_text = (
+        "ITEM 1. BUSINESS\n"
+        "We offer advanced software tools and cloud services to enterprise customers.\n"
+        "Our semiconductor division designs custom accelerators.\n"
+        "We rely exclusively on ZZFAB for advanced wafer fabrication of our core processor line.\n"
+        "Any disruption at ZZFAB would delay shipments.\n"
+    )
+    filing = _sample_filing(cik="0009990001", text=filing_text)
+    edge = _make_edge(edge_id="multiword_edge", interp_status="flagged")
+    _, one_res = _one_edge(edge)
+    items = select_research_items(one_res, analysis, max_items=1)
+    runner = ResearchLoop(client=FakeGeminiClient(), filings_by_key={"CIK:0009990001": filing})
+
+    spans = runner._find_spans_in_filing(filing, "advanced wafer fabrication", item=items[0], result=one_res)
+    assert spans
+    assert "advanced wafer fabrication" in spans[0]
+    assert "custom accelerators" in spans[0] or "delay shipments" in spans[0]
+    assert "advanced software tools" not in spans[0]
+
+    missed = runner._find_spans_in_filing(filing, "ZXNONEXISTENT", item=items[0], result=one_res)
+    assert missed == []
+
+    only_advanced_filing = _sample_filing(
+        cik="0009990001",
+        text="ITEM 1. BUSINESS\nWe offer advanced software tools and cloud services to enterprise customers.\n",
+    )
+    assert (
+        runner._find_spans_in_filing(
+            only_advanced_filing, "advanced wafer fabrication", item=items[0], result=one_res
+        )
+        == []
+    )

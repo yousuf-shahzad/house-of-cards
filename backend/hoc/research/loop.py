@@ -603,13 +603,12 @@ def merge_research_findings(
         if edge.edge_id in rejected_ids:
             continue
         updated = edge
-        if edge.edge_id in confirmed_ids:
-            vint = (
-                (verified_interpretations or {}).get(edge.edge_id)
-                or _RECENT_VERIFIED_INTERPRETATIONS.get(edge.edge_id)
-            )
-            if vint is not None and vint.status == "confirmed":
-                updated = updated.model_copy(update={"interpretation": vint})
+        vint = (
+            (verified_interpretations or {}).get(edge.edge_id)
+            or _RECENT_VERIFIED_INTERPRETATIONS.get(edge.edge_id)
+        )
+        if vint is not None and vint.status != "rejected":
+            updated = updated.model_copy(update={"interpretation": vint})
         if updated.target_key is None and resolver is not None and updated.target_kind == "company":
             resolved_key = resolver(updated.target_name)
             if resolved_key:
@@ -911,6 +910,7 @@ class ResearchLoop:
             return findings, merged
 
         started = time.monotonic()
+        _RECENT_VERIFIED_INTERPRETATIONS.clear()
         verified_interps: dict[str, EdgeInterpretation] = {}
         for idx, item in enumerate(items, start=1):
             elapsed = time.monotonic() - started
@@ -1636,78 +1636,61 @@ class ResearchLoop:
         result: DependencyResult,
     ) -> list[str]:
         spans: list[str] = []
-        if filing is not None and filing.text:
-            norm_doc = normalise_for_verify(filing.text)
-            raw_sentences = [
-                normalise_for_verify(s).strip()
-                for s in re.split(r"(?<=[.!?])\s+|\n+", filing.text)
-                if normalise_for_verify(s).strip()
-                and not re.match(r"^item\s+\d+[a-z]?\b", normalise_for_verify(s).strip(), re.IGNORECASE)
+        needle = normalise_for_verify(phrase).strip().casefold()
+        if not needle or filing is None or not filing.text:
+            return []
+
+        norm_doc = normalise_for_verify(filing.text)
+        raw_sentences = [
+            normalise_for_verify(s).strip()
+            for s in re.split(r"(?<=[.!?])\s+|\n+", filing.text)
+            if normalise_for_verify(s).strip()
+            and not re.match(r"^item\s+\d+[a-z]?\b", normalise_for_verify(s).strip(), re.IGNORECASE)
+        ]
+
+        for idx, sent in enumerate(raw_sentences):
+            sent_cf = sent.casefold()
+            if needle not in sent_cf:
+                continue
+
+            # F3: Require the queried phrase, derive ±1 sentence of context around the actual match,
+            # and verify via find_quote_span against Filing.text.
+            prev_s = raw_sentences[idx - 1] if idx > 0 else ""
+            next_s = raw_sentences[idx + 1] if idx + 1 < len(raw_sentences) else ""
+            candidates = [
+                " ".join(p for p in (prev_s, sent, next_s) if p),
+                " ".join(p for p in (sent, next_s) if p),
+                " ".join(p for p in (prev_s, sent) if p),
+                sent,
             ]
-            needle = normalise_for_verify(phrase).strip().casefold()
-            tokens = [
-                t.casefold()
-                for t in re.split(r"\W+", phrase)
-                if len(t) >= 3 and t.casefold() not in ("the", "and", "inc", "corp", "ltd", "llc", "company")
-            ]
-
-            for idx, sent in enumerate(raw_sentences):
-                sent_cf = sent.casefold()
-                has_match = (needle and needle in sent_cf) or (
-                    tokens and any(tok in sent_cf for tok in tokens)
-                )
-                if not has_match:
-                    continue
-
-                # F3: Return the sentence containing the queried phrase (verified via find_quote_span)
-                # along with ±1 sentence of surrounding context.
-                prev_s = raw_sentences[idx - 1] if idx > 0 else ""
-                next_s = raw_sentences[idx + 1] if idx + 1 < len(raw_sentences) else ""
-                candidates = [
-                    sent,
-                    " ".join(p for p in (prev_s, sent, next_s) if p),
-                    " ".join(p for p in (sent, next_s) if p),
-                    " ".join(p for p in (prev_s, sent) if p),
-                ]
-                added_for_idx = 0
-                for cand in candidates:
-                    if (
-                        20 <= len(cand) <= 360
-                        and find_quote_span(cand, norm_doc, already_normalised_doc=True) is not None
-                        and verify_quote(cand, norm_doc, already_normalised_doc=True)
-                        and cand not in spans
-                    ):
-                        spans.append(cand)
-                        added_for_idx += 1
-                        if added_for_idx >= 2 or len(spans) >= 3:
-                            break
-                if added_for_idx == 0 and len(sent) > 360:
-                    pos = sent_cf.find(needle) if needle and needle in sent_cf else 0
-                    win_start = max(0, pos - 120)
-                    win_end = min(len(sent), win_start + 300)
-                    window = sent[win_start:win_end].strip()
-                    if (
-                        20 <= len(window) <= 360
-                        and find_quote_span(window, norm_doc, already_normalised_doc=True) is not None
-                        and verify_quote(window, norm_doc, already_normalised_doc=True)
-                        and window not in spans
-                    ):
-                        spans.append(window)
-                if len(spans) >= 3:
-                    break
-
-        if not spans:
-            for edge in result.edges:
+            chosen: str | None = None
+            for cand in candidates:
                 if (
-                    edge.source_company_key == item.subject_key
-                    and edge.evidence_quote
-                    and (phrase.lower() in edge.evidence_quote.lower() or phrase.lower() in edge.target_name.lower())
+                    20 <= len(cand) <= 360
+                    and find_quote_span(cand, norm_doc, already_normalised_doc=True) is not None
+                    and verify_quote(cand, norm_doc, already_normalised_doc=True)
                 ):
-                    spans.append(edge.evidence_quote)
-                    if len(spans) >= 2:
-                        break
-            if not spans and item.edge is not None and item.edge.evidence_quote:
-                spans.append(item.edge.evidence_quote)
+                    chosen = cand
+                    break
+            if chosen is None and len(sent) > 360:
+                pos = sent_cf.find(needle)
+                win_start = max(0, pos - 120)
+                win_end = min(len(sent), win_start + 300)
+                window = sent[win_start:win_end].strip()
+                if (
+                    20 <= len(window) <= 360
+                    and find_quote_span(window, norm_doc, already_normalised_doc=True) is not None
+                    and verify_quote(window, norm_doc, already_normalised_doc=True)
+                ):
+                    chosen = window
+            if chosen and chosen not in spans:
+                spans.append(chosen)
+            if sent != chosen and 20 <= len(sent) <= 360 and sent not in spans and find_quote_span(
+                sent, norm_doc, already_normalised_doc=True
+            ) is not None:
+                spans.append(sent)
+            if len(spans) >= 3:
+                break
 
         return spans
 
