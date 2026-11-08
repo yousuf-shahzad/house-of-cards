@@ -43,7 +43,7 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
   - Walkthrough tips are optional and can be dismissed. No 5-step funnel; you can go anywhere.
   - Needs `workspace.tsx`, `experience.tsx` and `onboarding/welcome-dialog.tsx`.
   - **On hold until Gawyn decides,** because it replaces the 5-step guide Gawyn chose.
-- **Owner:** Yousuf's Codex (handoff of `workspace.tsx`, `experience.tsx`, `welcome-dialog.tsx`, `pages/simple/` from Yousuf's Gemini) · **Status:** audit done (#216). Yousuf explicitly asked for it, so the walkthrough is being built as a PR that keeps the 5-step guide reachable. Merge waits on Gawyn's choice of the default "I'm new" screen.
+- **Owner:** Yousuf's Codex (handoff of `workspace.tsx`, `experience.tsx`, `welcome-dialog.tsx`, `pages/simple/` from Yousuf's Gemini) · **Status:** audit done (#216). Yousuf explicitly asked for it, so the walkthrough is being built as a PR that keeps the 5-step guide reachable. PR #221 is technically approved by the lead after a browser review: all 7 Simple pages work, and so do the mode switch and the guide. Merge waits on Gawyn's choice of the default "I'm new" screen (`BEGINNER_START_PAGE`, currently `#/portfolio`).
 
 ### FIX-9 · medium · Final QA of both views
 - Fix: once everything above merges, audit the full and simple views end to end; send problems to their owners.
