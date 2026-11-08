@@ -526,9 +526,16 @@ class FakeGeminiClient:
         return {"verdicts": verdicts}
 
     def _default_research_step_response(self, prompt: str) -> dict[str, Any]:
-        """Deterministic multi-step response for `hoc-v3-research-1` prompts."""
+        """Deterministic multi-step response for `hoc-v3.1-research-2` prompts."""
         step_match = re.search(r"STEP_INDEX:\s*(\d+)", prompt)
         step_idx = int(step_match.group(1)) if step_match else 1
+        max_steps_match = re.search(r"MAX_STEPS:\s*(\d+)", prompt)
+        max_steps = int(max_steps_match.group(1)) if max_steps_match else 3
+        min_tools_match = re.search(r"MIN_TOOL_CALLS:\s*(\d+)", prompt)
+        min_tools = int(min_tools_match.group(1)) if min_tools_match else max(1, max_steps - 1)
+        req_search_match = re.search(r"REQUIRE_SEARCH_FILINGS:\s*(true|false)", prompt, re.IGNORECASE)
+        req_search = req_search_match.group(1).lower() == "true" if req_search_match else (max_steps >= 4)
+
         kind_match = re.search(r"ITEM_KIND:\s*([^\r\n]+)", prompt)
         item_kind = kind_match.group(1).strip() if kind_match else "flagged_edge"
         cik_match = re.search(r"SUBJECT_CIK:\s*([^\r\n]+)", prompt)
@@ -537,6 +544,29 @@ class FakeGeminiClient:
         target_name = target_match.group(1).strip() if target_match else ""
         subject_match = re.search(r"SUBJECT_NAME:\s*([^\r\n]+)", prompt)
         subject_name = subject_match.group(1).strip() if subject_match else ""
+
+        observed_quotes = re.findall(r'OBSERVED_QUOTE:\s*"([^"]+)"', prompt)
+        corroborating_quotes = re.findall(
+            r'OBSERVED_QUOTE:\s*"([^"]+)"\s*\([^)]*corroborating=true\)', prompt
+        )
+        all_observed = corroborating_quotes or observed_quotes
+
+        # Early rejection allowed if an observed quote clearly negates or is a competitor mention
+        if item_kind == "flagged_edge" and observed_quotes:
+            first_lower = observed_quotes[0].lower()
+            if any(
+                phrase in first_lower
+                for phrase in ("do not rely", "no assurance", "primary competitors include", "compete with")
+            ):
+                return {
+                    "action": "conclude",
+                    "query": "",
+                    "cik": cik,
+                    "section": "1",
+                    "outcome": "rejected",
+                    "explanation": f'Filing evidence "{observed_quotes[0]}" contradicts or negates an active dependency.',
+                    "candidate_edges": [],
+                }
 
         if step_idx == 1:
             if item_kind in ("undisclosed_customer", "single_source"):
@@ -559,19 +589,40 @@ class FakeGeminiClient:
                 "candidate_edges": [],
             }
 
-        observed_quotes = re.findall(r'OBSERVED_QUOTE:\s*"([^"]+)"', prompt)
-        if step_idx == 2 and not observed_quotes:
+        if step_idx == 2 and min_tools >= 2:
+            section_to_read = "1A" if "source=find_in_filing" in prompt else "1"
             return {
                 "action": "read_section",
-                "query": target_name or subject_name or "supplier",
+                "query": target_name if target_name and target_name != "None" else (subject_name or "supplier"),
                 "cik": cik,
-                "section": "1",
+                "section": section_to_read,
                 "outcome": "unresolved",
                 "explanation": "",
                 "candidate_edges": [],
             }
 
-        best_quote = observed_quotes[0] if observed_quotes else ""
+        if step_idx == 3 and min_tools >= 3:
+            if req_search and "source=search_filings" not in prompt:
+                return {
+                    "action": "search_filings",
+                    "query": target_name if target_name and target_name != "None" else subject_name,
+                    "cik": cik,
+                    "section": "1",
+                    "outcome": "unresolved",
+                    "explanation": "",
+                    "candidate_edges": [],
+                }
+            return {
+                "action": "find_in_filing",
+                "query": target_name if target_name and target_name != "None" else "customer",
+                "cik": cik,
+                "section": "1A",
+                "outcome": "unresolved",
+                "explanation": "",
+                "candidate_edges": [],
+            }
+
+        best_quote = all_observed[0] if all_observed else ""
         quote_lower = best_quote.lower()
         if item_kind == "flagged_edge":
             if any(
@@ -596,7 +647,7 @@ class FakeGeminiClient:
                 "query": "",
                 "cik": cik,
                 "section": "1",
-                "outcome": "confirmed",
+                "outcome": "confirmed" if corroborating_quotes else "unresolved",
                 "explanation": (
                     f'Verified filing passage "{best_quote}" confirms the operational relationship.'
                     if best_quote
@@ -611,7 +662,7 @@ class FakeGeminiClient:
                 "query": "",
                 "cik": cik,
                 "section": "1",
-                "outcome": "confirmed",
+                "outcome": "confirmed" if corroborating_quotes else "unresolved",
                 "explanation": (
                     f'Corroborated sole-source dependency in filing text "{best_quote}".'
                     if best_quote

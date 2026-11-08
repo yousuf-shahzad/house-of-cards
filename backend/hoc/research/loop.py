@@ -84,7 +84,7 @@ from hoc.identity.resolver import Aliases, clean_company_name, load_aliases
 
 log = logging.getLogger(__name__)
 
-RESEARCH_PROMPT_VERSION = "hoc-v3-research-1"
+RESEARCH_PROMPT_VERSION = "hoc-v3.1-research-2"
 RESEARCH_CACHE_NAMESPACE = "research"
 RESEARCH_COMPANY_CACHE_NAMESPACE = "research_company"
 MAX_RESEARCH_STEPS = 4
@@ -136,12 +136,13 @@ At each step, pick ONE `action`:
 - `find_in_filing`: search a specific company's filing (`cik`) for a verbatim `query` phrase (e.g. a supplier/customer name, "sole source", "customer", "foundry", "manufactur").
 - `read_section`: inspect a section (`section` in `"1"`, `"1A"`, `"2"`, `"concentration_1"`) of the filing for `cik`.
 - `search_filings`: search other companies' SEC filings for a company or counterparty `query` phrase to corroborate single-source dependencies or identify undisclosed customers.
-- `conclude`: finish the investigation once you have inspected the filing observations.
+- `conclude`: finish the investigation ONLY after completing at least `MIN_TOOL_CALLS` tool steps (and at least one `search_filings` step when `REQUIRE_SEARCH_FILINGS: true`), unless a tool step already found a direct rejection/contradiction.
 
 STRICT GROUNDING RULES WHEN CONCLUDING (`action == "conclude"`):
 1. `outcome` MUST be one of: `"confirmed"`, `"revised"`, `"rejected"`, `"new_evidence"`, `"unresolved"`.
-2. `explanation` MUST NOT contain ANY numbers or percentages outside double-quoted (`"..."`) verbatim passages from the observed filing text.
-3. Every item in `candidate_edges` MUST have an `evidence_quote` (20-400 characters) copied character-for-character from an observed filing passage. Never paraphrase or invent quotes.
+2. Re-finding only the initial extraction quote (`INITIAL_QUOTE`) in the same filing is NOT a confirmation; confirming requires a different passage in the filing or another company's filing via `search_filings`. Otherwise choose `"unresolved"`.
+3. `explanation` MUST NOT contain ANY numbers or percentages outside double-quoted (`"..."`) verbatim passages from the observed filing text.
+4. Every item in `candidate_edges` MUST have an `evidence_quote` (20-400 characters) copied character-for-character from an observed filing passage, and MUST refer to a single counterparty or single unnamed customer (never a plural group like "three largest customers" or "five distributors").
 """
 
 _UNNAMED_CUSTOMER_PATTERNS: tuple[str, ...] = (
@@ -331,14 +332,128 @@ def _has_material_customer_share(edge: VerifiedEdge) -> bool:
 _ALREADY_UNNAMED_RE = re.compile(r"^unnamed\s+customer(?:\s*\((.+)\))?$", re.IGNORECASE)
 _ANONYMISED_CUSTOMER_LABEL_RE = re.compile(
     r"^(?:"
-    r"(?:end\s+|direct\s+|major\s+|top\s+)?(?:customer|client|distributor|reseller)\s*(?:[a-z0-9#]+|one|two|three|alpha|beta|gamma)"
+    r"(?:end\s+|direct\s+|major\s+|top\s+)?(?:customer|client|distributor|reseller|channel\s+partner)\s*(?:[a-z0-9#]+|one|two|three|alpha|beta|gamma)"
     r"|"
-    r"(?:a|an|one|two|three|single|the)?\s*"
-    r"(?:single\s+|sole\s+|major\s+|largest\s+|significant\s+|primary\s+|principal\s+|individual\s+|unnamed\s+|undisclosed\s+|certain\s+|top\s+)*"
-    r"(?:customer|client|distributor|reseller)s?"
+    r"(?:a|an|one|single|the)?\s*"
+    r"(?:single\s+|sole\s+|major\s+|largest\s+|significant\s+|primary\s+|principal\s+|individual\s+|unnamed\s+|undisclosed\s+|direct\s+|indirect\s+|channel\s+)*"
+    r"(?:customer|client|distributor|reseller|partner)"
     r")$",
     re.IGNORECASE,
 )
+_CUSTOMER_GROUP_RE = re.compile(
+    r"\b(?:"
+    r"(?:two|three|four|five|six|seven|eight|nine|ten|multiple|several|various|numerous|certain|many|group\s+of|top|[2-9]|\d{2,})\s+"
+    r"(?:[\w\-]+\s+){0,4}(?:customers|clients|distributors|resellers|partners|suppliers|vendors|accounts)"
+    r"|"
+    r"(?:customers|clients|distributors|resellers)"
+    r")\b",
+    re.IGNORECASE,
+)
+_CORROBORATION_STOP_WORDS = frozenset({
+    "inc",
+    "corp",
+    "corporation",
+    "ltd",
+    "limited",
+    "llc",
+    "plc",
+    "company",
+    "companies",
+    "the",
+    "and",
+    "group",
+    "organization",
+    "organizations",
+    "partner",
+    "partners",
+    "supplier",
+    "suppliers",
+    "vendor",
+    "vendors",
+    "customer",
+    "customers",
+    "client",
+    "clients",
+    "distributor",
+    "distributors",
+    "third",
+    "party",
+    "parties",
+    "various",
+    "certain",
+    "other",
+    "multiple",
+    "unnamed",
+    "undisclosed",
+    "single",
+    "sole",
+    "major",
+    "largest",
+    "primary",
+})
+
+
+def _is_customer_group_target(target_name: str | None) -> bool:
+    """Return True if `target_name` refers to a multi-entity group of customers/distributors (FIX-14)."""
+    if not target_name:
+        return False
+    cleaned = normalise_for_verify(target_name).strip()
+    if not cleaned:
+        return False
+    already = _ALREADY_UNNAMED_RE.match(cleaned)
+    inner = (already.group(1) or "").strip() if already else cleaned
+    return bool(_CUSTOMER_GROUP_RE.search(inner))
+
+
+def _is_same_as_initial_quote(span: str, initial_quote: str | None) -> bool:
+    """Return True if `span` is merely the edge's own initial quote (or contained in / containing it)."""
+    if not span or not initial_quote:
+        return False
+    norm_span = normalise_for_verify(span).strip().casefold()
+    norm_init = normalise_for_verify(initial_quote).strip().casefold()
+    if not norm_span or not norm_init:
+        return False
+    return norm_span == norm_init or norm_span in norm_init or norm_init in norm_span
+
+
+def _corroboration_tokens(target_name: str | None) -> list[str]:
+    if not target_name:
+        return []
+    norm = normalise_for_verify(target_name).casefold()
+    return [
+        t
+        for t in re.split(r"[^a-z0-9]+", norm)
+        if len(t) >= 3 and t not in _CORROBORATION_STOP_WORDS
+    ]
+
+
+def _span_mentions_target(span: str, target_name: str | None) -> bool:
+    tokens = _corroboration_tokens(target_name)
+    if not tokens:
+        return False
+    span_cf = normalise_for_verify(span).casefold()
+    return any(tok in span_cf for tok in tokens)
+
+
+def _span_corroborates_item(
+    span: str,
+    *,
+    item: ResearchItem,
+    initial_quote: str | None,
+    from_other_filing: bool,
+) -> bool:
+    """Return True iff `span` is non-circular corroboration (different passage in filing or peer filing)."""
+    if not span or not span.strip():
+        return False
+    if from_other_filing:
+        return True
+    if _is_same_as_initial_quote(span, initial_quote):
+        return False
+    if item.item_kind in ("no_disclosures", "undisclosed_customer"):
+        span_cf = span.casefold()
+        return any(kw in span_cf for kw in _DEPENDENCY_KEYWORDS) or bool(_PERCENT_NUMBER_RE.search(span))
+    target = item.target_name or (item.edge.target_name if item.edge is not None else None)
+    return _span_mentions_target(span, target)
 
 
 def _format_anonymised_customer_target(target_name: str) -> str | None:
@@ -346,11 +461,13 @@ def _format_anonymised_customer_target(target_name: str) -> str | None:
     `'Unnamed customer (<label>)'` (or `'Unnamed customer'`), else `None`.
     """
     cleaned = normalise_for_verify(target_name).strip()
-    if not cleaned:
+    if not cleaned or _is_customer_group_target(cleaned):
         return None
     already = _ALREADY_UNNAMED_RE.match(cleaned)
     if already:
         inner = (already.group(1) or "").strip()
+        if _is_customer_group_target(inner):
+            return None
         return f"Unnamed customer ({inner})" if inner else "Unnamed customer"
     if _ANONYMISED_CUSTOMER_LABEL_RE.match(cleaned):
         if cleaned.casefold() in ("unnamed customer", "undisclosed customer"):
@@ -360,10 +477,13 @@ def _format_anonymised_customer_target(target_name: str) -> str | None:
 
 
 def _normalise_candidate_dict_for_q2(cand: Mapping[str, Any]) -> dict[str, Any]:
-    """Rewrite anonymised customer labels in raw candidate dicts to `unnamed_customer` (Q2)."""
+    """Rewrite anonymised customer labels in raw candidate dicts to `unnamed_customer` (Q2) and drop customer groups (FIX-14)."""
     out = dict(cand)
     raw_target = str(out.get("target_name") or out.get("object_name_as_written") or "").strip()
     raw_quote = str(out.get("evidence_quote") or "").strip()
+    if _is_customer_group_target(raw_target):
+        out["evidence_quote"] = ""
+        return out
     anon_name = _format_anonymised_customer_target(raw_target)
     if anon_name is not None:
         norm_quote_cf = normalise_for_verify(raw_quote).casefold()
@@ -878,14 +998,36 @@ def merge_research_findings(
         updated = updated.model_copy(update={"importance": score_edge_importance(updated)})
         merged_by_id[updated.edge_id] = updated
 
+    unnamed_quote_keys: set[tuple[str, str, str]] = {
+        (
+            e.source_company_key,
+            e.edge_type,
+            normalise_for_verify(e.evidence_quote).strip().casefold(),
+        )
+        for e in merged_by_id.values()
+    }
+
     for raw_new_edge in added_edges:
+        if _is_customer_group_target(raw_new_edge.target_name):
+            continue
         new_edge = _normalise_anonymised_customer_edge(raw_new_edge)
+        if _is_customer_group_target(new_edge.target_name):
+            continue
         # B2: Missing interpretation is never defaulted to confirmed (treat as unverified -> don't merge)
         if new_edge.interpretation is None or new_edge.interpretation.status == "rejected":
             continue
         rule_flags, _, _ = check_interpretation_rules(new_edge, new_edge.evidence_quote)
         if rule_flags and new_edge.interpretation.method == "rules":
             continue
+        if new_edge.target_kind == "unnamed_customer":
+            u_key = (
+                new_edge.source_company_key,
+                new_edge.edge_type,
+                normalise_for_verify(new_edge.evidence_quote).strip().casefold(),
+            )
+            if u_key in unnamed_quote_keys and new_edge.edge_id not in merged_by_id:
+                continue
+            unnamed_quote_keys.add(u_key)
         target_key = None if new_edge.target_kind == "unnamed_customer" else new_edge.target_key
         if target_key is None and resolver is not None and new_edge.target_kind == "company":
             target_key = resolver(new_edge.target_name)
@@ -1391,6 +1533,17 @@ class ResearchLoop:
                 f"HOC_GEMINI_API_KEY is not set and research for {company.company_key} ({depth}) is not cached.",
             )
 
+        cached_light: CompanyResearch | None = None
+        if depth == "thorough":
+            _, light_cache_key = _company_research_cache_key(
+                company.company_key,
+                accession,
+                initial_edges,
+                "light",
+                self.prompt_version,
+            )
+            cached_light = self._get_cached_company_run(light_cache_key)
+
         scoped_analysis, scoped_result = _build_single_company_context(
             company,
             filing_ref,
@@ -1408,16 +1561,17 @@ class ResearchLoop:
         )
 
         if not items:
-            scored = attach_edge_importance(initial_edges)
+            base_edges = list(cached_light.edges) if cached_light is not None else list(initial_edges)
+            scored = attach_edge_importance(base_edges)
             _invoke_company_progress(progress, on_step, 0, 0, [], None, None)
             empty_res = CompanyResearch(
-                findings=[],
+                findings=list(cached_light.findings) if cached_light is not None else [],
                 edges=scored,
-                rejected_edge_ids=[],
+                rejected_edge_ids=list(cached_light.rejected_edge_ids) if cached_light is not None else [],
                 cached=False,
                 steps_done=0,
                 steps_total=0,
-                interpretation_rejected=0,
+                interpretation_rejected=len(cached_light.rejected_edge_ids) if cached_light is not None else 0,
                 model=self.model,
             )
             self._put_cached_company_run(cache_key, empty_res)
@@ -1435,6 +1589,11 @@ class ResearchLoop:
             if self.total_timeout_s >= DEFAULT_TOTAL_TIMEOUT_SECONDS
             else self.total_timeout_s
         )
+        min_tool_calls = 3 if depth == "thorough" else 2
+        require_search_filings = depth == "thorough"
+        light_findings_by_id: dict[str, ResearchFinding] = (
+            {f.finding_id: f for f in cached_light.findings} if cached_light is not None else {}
+        )
 
         started = time.monotonic()
         verified_interps: dict[str, EdgeInterpretation] = {}
@@ -1446,14 +1605,20 @@ class ResearchLoop:
         for idx, item in enumerate(items):
             remaining_items_after = len(items) - idx - 1
             elapsed = time.monotonic() - started
+            prior_finding = light_findings_by_id.get(item.item_id)
 
             def _on_tool_step(step: ResearchStep, cur_total: int = steps_total) -> None:
                 nonlocal steps_done
                 steps_done += 1
                 _invoke_company_progress(progress, on_step, steps_done, cur_total, findings, step, None)
 
-            if elapsed >= company_timeout_s:
-                finding = self._timeout_finding(item)
+            if prior_finding is not None and prior_finding.outcome == "rejected":
+                # Keep already-verified rejection from light without re-spending steps
+                for step in prior_finding.steps[:-1]:
+                    _on_tool_step(step)
+                finding = prior_finding
+            elif elapsed >= company_timeout_s:
+                finding = prior_finding if prior_finding is not None else self._timeout_finding(item)
             else:
                 try:
                     finding = self._investigate_item(
@@ -1468,25 +1633,32 @@ class ResearchLoop:
                         max_steps_override=item_max_steps,
                         total_timeout_override=company_timeout_s,
                         on_tool_step=_on_tool_step,
+                        min_tool_calls=min_tool_calls,
+                        require_search_filings=require_search_filings,
+                        prior_finding=prior_finding,
                     )
                 except Exception as exc:  # noqa: BLE001
                     log.warning("company research item %s failed: %s", item.item_id, exc)
-                    finding = ResearchFinding(
-                        finding_id=item.item_id,
-                        kind=item.item_kind,
-                        subject=item.subject_label,
-                        question=item.question,
-                        outcome="unresolved",
-                        explanation="Investigation could not be completed due to an unexpected source error.",
-                        steps=[
-                            ResearchStep(
-                                index=1,
-                                action="conclude",
-                                query=item.subject_name,
-                                summary="Investigation terminated cleanly after an unexpected error.",
-                                filing=item.filing_ref,
-                            )
-                        ],
+                    finding = (
+                        prior_finding
+                        if prior_finding is not None
+                        else ResearchFinding(
+                            finding_id=item.item_id,
+                            kind=item.item_kind,
+                            subject=item.subject_label,
+                            question=item.question,
+                            outcome="unresolved",
+                            explanation="Investigation could not be completed due to an unexpected source error.",
+                            steps=[
+                                ResearchStep(
+                                    index=1,
+                                    action="conclude",
+                                    query=item.subject_name,
+                                    summary="Investigation terminated cleanly after an unexpected error.",
+                                    filing=item.filing_ref,
+                                )
+                            ],
+                        )
                     )
 
             steps_done += 1
@@ -1503,8 +1675,19 @@ class ResearchLoop:
                 finding,
             )
 
+        if cached_light is not None:
+            seen_finding_ids = {f.finding_id for f in findings}
+            for lf in cached_light.findings:
+                if lf.finding_id not in seen_finding_ids:
+                    findings.append(lf)
+
         rejected_ids_list: list[str] = []
         rejected_ids_set: set[str] = set()
+        if cached_light is not None:
+            for rid in cached_light.rejected_edge_ids:
+                if rid and rid not in rejected_ids_set:
+                    rejected_ids_set.add(rid)
+                    rejected_ids_list.append(rid)
         for finding in findings:
             for rid in finding.rejected_edge_ids:
                 if not rid or rid in rejected_ids_set:
@@ -1519,7 +1702,15 @@ class ResearchLoop:
         portfolio_keys = set(portfolio_names)
         merged_by_id: dict[str, VerifiedEdge] = {}
 
-        for edge in initial_edges:
+        seed_edges: list[VerifiedEdge] = list(initial_edges)
+        if cached_light is not None:
+            existing_seed_ids = {e.edge_id for e in seed_edges}
+            for le in cached_light.edges:
+                if le.edge_id not in existing_seed_ids:
+                    seed_edges.append(le)
+                    existing_seed_ids.add(le.edge_id)
+
+        for edge in seed_edges:
             if edge.edge_id in rejected_ids_set:
                 continue
             updated = edge
@@ -1539,16 +1730,38 @@ class ResearchLoop:
             updated = updated.model_copy(update={"importance": score_edge_importance(updated)})
             merged_by_id[updated.edge_id] = updated
 
+        unnamed_quote_keys: set[tuple[str, str, str]] = {
+            (
+                e.source_company_key,
+                e.edge_type,
+                normalise_for_verify(e.evidence_quote).strip().casefold(),
+            )
+            for e in merged_by_id.values()
+        }
+
         for finding in findings:
             for raw_new_edge in finding.new_edges:
                 if raw_new_edge.edge_id in rejected_ids_set:
                     continue
+                if _is_customer_group_target(raw_new_edge.target_name):
+                    continue
                 new_edge = _normalise_anonymised_customer_edge(raw_new_edge)
+                if _is_customer_group_target(new_edge.target_name):
+                    continue
                 if new_edge.interpretation is None or new_edge.interpretation.status != "confirmed":
                     continue
                 rule_flags, _, _ = check_interpretation_rules(new_edge, new_edge.evidence_quote)
                 if rule_flags and new_edge.interpretation.method == "rules":
                     continue
+                if new_edge.target_kind == "unnamed_customer":
+                    u_key = (
+                        new_edge.source_company_key,
+                        new_edge.edge_type,
+                        normalise_for_verify(new_edge.evidence_quote).strip().casefold(),
+                    )
+                    if u_key in unnamed_quote_keys and new_edge.edge_id not in merged_by_id:
+                        continue
+                    unnamed_quote_keys.add(u_key)
                 target_key = None if new_edge.target_kind == "unnamed_customer" else new_edge.target_key
                 if target_key is None and resolver is not None and new_edge.target_kind == "company":
                     target_key = resolver(new_edge.target_name)
@@ -1758,6 +1971,117 @@ class ResearchLoop:
         rem_item = self.item_timeout_s - (time.monotonic() - item_started)
         return min(self.call_timeout_s, rem_total, rem_item)
 
+    @staticmethod
+    def _is_early_rejection_allowed(
+        item: ResearchItem,
+        decision: Mapping[str, Any],
+        observed_quotes: Sequence[str],
+    ) -> bool:
+        """Return True if an early `conclude` is a grounded rejection of a flagged edge."""
+        if item.item_kind != "flagged_edge":
+            return False
+        if str(decision.get("outcome", "")).strip() != "rejected":
+            return False
+        cues = ("do not rely", "no assurance", "primary competitors include", "compete with")
+        if any(any(c in q.lower() for c in cues) for q in observed_quotes):
+            return True
+        return bool(
+            item.edge is not None
+            and item.edge.interpretation is not None
+            and any(
+                f in item.edge.interpretation.flags
+                for f in ("negated", "competitor_mention", "direction_mismatch", "subject_mismatch")
+            )
+        )
+
+    @staticmethod
+    def _next_complementary_tool_decision(
+        *,
+        item: ResearchItem,
+        cik: str,
+        steps: Sequence[ResearchStep],
+        require_search_filings: bool,
+        min_tool_calls: int,
+    ) -> dict[str, Any]:
+        """Choose the next complementary tool step when enforcing `min_tool_calls` and `require_search_filings`."""
+        used_actions = [s.action for s in steps]
+        used_set = set(used_actions)
+        target_query = (
+            clean_company_name(item.subject_name)
+            if item.item_kind in ("undisclosed_customer", "no_disclosures")
+            or _format_anonymised_customer_target(item.target_name or "") is not None
+            else (item.target_name or clean_company_name(item.subject_name))
+        )
+
+        # If on the last required tool step and search_filings is required, enforce search_filings
+        if require_search_filings and "search_filings" not in used_set and len(steps) >= max(0, min_tool_calls - 1):
+            return {
+                "action": "search_filings",
+                "query": target_query,
+                "cik": cik,
+                "section": "1",
+                "outcome": "unresolved",
+                "explanation": "",
+                "candidate_edges": [],
+            }
+
+        if "find_in_filing" not in used_set:
+            find_query = (
+                "customer"
+                if item.item_kind in ("undisclosed_customer", "no_disclosures")
+                else (item.target_name or "supplier")
+            )
+            return {
+                "action": "find_in_filing",
+                "query": find_query,
+                "cik": cik,
+                "section": "1",
+                "outcome": "unresolved",
+                "explanation": "",
+                "candidate_edges": [],
+            }
+
+        if "read_section" not in used_set:
+            sec = (
+                "1A"
+                if item.edge is not None
+                and "1" in (item.edge.section or "")
+                and "1A" not in (item.edge.section or "")
+                else "1"
+            )
+            return {
+                "action": "read_section",
+                "query": item.target_name or item.subject_name,
+                "cik": cik,
+                "section": sec,
+                "outcome": "unresolved",
+                "explanation": "",
+                "candidate_edges": [],
+            }
+
+        if "search_filings" not in used_set:
+            return {
+                "action": "search_filings",
+                "query": target_query,
+                "cik": cik,
+                "section": "1",
+                "outcome": "unresolved",
+                "explanation": "",
+                "candidate_edges": [],
+            }
+
+        # Fallback additional section read
+        read_1a = any(s.action == "read_section" and "1A" in s.query for s in steps)
+        return {
+            "action": "read_section",
+            "query": item.target_name or item.subject_name,
+            "cik": cik,
+            "section": "1" if read_1a else "1A",
+            "outcome": "unresolved",
+            "explanation": "",
+            "candidate_edges": [],
+        }
+
     def _investigate_item(
         self,
         *,
@@ -1772,11 +2096,30 @@ class ResearchLoop:
         max_steps_override: int | None = None,
         total_timeout_override: float | None = None,
         on_tool_step: Callable[[ResearchStep], None] | None = None,
+        min_tool_calls: int | None = None,
+        require_search_filings: bool | None = None,
+        prior_finding: ResearchFinding | None = None,
     ) -> ResearchFinding:
         effective_max_steps = max(
             1,
             min(int(max_steps_override if max_steps_override is not None else self.max_steps), MAX_RESEARCH_STEPS),
         )
+        default_min_tools = (
+            3
+            if effective_max_steps >= 4
+            else (2 if effective_max_steps == 3 else max(0, effective_max_steps - 1))
+        )
+        min_tools = (
+            max(0, min(int(min_tool_calls), max(0, effective_max_steps - 1)))
+            if min_tool_calls is not None
+            else default_min_tools
+        )
+        req_search = (
+            bool(require_search_filings)
+            if require_search_filings is not None
+            else (effective_max_steps >= 4 and min_tools >= 3)
+        )
+
         item_started = time.monotonic()
         init_budget = self._remaining_budget(
             run_started=run_started,
@@ -1784,14 +2127,14 @@ class ResearchLoop:
             total_timeout_s=total_timeout_override,
         )
         if init_budget <= 0:
-            return self._timeout_finding(item)
+            return prior_finding if prior_finding is not None else self._timeout_finding(item)
         try:
             filing = _call_with_timeout(
                 lambda: self._load_filing_for_item(item, analysis),
                 init_budget,
             )
         except FuturesTimeoutError:
-            return self._timeout_finding(item)
+            return prior_finding if prior_finding is not None else self._timeout_finding(item)
 
         cik = (
             (filing.cik if filing is not None else None)
@@ -1801,13 +2144,13 @@ class ResearchLoop:
         )
         cik = str(cik).zfill(10) if str(cik).isdigit() else str(cik)
         filing_ref = self._filing_ref_for(item, filing)
+        initial_quote = item.edge.evidence_quote if item.edge is not None and item.edge.evidence_quote else None
 
         steps: list[ResearchStep] = []
         observations: list[str] = []
         verified_quotes: list[str] = []
-
-        if item.edge is not None and item.edge.evidence_quote:
-            verified_quotes.append(item.edge.evidence_quote)
+        corroborating_quotes: list[str] = []
+        collected_candidate_edges: list[Mapping[str, Any]] = []
 
         has_key = bool(getattr(self.client, "has_api_key", True))
         can_call_gemini = has_key and not cache_only
@@ -1833,6 +2176,8 @@ class ResearchLoop:
                     step_idx=step_idx,
                     observations=observations,
                     max_steps=effective_max_steps,
+                    min_tool_calls=min_tools,
+                    require_search_filings=req_search,
                 )
                 try:
                     raw_resp, _ = _call_with_timeout(
@@ -1860,10 +2205,19 @@ class ResearchLoop:
                     item=item,
                     cik=cik,
                     step_idx=step_idx,
-                    verified_quotes=verified_quotes,
+                    verified_quotes=corroborating_quotes or verified_quotes,
                     observations=observations,
                     has_api_key=has_key,
+                    min_tool_calls=min_tools,
+                    require_search_filings=req_search,
+                    steps=steps,
                 )
+
+            raw_cands = step_decision.get("candidate_edges")
+            if isinstance(raw_cands, list):
+                for rc in raw_cands:
+                    if isinstance(rc, Mapping):
+                        collected_candidate_edges.append(rc)
 
             action_raw = str(step_decision.get("action", "conclude")).strip()
             action: ResearchAction = (
@@ -1872,9 +2226,50 @@ class ResearchLoop:
                 else "conclude"
             )
 
+            used_actions = {s.action for s in steps}
+            needs_more_tools = len(steps) < min_tools or (
+                req_search and "search_filings" not in used_actions
+            )
+
             if action == "conclude":
+                if not needs_more_tools or self._is_early_rejection_allowed(item, step_decision, verified_quotes):
+                    concluded_payload = step_decision
+                    break
+                # FIX-1 (1b/1c): Reject early conclude with a tool message and execute a complementary tool
+                observations.append(
+                    "TOOL_MESSAGE: Early `conclude` rejected — re-finding the initial quote or stopping before "
+                    f"{min_tools} tool calls is insufficient. Running another tool to check for independent "
+                    "corroboration in the filing or peer SEC filings."
+                )
+                if str(step_decision.get("explanation") or "").strip():
+                    concluded_payload = step_decision  # Preserve explanation/candidates if final step times out
+                step_decision = self._next_complementary_tool_decision(
+                    item=item,
+                    cik=cik,
+                    steps=steps,
+                    require_search_filings=req_search,
+                    min_tool_calls=min_tools,
+                )
+                action = step_decision["action"]  # type: ignore[assignment]
+            elif step_idx == effective_max_steps and not needs_more_tools:
+                # Final slot reached after all required tool calls; conclude now instead of overwriting a tool step
                 concluded_payload = step_decision
                 break
+            elif (
+                req_search
+                and "search_filings" not in used_actions
+                and len(steps) == max(0, min_tools - 1)
+                and action != "search_filings"
+            ):
+                # Enforce at least one search_filings call in thorough depth
+                step_decision = self._next_complementary_tool_decision(
+                    item=item,
+                    cik=cik,
+                    steps=steps,
+                    require_search_filings=True,
+                    min_tool_calls=min_tools,
+                )
+                action = "search_filings"
 
             tool_budget = self._remaining_budget(
                 run_started=run_started,
@@ -1896,10 +2291,13 @@ class ResearchLoop:
                         filing_ref=filing_ref,
                         result=result,
                         analysis=analysis,
+                        resolver=resolver,
                         cache_only=cache_only,
                         steps=steps,
                         observations=observations,
                         verified_quotes=verified_quotes,
+                        corroborating_quotes=corroborating_quotes,
+                        initial_quote=initial_quote,
                     ),
                     tool_budget,
                 )
@@ -1918,6 +2316,9 @@ class ResearchLoop:
                 "candidate_edges": [],
             }
 
+        if initial_quote and initial_quote not in verified_quotes:
+            verified_quotes.append(initial_quote)
+
         return self._finalize_finding(
             item=item,
             cik=cik,
@@ -1930,12 +2331,15 @@ class ResearchLoop:
             cache_only=cache_only,
             steps=steps,
             verified_quotes=verified_quotes,
+            corroborating_quotes=corroborating_quotes,
+            collected_candidate_edges=collected_candidate_edges,
             concluded_payload=concluded_payload,
             run_started=run_started,
             item_started=item_started,
             verified_interpretations=verified_interpretations,
             max_steps_override=effective_max_steps,
             total_timeout_override=total_timeout_override,
+            prior_finding=prior_finding,
         )
 
     @staticmethod
@@ -1966,10 +2370,13 @@ class ResearchLoop:
         filing_ref: FilingRef | None,
         result: DependencyResult,
         analysis: AnalysisResponse,
+        resolver: Callable[[str], str | None],
         cache_only: bool,
         steps: list[ResearchStep],
         observations: list[str],
         verified_quotes: list[str],
+        corroborating_quotes: list[str],
+        initial_quote: str | None,
     ) -> None:
         query_raw = str(decision.get("query") or "").strip()
         target_cik = str(decision.get("cik") or cik).strip() or cik
@@ -1980,19 +2387,40 @@ class ResearchLoop:
             target_filing = self._load_filing_by_cik(target_cik) or filing
 
         next_index = len(steps) + 1
+        from_other_filing = target_cik != cik and target_filing is not filing
 
         if action == "find_in_filing":
             search_phrase = query_raw or item.target_name or item.subject_name
             spans = self._find_spans_in_filing(target_filing, search_phrase, item=item, result=result)
+            corroborating_in_step: list[str] = []
             for span in spans:
-                if span not in verified_quotes:
-                    verified_quotes.append(span)
-                observations.append(f'OBSERVED_QUOTE: "{span}" (source=find_in_filing, cik={target_cik})')
-            summary = (
-                f'Found verified filing passage "{spans[0][:140]}" matching {search_phrase}.'
-                if spans
-                else f"Searched filing for {search_phrase}; no exact phrase match in primary text."
-            )
+                is_corroborating = _span_corroborates_item(
+                    span,
+                    item=item,
+                    initial_quote=initial_quote,
+                    from_other_filing=from_other_filing,
+                )
+                if is_corroborating:
+                    corroborating_in_step.append(span)
+                    if span not in corroborating_quotes:
+                        corroborating_quotes.append(span)
+                    if span not in verified_quotes:
+                        verified_quotes.insert(0, span)
+                    observations.append(
+                        f'OBSERVED_QUOTE: "{span}" (source=find_in_filing, cik={target_cik}, corroborating=true)'
+                    )
+                else:
+                    if span not in verified_quotes:
+                        verified_quotes.append(span)
+                    observations.append(
+                        f'OBSERVED_QUOTE: "{span}" (source=find_in_filing, cik={target_cik}, corroborating=false, note=same_as_initial_quote)'
+                    )
+            if corroborating_in_step:
+                summary = f'Found independent filing passage "{corroborating_in_step[0][:140]}" matching {search_phrase}.'
+            elif spans:
+                summary = f"Searched filing for {search_phrase}; only the initial extraction passage matched (no second independent passage)."
+            else:
+                summary = f"Searched filing for {search_phrase}; no exact phrase match in primary text."
             steps.append(
                 ResearchStep(
                     index=next_index,
@@ -2006,15 +2434,33 @@ class ResearchLoop:
 
         if action == "read_section":
             spans = self._read_section_spans(target_filing, section_req, item=item, result=result)
+            corroborating_in_step = []
             for span in spans:
-                if span not in verified_quotes:
-                    verified_quotes.append(span)
-                observations.append(
-                    f'OBSERVED_QUOTE: "{span}" (source=read_section, cik={target_cik}, section={section_req})'
+                is_corroborating = _span_corroborates_item(
+                    span,
+                    item=item,
+                    initial_quote=initial_quote,
+                    from_other_filing=from_other_filing,
                 )
+                if is_corroborating:
+                    corroborating_in_step.append(span)
+                    if span not in corroborating_quotes:
+                        corroborating_quotes.append(span)
+                    if span not in verified_quotes:
+                        verified_quotes.insert(0, span)
+                    observations.append(
+                        f'OBSERVED_QUOTE: "{span}" (source=read_section, cik={target_cik}, section={section_req}, corroborating=true)'
+                    )
+                else:
+                    if span not in verified_quotes:
+                        verified_quotes.append(span)
+                    observations.append(
+                        f'OBSERVED_QUOTE: "{span}" (source=read_section, cik={target_cik}, section={section_req}, corroborating=false)'
+                    )
+            display_span = corroborating_in_step[0] if corroborating_in_step else (spans[0] if spans else "")
             summary = (
-                f'Read section {section_req} and extracted verified passage "{spans[0][:140]}".'
-                if spans
+                f'Read section {section_req} and extracted verified passage "{display_span[:140]}".'
+                if display_span
                 else f"Read section {section_req} of filing; no additional dependency passages surfaced."
             )
             steps.append(
@@ -2029,24 +2475,37 @@ class ResearchLoop:
             return
 
         if action == "search_filings":
-            phrase = query_raw or item.target_name or clean_company_name(item.subject_name)
+            raw_phrase = query_raw or item.target_name or clean_company_name(item.subject_name)
+            if (
+                item.item_kind in ("undisclosed_customer", "no_disclosures")
+                or _format_anonymised_customer_target(raw_phrase) is not None
+                or not _corroboration_tokens(raw_phrase)
+            ):
+                phrase = clean_company_name(item.subject_name) or item.subject_name
+            else:
+                phrase = raw_phrase
             spans, peer_names = self._search_across_filings(
                 phrase,
                 exclude_cik=cik,
                 item=item,
                 result=result,
                 analysis=analysis,
+                resolver=resolver,
                 cache_only=cache_only,
             )
             for span in spans:
+                if span not in corroborating_quotes:
+                    corroborating_quotes.append(span)
                 if span not in verified_quotes:
-                    verified_quotes.append(span)
-                observations.append(f'OBSERVED_QUOTE: "{span}" (source=search_filings, query={phrase})')
+                    verified_quotes.insert(0, span)
+                observations.append(
+                    f'OBSERVED_QUOTE: "{span}" (source=search_filings, query={phrase}, corroborating=true)'
+                )
             if spans:
                 peer_label = ", ".join(peer_names[:2]) if peer_names else "peer filings"
                 summary = f'Cross-filing search for {phrase} in {peer_label} found "{spans[0][:140]}".'
             else:
-                summary = f"Searched SEC filings for {phrase}; no additional corroborating passages found."
+                summary = f"Searched peer SEC filings for {phrase}; no additional corroborating passages found."
             steps.append(
                 ResearchStep(
                     index=next_index,
@@ -2071,12 +2530,15 @@ class ResearchLoop:
         cache_only: bool,
         steps: list[ResearchStep],
         verified_quotes: list[str],
+        corroborating_quotes: list[str],
+        collected_candidate_edges: Sequence[Mapping[str, Any]],
         concluded_payload: Mapping[str, Any] | None,
         run_started: float,
         item_started: float,
         verified_interpretations: dict[str, EdgeInterpretation],
         max_steps_override: int | None = None,
         total_timeout_override: float | None = None,
+        prior_finding: ResearchFinding | None = None,
     ) -> ResearchFinding:
         effective_max_steps = max(
             1,
@@ -2088,9 +2550,12 @@ class ResearchLoop:
                 item=item,
                 cik=cik,
                 step_idx=effective_max_steps,
-                verified_quotes=verified_quotes,
-                observations=[f'OBSERVED_QUOTE: "{q}"' for q in verified_quotes],
+                verified_quotes=corroborating_quotes or verified_quotes,
+                observations=[f'OBSERVED_QUOTE: "{q}"' for q in (corroborating_quotes or verified_quotes)],
                 has_api_key=has_key,
+                min_tool_calls=0,
+                require_search_filings=False,
+                steps=steps,
             )
 
         raw_outcome = str(concluded_payload.get("outcome") or "unresolved").strip()
@@ -2100,12 +2565,19 @@ class ResearchLoop:
             else "unresolved"
         )
         raw_explanation = str(concluded_payload.get("explanation") or "").strip()
-        raw_candidates = concluded_payload.get("candidate_edges")
-        candidate_dicts = (
-            [_normalise_candidate_dict_for_q2(c) for c in raw_candidates if isinstance(c, Mapping)]
-            if isinstance(raw_candidates, list)
-            else []
-        )
+
+        combined_raw_candidates: list[Mapping[str, Any]] = list(collected_candidate_edges)
+        final_cands = concluded_payload.get("candidate_edges")
+        if isinstance(final_cands, list):
+            for fc in final_cands:
+                if isinstance(fc, Mapping):
+                    combined_raw_candidates.append(fc)
+
+        candidate_dicts = [
+            _normalise_candidate_dict_for_q2(c)
+            for c in combined_raw_candidates
+            if isinstance(c, Mapping)
+        ]
 
         verified_new_edges: list[VerifiedEdge] = []
         if candidate_dicts and filing is not None and filing_ref is not None:
@@ -2121,6 +2593,7 @@ class ResearchLoop:
                 portfolio_company_keys=top_keys,
                 resolve_target_key=resolver,
             )
+            built_edges = [e for e in built_edges if not _is_customer_group_target(e.target_name)]
             if built_edges:
                 budget = self._remaining_budget(
                     run_started=run_started,
@@ -2144,7 +2617,9 @@ class ResearchLoop:
                         confirmed_built = [
                             e
                             for e in interp_res.edges
-                            if e.interpretation is not None and e.interpretation.status == "confirmed"
+                            if e.interpretation is not None
+                            and e.interpretation.status == "confirmed"
+                            and not _is_customer_group_target(e.target_name)
                         ]
                         verified_new_edges = [
                             _normalise_anonymised_customer_edge(e)
@@ -2152,12 +2627,25 @@ class ResearchLoop:
                         ]
                         for ve in verified_new_edges:
                             if ve.evidence_quote not in verified_quotes:
-                                verified_quotes.append(ve.evidence_quote)
+                                verified_quotes.insert(0, ve.evidence_quote)
                     except FuturesTimeoutError:
                         log.info("V-INT on candidate_edges timed out")
 
-        # F4: A candidate edge in new_edges whose edge_id (or identical source/target/type/accession)
-        # already exists in result.edges counts as confirmed, not new_evidence.
+        # FIX-2: Carry forward verified new_edges from cached light finding if present
+        if prior_finding is not None and prior_finding.new_edges:
+            existing_new_ids = {e.edge_id for e in verified_new_edges}
+            for pe in prior_finding.new_edges:
+                if _is_customer_group_target(pe.target_name):
+                    continue
+                if pe.edge_id not in existing_new_ids:
+                    verified_new_edges.append(pe)
+                    existing_new_ids.add(pe.edge_id)
+                    if pe.evidence_quote not in verified_quotes:
+                        verified_quotes.insert(0, pe.evidence_quote)
+
+        # F4 + FIX-14: A candidate edge in new_edges whose edge_id (or identical source/target/type/accession,
+        # or unnamed_customer with same source/type/normalised quote) already exists in result.edges
+        # counts as matching the existing edge, not new_evidence.
         existing_by_id: dict[str, VerifiedEdge] = {e.edge_id: e for e in result.edges}
         existing_by_tuple: dict[tuple[str, str, str, str], VerifiedEdge] = {
             (
@@ -2177,10 +2665,21 @@ class ResearchLoop:
             ): e
             for e in result.edges
         }
+        existing_by_unnamed_quote: dict[tuple[str, str, str], VerifiedEdge] = {
+            (
+                e.source_company_key,
+                e.edge_type,
+                normalise_for_verify(e.evidence_quote).strip().casefold(),
+            ): e
+            for e in result.edges
+        }
         refound_existing_ids: list[str] = []
         if verified_new_edges:
             truly_new_edges: list[VerifiedEdge] = []
+            seen_new_unnamed_quotes: set[tuple[str, str, str]] = set()
             for ve in verified_new_edges:
+                if _is_customer_group_target(ve.target_name):
+                    continue
                 tup = (
                     ve.source_company_key,
                     ve.target_key or ve.target_name.strip().casefold(),
@@ -2193,21 +2692,40 @@ class ResearchLoop:
                     ve.edge_type,
                     ve.filing.accession,
                 )
+                unnamed_tup = (
+                    ve.source_company_key,
+                    ve.edge_type,
+                    normalise_for_verify(ve.evidence_quote).strip().casefold(),
+                )
                 matched_existing = (
                     existing_by_id.get(ve.edge_id)
                     or existing_by_tuple.get(tup)
                     or existing_by_name_tuple.get(name_tup)
+                    or (existing_by_unnamed_quote.get(unnamed_tup) if ve.target_kind == "unnamed_customer" else None)
                 )
                 if matched_existing is not None:
                     eid = matched_existing.edge_id
+                    if (
+                        not _is_same_as_initial_quote(ve.evidence_quote, matched_existing.evidence_quote)
+                        and ve.evidence_quote not in corroborating_quotes
+                    ):
+                        corroborating_quotes.append(ve.evidence_quote)
                     if eid not in refound_existing_ids:
                         refound_existing_ids.append(eid)
                     if ve.interpretation is not None and ve.interpretation.status == "confirmed":
                         verified_interpretations[eid] = ve.interpretation
                         _RECENT_VERIFIED_INTERPRETATIONS[eid] = ve.interpretation
                 else:
+                    if ve.target_kind == "unnamed_customer":
+                        if unnamed_tup in seen_new_unnamed_quotes:
+                            continue
+                        seen_new_unnamed_quotes.add(unnamed_tup)
                     truly_new_edges.append(ve)
             verified_new_edges = truly_new_edges
+
+        # FIX-1 (1a): Non-circular confirmation requires a different passage in the filing OR a peer filing quote.
+        has_corroboration = bool(corroborating_quotes)
+        best_corroborating_quote = corroborating_quotes[0] if corroborating_quotes else ""
 
         confirmed_edge_ids: list[str] = []
         rejected_edge_ids: list[str] = []
@@ -2236,42 +2754,45 @@ class ResearchLoop:
                 except FuturesTimeoutError:
                     vint_interp = None
 
-            if vint_interp is not None:
-                verified_interpretations[edge.edge_id] = vint_interp
-                _RECENT_VERIFIED_INTERPRETATIONS[edge.edge_id] = vint_interp
-
-            # B1 + Codex second review (1 & 2):
-            # - Rejection is gated strictly on vint_interp.status == "rejected"; a research conclusion alone
-            #   must never delete an edge supported by V-INT.
-            # - Confirmation requires both vint_interp.status == "confirmed" and outcome in ("confirmed", "revised"),
-            #   and carries the exact verifier verdict into merge_research_findings.
             if outcome == "unresolved" or vint_interp is None:
                 outcome = "unresolved"
+                if vint_interp is not None and vint_interp.status != "confirmed":
+                    verified_interpretations[edge.edge_id] = vint_interp
+                    _RECENT_VERIFIED_INTERPRETATIONS[edge.edge_id] = vint_interp
                 if not raw_explanation:
                     raw_explanation = (
                         f'Filing context for "{edge.evidence_quote}" remains ambiguous or unresolved.'
                     )
             elif vint_interp.status == "rejected":
+                verified_interpretations[edge.edge_id] = vint_interp
+                _RECENT_VERIFIED_INTERPRETATIONS[edge.edge_id] = vint_interp
                 outcome = "rejected"
                 rejected_edge_ids = [edge.edge_id]
                 if not raw_explanation:
                     raw_explanation = (
                         f'Filing context "{edge.evidence_quote}" does not support an active supply dependency.'
                     )
-            elif vint_interp.status == "confirmed" and (
-                outcome in ("confirmed", "revised") or edge.edge_id in refound_existing_ids
+            elif (
+                vint_interp.status == "confirmed"
+                and has_corroboration
+                and (outcome in ("confirmed", "revised") or edge.edge_id in refound_existing_ids)
             ):
+                verified_interpretations[edge.edge_id] = vint_interp
+                _RECENT_VERIFIED_INTERPRETATIONS[edge.edge_id] = vint_interp
                 outcome = "confirmed"
                 confirmed_edge_ids = [edge.edge_id]
                 if not raw_explanation:
                     raw_explanation = (
-                        f'Verified filing context "{edge.evidence_quote}" confirms the operational dependency.'
+                        f'Verified corroborating passage "{best_corroborating_quote}" confirms the operational dependency.'
                     )
             else:
+                if vint_interp.status == "flagged":
+                    verified_interpretations[edge.edge_id] = vint_interp
+                    _RECENT_VERIFIED_INTERPRETATIONS[edge.edge_id] = vint_interp
                 outcome = "unresolved"
-                if not raw_explanation:
+                if not raw_explanation or not has_corroboration:
                     raw_explanation = (
-                        f'Filing context "{edge.evidence_quote}" remains flagged after verification.'
+                        f'Filing context "{edge.evidence_quote}" remains uncorroborated by an independent passage.'
                     )
 
         elif item.item_kind == "single_source" and item.edge is not None:
@@ -2279,21 +2800,26 @@ class ResearchLoop:
             edge_is_confirmed = edge.interpretation is not None and edge.interpretation.status == "confirmed"
             if verified_new_edges:
                 outcome = "new_evidence"
-                if edge_is_confirmed:
+                if edge_is_confirmed and has_corroboration:
                     confirmed_edge_ids = [edge.edge_id]
             elif (
-                refound_existing_ids
-                or (verified_quotes and outcome in ("confirmed", "revised") and edge_is_confirmed)
+                has_corroboration
+                and edge_is_confirmed
+                and (outcome in ("confirmed", "revised") or edge.edge_id in refound_existing_ids)
             ):
                 outcome = "confirmed"
-                if edge_is_confirmed and edge.edge_id not in confirmed_edge_ids:
+                if edge.edge_id not in confirmed_edge_ids:
                     confirmed_edge_ids.append(edge.edge_id)
-                if not raw_explanation and verified_quotes:
+                if not raw_explanation:
                     raw_explanation = (
-                        f'Verified sole-source disclosure "{verified_quotes[0]}" in the annual report.'
+                        f'Verified sole-source disclosure "{best_corroborating_quote}" in the annual report.'
                     )
             else:
                 outcome = "unresolved"
+                if not raw_explanation or not has_corroboration:
+                    raw_explanation = (
+                        f'Initial disclosure "{edge.evidence_quote}" was not corroborated by a second passage or peer filing.'
+                    )
 
         elif item.item_kind == "unresolved_counterparty" and item.edge is not None:
             edge = item.edge
@@ -2308,55 +2834,73 @@ class ResearchLoop:
                         f'Resolved counterparty identity for "{edge.evidence_quote}" against portfolio records.'
                     )
             elif (
-                refound_existing_ids
-                or (verified_quotes and outcome in ("confirmed", "revised") and edge_is_confirmed)
+                has_corroboration
+                and edge_is_confirmed
+                and (outcome in ("confirmed", "revised") or edge.edge_id in refound_existing_ids)
             ):
                 outcome = "confirmed"
-                if edge_is_confirmed and edge.edge_id not in confirmed_edge_ids:
+                if edge.edge_id not in confirmed_edge_ids:
                     confirmed_edge_ids.append(edge.edge_id)
-                if not raw_explanation and verified_quotes:
+                if not raw_explanation:
                     raw_explanation = (
-                        f'Verified external counterparty disclosure "{verified_quotes[0]}" in the filing.'
+                        f'Verified external counterparty disclosure "{best_corroborating_quote}" in the filing.'
                     )
             else:
                 outcome = "unresolved"
+                if not raw_explanation or not has_corroboration:
+                    raw_explanation = (
+                        f'Counterparty in "{edge.evidence_quote}" remains unresolved as an external entity.'
+                    )
 
         elif item.item_kind in ("no_disclosures", "undisclosed_customer"):
             if verified_new_edges:
                 outcome = "new_evidence"
-                if not raw_explanation:
+                if (
+                    not raw_explanation
+                    or "no additional" in raw_explanation.lower()
+                    or "undisclosed" in raw_explanation.lower()
+                ):
                     raw_explanation = (
                         f'Extracted verified dependency disclosure "{verified_new_edges[0].evidence_quote}".'
                     )
-            elif refound_existing_ids or (
-                item.edge is not None
-                and verified_quotes
-                and outcome in ("confirmed", "revised")
+            elif (
+                has_corroboration
+                and item.edge is not None
                 and item.edge.interpretation is not None
                 and item.edge.interpretation.status == "confirmed"
+                and (outcome in ("confirmed", "revised") or item.edge.edge_id in refound_existing_ids)
             ):
                 outcome = "confirmed"
-                if (
-                    item.edge is not None
-                    and item.edge.interpretation is not None
-                    and item.edge.interpretation.status == "confirmed"
-                    and item.edge.edge_id not in confirmed_edge_ids
-                ):
+                if item.edge.edge_id not in confirmed_edge_ids:
                     confirmed_edge_ids.append(item.edge.edge_id)
-                if not raw_explanation and verified_quotes:
+                if not raw_explanation:
                     raw_explanation = (
-                        f'Confirmed customer concentration disclosure "{verified_quotes[0]}" in the filing.'
+                        f'Confirmed customer concentration disclosure "{best_corroborating_quote}" in the filing.'
                     )
             else:
                 outcome = "unresolved"
-                if not raw_explanation:
+                if not raw_explanation or not has_corroboration:
                     raw_explanation = (
                         "Filing leaves specific counterparty identities undisclosed in the inspected sections."
                     )
 
-        for refound_id in refound_existing_ids:
-            if refound_id not in rejected_edge_ids and refound_id not in confirmed_edge_ids:
-                confirmed_edge_ids.append(refound_id)
+        if has_corroboration:
+            for refound_id in refound_existing_ids:
+                if refound_id not in rejected_edge_ids and refound_id not in confirmed_edge_ids:
+                    confirmed_edge_ids.append(refound_id)
+
+        # FIX-2: Preserve confirmed_edge_ids from cached light finding if not rejected
+        if prior_finding is not None and outcome != "rejected":
+            for cid in prior_finding.confirmed_edge_ids:
+                if cid not in rejected_edge_ids and cid not in confirmed_edge_ids:
+                    confirmed_edge_ids.append(cid)
+            if outcome == "unresolved" and prior_finding.outcome in ("confirmed", "revised", "new_evidence"):
+                outcome = "new_evidence" if verified_new_edges else prior_finding.outcome
+                if prior_finding.explanation:
+                    raw_explanation = prior_finding.explanation
+                    for pq in re.findall(r'"([^"]+)"', prior_finding.explanation):
+                        if pq not in verified_quotes:
+                            verified_quotes.append(pq)
 
         clean_explanation = strip_unquoted_numbers(raw_explanation, verified_quotes)
 
@@ -2439,12 +2983,19 @@ class ResearchLoop:
         *,
         item: ResearchItem,
         result: DependencyResult,
+        exclude_initial_quote: bool = False,
     ) -> list[str]:
-        spans: list[str] = []
         needle = normalise_for_verify(phrase).strip().casefold()
         if not needle or filing is None or not filing.text:
             return []
 
+        initial_quote = (
+            item.edge.evidence_quote
+            if item.edge is not None
+            and item.edge.evidence_quote
+            and filing.accession == item.edge.filing.accession
+            else None
+        )
         norm_doc = normalise_for_verify(filing.text)
         raw_sentences = [
             normalise_for_verify(s).strip()
@@ -2453,15 +3004,28 @@ class ResearchLoop:
             and not re.match(r"^item\s+\d+[a-z]?\b", normalise_for_verify(s).strip(), re.IGNORECASE)
         ]
 
+        distinct_spans: list[str] = []
+        initial_spans: list[str] = []
+
         for idx, sent in enumerate(raw_sentences):
             sent_cf = sent.casefold()
             if needle not in sent_cf:
+                continue
+
+            is_initial = _is_same_as_initial_quote(sent, initial_quote)
+            if is_initial and exclude_initial_quote:
                 continue
 
             # F3: Require the queried phrase, derive ±1 sentence of context around the actual match,
             # and verify via find_quote_span against Filing.text.
             prev_s = raw_sentences[idx - 1] if idx > 0 else ""
             next_s = raw_sentences[idx + 1] if idx + 1 < len(raw_sentences) else ""
+            if not is_initial and initial_quote:
+                if _is_same_as_initial_quote(prev_s, initial_quote):
+                    prev_s = ""
+                if _is_same_as_initial_quote(next_s, initial_quote):
+                    next_s = ""
+
             candidates = [
                 " ".join(p for p in (prev_s, sent, next_s) if p),
                 " ".join(p for p in (sent, next_s) if p),
@@ -2488,16 +3052,26 @@ class ResearchLoop:
                     and verify_quote(window, norm_doc, already_normalised_doc=True)
                 ):
                     chosen = window
-            if chosen and chosen not in spans:
-                spans.append(chosen)
-            if sent != chosen and 20 <= len(sent) <= 360 and sent not in spans and find_quote_span(
-                sent, norm_doc, already_normalised_doc=True
-            ) is not None:
-                spans.append(sent)
-            if len(spans) >= 3:
+
+            target_list = initial_spans if is_initial else distinct_spans
+            if chosen and chosen not in target_list:
+                target_list.append(chosen)
+            if (
+                sent != chosen
+                and 20 <= len(sent) <= 360
+                and sent not in target_list
+                and find_quote_span(sent, norm_doc, already_normalised_doc=True) is not None
+            ):
+                target_list.append(sent)
+            if len(distinct_spans) >= 3:
                 break
 
-        return spans
+        combined = list(distinct_spans)
+        if not exclude_initial_quote:
+            for sp in initial_spans:
+                if sp not in combined:
+                    combined.append(sp)
+        return combined[:3]
 
     def _read_section_spans(
         self,
@@ -2510,6 +3084,13 @@ class ResearchLoop:
         if filing is None or not filing.text:
             return self._find_spans_in_filing(filing, item.target_name or item.subject_name, item=item, result=result)
 
+        initial_quote = (
+            item.edge.evidence_quote
+            if item.edge is not None
+            and item.edge.evidence_quote
+            and filing.accession == item.edge.filing.accession
+            else None
+        )
         sections_map = section_map(filing.text, filing.form)[0]
         sec_key = section.lower().strip()
         chosen_text = ""
@@ -2529,20 +3110,39 @@ class ResearchLoop:
             for s in re.split(r"(?<=[.!?])\s+|\n+", chosen_text)
             if 20 <= len(s.strip()) <= 360
         ]
-        spans: list[str] = []
-        target_tok = (item.target_name or "").strip().lower()
+        target_distinct: list[str] = []
+        keyword_distinct: list[str] = []
+        initial_matches: list[str] = []
+        target_name = item.target_name or (item.edge.target_name if item.edge is not None else None)
+
         for sent in sentences:
             sent_lower = sent.lower()
-            if (
-                ((target_tok and target_tok in sent_lower) or any(kw in sent_lower for kw in _DEPENDENCY_KEYWORDS))
-                and verify_quote(sent, norm_doc, already_normalised_doc=True)
-            ):
-                clean_sent = normalise_for_verify(sent)
-                if clean_sent not in spans:
-                    spans.append(clean_sent)
-                    if len(spans) >= 3:
+            mentions_target = _span_mentions_target(sent, target_name)
+            has_kw = any(kw in sent_lower for kw in _DEPENDENCY_KEYWORDS) or bool(_PERCENT_NUMBER_RE.search(sent))
+            if not (mentions_target or has_kw):
+                continue
+            if not verify_quote(sent, norm_doc, already_normalised_doc=True):
+                continue
+            clean_sent = normalise_for_verify(sent)
+            if _is_same_as_initial_quote(clean_sent, initial_quote):
+                if clean_sent not in initial_matches:
+                    initial_matches.append(clean_sent)
+            elif mentions_target:
+                if clean_sent not in target_distinct:
+                    target_distinct.append(clean_sent)
+                    if len(target_distinct) >= 3:
                         break
-        return spans
+            else:
+                if clean_sent not in keyword_distinct:
+                    keyword_distinct.append(clean_sent)
+
+        out: list[str] = []
+        for s in (*target_distinct, *keyword_distinct, *initial_matches):
+            if s not in out:
+                out.append(s)
+                if len(out) >= 3:
+                    break
+        return out
 
     def _search_across_filings(
         self,
@@ -2552,12 +3152,15 @@ class ResearchLoop:
         item: ResearchItem,
         result: DependencyResult,
         analysis: AnalysisResponse,
+        resolver: Callable[[str], str | None] | None = None,
         cache_only: bool,
     ) -> tuple[list[str], list[str]]:
         spans: list[str] = []
         peer_names: list[str] = []
         needle = phrase.strip().lower()
+        subj_clean = clean_company_name(item.subject_name) or item.subject_name
 
+        # 1. Check existing edges from OTHER companies in result.edges
         for edge in result.edges:
             if edge.source_company_key == item.subject_key:
                 continue
@@ -2575,26 +3178,90 @@ class ResearchLoop:
                 if len(spans) >= 3:
                     return spans, peer_names
 
-        for key, peer_filing in list(self._filings_by_key.items()):
-            if key == item.subject_key or not peer_filing.text:
-                continue
-            matches = self._find_spans_in_filing(peer_filing, phrase, item=item, result=result)
-            for m in matches:
-                if m not in spans:
-                    spans.append(m)
-                    peer_names.append(key)
-                    if len(spans) >= 3:
-                        return spans, peer_names
+        # 2. If the edge's counterparty resolves to a CIK (e.g. TSMC's 20-F for Broadcom->TSMC),
+        # check the counterparty's own filing directly.
+        counterparty_cik: str | None = None
+        if item.edge is not None:
+            cp_key = item.edge.target_key or (resolver(item.edge.target_name) if resolver else None)
+            counterparty_cik = _extract_cik_from_key(cp_key)
+        if counterparty_cik is None and resolver is not None and phrase.strip():
+            counterparty_cik = _extract_cik_from_key(resolver(phrase.strip()))
+        if counterparty_cik and counterparty_cik != exclude_cik:
+            cp_filing = self._load_filing_by_cik(counterparty_cik)
+            if cp_filing is not None and cp_filing.text:
+                cp_queries = [
+                    q
+                    for q in (
+                        subj_clean,
+                        phrase.strip(),
+                        clean_company_name(item.target_name or ""),
+                        "customer",
+                        "foundry",
+                        "wafer",
+                    )
+                    if q
+                ]
+                for cp_q in cp_queries:
+                    matches = self._find_spans_in_filing(cp_filing, cp_q, item=item, result=result)
+                    for m in matches:
+                        if m not in spans:
+                            spans.append(m)
+                            peer_names.append(f"CIK:{counterparty_cik}")
+                            if len(spans) >= 3:
+                                return spans, peer_names
+                    if spans:
+                        break
 
+        # 3. Check all already-loaded peer filings in _filings_by_key and _filings_by_cik
+        seen_peer_ciks: set[str] = {exclude_cik}
+        for key, peer_filing in list(self._filings_by_key.items()):
+            peer_cik = str(peer_filing.cik).zfill(10) if peer_filing.cik else ""
+            if key == item.subject_key or peer_cik == exclude_cik or not peer_filing.text:
+                continue
+            if peer_cik:
+                seen_peer_ciks.add(peer_cik)
+            for q_cand in (phrase, subj_clean):
+                if not q_cand:
+                    continue
+                matches = self._find_spans_in_filing(peer_filing, q_cand, item=item, result=result)
+                for m in matches:
+                    if m not in spans:
+                        spans.append(m)
+                        peer_names.append(key)
+                        if len(spans) >= 3:
+                            return spans, peer_names
+                if spans:
+                    break
+
+        for peer_cik, peer_filing in list(self._filings_by_cik.items()):
+            if peer_cik in seen_peer_ciks or not peer_filing.text:
+                continue
+            seen_peer_ciks.add(peer_cik)
+            for q_cand in (phrase, subj_clean):
+                if not q_cand:
+                    continue
+                matches = self._find_spans_in_filing(peer_filing, q_cand, item=item, result=result)
+                for m in matches:
+                    if m not in spans:
+                        spans.append(m)
+                        peer_names.append(f"CIK:{peer_cik}")
+                        if len(spans) >= 3:
+                            return spans, peer_names
+                if spans:
+                    break
+
+        # 4. Search other companies' filings via EDGAR full-text search (never fall back to own_filing)
         if self.fetcher is not None and phrase.strip() and not cache_only:
             try:
                 peer_filings = self.fetcher.names_in_other_filings(
                     phrase.strip(),
                     exclude_cik=exclude_cik if exclude_cik != "0000000000" else None,
-                    limit=3,
+                    limit=2,
                 )
                 for pf in peer_filings:
                     pf_cik = str(pf.cik).zfill(10)
+                    if pf_cik == exclude_cik:
+                        continue
                     self._filings_by_cik.setdefault(pf_cik, pf)
                     matches = self._find_spans_in_filing(pf, phrase, item=item, result=result)
                     for m in matches:
@@ -2606,11 +3273,6 @@ class ResearchLoop:
             except (CompanyUnavailable, SourceError, ValueError):
                 pass
 
-        if not spans:
-            own_filing = self._load_filing_for_item(item, analysis)
-            own_spans = self._find_spans_in_filing(own_filing, phrase, item=item, result=result)
-            spans.extend(own_spans[:2])
-
         return spans, peer_names
 
     @staticmethod
@@ -2621,6 +3283,8 @@ class ResearchLoop:
         step_idx: int,
         observations: Sequence[str],
         max_steps: int = MAX_RESEARCH_STEPS,
+        min_tool_calls: int = 2,
+        require_search_filings: bool = False,
     ) -> str:
         edge_block = "NONE"
         if item.edge is not None:
@@ -2643,6 +3307,8 @@ class ResearchLoop:
             f"PROMPT_VERSION: {RESEARCH_PROMPT_VERSION}\n"
             f"STEP_INDEX: {step_idx}\n"
             f"MAX_STEPS: {max_steps}\n"
+            f"MIN_TOOL_CALLS: {min_tool_calls}\n"
+            f"REQUIRE_SEARCH_FILINGS: {'true' if require_search_filings else 'false'}\n"
             f"ITEM_ID: {item.item_id}\n"
             f"ITEM_KIND: {item.item_kind}\n"
             f"SUBJECT_KEY: {item.subject_key}\n"
@@ -2653,8 +3319,9 @@ class ResearchLoop:
             f"OBSERVATIONS:\n{obs_block}\n"
         )
 
-    @staticmethod
+    @classmethod
     def _deterministic_step_decision(
+        cls,
         *,
         item: ResearchItem,
         cik: str,
@@ -2662,38 +3329,22 @@ class ResearchLoop:
         verified_quotes: Sequence[str],
         observations: Sequence[str],
         has_api_key: bool = True,
+        min_tool_calls: int = 2,
+        require_search_filings: bool = False,
+        steps: Sequence[ResearchStep] = (),
     ) -> dict[str, Any]:
-        if step_idx == 1:
-            if item.item_kind in ("undisclosed_customer", "single_source"):
-                return {
-                    "action": "search_filings",
-                    "query": item.target_name or clean_company_name(item.subject_name),
-                    "cik": cik,
-                    "section": "1",
-                    "outcome": "unresolved",
-                    "explanation": "",
-                    "candidate_edges": [],
-                }
-            return {
-                "action": "find_in_filing",
-                "query": item.target_name or "supplier",
-                "cik": cik,
-                "section": "1",
-                "outcome": "unresolved",
-                "explanation": "",
-                "candidate_edges": [],
-            }
-
-        if step_idx == 2 and len(observations) <= 1:
-            return {
-                "action": "read_section",
-                "query": item.target_name or item.subject_name,
-                "cik": cik,
-                "section": "1",
-                "outcome": "unresolved",
-                "explanation": "",
-                "candidate_edges": [],
-            }
+        used_actions = {s.action for s in steps}
+        needs_more_tools = len(steps) < min_tool_calls or (
+            require_search_filings and "search_filings" not in used_actions
+        )
+        if needs_more_tools:
+            return cls._next_complementary_tool_decision(
+                item=item,
+                cik=cik,
+                steps=steps,
+                require_search_filings=require_search_filings,
+                min_tool_calls=min_tool_calls,
+            )
 
         if not has_api_key:
             return {
@@ -2728,7 +3379,7 @@ class ResearchLoop:
                 "query": "",
                 "cik": cik,
                 "section": "1",
-                "outcome": "confirmed",
+                "outcome": "confirmed" if best_quote else "unresolved",
                 "explanation": (
                     f'Verified filing context "{best_quote}" confirms the operational dependency.'
                     if best_quote
@@ -2743,7 +3394,7 @@ class ResearchLoop:
                 "query": "",
                 "cik": cik,
                 "section": "1",
-                "outcome": "confirmed",
+                "outcome": "confirmed" if best_quote else "unresolved",
                 "explanation": (
                     f'Verified sole-source dependency in filing passage "{best_quote}".'
                     if best_quote
