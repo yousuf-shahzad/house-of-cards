@@ -714,7 +714,6 @@ function ResearchPanel({
   edgeById,
   selectEdge,
   onRunResearch,
-  onGoDeeper,
 }: {
   researchStatus: ResearchRunStatus;
   researchJob: ResearchJob | null;
@@ -725,7 +724,6 @@ function ResearchPanel({
   edgeById: ReadonlyMap<string, VerifiedEdge>;
   selectEdge: (edgeId: string, openDrawer: boolean) => void;
   onRunResearch: () => void;
-  onGoDeeper: () => void;
 }) {
   const isInvestigating = researchStatus === "starting" || researchStatus === "polling";
   const findings = researchJob?.findings?.length ? researchJob.findings : resultResearch;
@@ -763,34 +761,21 @@ function ResearchPanel({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {researchDepth !== "thorough" && (
-            <Button
-              variant="primary"
-              size="small"
-              leadingIcon={RiSparklingLine}
-              disabled={isDepRunning || isInvestigating}
-              onClick={onGoDeeper}
-            >
-              Go deeper
-            </Button>
-          )}
-          <Button
-            variant={researchDepth === "thorough" ? "primary" : "secondary"}
-            size="small"
-            leadingIcon={isInvestigating ? undefined : researchJob ? RiRefreshLine : RiSparklingLine}
-            disabled={isInvestigating || isDepRunning}
-            onClick={onRunResearch}
-          >
-            {isInvestigating
-              ? `Investigating (${researchJob?.progress_done ?? 0}/${
-                  researchJob?.progress_total || 6
-                })…`
-              : researchJob
-                ? "Re-run investigation"
-                : "Investigate gaps"}
-          </Button>
-        </div>
+        <Button
+          variant="primary"
+          size="small"
+          leadingIcon={isInvestigating ? undefined : researchJob ? RiRefreshLine : RiSparklingLine}
+          disabled={isInvestigating || isDepRunning}
+          onClick={onRunResearch}
+        >
+          {isInvestigating
+            ? `Investigating (${researchJob?.progress_done ?? 0}/${
+                researchJob?.progress_total || 6
+              })…`
+            : researchJob
+              ? "Re-run investigation"
+              : "Investigate gaps"}
+        </Button>
       </div>
 
       {isInvestigating && (
@@ -2183,7 +2168,6 @@ function DependenciesPageContent() {
             edgeById={edgeById}
             selectEdge={selectEdge}
             onRunResearch={() => runResearch()}
-            onGoDeeper={() => goDeeper()}
           />
 
           {/* 5. Key numbers: one plain-English card per subject (% and company count together) */}
