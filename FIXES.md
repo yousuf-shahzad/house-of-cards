@@ -31,10 +31,20 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
+### FIX-31 · medium · Link importance is shown as a percentage, and graph line width means something else
+From Codex's FIX-30 audit:
+- `importance.score` is a heuristic ranking score, but the UI shows it like a measured share ("Critical 90%").
+- Graph line width follows the company's portfolio exposure, not link importance, and nothing says so.
+- Fix: show only the tier (Critical/High/Medium/Low) with a tooltip such as "how much this link matters to the company, judged from the filing". Add a legend line: "Line thickness = how much of your money is in that company". No backend change.
+- **Owner:** Yousuf's Gemini (Dependencies and Network pages) · **Status:** assigned
+
 ### FIX-30 · high · Yousuf's requests: audit dependency links; a simple dashboard instead of the step-by-step guide (Yousuf, 08:43)
 - **Audit** (read-only, can start now): how dependencies are detected, how links are weighted and displayed. Report findings as new FIX items.
-- **Simple dashboard:** a new `app/pages/simple/` with plain-language versions of holdings, overlap, concentration, network, dependencies and change comparison, with free navigation.
-  - **On hold until Gawyn decides:** it would replace the 5-step guide Gawyn chose, or sit alongside it. That needs `workspace.tsx` / `experience.tsx`.
+- **Simple mode as a walkthrough of the real app** (Yousuf clarified at 08:45: "Make the walkthrough of the bigger UI with its more simplified views"):
+  - Simple mode keeps the same sidebar and pages as Full mode, with simplified versions of each page (new `pages/simple/` renderers).
+  - Walkthrough tips are optional and can be dismissed. No 5-step funnel; you can go anywhere.
+  - Needs `workspace.tsx`, `experience.tsx` and `onboarding/welcome-dialog.tsx`.
+  - **On hold until Gawyn decides,** because it replaces the 5-step guide Gawyn chose.
 - **Owner:** Yousuf's Codex · **Status:** audit in progress; dashboard waiting for Gawyn
 
 ### FIX-22 · medium · Research time budgets are too tight
