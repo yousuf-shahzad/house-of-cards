@@ -357,3 +357,111 @@ def test_critical_metrics_only_count_critical_and_high_edges_and_have_dep_twins(
     assert unscored_edge.importance is None
     assert "critical.ALIAS:ZZEPSILON" in unscored_metrics
     assert unscored_metrics["critical.ALIAS:ZZEPSILON"].value == pytest.approx(0.30)
+
+
+def test_fix_33_customer_share_grounding_office_facilities_and_reverse_customer_cap() -> None:
+    """FIX-33 (#216 / #215):
+    - (A) Customer importance uses only a share grounded to this target (never another customer's 22%
+      or an ungrounded qualifier share).
+    - (C) 'office facilities' / headquarters scores 0.30 unless there is actual production evidence.
+    - Reverse customer links are capped at medium and never raise the buyer's critical.* metric.
+    """
+    # (A.1) Issue #216 repro: target has 8% qualifier, another company in same quote has 22%
+    other_cust_imp = score_edge_importance(
+        _make_edge(
+            "e-fix33-a1",
+            "customer",
+            target_name="ZZ Counterparty",
+            qualifier="8% of revenue",
+            evidence_quote="ZZ Counterparty represented 8% of revenue; Another Company represented 22% of revenue.",
+        )
+    )
+    assert other_cust_imp.score == pytest.approx(0.50)
+    assert other_cust_imp.tier == "medium"
+    assert not any("22%" in r for r in other_cust_imp.reasons)
+
+    # (A.2) Issue #215 B.1 repro: invented 90% qualifier not present in evidence_quote
+    ungrounded_qual_imp = score_edge_importance(
+        _make_edge(
+            "e-fix33-b1",
+            "customer",
+            target_name="Acme",
+            qualifier="90% of revenue",
+            evidence_quote="Acme is one of our customers.",
+        )
+    )
+    assert ungrounded_qual_imp.score == pytest.approx(0.50)
+    assert ungrounded_qual_imp.tier == "medium"
+
+    # (A.3) Issue #215 B.2 repro: target has 2% while exports have 80%
+    exports_imp = score_edge_importance(
+        _make_edge(
+            "e-fix33-b2",
+            "customer",
+            target_name="Acme",
+            qualifier=None,
+            evidence_quote="Acme accounted for 2% of revenue, while exports accounted for 80% of revenue.",
+        )
+    )
+    assert exports_imp.score == pytest.approx(0.50)
+    assert exports_imp.tier == "medium"
+
+    # (A.4) Issue #215 B.3 repro: another supplier's 'sole supplier' cue in a separate clause
+    other_sole_imp = score_edge_importance(
+        _make_edge(
+            "e-fix33-b3",
+            "supplier",
+            target_name="Acme",
+            sole_source=False,
+            evidence_quote="We buy components from Acme and our sole supplier of packaging is Beta.",
+        )
+    )
+    assert other_sole_imp.score == pytest.approx(0.50)
+    assert other_sole_imp.tier == "medium"
+
+    # (C) Issue #216 repro: 'office facilities' / corporate headquarters scores 0.30 (low), not 0.70 (high)
+    office_fac_imp = score_edge_importance(
+        _make_edge(
+            "e-fix33-c",
+            "facility",
+            target_kind="country",
+            target_name="United States",
+            target_key="US",
+            qualifier="corporate headquarters",
+            evidence_quote="Our corporate headquarters and office facilities are in the United States.",
+        )
+    )
+    assert office_fac_imp.score == pytest.approx(0.30)
+    assert office_fac_imp.tier == "low"
+    assert not any("Production facility" in r for r in office_fac_imp.reasons)
+
+    # Reverse customer link: external supplier says portfolio buyer is 30% of supplier's sales ->
+    # capped at medium (<= 0.55) and does NOT emit critical.<supplier> for the buyer
+    exposures = [
+        _make_exposure("CIK:9990000001", "ZZ Alpha Corp", 0.10),
+    ]
+    rev_cust_edge = VerifiedEdge(
+        edge_id="e-fix33-rev",
+        source_company_key="CIK:8880000009",
+        source_company_name="ZZ Optics Supplier",
+        source_in_portfolio=False,
+        edge_type="customer",
+        target_name="ZZ Alpha Corp",
+        target_kind="company",
+        target_key="CIK:9990000001",
+        target_in_portfolio=True,
+        sole_source=False,
+        qualifier="30% of revenue",
+        evidence_quote="ZZ Alpha Corp accounted for 30% of our revenue.",
+        section="Item 1",
+        filing=_make_filing("CIK:8880000009"),
+    )
+    rev_imp = score_edge_importance(rev_cust_edge)
+    assert rev_imp.tier == "medium"
+    assert rev_imp.score <= 0.55
+
+    rev_metrics = {m.metric_id: m for m in compute_dependency_metrics(exposures, [rev_cust_edge])}
+    assert "dep.CIK:8880000009" in rev_metrics
+    assert rev_metrics["dep.CIK:8880000009"].value == pytest.approx(0.10)
+    assert "critical.CIK:8880000009" not in rev_metrics
+

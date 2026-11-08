@@ -1387,9 +1387,9 @@ def compute_dependency_summary(
                 supplier_edge_types.setdefault(sup_id, set()).add("supplier")
                 if edge.sole_source:
                     supplier_sole_source[sup_id] = True
-                if is_critical_or_high:
-                    critical_supplier_companies.setdefault(sup_id, set()).add(dep_comp_key)
-                    critical_supplier_edges.setdefault(sup_id, set()).add(edge_id)
+                # FIX-33: A reverse customer disclosure ("X is 30% of our sales") shows the supplier
+                # depends on X for revenue, not that buyer X critically depends on the supplier;
+                # never let a reverse customer edge raise the buyer's critical.* metric.
 
     # Build SupplierDependencySummary list
     suppliers: list[SupplierDependencySummary] = []
