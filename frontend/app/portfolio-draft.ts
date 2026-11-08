@@ -8,7 +8,7 @@
 // - shares: each row holds a share count. The backend prices the rows (POST /api/valuation) and
 //   returns each row's %. Typing a % into a row pins it; the unpinned rows rescale by value to
 //   fill the rest of 100%. Analyses only ever see the resulting percentages (`inputs`).
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError, type AllocationInput, type ShareInput } from "@/api/client";
 import { ALLOCATION_TOLERANCE, MAX_ETFS, type ValuationResponse, type ValuationRowResult } from "@/api/types";
 
@@ -129,7 +129,12 @@ export type PortfolioDraft = {
   key: string;
   /** Re-runs a failed valuation. */
   retryValuation: () => void;
+  /** Shares mode: prices the pinned rows and turns them into whole share counts at about their %. */
+  fillShares: () => void;
+  /** Progress of turning pinned rows into shares (setRows does this on its own). */
+  sharesFill: SharesFillStatus;
 };
+export type SharesFillStatus = "idle" | "pricing" | "failed";
 
 let nextRowId = 0;
 const rowId = () => `row-${++nextRowId}`;
@@ -140,6 +145,9 @@ const newRow = (ticker: string, allocationPct: number | null): DraftRow => ({
   shares: null,
   pinned: false,
 });
+const normalise = (ticker: string) => ticker.trim().toUpperCase();
+/** Rough value of a loaded sample when every row is a %, so it becomes sensible whole share counts. */
+const SAMPLE_VALUE = 10_000;
 /** 4 decimal places of a percent, so 0.07 * 100 doesn't show as 7.000000000000001. */
 const tidyPct = (value: number) => Math.round(value * 1e4) / 1e4;
 
@@ -253,57 +261,95 @@ export function usePortfolioDraft(): PortfolioDraft {
     [inputs, rows, effectivePct],
   );
 
-  const setRows = useCallback((next: AllocationInput[]) => {
-    setNotice(null);
-    setModeState("shares");
-    if (next.length === 0) {
-      setDraftRows([]);
+  // Turning pinned % rows into whole shares. `fillTarget` is the rows array the latest attempt
+  // started from: any edit replaces the array, so a late answer for older rows is dropped.
+  const [sharesFill, setSharesFill] = useState<SharesFillStatus>("idle");
+  const fillTarget = useRef<DraftRow[] | null>(null);
+  const rowsRef = useRef(rows);
+  rowsRef.current = rows;
+
+  const fillSharesFor = useCallback((target: DraftRow[]) => {
+    const pinned = target.filter((row) => row.pinned);
+    fillTarget.current = target;
+    if (pinned.length === 0) {
+      setSharesFill("idle");
       return;
     }
-    const sampleRows: DraftRow[] = next.map((row) => ({
-      id: rowId(),
-      ticker: row.ticker.trim().toUpperCase(),
-      allocationPct: row.allocationPct,
-      shares: null,
-      pinned: true,
-    }));
-    setDraftRows(sampleRows);
-
+    setSharesFill("pricing");
     api
-      .valuation(sampleRows.map((row) => ({ ticker: row.ticker, shares: 1, overridePct: null })))
+      // Pinned rows ask for 1 share to learn the price; unpinned rows send their shares (blank as 0).
+      .valuation(target.map((row) => ({ ticker: row.ticker, shares: row.pinned ? 1 : validShares(row.shares) ? row.shares : 0, overridePct: null })))
       .then((res) => {
-        const computedShares: number[] = [];
-        for (let i = 0; i < sampleRows.length; i += 1) {
-          const item = sampleRows[i];
+        if (fillTarget.current !== target) return;
+        const pinnedPct = pinned.reduce((sum, row) => sum + (row.allocationPct ?? 0), 0);
+        let unpinnedValue = 0;
+        const prices: (number | null)[] = target.map((row, i) => {
           const match = res.rows[i];
-          const price = match?.price?.price;
-          const pct = item.allocationPct ?? 0;
-          if (typeof price !== "number" || !Number.isFinite(price) || price <= 0 || pct <= 0) {
-            return;
-          }
-          computedShares.push(Math.max(1, Math.round((pct * 100) / price)));
-        }
-        setDraftRows((current) => {
-          if (
-            current.length !== sampleRows.length ||
-            !current.every((row, idx) => row.id === sampleRows[idx].id && row.pinned && row.shares === null)
-          ) {
-            return current;
-          }
-          return sampleRows.map((row, idx) => ({
-            ...row,
-            shares: computedShares[idx],
-            allocationPct: null,
-            pinned: false,
-          }));
+          if (!match || match.ticker !== normalise(row.ticker)) return null;
+          if (!row.pinned) unpinnedValue += match.value ?? 0;
+          const price = match.price?.price;
+          return typeof price === "number" && Number.isFinite(price) && price > 0 ? price : null;
         });
+        // Size the pinned rows against the unpinned rows' value, or ~$10,000 when every row is pinned.
+        const unpinnedPct = 100 - pinnedPct;
+        const total = unpinnedValue > 0 && unpinnedPct > SUM_TOLERANCE_PCT ? unpinnedValue / (unpinnedPct / 100) : SAMPLE_VALUE;
+        if (target.some((row, i) => row.pinned && prices[i] === null)) {
+          fillTarget.current = null;
+          setSharesFill("failed");
+          return;
+        }
+        fillTarget.current = null;
+        setSharesFill("idle");
+        setDraftRows((current) =>
+          current !== target
+            ? current
+            : target.map((row, i) => {
+                if (!row.pinned) return row;
+                const pct = row.allocationPct ?? 0;
+                const shares = pct <= 0 ? 0 : Math.max(1, Math.round(((pct / 100) * total) / (prices[i] as number)));
+                return { ...row, shares, allocationPct: null, pinned: false };
+              }),
+        );
       })
       .catch(() => {
-        // Keep the pinned-% fallback already in state if pricing fails.
+        if (fillTarget.current !== target) return;
+        fillTarget.current = null;
+        setSharesFill("failed");
       });
   }, []);
+
+  const fillShares = useCallback(() => {
+    if (mode === "shares") fillSharesFor(rowsRef.current);
+  }, [mode, fillSharesFor]);
+
+  const setRows = useCallback(
+    (next: AllocationInput[]) => {
+      setNotice(null);
+      setModeState("shares");
+      if (next.length === 0) {
+        fillTarget.current = null;
+        setSharesFill("idle");
+        setDraftRows([]);
+        return;
+      }
+      // Loads pinned at the given % (so analyses can start at once), then becomes whole shares
+      // once prices arrive. If pricing fails the rows stay pinned and sharesFill says "failed".
+      const sampleRows: DraftRow[] = next.map((row) => ({
+        id: rowId(),
+        ticker: normalise(row.ticker),
+        allocationPct: row.allocationPct,
+        shares: null,
+        pinned: true,
+      }));
+      setDraftRows(sampleRows);
+      fillSharesFor(sampleRows);
+    },
+    [fillSharesFor],
+  );
   const copyFrom = useCallback((source: readonly DraftRow[], sourceMode: InputMode) => {
     setNotice(null);
+    fillTarget.current = null;
+    setSharesFill("idle");
     setModeState(sourceMode);
     setDraftRows(source.map((row) => ({ ...row, id: rowId() })));
   }, []);
@@ -372,6 +418,8 @@ export function usePortfolioDraft(): PortfolioDraft {
       inputs,
       key,
       retryValuation,
+      fillShares,
+      sharesFill,
     }),
     [
       rows,
@@ -391,6 +439,8 @@ export function usePortfolioDraft(): PortfolioDraft {
       inputs,
       key,
       retryValuation,
+      fillShares,
+      sharesFill,
     ],
   );
 }

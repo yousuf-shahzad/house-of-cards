@@ -1,7 +1,7 @@
 // Editor for one PortfolioDraft: the "Enter as: Shares | %" toggle, the ETF rows, totals and every
 // validation and valuation message. Used by the Portfolio page (the Current portfolio) and the
 // Compare page (the Scenario), so both follow the same rules. Owner: Yousuf's Claude.
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useEffect, type ReactNode } from "react";
 import { RiAddLine, RiEqualizerLine, RiPushpinLine, RiRefreshLine, RiUnpinLine } from "@remixicon/react";
 import type { ApiError } from "@/api/client";
 import { MAX_ETFS, PRICE_STALE_DAYS, type EtfReport, type ValuationIssue, type ValuationRowResult } from "@/api/types";
@@ -61,6 +61,12 @@ const ISSUE_TEXT: Record<InputMode, Record<ShownIssue, string>> = {
   },
 };
 
+/** Shares-only editors (the guided view) have no % inputs or pins, so their messages don't mention them. */
+const SHARES_ONLY_TEXT: Partial<Record<ShownIssue, string>> = {
+  "invalid-shares": "Enter how many shares you hold of every ETF.",
+  "nothing-to-rescale": "Enter a share count above 0 for at least one ETF.",
+};
+
 function sumMessage(totalPct: number, mode: InputMode): string {
   const gap = Math.abs(100 - totalPct).toFixed(2);
   const what = mode === "shares" ? "pinned ETFs" : "allocations";
@@ -92,13 +98,14 @@ export function ServerError({ error, retry }: { error: ApiError; retry: () => vo
 
 /** Portfolio-level valuation issues (blocking first). Issues naming a ticker already show on their row. */
 function ValuationIssues({ issues, blocked }: { issues: ValuationIssue[]; blocked: boolean }) {
+  const sharesOnly = useContext(SharesOnlyContext);
   const shown = issues
     .filter((issue) => issue.ticker === null)
     .sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "blocking" ? -1 : 1));
   if (blocked && !shown.some((issue) => issue.severity === "blocking")) {
     return (
       <p className="text-body-regular text-text-error-primary">
-        Some ETFs can't be valued yet. Fix the rows marked above, or type a % to pin them.
+        Some ETFs can't be valued yet. Fix the rows marked above{sharesOnly ? "" : ", or type a % to pin them"}.
       </p>
     );
   }
@@ -118,6 +125,8 @@ function ValuationIssues({ issues, blocked }: { issues: ValuationIssue[]; blocke
 }
 
 const DraftContext = createContext<PortfolioDraft | null>(null);
+/** True inside a shares-only editor: no Shares | % switch, % shown as text, no pins. */
+const SharesOnlyContext = createContext(false);
 function useDraft(): PortfolioDraft {
   const draft = useContext(DraftContext);
   if (!draft) throw new Error("Draft rows must be rendered inside <DraftEditor>.");
@@ -127,6 +136,7 @@ function useDraft(): PortfolioDraft {
 /** Totals, pricing state and every draft-level message. `extra` adds the caller's own status (e.g. analysis). */
 function DraftStatus({ extra, extraMessages }: { extra?: ReactNode; extraMessages?: ReactNode }) {
   const { rows, mode, validation, valuation, retryValuation } = useDraft();
+  const sharesOnly = useContext(SharesOnlyContext);
   const issues = validation.issues
     .filter((issue): issue is ShownIssue =>
       issue !== "allocation-sum" && issue !== "valuation-blocked" && issue !== "valuation-error",
@@ -174,7 +184,7 @@ function DraftStatus({ extra, extraMessages }: { extra?: ReactNode; extraMessage
       )}
       {issues.map((issue) => (
         <p key={issue} className="text-body-regular text-text-error-primary">
-          {ISSUE_TEXT[mode][issue]}
+          {(sharesOnly && SHARES_ONLY_TEXT[issue]) || ISSUE_TEXT[mode][issue]}
         </p>
       ))}
       {mode === "shares" && valuation.result && (blocked || valuation.status === "usable") && (
@@ -261,10 +271,13 @@ function PercentRow({ row, report, flagged }: { row: DraftRow; report?: EtfRepor
 
 /** "10 sh × $738.68 = $7,386.80 · close 2026-11-06", plus stale and per-row issues. */
 function PriceLine({ row, priced }: { row: DraftRow; priced?: ValuationRowResult }) {
+  const sharesOnly = useContext(SharesOnlyContext);
   if (row.pinned) {
     return (
       <span className="text-body-2-regular text-text-secondary">
-        Pinned: the other ETFs rescale by value around this %.
+        {sharesOnly
+          ? "Fixed at this % until you enter how many shares you hold."
+          : "Pinned: the other ETFs rescale by value around this %."}
       </span>
     );
   }
@@ -307,6 +320,7 @@ function PriceLine({ row, priced }: { row: DraftRow; priced?: ValuationRowResult
 
 function SharesRow({ row, report, flagged }: { row: DraftRow; report?: EtfReport; flagged: boolean }) {
   const { updateRow, removeRow, effectivePct, priced } = useDraft();
+  const sharesOnly = useContext(SharesOnlyContext);
   const label = normTicker(row.ticker) || "this ETF";
   const pct = effectivePct[row.id];
   // The field shows 2 dp, so give it the 2-dp value: blur then commits exactly what is shown.
@@ -331,6 +345,15 @@ function SharesRow({ row, report, flagged }: { row: DraftRow; report?: EtfReport
           // Typing shares hands the row back to the valuation.
           onChange={(shares) => updateRow(row.id, { shares: Number.isNaN(shares) ? null : shares, pinned: false })}
         />
+        {sharesOnly ? (
+          <span
+            className="flex items-center text-body-regular text-text-primary"
+            style={tabular}
+            aria-label={`${label} is ${shownPct === null ? "not priced yet" : `${shownPct}%`} of your portfolio`}
+          >
+            {shownPct === null ? "—" : `${shownPct.toFixed(2)}%`}
+          </span>
+        ) : (
         <NumberField
           aria-label={`Allocation for ${label}, percent${row.pinned ? ", pinned" : ", from shares"}`}
           placeholder="%"
@@ -347,9 +370,10 @@ function SharesRow({ row, report, flagged }: { row: DraftRow; report?: EtfReport
             updateRow(row.id, { allocationPct: Number.isNaN(next) ? null : next, pinned: true });
           }}
         />
+        )}
       </div>
       <div className="col-span-2 flex items-center sm:col-span-1 sm:col-start-4 sm:row-start-1">
-        {row.pinned ? (
+        {sharesOnly ? null : row.pinned ? (
           <Button
             variant="ghost"
             size="small"
@@ -373,6 +397,36 @@ function SharesRow({ row, report, flagged }: { row: DraftRow; report?: EtfReport
   );
 }
 
+/** Shares-only editors: rows still pinned at a % (a sample whose prices failed, or rows typed as % in
+ * the full view) can't be edited as %, so offer to turn them into share counts. */
+function PinnedRowsPrompt() {
+  const { rows, sharesFill, fillShares } = useDraft();
+  const pinned = rows.filter((row) => row.pinned).map((row) => normTicker(row.ticker) || "One ETF");
+  if (pinned.length === 0) return null;
+  const one = pinned.length === 1;
+  const names = pinned.join(", ");
+  if (sharesFill === "pricing") {
+    return (
+      <div role="status" className="flex items-center gap-2 text-body-regular text-text-secondary">
+        <Spinner size="sm" aria-label="Pricing" /> Working out share counts…
+      </div>
+    );
+  }
+  const failed = sharesFill === "failed";
+  return (
+    <div role="status" className="flex flex-wrap items-center justify-between gap-3">
+      <p className="text-body-regular text-text-secondary">
+        {failed
+          ? `Prices are unavailable right now, so ${names} ${one ? "uses a fixed percentage" : "use fixed percentages"}. Try again, or enter how many shares you hold.`
+          : `${names} ${one ? "is set as a fixed percentage" : "are set as fixed percentages"}. Turn ${one ? "it" : "them"} into shares to edit here.`}
+      </p>
+      <Button variant="secondary" size="small" leadingIcon={failed ? RiRefreshLine : undefined} onClick={fillShares}>
+        {failed ? "Try again" : "Use shares"}
+      </Button>
+    </div>
+  );
+}
+
 export function DraftEditor({
   draft,
   label,
@@ -381,6 +435,7 @@ export function DraftEditor({
   emptyText,
   status,
   messages,
+  sharesOnly = false,
 }: {
   draft: PortfolioDraft;
   /** Accessible name of the editor section, e.g. "Your ETFs" or "Scenario ETFs". */
@@ -394,8 +449,14 @@ export function DraftEditor({
   status?: ReactNode;
   /** Caller's own messages under the draft's messages. */
   messages?: ReactNode;
+  /** Shares only (the guided view): hides the Shares | % switch, shows each % as text and drops pins. */
+  sharesOnly?: boolean;
 }) {
   const { rows, mode, setMode, updateRow, addRow, notice, dismissNotice } = draft;
+  // A draft left in % mode by the full view switches to shares, keeping every %.
+  useEffect(() => {
+    if (sharesOnly && mode === "percent") setMode("shares");
+  }, [sharesOnly, mode, setMode]);
   const counts = new Map<string, number>();
   for (const row of rows) counts.set(normTicker(row.ticker), (counts.get(normTicker(row.ticker)) ?? 0) + 1);
   const isFlagged = (row: DraftRow) => (counts.get(normTicker(row.ticker)) ?? 0) > 1 || (flaggedIds?.has(row.id) ?? false);
@@ -406,7 +467,9 @@ export function DraftEditor({
   };
   return (
     <DraftContext.Provider value={draft}>
+     <SharesOnlyContext.Provider value={sharesOnly}>
       <section className="suite-card" aria-label={label}>
+        {!sharesOnly && (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <span className="text-body-medium text-text-primary">Enter as</span>
           <SegmentedControl
@@ -421,6 +484,7 @@ export function DraftEditor({
             <SegmentedControlItem id="percent">%</SegmentedControlItem>
           </SegmentedControl>
         </div>
+        )}
         {notice && (
           <div role="status" className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-body-regular text-text-secondary">{notice}</p>
@@ -474,6 +538,7 @@ export function DraftEditor({
             </Button>
           )}
         </div>
+        {sharesOnly && mode === "shares" && <PinnedRowsPrompt />}
         <DraftStatus extra={status} extraMessages={messages} />
         {mode === "shares" && (
           <p className="text-body-2-regular text-text-tertiary">
@@ -481,6 +546,7 @@ export function DraftEditor({
           </p>
         )}
       </section>
+     </SharesOnlyContext.Provider>
     </DraftContext.Provider>
   );
 }
