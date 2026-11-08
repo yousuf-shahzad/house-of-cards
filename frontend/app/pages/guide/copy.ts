@@ -123,6 +123,8 @@ export const RISKS_COPY = {
   checkedNote: "The rest belongs to companies that don't publish this kind of detail.",
   concernsTitle: "What the AI noticed",
   noConcerns: "The AI didn't point out any specific problems.",
+  doubleCheckedTitle: (n: number) =>
+    n === 1 ? "How we double-checked (1 item)" : `How we double-checked (${n} items)`,
   learnMore: "Learn more",
 } as const;
 
