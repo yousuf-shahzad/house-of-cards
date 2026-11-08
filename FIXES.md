@@ -35,6 +35,14 @@ Seen by Bekarys's Gemini on NKE: the agent added a new link "Three largest custo
 - Fix: when merging an agent's new links, skip an `unnamed_customer` link whose source, link type and normalised quote already match an existing link. Treat groups like "three largest customers" as not a link.
 - **Owner:** Kendrick's Gemini (fold into A1-fix) · **Status:** assigned
 
+### FIX-20 · high · Compare overstates drops: each side counts a different set of companies
+Found by the lead in the FIX-17 live check. Compare (Try a change and change ideas) measures each portfolio on its own top-15 companies. A TSMC-dependent company that falls out of the new portfolio's top 15 (e.g. Intel after adding 20% XLU) stops counting, so the drop looks bigger than it is.
+- **Adding 20% XLU:** shows TSMC 12.5% → 9.0%. With a 30-company window it is 9.9%, about what pure dilution gives.
+- **The XLK → VTV swap in README, DEMO and the pitch deck:** shows "12.39% → 4.69%". With a 30-company window it is 12.89% → 6.30%.
+- Fix: measure both sides on the same company set, the union of both portfolios' top-N companies, so a company counts on both sides at its own weight. Unanalysed companies stay "not checked yet". Add a test where a dependent company drops out of one side's top N.
+- Then update the 12.39% → 4.69% figure everywhere it's quoted (README, DEMO, PITCH_DECK).
+- **Owner:** Yousuf's Codex (`portfolio/compare.py`, `portfolio/ideas.py`), then Gawyn's Gemini (docs numbers) · **Status:** assigned
+
 ### FIX-17 · high · Suggest specific changes on screen 5 and in Try a change (both views)
 Gawyn wants concrete ideas such as "add this ETF to help fix this diversification issue", which the user can pick to load into Try a change, in the simple view and the full view.
 - **Backend (Python owns every number):** a new `POST /api/change-ideas`.
@@ -51,7 +59,11 @@ Gawyn wants concrete ideas such as "add this ETF to help fix this diversificatio
   - Yousuf's Codex: backend + contract. Shape approved. It merges the contract + fixture as a small PR first.
   - Yousuf's Claude: the vite proxy and `api.changeIdeas`.
   - Bekarys's Claude: the screen-5 cards and the Ideas list in Try a change.
-- **Status:** contract PR #177 approved by the lead; engine PR next (it adds a `ChangeIdea` validator and reasons that name the industry and company); UI builds on the fixture
+- **Live check of the engine (#178) found:**
+  - **Wrong issue:** all 3 ideas address the TSMC dependency, although the screens tell the user the problem is one industry (Technology 51%). The ideas engine's stricter 95% sector-coverage gate skips the industry rule. Use the same rule as the verdict on screen 3 and the Risk page.
+  - **Identical text:** the 3 ideas (XLU, XLP, XLV) have the same reason sentence. Say what each adds, e.g. "Add health care (XLV)" with "Adds health-care companies; your largest industry, Technology, would fall from 51% to 41%." Prefer some variety, such as one broad fund if it helps.
+  - **Numbers:** these also depend on FIX-20.
+- **Status:** contract (#177), client (#179) and engine (#178) merged. Codex fixes the points above; Bekarys's Claude builds the UI.
 
 ### FIX-19 · low · Progress bar can stick at 100% when a finished scan is re-run
 Found by Yousuf's Claude in review of #174. The backend reuses the job_id when a cached replay is upgraded to a live run, so the "never go down" rule keeps showing 100% until the new run ends.
