@@ -50,6 +50,13 @@ _EXTRA_COUNTRY_FALLBACKS: tuple[tuple[str, str], ...] = (
     ("nanchang", "CN"),
 )
 
+_POOLED_REJECTED_REASONS: dict[str, str] = {
+    "edge_d3ccd3a1052a": "Pooled review: reject — customer group ('three largest customers outside the US'), not one counterparty (policy 3)",
+    "edge_db8132253be5": "Pooled review: reject — Air Manufacturing Innovation is a wholly-owned Nike subsidiary, not an external supplier",
+    "edge_55810b619d12": "Pooled review: reject — Sojitz America provides import-export financing and holds preferred stock; not a supply dependency",
+    "edge_83e00ad1aec8": "Pooled review: reject — Takata appears only in an industry-wide NHTSA study; filing does not state Takata supplies Ford",
+}
+
 _SOLE_SOURCE_CUES: tuple[str, ...] = (
     "sole source",
     "sole-source",
@@ -595,11 +602,14 @@ def build_pooled_candidates(
     ticker: str,
     evaluated_company_key: str,
     hard_negative_edge_ids: set[str],
+    exclude_adjudicated_rejections: bool = False,
 ) -> list[PooledCandidate]:
     """Collect unmatched positive predictions (excluding hard-negative leaks) into a pooled list for review."""
     pooled: list[PooledCandidate] = []
     for edge in unmatched_edges:
         if edge.edge_id in hard_negative_edge_ids:
+            continue
+        if exclude_adjudicated_rejections and edge.edge_id in _POOLED_REJECTED_REASONS:
             continue
         vint_status = (
             edge.interpretation.status
@@ -642,11 +652,12 @@ def build_error_lists(
     false_positives: list[EvalErrorDetail] = []
     for edge in match_after.unmatched_edges:
         neg = hard_neg_by_edge_id.get(edge.edge_id)
-        reason = (
-            f"Hard negative leak ({neg.kind}: {neg.id})"
-            if neg is not None
-            else "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
-        )
+        if neg is not None:
+            reason = f"Hard negative leak ({neg.kind}: {neg.id})"
+        elif edge.edge_id in _POOLED_REJECTED_REASONS:
+            reason = _POOLED_REJECTED_REASONS[edge.edge_id]
+        else:
+            reason = "Unmatched verified prediction (pooled candidate / unannotated or spurious)"
         false_positives.append(
             EvalErrorDetail(
                 kind="false_positive",

@@ -780,6 +780,9 @@ def format_console_summary(report: EvalRunReport) -> str:
     p = report.overall_after_vint.precision
     r = report.overall_after_vint.recall
     f1 = report.overall_after_vint.f1
+    blind = report.blind_overall_after_vint or report.overall_after_vint
+    p_blind = blind.precision
+    f1_blind = blind.f1
     p_pre = report.overall_before_vint.precision
     hn_pre = report.hard_negative_fp_rate_before_vint
     hn_post = report.hard_negative_fp_rate_after_vint
@@ -800,11 +803,21 @@ def format_console_summary(report: EvalRunReport) -> str:
         ),
         "",
         (
-            f"  Micro Precision (after V-INT): {p.value * 100:5.1f}% [{p.ci_low * 100:5.1f}%, {p.ci_high * 100:5.1f}%] "
-            f"(before V-INT: {p_pre.value * 100:5.1f}%)"
+            f"  Micro Precision (blind)      : {p_blind.value * 100:5.1f}% [{p_blind.ci_low * 100:5.1f}%, {p_blind.ci_high * 100:5.1f}%] "
+            f"({p_blind.numerator}/{p_blind.denominator})"
         ),
-        f"  Micro Recall    (core, post) : {r.value * 100:5.1f}% [{r.ci_low * 100:5.1f}%, {r.ci_high * 100:5.1f}%]",
-        f"  Micro F1        (after V-INT): {f1.value * 100:5.1f}% [{f1.ci_low * 100:5.1f}%, {f1.ci_high * 100:5.1f}%]",
+        (
+            f"  Micro Precision (pooled)     : {p.value * 100:5.1f}% [{p.ci_low * 100:5.1f}%, {p.ci_high * 100:5.1f}%] "
+            f"({p.numerator}/{p.denominator}; before V-INT: {p_pre.value * 100:5.1f}%)"
+        ),
+        (
+            f"  Micro Recall    (core, post) : {r.value * 100:5.1f}% [{r.ci_low * 100:5.1f}%, {r.ci_high * 100:5.1f}%] "
+            f"({r.numerator}/{r.denominator})"
+        ),
+        (
+            f"  Micro F1        (blind/pool) : {f1_blind.value * 100:5.1f}% [{f1_blind.ci_low * 100:5.1f}%, {f1_blind.ci_high * 100:5.1f}%] / "
+            f"{f1.value * 100:5.1f}% [{f1.ci_low * 100:5.1f}%, {f1.ci_high * 100:5.1f}%]"
+        ),
         f"  Direction Accuracy           : {dir_acc.value * 100:5.1f}% ({dir_acc.numerator}/{dir_acc.denominator})",
         (
             f"  Hard-Negative FP Rate        : {hn_post.value * 100:5.1f}% ({hn_post.numerator}/{hn_post.denominator}) "

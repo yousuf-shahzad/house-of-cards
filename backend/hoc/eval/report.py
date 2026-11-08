@@ -55,6 +55,11 @@ def render_eval_markdown(report: EvalRunReport) -> str:
         f"`{k}`: {v}" for k, v in sorted(report.gold_core_by_source.items())
     ) or "—"
 
+    blind_micro = report.blind_overall_after_vint or report.overall_after_vint
+    blind_macro = report.blind_macro_after_vint or report.macro_after_vint
+    fac_fn_count = report.per_edge_type["facility"].fn if "facility" in report.per_edge_type else 0
+    total_fn_count = report.overall_after_vint.fn
+
     lines: list[str] = [
         "# House of Cards v3 — Unseen-Data Dependency Extraction Evaluation (`E-RUN`)",
         "",
@@ -78,10 +83,11 @@ def render_eval_markdown(report: EvalRunReport) -> str:
         "- **Core vs. Extended Tiers**: Core relationships (`tier = \"core\"`) count toward recall (a missing core relationship is a false negative). Extended relationships (`tier = \"extended\"`) are optional list/distribution items: a prediction matching an extended item counts as a true positive for precision, while an unextracted extended item is not a false negative.",
         (
             "- **Hard Negatives & Pooling**: A prediction matching a hard negative is always a false positive. "
-            "Remaining unmatched verified predictions are exported as `pooled_candidates` for blind adjudication; "
-            f"approved pooled additions carry `\"source\": \"pooled\"`. Of the `{report.gold_relationships_total}` "
-            f"gold relationships in this run, `{report.gold_blind_total}` came from initial blind annotation and "
-            f"`{report.gold_pooled_total}` came from pooling."
+            "In the first live run, 14 unmatched non-negative predictions were exported for blind adjudication by the lead "
+            "(`docs/hoc/eval/ADJUDICATION.md`): **10 were accepted** with `\"source\": \"pooled\"` and `\"tier\": \"extended\"` "
+            "(adding precision credit while keeping the `115` core recall denominator strictly blind), and **4 were rejected** "
+            f"(remaining false positives). Of the `{report.gold_relationships_total}` gold relationships in this run, "
+            f"`{report.gold_blind_total}` came from initial blind annotation and `{report.gold_pooled_total}` came from pooling."
         ),
         "",
         "---",
@@ -90,18 +96,25 @@ def render_eval_markdown(report: EvalRunReport) -> str:
         "",
         "| Metric | Score & 95% CI (Count) |",
         "|---|---|",
-        f"| **Micro Precision (After V-INT)** | {_fmt_ci(report.overall_after_vint.precision)} |",
-        f"| **Micro Recall on Core (After V-INT)** | {_fmt_ci(report.overall_after_vint.recall)} |",
-        f"| **Micro F1 (After V-INT)** | {_fmt_ci(report.overall_after_vint.f1)} |",
-        f"| **Macro Precision (After V-INT)** | {_fmt_ci(report.macro_after_vint.precision)} |",
+        f"| **Micro Precision — Blind (Initial Blind Gold Only)** | {_fmt_ci(blind_micro.precision)} |",
+        f"| **Micro Precision — Pooled (After Blind Pooling Review)** | {_fmt_ci(report.overall_after_vint.precision)} |",
+        f"| **Micro Recall on Core (`tier = 'core'`, Blind Denominator)** | {_fmt_ci(report.overall_after_vint.recall)} |",
+        f"| **Micro F1 — Blind** | {_fmt_ci(blind_micro.f1)} |",
+        f"| **Micro F1 — Pooled** | {_fmt_ci(report.overall_after_vint.f1)} |",
+        f"| **Macro Precision — Blind / Pooled** | {_fmt_ci(blind_macro.precision)} / {_fmt_ci(report.macro_after_vint.precision)} |",
         f"| **Macro Recall on Core (After V-INT)** | {_fmt_ci(report.macro_after_vint.recall)} |",
-        f"| **Macro F1 (After V-INT)** | {_fmt_ci(report.macro_after_vint.f1)} |",
+        f"| **Macro F1 — Blind / Pooled** | {_fmt_ci(blind_macro.f1)} / {_fmt_ci(report.macro_after_vint.f1)} |",
         f"| **Direction Accuracy** (`depends_on_target` vs. `target_depends_on_company`) | {_fmt_ci(report.direction_accuracy)} |",
         f"| **Hard-Negative False-Positive Rate (After V-INT)** | {_fmt_ci(report.hard_negative_fp_rate_after_vint)} |",
         f"| **Facility-Country Accuracy** (ISO-2 country resolution) | {_fmt_ci(report.facility_country_accuracy)} |",
         f"| **Importance-Tier Agreement (Quadratic Weighted Cohen's $\\kappa$)** | {_fmt_ci(report.importance_weighted_kappa, as_pct=False)} |",
         f"| **Importance-Tier Agreement (Linear Weighted Cohen's $\\kappa$)** | {_fmt_ci(report.importance_linear_kappa, as_pct=False)} |",
         f"| **Importance-Tier Exact Agreement** | {_fmt_ci(report.importance_exact_agreement)} |",
+        "",
+        "### 2.1 Key Findings & Error Analysis",
+        "1. **V-INT on the held-out set vs. live portfolio run**: V-INT filtered `0` edges on the 10 held-out companies (`129 → 129`), so it had no measurable precision/recall delta on this corpus — the extractor prompt (`hoc-v2-extract-1`) and deterministic quote/generic-noun verifier already avoided all `27` competitor, `11` negated, `9` hypothetical, and `7` unrelated hard negatives, and the `hoc-v3-judge-1` Flash judge cleared 2 false-alarm `competitor_mention` rule flags on Skyworks' `Samsung` and `Tesla` customer edges. V-INT's practical value shows up on the live `us-core-tilt` portfolio run, where it catches and flags `1` overclaim.",
+        f"2. **Recall misses are concentrated in facility countries (`{fac_fn_count}/{total_fn_count}`) and Pfizer alliances**: Of the `{total_fn_count}` missed core relationships, `{fac_fn_count}` (`{fac_fn_count}/{total_fn_count}`) are facility countries where a 10-K lists multiple countries in a single prose sentence (e.g., Boeing's 8 international locations in Item 2, GM's 4 non-US assembly countries, Pfizer's 8-country plant summary), and `18/{total_fn_count}` come from Pfizer (`PFE`), whose three wholesaler customers (`McKesson`, `Cencora`, `Cardinal Health`) sit in a Note 17B table and whose drug co-development/commercialization alliances (`Astellas`, `BMS`, `Genmab`, `SMPS`, `Takeda`) are spread across product paragraphs in Item 1 (`1/19` core recall on `PFE`, vs. `65/96` = `67.7%` across the other 9 filers).",
+        "3. **`supplier` precision is the weak edge type**: On `supplier` predictions (`n = 6`), blind precision is `16.7%` (`1/6`, where `Ford Otosan` matched a core `jv_partner`/`supplier` relationship) and pooled precision is `50.0%` (`3/6`, after `ARC Automotive` and `Delphi Automotive` were accepted in pooling). The 3 remaining `supplier` false positives are a wholly-owned subsidiary (`NKE` `Air Manufacturing Innovation`), a trade-finance/preferred-stock holder (`NKE` `Sojitz Corporation of America`), and an industry-wide NHTSA recall mention (`F` `Takata`). By contrast, `facility` (`68/68`), `key_input` (`18/18`), `jv_partner` (`14/14`), and `contract_manufacturer` (`5/5`) achieve `100.0%` pooled precision, and `customer` reaches `88.9%` (`16/18`).",
         "",
         "---",
         "",
@@ -141,7 +154,7 @@ def render_eval_markdown(report: EvalRunReport) -> str:
             "",
             "## 5. Per-Company Breakdown",
             "",
-            "| Ticker | Company | Accession | Gold (Core+Ext) | Negs | Pred (Pre→Post V-INT) | TP (Core+Ext) | FP | Core FN | P (Pre→Post) | Core R | F1 | Dir Acc | Hard-Neg FP (Pre→Post) | Fac Country |",
+            "| Ticker | Company | Accession | Gold (Core+Ext) | Negs | Pred (Pre→Post V-INT) | TP (Core+Ext) | FP | Core FN | P (Blind→Pooled) | Core R | F1 (Blind→Pooled) | Dir Acc | Hard-Neg FP | Fac Country |",
             "|---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|---|---|---|",
         ]
     )
@@ -163,8 +176,9 @@ def render_eval_markdown(report: EvalRunReport) -> str:
             f"{comp.negatives_total} | {comp.predicted_before_vint}→{comp.predicted_after_vint} | "
             f"{comp.tp_after_vint} ({comp.tp_core_after_vint}+{comp.tp_extended_after_vint}) | "
             f"{comp.fp_after_vint} | {comp.fn_after_vint} | "
-            f"{_fmt_pct(comp.precision_before_vint)}→{_fmt_pct(comp.precision_after_vint)} | "
-            f"{_fmt_pct(comp.recall_after_vint)} | {_fmt_pct(comp.f1_after_vint)} | "
+            f"{_fmt_pct(comp.precision_blind_after_vint)}→{_fmt_pct(comp.precision_after_vint)} | "
+            f"{_fmt_pct(comp.recall_after_vint)} | "
+            f"{_fmt_pct(comp.f1_blind_after_vint)}→{_fmt_pct(comp.f1_after_vint)} | "
             f"{dir_str} | {comp.hard_neg_fp_before_vint}→{comp.hard_neg_fp_after_vint}/{comp.negatives_total} | "
             f"{fac_str} |"
         )
