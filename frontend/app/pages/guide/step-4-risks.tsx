@@ -29,6 +29,7 @@ import { RISKS_COPY } from "./copy";
 import {
   formatFindingOneLiner,
   monotonicProgressPct,
+  plainCounterpartyText,
   splitFirstSentence,
 } from "./sentence";
 
@@ -282,12 +283,12 @@ function ResearchFindingItem({ finding }: { finding: ResearchFinding }) {
       </div>
       {showTrace && (
         <div className="flex flex-col gap-1.5 border-t border-separator-border pt-2">
-          {finding.explanation && <p>{finding.explanation}</p>}
+          {finding.explanation && <p>{plainCounterpartyText(finding.explanation)}</p>}
           {finding.steps.length > 0 && (
             <ol className="list-decimal space-y-1 pl-4 text-text-tertiary">
               {finding.steps.map((step) => (
                 <li key={step.index}>
-                  <span className="text-text-secondary">{step.summary}</span>
+                  <span className="text-text-secondary">{plainCounterpartyText(step.summary)}</span>
                 </li>
               ))}
             </ol>
