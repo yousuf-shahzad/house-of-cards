@@ -5,14 +5,20 @@ portfolio is in each. House of Cards fetches each fund's **real, published holdi
 effective exposure to every underlying company, and shows where your ETFs overlap and how concentrated
 the portfolio really is.
 
-This is a proof of concept. It validates ETF ingestion and portfolio look-through, which are the
-foundations for the eventual goal: recursive corporate-dependency analysis. It does not yet model
-supply chains, run AI agents or simulate risk.
+Version 2 adds two things: you can enter **shares** instead of percentages, and **Find dependencies**
+reads your largest companies' SEC annual reports with AI sub-agents to show who they depend on (suppliers,
+foundries, customers, facilities), keeping only facts quoted word for word from the filings.
+
+This is a proof of concept, not investment advice, and it does not trade or simulate risk.
 
 ## What it shows
 
 - **Portfolio builder**: add or remove ETFs, set allocations with inputs or sliders (they must total 100%),
   or load a verified example portfolio. Every change re-runs the analysis.
+- **Shares input** (v2): switch to **Shares**, enter how many shares you hold (fractions allowed), and each
+  ETF is valued at its latest **exchange close** (from TickerInside; not NAV) to give its %. Typing a % on a
+  row **pins** it, and the other rows rescale by value to fill the rest. A missing, invalid or non-USD price
+  blocks that row until you pin it; a price more than 4 days old shows a warning.
 - **What you really own**: the top company exposures, with each ETF's contribution, share classes merged
   (GOOG + GOOGL = Alphabet), and a searchable, filterable holdings table.
 - **ETF overlap**: a heatmap of weighted overlap between every pair of ETFs (the sum of the smaller weight of
@@ -20,9 +26,14 @@ supply chains, run AI agents or simulate risk.
 - **Network**: each ETF linked to the largest companies it gives you.
 - **Risk & data**: top-5 and top-10 concentration, the effective number of companies, sector allocation,
   how much of the portfolio the data covers, each fund's source and disclosure date, and any data gaps.
+- **Dependencies** (v2): **Find dependencies** takes your 15 largest company exposures, fetches each one's
+  latest SEC 10-K or 20-F, and shows a supplier/customer graph, the portfolio weight that depends on each
+  supplier (e.g. "12.39% of your portfolio depends on TSMC, through 4 companies"), facility concentration by
+  country, single points of failure, and an AI synthesis of critical flaws and diversification ideas. Every
+  edge opens its evidence: the verbatim quote, the section, the form and filing date, and a link to the filing.
 
-Every number comes from deterministic Python on the backend. The browser only displays results, and no
-LLM is involved.
+Every number comes from deterministic Python on the backend. The only LLM use is the Dependencies page,
+and even there the model never produces a number or a company match (see "How it works").
 
 ## Run it locally
 
@@ -67,9 +78,20 @@ uv run python -m hoc.cli analyse --example us-core-tilt
 uv run python -m hoc.cli analyse IVV=60 QQQ=40
 ```
 
-Optional settings live in [`backend/.env.example`](backend/.env.example); none are secrets. To enable the
-SEC N-PORT fallback, set `HOC_SEC_CONTACT="Your Name you@example.com"` in your own environment, because SEC
-requires a contact in the User-Agent. To work without the network, set `HOC_OFFLINE=1` (cache only).
+Optional settings live in [`backend/.env.example`](backend/.env.example). Set them in your own environment,
+never in the repository:
+
+| Variable | Needed for | Default |
+|---|---|---|
+| `HOC_SEC_CONTACT` | Anything from SEC EDGAR (the N-PORT fallback and every 10-K/20-F on the Dependencies page). SEC requires a contact in the User-Agent, e.g. `"Your Name you@example.com"` | unset: those companies show `sec_contact_missing` |
+| `GEMINI_API_KEY` | **Secret.** Live AI extraction and synthesis. Sent only in a request header, never in a URL, cache file or log | unset: cached results only, otherwise `missing_api_key` |
+| `HOC_GEMINI_EXTRACTOR_MODEL` / `HOC_GEMINI_ORCHESTRATOR_MODEL` | The sub-agents / the synthesis | `gemini-3.8-flash` / `gemini-4-argon` (Argon falls back to Flash on rate limits) |
+| `HOC_DEPS_TOP_N` | How many top companies Find dependencies reads | 15 |
+| `HOC_DEPS_REVERSE_LIMIT` | Other companies' filings searched per company for reverse links (0 = off) | 3 |
+| `HOC_OFFLINE` | `1` = serve only from the local cache, no network | 0 |
+
+Without the key or the SEC contact, nothing fails: the app shows any cached results and says which
+setting is missing.
 
 ## How it works
 
@@ -89,6 +111,30 @@ requires a contact in the User-Agent. To work without the network, set `HOC_OFFL
 - **Concentration**: the sum of the top 5, 10 and 20 exposures, and the Herfindahl index (HHI) with its
   effective number of companies.
 
+**Dependencies (v2)**, one click on the top 15 companies:
+
+```
+ company --> SEC 10-K / 20-F --> Gemini Flash --> Python checks --> Python metrics --> Gemini Argon --> Python checks
+             newest from EDGAR,   one sub-agent    each quote must   dependency %,     synthesis of     a claim with a
+             sections 1/1A/2 or   per company:     be verbatim in    facilities by     critical flaws   number not from a
+             3/4/5, plus reverse  edges, each      the filing;       country, single   and              cited metric, an
+             links from other     with a quote     names resolved    points of         diversification unknown id or an
+             filers                                exactly           failure           ideas            outside name: dropped
+```
+
+- **No hallucinated facts.** An edge survives only if its quote appears word for word in the filing text
+  (after normalising spaces, quotes and dashes). Rejected edges are counted on the page, never drawn.
+- **The model never picks a company.** Counterparty names resolve by exact match against the portfolio,
+  the curated aliases and SEC company titles, so "TSMC" and "Taiwan Semiconductor Manufacturing Company
+  Limited" are one node. Anything else stays an unresolved name.
+- **Python owns every number.** The synthesis may only write `{{metric:id}}` placeholders, which Python
+  fills in. A claim with any other number, an unknown id, or a company outside the portfolio and the
+  verified edges is dropped.
+- **Reverse links.** EDGAR full-text search finds other companies' current annual reports that name a
+  holding (e.g. Qualcomm's 10-K naming Samsung as a foundry), so companies without SEC filings still appear.
+- Filings and AI results are cached on disk (filings by accession, forever; extractions per company,
+  filing and prompt version), so a repeat click replays without new AI calls.
+
 The exact definitions, identity rules, API and error codes are in
 [`docs/hoc/CONTRACT.md`](docs/hoc/CONTRACT.md). The backend is laid out so a corporate dependency graph can
 plug in after identity resolution without touching ingestion ([`backend/hoc/graph/`](backend/hoc/graph/README.md)).
@@ -100,6 +146,8 @@ plug in after identity resolution without touching ingestion ([`backend/hoc/grap
 | [TickerInside](https://tickerinside.com/api/) | Primary: holdings, names, CIK/FIGI identifiers | **CC BY 4.0.** Its citation for each fund is shown in the app. It republishes issuer files (daily) or SEC N-PORT filings (quarterly). |
 | [iShares](https://www.ishares.com) holdings CSV | Fallback for iShares funds, with sectors | Fetched at runtime and never redistributed. |
 | [SEC EDGAR N-PORT](https://www.sec.gov/edgar) | Fallback, plus ISIN and LEI identifiers | Public domain. Quarterly, published about 60 days after quarter end. |
+| SEC EDGAR 10-K / 20-F and full-text search | Dependencies: suppliers, customers, facilities (v2) | Public domain. Needs `HOC_SEC_CONTACT`; at most 10 requests per second. |
+| Google Gemini API | Dependencies: extraction (Flash) and synthesis (Argon) (v2) | Needs `GEMINI_API_KEY`. Python checks its output before any of it is shown. |
 
 Each ETF shows its source and **disclosure date**. Funds that only file quarterly (for example QQQ via
 N-PORT) can be months old, and the app flags that as a data gap. No financial data is committed to this
@@ -128,6 +176,16 @@ contract. They use synthetic fixtures only.
 - Company sectors come from TickerInside's per-stock files for each fund's heaviest ~150 holdings; local
   non-US listings have no such file, so they show as Unknown. Portfolio sector allocation falls back to each
   fund's own reported breakdown when line-level sectors cover less than 95% of a fund.
+- **Dependencies only see what companies disclose.** In the live us-core-tilt run, 14 of the top 15 companies
+  had a 10-K or 20-F. Samsung has no SEC filing, so it appears only through other filers' links (e.g.
+  Qualcomm's 10-K). About 45% of the portfolio is covered by verified disclosures; the rest is not analysed.
+- **Big customers are usually anonymous** in filings ("one customer was 22% of revenue"), so they show as
+  undisclosed customers, not named companies. Some large companies (Apple, Microsoft) name no suppliers at all.
+- **Annual reports can be up to a year old**, so every edge shows its form and filing date.
+- **A first, uncached Find dependencies click takes about 2 minutes** (about 15 filings, the AI calls and the
+  reverse search). Run it once before a demo; after that it replays from the cache.
+- **Share prices are exchange closes**, not NAV, and only USD-priced ETFs can be valued by shares; others
+  must be pinned to a %.
 - This is a local PoC: no accounts, no database, no trading, and not investment advice.
 
 ## Repository layout
