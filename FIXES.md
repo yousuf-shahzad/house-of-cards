@@ -32,6 +32,14 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
+### FIX-38 · high · Remove the Network page; Exposures covers it (Gawyn, 09:27)
+- Remove the `network` entry from `frontend/app/registry.tsx` (lead-approved edit), so it leaves the sidebar in both views. Old `#/network` links redirect to `#/exposures`.
+- Delete `frontend/app/pages/network/index.tsx`, but **keep the graph helper**: `pages/simple/index.tsx` imports `buildGraph` from `../network/graph`. Move it to `frontend/app/ui/money-flow-graph.ts`, or leave `graph.ts` in place and update the import.
+- Simple mode: drop the `pageKey === "network"` branch in `pages/simple/index.tsx`. If the money-flow diagram is shown only there, show it on Simple Exposures instead, so nothing useful is lost.
+- Remove `PAGE_INFO_COPY.network` in `guide/copy.ts`, and any "Network" mentions in the README, DEMO and pitch deck.
+- Check: `npm run build` / tsc clean; no sidebar entry; `#/network` lands on Exposures; Simple Exposures still works.
+- **Owner:** Yousuf's Gemini (owns Exposures and `guide/copy.ts`, and covers the Network files; lead-approved edits in `registry.tsx` and `pages/simple/index.tsx`); Yousuf's Codex reviews (owns `pages/simple/`) · **Status:** assigned
+
 ### FIX-36 · high · Independent proof outside the app: QQQ vs XLK overlap, and dependencies vs price history (Gawyn, 09:22)
 Prove one example without the app's own code or validation.
 
