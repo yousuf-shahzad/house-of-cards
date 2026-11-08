@@ -31,9 +31,9 @@ import time
 from collections.abc import Callable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FuturesTimeoutError
-from dataclasses import dataclass
-from datetime import timedelta
-from typing import Any
+from dataclasses import dataclass, replace
+from datetime import UTC, date, datetime, timedelta
+from typing import Any, Literal
 
 from hoc.ai.cache import ExtractionCache
 from hoc.ai.client import (
@@ -51,13 +51,20 @@ from hoc.ai.interpretation import (
 from hoc.ai.verifier import find_quote_span, normalise_for_verify, verify_quote
 from hoc.contract import (
     AnalysisResponse,
+    CompanyExposure,
     CompanyRunStatus,
     CompanyUnavailable,
+    Concentration,
+    Coverage,
     DependencyCounts,
+    DependencyRequest,
     DependencyResult,
     EdgeInterpretation,
     FilingRef,
     Insights,
+    Overlap,
+    PortfolioItem,
+    PortfolioRequest,
     ResearchFinding,
     ResearchStep,
     SourceError,
@@ -79,11 +86,24 @@ log = logging.getLogger(__name__)
 
 RESEARCH_PROMPT_VERSION = "hoc-v3-research-1"
 RESEARCH_CACHE_NAMESPACE = "research"
+RESEARCH_COMPANY_CACHE_NAMESPACE = "research_company"
 MAX_RESEARCH_STEPS = 4
 DEFAULT_CALL_TIMEOUT_SECONDS = 45.0
 DEFAULT_ITEM_TIMEOUT_SECONDS = 25.0
 DEFAULT_TOTAL_TIMEOUT_SECONDS = 90.0
 DEFAULT_INSIGHTS_TIMEOUT_SECONDS = 75.0
+
+ResearchDepthOption = Literal["none", "light", "thorough"]
+RESEARCH_DEPTH_PRESETS: dict[str, tuple[int, int]] = {
+    "none": (0, 0),
+    "light": (2, 3),
+    "thorough": (4, 4),
+}
+RESEARCH_DEPTH_TIMEOUT_SECONDS: dict[str, float] = {
+    "none": 0.0,
+    "light": 25.0,
+    "thorough": 45.0,
+}
 
 _RECENT_VERIFIED_INTERPRETATIONS: dict[str, EdgeInterpretation] = {}
 
@@ -265,6 +285,25 @@ class ResearchItem:
     target_name: str | None = None
     cik: str | None = None
     filing_ref: FilingRef | None = None
+
+
+@dataclass(frozen=True)
+class CompanyResearch:
+    """Per-company agentic research result for v3.1 (A1 <-> A2/A3 seam)."""
+
+    findings: list[ResearchFinding]
+    edges: list[VerifiedEdge]
+    rejected_edge_ids: list[str]
+    cached: bool = False
+    steps_done: int = 0
+    steps_total: int = 0
+    interpretation_rejected: int = 0
+    rejected: int = 0
+    quality: Literal["sections", "fallback"] | None = None
+    model: str | None = None
+
+
+CompanyResearchResult = CompanyResearch
 
 
 def _extract_cik_from_key(company_key: str | None) -> str | None:
@@ -582,6 +621,147 @@ def select_research_items(
     return deduped
 
 
+def _build_single_company_context(
+    company: CompanyExposure,
+    filing_ref: FilingRef | None,
+    edges: Sequence[VerifiedEdge],
+    analysis: AnalysisResponse | None = None,
+    portfolio: Sequence[CompanyExposure] | None = None,
+) -> tuple[AnalysisResponse, DependencyResult]:
+    """Construct a minimal `(AnalysisResponse, DependencyResult)` scoped to `company`."""
+    own_edges = [
+        e for e in edges if e.source_company_key == company.company_key
+    ] or list(edges)
+    exp_val = float(company.exposure) if company.exposure > 0 else 1.0
+    comp_status = CompanyRunStatus(
+        company_key=company.company_key,
+        company_name=company.company_name,
+        exposure=min(max(exp_val, 0.0), 1.0),
+        status="done",
+        filing=filing_ref or (own_edges[0].filing if own_edges else None),
+        verified_edges=len(own_edges),
+        rejected_edges=0,
+    )
+    if analysis is not None:
+        scoped_analysis = analysis
+    else:
+        exposures = list(portfolio) if portfolio is not None else [company]
+        if all(c.company_key != company.company_key for c in exposures):
+            exposures.insert(0, company)
+        scoped_analysis = AnalysisResponse(
+            generated_at=datetime(2026, 1, 1, 12, 0, tzinfo=UTC),
+            as_of_date=date(2026, 1, 1),
+            request=PortfolioRequest(
+                holdings=[PortfolioItem(ticker="PORT", allocation=1.0)],
+            ),
+            etfs=[],
+            coverage=Coverage(
+                total_allocation=1.0,
+                loaded_allocation=1.0,
+                missing_allocation=0.0,
+                covered_weight=1.0,
+                excluded_weight=0.0,
+                unexplained_weight=0.0,
+                unmatched_weight=0.0,
+                sector_known_weight=1.0,
+            ),
+            exposures=exposures,
+            exposures_truncated=False,
+            other_exposure=0.0,
+            overlap=Overlap(etfs=["PORT"], matrix=[[1.0]], pairs=[]),
+            concentration=Concentration(
+                top5=1.0,
+                top10=1.0,
+                top20=1.0,
+                hhi=1.0,
+                effective_companies=float(max(1, len(exposures))),
+                distinct_securities=max(1, len(exposures)),
+                distinct_companies=max(1, len(exposures)),
+            ),
+            sectors=[],
+            gaps=[],
+            warnings=[],
+            attributions=[],
+        )
+
+    scoped_result = DependencyResult(
+        as_of_date=scoped_analysis.as_of_date,
+        request=DependencyRequest(
+            holdings=scoped_analysis.request.holdings,
+            top_n=max(1, min(len(scoped_analysis.exposures), 30)),
+        ),
+        companies=[comp_status],
+        edges=list(own_edges),
+        metrics=[],
+        insights=Insights(status="ok", suggestions=[], flaws=[]),
+        counts=DependencyCounts(
+            companies_requested=1,
+            companies_analysed=1,
+            companies_skipped=0,
+            verified_edges=len(own_edges),
+            rejected_edges=0,
+            interpretation_rejected=0,
+            unresolved_counterparties=len(
+                {
+                    e.target_name.casefold()
+                    for e in own_edges
+                    if e.target_kind == "company" and e.target_key is None
+                }
+            ),
+        ),
+    )
+    return scoped_analysis, scoped_result
+
+
+def select_company_research_items(
+    company: CompanyExposure,
+    filing_ref: FilingRef | None,
+    edges: Sequence[VerifiedEdge],
+    *,
+    max_items: int = 2,
+    analysis: AnalysisResponse | None = None,
+    portfolio: Sequence[CompanyExposure] | None = None,
+) -> list[ResearchItem]:
+    """Select up to `max_items` uncertain/critical research items for a single company (v3.1 A1).
+
+    Picks the highest-priority item per `ResearchItemKind` first, then fills any remaining slots up to
+    `max_items` from remaining candidate items of that company ordered by kind priority and score.
+    """
+    if max_items <= 0:
+        return []
+    scoped_analysis, scoped_result = _build_single_company_context(
+        company, filing_ref, edges, analysis=analysis, portfolio=portfolio
+    )
+    first_pass = select_research_items(scoped_result, scoped_analysis, max_items=max_items)
+    if len(first_pass) >= max_items or not scoped_result.edges:
+        return first_pass[:max_items]
+
+    chosen_ids = {item.item_id for item in first_pass}
+    selected = list(first_pass)
+    remaining_edges = [
+        e for e in scoped_result.edges if all(item.edge is None or item.edge.edge_id != e.edge_id for item in selected)
+    ]
+    while len(selected) < max_items and remaining_edges:
+        sub_result = scoped_result.model_copy(update={"edges": remaining_edges})
+        more = select_research_items(sub_result, scoped_analysis, max_items=max_items - len(selected))
+        new_items = [m for m in more if m.item_id not in chosen_ids and m.item_kind != "no_disclosures"]
+        if not new_items:
+            break
+        for ni in new_items:
+            chosen_ids.add(ni.item_id)
+            selected.append(ni)
+            if len(selected) >= max_items:
+                break
+        remaining_edges = [
+            e
+            for e in remaining_edges
+            if all(item.edge is None or item.edge.edge_id != e.edge_id for item in selected)
+        ]
+
+    selected.sort(key=lambda item: (_KIND_PRIORITY.get(item.item_kind, 99), -item.priority_score, item.item_id))
+    return selected[:max_items]
+
+
 def strip_unquoted_numbers(explanation: str, verified_quotes: Sequence[str] = ()) -> str:
     """Ensure `explanation` contains NO digits outside exact `"..."` spans of verified evidence."""
     if not explanation or not explanation.strip():
@@ -814,6 +994,70 @@ def _research_cache_key(result: DependencyResult, max_items: int, prompt_version
     return f"{digest}:{max_items}:{prompt_version}"
 
 
+def _company_extraction_hash(
+    company_key: str,
+    accession: str,
+    edges: Sequence[VerifiedEdge],
+) -> str:
+    """Compute a deterministic hash of a company's initial extracted edges for `(extraction_hash, depth, prompt_version)` caching."""
+    sorted_edges = sorted(edges, key=lambda e: e.edge_id)
+    edge_records = [
+        {
+            "edge_id": e.edge_id,
+            "edge_type": e.edge_type,
+            "target_name": e.target_name,
+            "target_kind": e.target_kind,
+            "target_key": e.target_key,
+            "sole_source": e.sole_source,
+            "qualifier": e.qualifier,
+            "evidence_quote": e.evidence_quote,
+            "section": e.section,
+            "interp_status": e.interpretation.status if e.interpretation is not None else None,
+            "interp_flags": list(e.interpretation.flags) if e.interpretation is not None else [],
+        }
+        for e in sorted_edges
+    ]
+    payload = json.dumps(
+        {
+            "company_key": company_key,
+            "accession": accession,
+            "edges": edge_records,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:24]
+
+
+def _company_research_cache_key(
+    company_key: str,
+    accession: str,
+    edges: Sequence[VerifiedEdge],
+    depth: str,
+    prompt_version: str,
+) -> tuple[str, str]:
+    extraction_hash = _company_extraction_hash(company_key, accession, edges)
+    return extraction_hash, f"{company_key}:{accession}:{extraction_hash}:{depth}:{prompt_version}"
+
+
+def _invoke_company_progress(
+    progress: Callable[..., None] | None,
+    on_step: Callable[[int, int, ResearchStep | None, ResearchFinding | None], None] | None,
+    steps_done: int,
+    steps_total: int,
+    findings: list[ResearchFinding],
+    step: ResearchStep | None,
+    finding: ResearchFinding | None,
+) -> None:
+    if on_step is not None:
+        on_step(steps_done, steps_total, step, finding)
+    if progress is not None:
+        try:
+            progress(steps_done, steps_total)
+        except TypeError:
+            progress(steps_done, steps_total, list(findings))
+
+
 class ResearchLoop:
     """Bounded multi-step agentic research runner (`hoc.jobs.ResearchRunner`)."""
 
@@ -847,6 +1091,7 @@ class ResearchLoop:
             disk_cache or getattr(cache, "disk_cache", None) or getattr(cache, "cache", None)
         )
         self._replay_cache: dict[str, tuple[list[ResearchFinding], DependencyResult]] = {}
+        self._company_replay_cache: dict[str, CompanyResearch] = {}
         self.aliases = aliases
         self._filings_by_key: dict[str, Filing] = dict(filings_by_key or {})
         self._filings_by_cik: dict[str, Filing] = {
@@ -925,17 +1170,434 @@ class ResearchLoop:
             except Exception:  # noqa: BLE001
                 log.warning("Failed to write research result to disk cache for %s", cache_key)
 
+    def _get_cached_company_run(self, cache_key: str) -> CompanyResearch | None:
+        if cache_key in self._company_replay_cache:
+            cached = self._company_replay_cache[cache_key]
+            return replace(
+                cached,
+                findings=list(cached.findings),
+                edges=list(cached.edges),
+                rejected_edge_ids=list(cached.rejected_edge_ids),
+                cached=True,
+            )
+        if self._disk_cache is not None:
+            entry = self._disk_cache.get(RESEARCH_COMPANY_CACHE_NAMESPACE, cache_key)
+            if entry is not None:
+                try:
+                    data = json.loads(entry.body.decode("utf-8"))
+                    findings = [ResearchFinding.model_validate(f) for f in data.get("findings", [])]
+                    edges = [VerifiedEdge.model_validate(e) for e in data.get("edges", [])]
+                    rejected_edge_ids = [str(rid) for rid in data.get("rejected_edge_ids", [])]
+                    steps_done = int(data.get("steps_done", sum(len(f.steps) for f in findings)))
+                    steps_total = int(data.get("steps_total", steps_done))
+                    interp_rej = int(data.get("interpretation_rejected", len(rejected_edge_ids)))
+                    rejected = int(data.get("rejected", 0))
+                    quality_raw = data.get("quality")
+                    quality: Literal["sections", "fallback"] | None = (
+                        quality_raw if quality_raw in ("sections", "fallback") else None
+                    )
+                    model_val = data.get("model")
+                    res = CompanyResearch(
+                        findings=findings,
+                        edges=edges,
+                        rejected_edge_ids=rejected_edge_ids,
+                        cached=True,
+                        steps_done=steps_done,
+                        steps_total=steps_total,
+                        interpretation_rejected=interp_rej,
+                        rejected=rejected,
+                        quality=quality,
+                        model=str(model_val) if model_val else self.model,
+                    )
+                    self._company_replay_cache[cache_key] = res
+                    return res
+                except Exception:  # noqa: BLE001
+                    log.warning("Failed to deserialize cached company research for %s", cache_key)
+        return None
+
+    def _put_cached_company_run(self, cache_key: str, res: CompanyResearch) -> None:
+        self._company_replay_cache[cache_key] = res
+        if self._disk_cache is not None:
+            try:
+                payload = {
+                    "findings": [f.model_dump(mode="json") for f in res.findings],
+                    "edges": [e.model_dump(mode="json") for e in res.edges],
+                    "rejected_edge_ids": list(res.rejected_edge_ids),
+                    "steps_done": res.steps_done,
+                    "steps_total": res.steps_total,
+                    "interpretation_rejected": res.interpretation_rejected,
+                    "rejected": res.rejected,
+                    "quality": res.quality,
+                    "model": res.model,
+                }
+                body = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+                self._disk_cache.put(
+                    RESEARCH_COMPANY_CACHE_NAMESPACE,
+                    cache_key,
+                    body,
+                    {"prompt_version": self.prompt_version},
+                )
+            except Exception:  # noqa: BLE001
+                log.warning("Failed to write company research to disk cache for %s", cache_key)
+
+    def research_company(
+        self,
+        company: CompanyExposure,
+        filing: FilingRef | Filing | None,
+        edges: Sequence[VerifiedEdge],
+        *,
+        depth: ResearchDepthOption = "light",
+        cache_only: bool = False,
+        progress: Callable[..., None] | None = None,
+        on_step: Callable[[int, int, ResearchStep | None, ResearchFinding | None], None] | None = None,
+        analysis: AnalysisResponse | None = None,
+        portfolio: Sequence[CompanyExposure] | None = None,
+        resolve_target_key: Callable[[str], str | None] | None = None,
+        filing_obj: Filing | None = None,
+    ) -> CompanyResearch:
+        """Run the v3.1 per-company agentic sub-agent loop (A1 <-> A2/A3 seam).
+
+        - Depth presets: `'light'` (`max_items=2, max_steps=3`, ~25s budget),
+          `'thorough'` (`max_items=4, max_steps=4`, ~45s budget), `'none'` (`0, 0`).
+        - Cached in `DiskCache` per `(extraction_hash, depth, prompt_version)` so `cache_only=True`
+          replays without calling Gemini and switching from `'light'` to `'thorough'` reuses the extraction.
+        - Raises `CompanyUnavailable('missing_api_key', ...)` when uncached and either `cache_only=True`
+          or `not client.has_api_key`.
+        """
+        actual_filing: Filing | None = filing_obj
+        filing_ref: FilingRef | None = None
+
+        if isinstance(filing, Filing):
+            actual_filing = filing
+            form_literal = "20-F" if "20-F" in str(filing.form).upper() else "10-K"
+            filing_ref = FilingRef(
+                company_key=company.company_key,
+                form=form_literal,  # type: ignore[arg-type]
+                accession=filing.accession,
+                filed=filing.filed,
+                url=filing.url,
+            )
+            self._filings_by_key[company.company_key] = filing
+            if filing.cik:
+                self._filings_by_cik[str(filing.cik).zfill(10)] = filing
+        elif isinstance(filing, FilingRef):
+            filing_ref = filing
+            if actual_filing is None:
+                actual_filing = self._filings_by_key.get(company.company_key)
+                if actual_filing is None:
+                    cik_hint = _extract_cik_from_key(company.company_key)
+                    if cik_hint and cik_hint in self._filings_by_cik:
+                        actual_filing = self._filings_by_cik[cik_hint]
+        else:
+            if actual_filing is None:
+                actual_filing = self._filings_by_key.get(company.company_key)
+            if actual_filing is not None:
+                self._filings_by_key[company.company_key] = actual_filing
+                if actual_filing.cik:
+                    self._filings_by_cik[str(actual_filing.cik).zfill(10)] = actual_filing
+                form_literal = "20-F" if "20-F" in str(actual_filing.form).upper() else "10-K"
+                filing_ref = FilingRef(
+                    company_key=company.company_key,
+                    form=form_literal,  # type: ignore[arg-type]
+                    accession=actual_filing.accession,
+                    filed=actual_filing.filed,
+                    url=actual_filing.url,
+                )
+            elif edges:
+                filing_ref = edges[0].filing
+
+        initial_edges = [
+            _normalise_anonymised_customer_edge(e)
+            for e in edges
+            if e.source_company_key == company.company_key or not e.source_company_key
+        ]
+        if not initial_edges and edges:
+            initial_edges = [_normalise_anonymised_customer_edge(e) for e in edges]
+
+        if depth == "none":
+            scored = attach_edge_importance(initial_edges)
+            _invoke_company_progress(progress, on_step, 0, 0, [], None, None)
+            return CompanyResearch(
+                findings=[],
+                edges=scored,
+                rejected_edge_ids=[],
+                cached=True,
+                steps_done=0,
+                steps_total=0,
+                interpretation_rejected=0,
+                model=self.model,
+            )
+
+        max_items, item_max_steps = RESEARCH_DEPTH_PRESETS.get(depth, (2, 3))
+        accession = (
+            filing_ref.accession
+            if filing_ref is not None
+            else (actual_filing.accession if actual_filing is not None else "no_filing")
+        )
+        _, cache_key = _company_research_cache_key(
+            company.company_key,
+            accession,
+            initial_edges,
+            depth,
+            self.prompt_version,
+        )
+
+        cached_res = self._get_cached_company_run(cache_key)
+        if cached_res is not None:
+            replay_total = sum(max(1, len(f.steps)) for f in cached_res.findings)
+            _invoke_company_progress(progress, on_step, 0, replay_total, [], None, None)
+            done_so_far = 0
+            replayed_findings: list[ResearchFinding] = []
+            for finding in cached_res.findings:
+                steps_list = finding.steps or [
+                    ResearchStep(
+                        index=1,
+                        action="conclude",
+                        query=company.company_name,
+                        summary=finding.explanation,
+                        filing=filing_ref,
+                    )
+                ]
+                for step_idx_in_finding, step in enumerate(steps_list):
+                    done_so_far += 1
+                    is_last = step_idx_in_finding == len(steps_list) - 1
+                    if is_last:
+                        replayed_findings.append(finding)
+                    _invoke_company_progress(
+                        progress,
+                        on_step,
+                        done_so_far,
+                        replay_total,
+                        replayed_findings,
+                        step,
+                        finding if is_last else None,
+                    )
+            return replace(
+                cached_res,
+                cached=True,
+                steps_done=replay_total,
+                steps_total=replay_total,
+            )
+
+        has_key = bool(getattr(self.client, "has_api_key", True))
+        if cache_only:
+            raise CompanyUnavailable(
+                "missing_api_key",
+                f"Agentic research for {company.company_key} ({depth}) is not in cache (cache_only=True).",
+            )
+        if not has_key:
+            raise CompanyUnavailable(
+                "missing_api_key",
+                f"HOC_GEMINI_API_KEY is not set and research for {company.company_key} ({depth}) is not cached.",
+            )
+
+        scoped_analysis, scoped_result = _build_single_company_context(
+            company,
+            filing_ref,
+            initial_edges,
+            analysis=analysis,
+            portfolio=portfolio,
+        )
+        items = select_company_research_items(
+            company,
+            filing_ref,
+            initial_edges,
+            max_items=max_items,
+            analysis=scoped_analysis,
+            portfolio=portfolio,
+        )
+
+        if not items:
+            scored = attach_edge_importance(initial_edges)
+            _invoke_company_progress(progress, on_step, 0, 0, [], None, None)
+            empty_res = CompanyResearch(
+                findings=[],
+                edges=scored,
+                rejected_edge_ids=[],
+                cached=False,
+                steps_done=0,
+                steps_total=0,
+                interpretation_rejected=0,
+                model=self.model,
+            )
+            self._put_cached_company_run(cache_key, empty_res)
+            return empty_res
+
+        aliases = self.aliases if self.aliases is not None else load_aliases()
+        resolver = resolve_target_key or NameResolver(scoped_analysis.exposures, aliases).resolve
+        top_keys = {c.company_key for c in scoped_analysis.exposures if c.exposure > 0}
+        if company.company_key:
+            top_keys.add(company.company_key)
+
+        preset_timeout = RESEARCH_DEPTH_TIMEOUT_SECONDS.get(depth, 25.0)
+        company_timeout_s = (
+            min(self.total_timeout_s, preset_timeout)
+            if self.total_timeout_s >= DEFAULT_TOTAL_TIMEOUT_SECONDS
+            else self.total_timeout_s
+        )
+
+        started = time.monotonic()
+        verified_interps: dict[str, EdgeInterpretation] = {}
+        findings: list[ResearchFinding] = []
+        steps_done = 0
+        steps_total = len(items) * item_max_steps
+        _invoke_company_progress(progress, on_step, steps_done, steps_total, findings, None, None)
+
+        for idx, item in enumerate(items):
+            remaining_items_after = len(items) - idx - 1
+            elapsed = time.monotonic() - started
+
+            def _on_tool_step(step: ResearchStep, cur_total: int = steps_total) -> None:
+                nonlocal steps_done
+                steps_done += 1
+                _invoke_company_progress(progress, on_step, steps_done, cur_total, findings, step, None)
+
+            if elapsed >= company_timeout_s:
+                finding = self._timeout_finding(item)
+            else:
+                try:
+                    finding = self._investigate_item(
+                        item=item,
+                        result=scoped_result,
+                        analysis=scoped_analysis,
+                        resolver=resolver,
+                        top_keys=top_keys,
+                        cache_only=cache_only,
+                        run_started=started,
+                        verified_interpretations=verified_interps,
+                        max_steps_override=item_max_steps,
+                        total_timeout_override=company_timeout_s,
+                        on_tool_step=_on_tool_step,
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    log.warning("company research item %s failed: %s", item.item_id, exc)
+                    finding = ResearchFinding(
+                        finding_id=item.item_id,
+                        kind=item.item_kind,
+                        subject=item.subject_label,
+                        question=item.question,
+                        outcome="unresolved",
+                        explanation="Investigation could not be completed due to an unexpected source error.",
+                        steps=[
+                            ResearchStep(
+                                index=1,
+                                action="conclude",
+                                query=item.subject_name,
+                                summary="Investigation terminated cleanly after an unexpected error.",
+                                filing=item.filing_ref,
+                            )
+                        ],
+                    )
+
+            steps_done += 1
+            steps_total = steps_done + remaining_items_after * item_max_steps
+            findings.append(finding)
+            conclude_step = finding.steps[-1] if finding.steps else None
+            _invoke_company_progress(
+                progress,
+                on_step,
+                steps_done,
+                steps_total,
+                findings,
+                conclude_step,
+                finding,
+            )
+
+        rejected_ids_list: list[str] = []
+        rejected_ids_set: set[str] = set()
+        for finding in findings:
+            for rid in finding.rejected_edge_ids:
+                if not rid or rid in rejected_ids_set:
+                    continue
+                vint_check = verified_interps.get(rid) or _RECENT_VERIFIED_INTERPRETATIONS.get(rid)
+                if vint_check is not None and vint_check.status != "rejected":
+                    continue
+                rejected_ids_set.add(rid)
+                rejected_ids_list.append(rid)
+
+        portfolio_names = {c.company_key: c.company_name for c in scoped_analysis.exposures}
+        portfolio_keys = set(portfolio_names)
+        merged_by_id: dict[str, VerifiedEdge] = {}
+
+        for edge in initial_edges:
+            if edge.edge_id in rejected_ids_set:
+                continue
+            updated = edge
+            vint = verified_interps.get(edge.edge_id) or _RECENT_VERIFIED_INTERPRETATIONS.get(edge.edge_id)
+            if vint is not None and vint.status != "rejected":
+                updated = updated.model_copy(update={"interpretation": vint})
+            if updated.target_key is None and resolver is not None and updated.target_kind == "company":
+                resolved_key = resolver(updated.target_name)
+                if resolved_key:
+                    updated = updated.model_copy(
+                        update={
+                            "target_key": resolved_key,
+                            "target_in_portfolio": resolved_key in portfolio_keys,
+                        }
+                    )
+            updated = _normalise_anonymised_customer_edge(updated)
+            updated = updated.model_copy(update={"importance": score_edge_importance(updated)})
+            merged_by_id[updated.edge_id] = updated
+
+        for finding in findings:
+            for raw_new_edge in finding.new_edges:
+                if raw_new_edge.edge_id in rejected_ids_set:
+                    continue
+                new_edge = _normalise_anonymised_customer_edge(raw_new_edge)
+                if new_edge.interpretation is None or new_edge.interpretation.status != "confirmed":
+                    continue
+                rule_flags, _, _ = check_interpretation_rules(new_edge, new_edge.evidence_quote)
+                if rule_flags and new_edge.interpretation.method == "rules":
+                    continue
+                target_key = None if new_edge.target_kind == "unnamed_customer" else new_edge.target_key
+                if target_key is None and resolver is not None and new_edge.target_kind == "company":
+                    target_key = resolver(new_edge.target_name)
+                prepared = new_edge.model_copy(
+                    update={
+                        "target_key": target_key,
+                        "source_company_name": portfolio_names.get(
+                            new_edge.source_company_key, new_edge.source_company_name
+                        ),
+                        "source_in_portfolio": new_edge.source_company_key in portfolio_keys,
+                        "target_in_portfolio": target_key is not None and target_key in portfolio_keys,
+                    }
+                )
+                prepared = prepared.model_copy(update={"importance": score_edge_importance(prepared)})
+                merged_by_id[prepared.edge_id] = prepared
+
+        final_edges = list(merged_by_id.values())
+        company_res = CompanyResearch(
+            findings=findings,
+            edges=final_edges,
+            rejected_edge_ids=rejected_ids_list,
+            cached=False,
+            steps_done=steps_done,
+            steps_total=steps_total,
+            interpretation_rejected=len(rejected_ids_list),
+            model=self.model,
+        )
+        self._put_cached_company_run(cache_key, company_res)
+        return company_res
+
+    run_company = research_company
+
     def run(
         self,
         result: DependencyResult,
         analysis: AnalysisResponse,
         *,
         max_items: int = 6,
+        depth: ResearchDepthOption | None = None,
         cache_only: bool = False,
         progress: Callable[[int, int, list[ResearchFinding]], None] | None = None,
         on_finding: Callable[[ResearchFinding], None] | None = None,
     ) -> tuple[list[ResearchFinding], DependencyResult]:
         """Run the bounded research loop on up to `max_items` uncertain items and return `(findings, merged_result)`."""
+        effective_max_steps = self.max_steps
+        if depth is not None and depth in RESEARCH_DEPTH_PRESETS:
+            preset_items, preset_steps = RESEARCH_DEPTH_PRESETS[depth]
+            max_items = preset_items
+            effective_max_steps = preset_steps if preset_steps > 0 else self.max_steps
         cache_key = _research_cache_key(result, max_items, self.prompt_version)
         cached_pair = self._get_cached_run(cache_key)
         if cached_pair is not None:
@@ -1014,6 +1676,7 @@ class ResearchLoop:
                         cache_only=cache_only,
                         run_started=started,
                         verified_interpretations=verified_interps,
+                        max_steps_override=effective_max_steps,
                     )
                 except Exception as exc:  # noqa: BLE001
                     log.warning("research item %s failed: %s", item.item_id, exc)
@@ -1083,8 +1746,15 @@ class ResearchLoop:
             ],
         )
 
-    def _remaining_budget(self, *, run_started: float, item_started: float) -> float:
-        rem_total = self.total_timeout_s - (time.monotonic() - run_started)
+    def _remaining_budget(
+        self,
+        *,
+        run_started: float,
+        item_started: float,
+        total_timeout_s: float | None = None,
+    ) -> float:
+        effective_total = total_timeout_s if total_timeout_s is not None else self.total_timeout_s
+        rem_total = effective_total - (time.monotonic() - run_started)
         rem_item = self.item_timeout_s - (time.monotonic() - item_started)
         return min(self.call_timeout_s, rem_total, rem_item)
 
@@ -1099,9 +1769,20 @@ class ResearchLoop:
         cache_only: bool,
         run_started: float,
         verified_interpretations: dict[str, EdgeInterpretation],
+        max_steps_override: int | None = None,
+        total_timeout_override: float | None = None,
+        on_tool_step: Callable[[ResearchStep], None] | None = None,
     ) -> ResearchFinding:
+        effective_max_steps = max(
+            1,
+            min(int(max_steps_override if max_steps_override is not None else self.max_steps), MAX_RESEARCH_STEPS),
+        )
         item_started = time.monotonic()
-        init_budget = self._remaining_budget(run_started=run_started, item_started=item_started)
+        init_budget = self._remaining_budget(
+            run_started=run_started,
+            item_started=item_started,
+            total_timeout_s=total_timeout_override,
+        )
         if init_budget <= 0:
             return self._timeout_finding(item)
         try:
@@ -1134,8 +1815,12 @@ class ResearchLoop:
         concluded_payload: Mapping[str, Any] | None = None
         timed_out_or_failed = False
 
-        for step_idx in range(1, self.max_steps + 1):
-            budget = self._remaining_budget(run_started=run_started, item_started=item_started)
+        for step_idx in range(1, effective_max_steps + 1):
+            budget = self._remaining_budget(
+                run_started=run_started,
+                item_started=item_started,
+                total_timeout_s=total_timeout_override,
+            )
             if budget <= 0:
                 timed_out_or_failed = True
                 break
@@ -1147,6 +1832,7 @@ class ResearchLoop:
                     cik=cik,
                     step_idx=step_idx,
                     observations=observations,
+                    max_steps=effective_max_steps,
                 )
                 try:
                     raw_resp, _ = _call_with_timeout(
@@ -1190,10 +1876,15 @@ class ResearchLoop:
                 concluded_payload = step_decision
                 break
 
-            tool_budget = self._remaining_budget(run_started=run_started, item_started=item_started)
+            tool_budget = self._remaining_budget(
+                run_started=run_started,
+                item_started=item_started,
+                total_timeout_s=total_timeout_override,
+            )
             if tool_budget <= 0:
                 timed_out_or_failed = True
                 break
+            prev_len = len(steps)
             try:
                 _call_with_timeout(
                     lambda act=action, dec=step_decision: self._execute_tool_step(
@@ -1215,6 +1906,8 @@ class ResearchLoop:
             except FuturesTimeoutError:
                 timed_out_or_failed = True
                 break
+            if on_tool_step is not None and len(steps) > prev_len and len(steps) < effective_max_steps:
+                on_tool_step(steps[-1])
 
         if timed_out_or_failed and concluded_payload is None:
             concluded_payload = {
@@ -1241,6 +1934,8 @@ class ResearchLoop:
             run_started=run_started,
             item_started=item_started,
             verified_interpretations=verified_interpretations,
+            max_steps_override=effective_max_steps,
+            total_timeout_override=total_timeout_override,
         )
 
     @staticmethod
@@ -1380,13 +2075,19 @@ class ResearchLoop:
         run_started: float,
         item_started: float,
         verified_interpretations: dict[str, EdgeInterpretation],
+        max_steps_override: int | None = None,
+        total_timeout_override: float | None = None,
     ) -> ResearchFinding:
+        effective_max_steps = max(
+            1,
+            min(int(max_steps_override if max_steps_override is not None else self.max_steps), MAX_RESEARCH_STEPS),
+        )
         has_key = bool(getattr(self.client, "has_api_key", True))
         if concluded_payload is None:
             concluded_payload = self._deterministic_step_decision(
                 item=item,
                 cik=cik,
-                step_idx=self.max_steps,
+                step_idx=effective_max_steps,
                 verified_quotes=verified_quotes,
                 observations=[f'OBSERVED_QUOTE: "{q}"' for q in verified_quotes],
                 has_api_key=has_key,
@@ -1421,7 +2122,11 @@ class ResearchLoop:
                 resolve_target_key=resolver,
             )
             if built_edges:
-                budget = self._remaining_budget(run_started=run_started, item_started=item_started)
+                budget = self._remaining_budget(
+                    run_started=run_started,
+                    item_started=item_started,
+                    total_timeout_s=total_timeout_override,
+                )
                 if budget > 0:
                     try:
                         interp_res = _call_with_timeout(
@@ -1510,7 +2215,11 @@ class ResearchLoop:
         if item.item_kind == "flagged_edge" and item.edge is not None:
             edge = item.edge
             doc_text = filing.text if filing is not None else edge.evidence_quote
-            budget = self._remaining_budget(run_started=run_started, item_started=item_started)
+            budget = self._remaining_budget(
+                run_started=run_started,
+                item_started=item_started,
+                total_timeout_s=total_timeout_override,
+            )
             vint_interp: EdgeInterpretation | None = None
             if budget > 0:
                 try:
@@ -1651,7 +2360,7 @@ class ResearchLoop:
 
         clean_explanation = strip_unquoted_numbers(raw_explanation, verified_quotes)
 
-        if len(steps) < self.max_steps:
+        if len(steps) < effective_max_steps:
             steps.append(
                 ResearchStep(
                     index=len(steps) + 1,
@@ -1663,7 +2372,7 @@ class ResearchLoop:
             )
         else:
             steps[-1] = ResearchStep(
-                index=self.max_steps,
+                index=effective_max_steps,
                 action="conclude",
                 query=item.target_name or item.subject_name,
                 summary=clean_explanation,
@@ -1677,7 +2386,7 @@ class ResearchLoop:
             question=item.question,
             outcome=outcome,
             explanation=clean_explanation,
-            steps=steps[: self.max_steps],
+            steps=steps[:effective_max_steps],
             confirmed_edge_ids=confirmed_edge_ids,
             rejected_edge_ids=rejected_edge_ids,
             new_edges=verified_new_edges,
@@ -1911,6 +2620,7 @@ class ResearchLoop:
         cik: str,
         step_idx: int,
         observations: Sequence[str],
+        max_steps: int = MAX_RESEARCH_STEPS,
     ) -> str:
         edge_block = "NONE"
         if item.edge is not None:
@@ -1932,7 +2642,7 @@ class ResearchLoop:
         return (
             f"PROMPT_VERSION: {RESEARCH_PROMPT_VERSION}\n"
             f"STEP_INDEX: {step_idx}\n"
-            f"MAX_STEPS: {MAX_RESEARCH_STEPS}\n"
+            f"MAX_STEPS: {max_steps}\n"
             f"ITEM_ID: {item.item_id}\n"
             f"ITEM_KIND: {item.item_kind}\n"
             f"SUBJECT_KEY: {item.subject_key}\n"
@@ -2073,3 +2783,48 @@ class ResearchLoop:
 
 
 AgenticResearchRunner = ResearchLoop
+
+
+def research_company(
+    company: CompanyExposure,
+    filing: FilingRef | Filing | None,
+    edges: Sequence[VerifiedEdge],
+    *,
+    depth: ResearchDepthOption = "light",
+    cache_only: bool = False,
+    progress: Callable[..., None] | None = None,
+    on_step: Callable[[int, int, ResearchStep | None, ResearchFinding | None], None] | None = None,
+    analysis: AnalysisResponse | None = None,
+    portfolio: Sequence[CompanyExposure] | None = None,
+    resolve_target_key: Callable[[str], str | None] | None = None,
+    filing_obj: Filing | None = None,
+    loop: ResearchLoop | None = None,
+    client: Any = None,
+    fetcher: FilingFetcher | None = None,
+    cache: ExtractionCache | None = None,
+    disk_cache: DiskCache | None = None,
+    aliases: Aliases | None = None,
+    filings_by_key: Mapping[str, Filing] | None = None,
+) -> CompanyResearch:
+    """Top-level per-company agentic research helper for v3.1 (A1 <-> A2/A3 seam)."""
+    runner = loop or ResearchLoop(
+        client=client,
+        fetcher=fetcher,
+        cache=cache,
+        disk_cache=disk_cache,
+        aliases=aliases,
+        filings_by_key=filings_by_key,
+    )
+    return runner.research_company(
+        company,
+        filing,
+        edges,
+        depth=depth,
+        cache_only=cache_only,
+        progress=progress,
+        on_step=on_step,
+        analysis=analysis,
+        portfolio=portfolio,
+        resolve_target_key=resolve_target_key,
+        filing_obj=filing_obj,
+    )

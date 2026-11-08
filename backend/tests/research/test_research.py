@@ -1009,3 +1009,193 @@ def test_q2_anonymised_customer_labels_become_unnamed_customer_never_company() -
         assert e.edge_type == "customer"
         assert e.target_key is None
         assert e.target_in_portfolio is False
+
+
+def test_a1_research_company_light_vs_thorough_depth_presets() -> None:
+    from hoc.research import (
+        RESEARCH_DEPTH_PRESETS,
+        CompanyResearch,
+        research_company,
+    )
+
+    assert RESEARCH_DEPTH_PRESETS["none"] == (0, 0)
+    assert RESEARCH_DEPTH_PRESETS["light"] == (2, 3)
+    assert RESEARCH_DEPTH_PRESETS["thorough"] == (4, 4)
+
+    analysis, _ = _sample_analysis_and_result()
+    comp = analysis.exposures[0]
+    filing = _sample_filing(cik="0009990001", accession="0009990001-25-000001")
+
+    e1 = _make_edge(
+        edge_id="e_flag_1",
+        source_key=comp.company_key,
+        source_name=comp.company_name,
+        target_name="TSMC",
+        quote="We rely on TSMC as our primary wafer foundry for advanced logic products.",
+        interp_status="flagged",
+        interp_flags=["judge_unclear"],
+    )
+    e2 = _make_edge(
+        edge_id="e_undisc_1",
+        source_key=comp.company_key,
+        source_name=comp.company_name,
+        target_name="Customer A",
+        target_key=None,
+        target_kind="unnamed_customer",
+        edge_type="customer",
+        sole_source=False,
+        quote="Sales to Customer A accounted for 22% of our consolidated revenue.",
+    )
+    e3 = _make_edge(
+        edge_id="e_unres_1",
+        source_key=comp.company_key,
+        source_name=comp.company_name,
+        target_name="ZZSUP",
+        target_key=None,
+        target_kind="company",
+        edge_type="supplier",
+        sole_source=True,
+        quote="We also purchase memory components from ZZSUP under multi-year supply agreements.",
+    )
+    e4 = _make_edge(
+        edge_id="e_single_1",
+        source_key=comp.company_key,
+        source_name=comp.company_name,
+        target_name="ZZFAB",
+        target_key="CIK:0009990009",
+        target_kind="company",
+        edge_type="foundry",
+        sole_source=True,
+        quote="We rely exclusively on ZZFAB for advanced wafer fabrication of our core processor line.",
+    )
+    edges = [e1, e2, e3, e4]
+
+    client_light = FakeGeminiClient()
+    runner_light = ResearchLoop(client=client_light, filings_by_key={comp.company_key: filing})
+    light_progress: list[tuple[int, int]] = []
+    res_light = runner_light.research_company(
+        comp,
+        filing,
+        edges,
+        depth="light",
+        progress=lambda done, total: light_progress.append((done, total)),
+    )
+    assert isinstance(res_light, CompanyResearch)
+    assert len(res_light.findings) == 2
+    assert all(1 <= len(f.steps) <= 3 for f in res_light.findings)
+    assert light_progress[0][0] == 0
+    assert light_progress[-1][0] == light_progress[-1][1] == res_light.steps_done == res_light.steps_total
+    assert res_light.steps_done == sum(len(f.steps) for f in res_light.findings)
+
+    client_thorough = FakeGeminiClient()
+    res_thorough = research_company(
+        comp,
+        filing,
+        edges,
+        depth="thorough",
+        client=client_thorough,
+        filings_by_key={comp.company_key: filing},
+    )
+    assert len(res_thorough.findings) == 4
+    assert all(1 <= len(f.steps) <= 4 for f in res_thorough.findings)
+    assert res_thorough.steps_done == res_thorough.steps_total == sum(len(f.steps) for f in res_thorough.findings)
+
+
+def test_a1_research_company_rejects_negated_edge_and_caches_across_depths(tmp_path) -> None:
+    import pytest
+
+    from hoc.contract import CompanyUnavailable
+    from hoc.core.cache import DiskCache
+
+    analysis, _ = _sample_analysis_and_result()
+    comp = analysis.exposures[0]
+    neg_quote = "We do not rely on ZZCOMP for any critical manufacturing capacity."
+    valid_quote = "We rely on TSMC as our primary wafer foundry for advanced logic products."
+    filing = _sample_filing(
+        cik="0009990001",
+        text=f"ITEM 1. BUSINESS\n{neg_quote}\n{valid_quote}\n",
+    )
+    e_neg = _make_edge(
+        edge_id="e_neg",
+        source_key=comp.company_key,
+        source_name=comp.company_name,
+        target_name="ZZCOMP",
+        quote=neg_quote,
+        interp_status="flagged",
+        interp_flags=["negated"],
+    )
+    e_valid = _make_edge(
+        edge_id="e_valid",
+        source_key=comp.company_key,
+        source_name=comp.company_name,
+        target_name="TSMC",
+        quote=valid_quote,
+        interp_status="confirmed",
+    )
+
+    disk = DiskCache(tmp_path)
+    runner1 = ResearchLoop(
+        client=FakeGeminiClient(),
+        disk_cache=disk,
+        filings_by_key={comp.company_key: filing},
+    )
+    res1 = runner1.research_company(comp, filing, [e_neg, e_valid], depth="light")
+    assert res1.cached is False
+    assert "e_neg" in res1.rejected_edge_ids
+    assert res1.interpretation_rejected == 1
+    assert [e.edge_id for e in res1.edges] == ["e_valid"]
+
+    # Replay from DiskCache in cache_only mode with no API key
+    offline_client = FakeGeminiClient(has_api_key=False)
+    runner2 = ResearchLoop(
+        client=offline_client,
+        disk_cache=disk,
+        filings_by_key={comp.company_key: filing},
+    )
+    replay_progress: list[tuple[int, int]] = []
+    res_cached = runner2.research_company(
+        comp,
+        filing,
+        [e_neg, e_valid],
+        depth="light",
+        cache_only=True,
+        progress=lambda done, total: replay_progress.append((done, total)),
+    )
+    assert res_cached.cached is True
+    assert offline_client.calls == []
+    assert res_cached.rejected_edge_ids == ["e_neg"]
+    assert [e.edge_id for e in res_cached.edges] == ["e_valid"]
+    assert replay_progress[-1][0] == replay_progress[-1][1] == res_cached.steps_total
+
+    # Uncached thorough depth in cache_only mode raises CompanyUnavailable('missing_api_key')
+    with pytest.raises(CompanyUnavailable) as exc_info:
+        runner2.research_company(comp, filing, [e_neg, e_valid], depth="thorough", cache_only=True)
+    assert exc_info.value.status == "missing_api_key"
+
+
+def test_a1_dependency_extractor_reuses_cached_extraction_from_light_to_thorough(tmp_path) -> None:
+    from hoc.ai.cache import ExtractionCache
+    from hoc.ai.extractor import DependencyExtractor
+    from hoc.core.cache import DiskCache
+
+    analysis, _ = _sample_analysis_and_result()
+    comp = analysis.exposures[0]
+    filing = _sample_filing(cik="0009990001", accession="0009990001-25-000099")
+
+    disk = DiskCache(tmp_path)
+    ext_cache = ExtractionCache(disk)
+    client = FakeGeminiClient()
+    extractor = DependencyExtractor(client, cache=ext_cache)
+
+    light_ext = extractor.extract(comp, filing, depth="light")
+    assert light_ext.cached is False
+    assert len(light_ext.edges) >= 1
+    assert len(light_ext.findings) >= 1
+    assert light_ext.steps_done == light_ext.steps_total > 0
+
+    calls_after_light = len(client.calls)
+    # Upgrading to thorough reuses the cached initial extraction (0 new extraction calls; only research steps run)
+    thorough_ext = extractor.extract_agentic(comp, filing, depth="thorough")
+    new_calls = client.calls[calls_after_light:]
+    assert all("FILING TEXT:" not in c["prompt"] for c in new_calls)
+    assert len(thorough_ext.findings) >= len(light_ext.findings)
