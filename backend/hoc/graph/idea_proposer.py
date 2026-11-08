@@ -410,227 +410,12 @@ def _format_lookup_metric(entry: MetricFact | PortfolioIssue | float | str) -> s
     return str(entry)
 
 
-_COMMON_PROSE_WORDS: frozenset[str] = frozenset(
-    {
-        "add",
-        "adds",
-        "adding",
-        "swap",
-        "swaps",
-        "swapping",
-        "shift",
-        "shifts",
-        "shifting",
-        "move",
-        "moves",
-        "moving",
-        "reduce",
-        "reduces",
-        "reducing",
-        "lower",
-        "lowers",
-        "lowering",
-        "spread",
-        "spreads",
-        "spreading",
-        "broaden",
-        "broadens",
-        "broadening",
-        "replace",
-        "replaces",
-        "replacing",
-        "trim",
-        "trims",
-        "trimming",
-        "cut",
-        "cuts",
-        "cutting",
-        "diversify",
-        "diversifies",
-        "diversifying",
-        "diversification",
-        "put",
-        "puts",
-        "putting",
-        "tilt",
-        "tilts",
-        "tilting",
-        "keep",
-        "keeps",
-        "keeping",
-        "avoid",
-        "avoids",
-        "avoiding",
-        "limit",
-        "limits",
-        "limiting",
-        "balance",
-        "balances",
-        "balancing",
-        "help",
-        "helps",
-        "helping",
-        "cap",
-        "caps",
-        "capping",
-        "your",
-        "the",
-        "this",
-        "these",
-        "that",
-        "those",
-        "into",
-        "from",
-        "with",
-        "across",
-        "outside",
-        "beyond",
-        "while",
-        "without",
-        "through",
-        "toward",
-        "towards",
-        "away",
-        "out",
-        "over",
-        "under",
-        "equal",
-        "weight",
-        "weighted",
-        "value",
-        "growth",
-        "broad",
-        "core",
-        "total",
-        "large",
-        "mid",
-        "small",
-        "international",
-        "developed",
-        "emerging",
-        "global",
-        "world",
-        "foreign",
-        "domestic",
-        "american",
-        "united",
-        "states",
-        "markets",
-        "market",
-        "stocks",
-        "stock",
-        "equities",
-        "equity",
-        "shares",
-        "share",
-        "funds",
-        "fund",
-        "etf",
-        "etfs",
-        "index",
-        "portfolio",
-        "holdings",
-        "holding",
-        "allocation",
-        "sector",
-        "sectors",
-        "industry",
-        "industries",
-        "companies",
-        "company",
-        "firms",
-        "firm",
-        "names",
-        "name",
-        "giants",
-        "giant",
-        "leaders",
-        "leader",
-        "suppliers",
-        "supplier",
-        "customers",
-        "customer",
-        "partners",
-        "partner",
-        "reliance",
-        "dependency",
-        "dependencies",
-        "concentration",
-        "exposure",
-        "overlap",
-        "risk",
-        "risks",
-        "single",
-        "top",
-        "biggest",
-        "largest",
-        "main",
-        "heavy",
-        "heavily",
-        "high",
-        "higher",
-        "low",
-        "more",
-        "less",
-        "fewer",
-        "other",
-        "new",
-        "current",
-        "existing",
-        "overall",
-        "direct",
-        "indirect",
-        "supply",
-        "chain",
-        "chip",
-        "chips",
-        "semiconductor",
-        "semiconductors",
-        "foundry",
-        "foundries",
-        "factory",
-        "factories",
-        "manufacturing",
-        "makers",
-        "maker",
-        "hardware",
-        "software",
-        "cloud",
-        "tech",
-        "technology",
-        "information",
-        "financial",
-        "financials",
-        "healthcare",
-        "health",
-        "care",
-        "consumer",
-        "staples",
-        "discretionary",
-        "utilities",
-        "utility",
-        "energy",
-        "industrial",
-        "industrials",
-        "materials",
-        "material",
-        "communication",
-        "communications",
-        "services",
-        "real",
-        "estate",
-        "defensive",
-        "cyclical",
-        "dividend",
-        "income",
-        "bond",
-        "bonds",
-        "treasury",
-        "gold",
-        "commodity",
-        "commodities",
-    }
-)
+_SECTOR_WORDS: frozenset[str] = frozenset(
+    tok
+    for sec in Sector
+    for tok in _normalise_entity_token(_format_sector_display_name(sec)).split()
+    if len(tok) >= 3 and sec != Sector.unknown
+) | frozenset({"technology", "healthcare"})
 
 
 def _expand_allowed_entity_tokens(
@@ -638,7 +423,7 @@ def _expand_allowed_entity_tokens(
     metrics_by_id: Mapping[str, MetricFact | PortfolioIssue | float | str] | None = None,
 ) -> set[str]:
     """Normalise `allowed_entities` (plus metric labels/IDs when needed) into surface forms and words."""
-    expanded: set[str] = set()
+    expanded: set[str] = set(_SECTOR_WORDS)
     sources: list[str] = list(allowed_entities or ())
     if metrics_by_id:
         for mid, entry in metrics_by_id.items():
@@ -668,7 +453,7 @@ def _find_unknown_entity_in_text(
     metrics_by_id: Mapping[str, MetricFact | PortfolioIssue | float | str] | None = None,
     explicit_entities: Sequence[str] = (),
 ) -> str | None:
-    """Return the first unverified company/entity name found in `explicit_entities` or `stripped_text`."""
+    """Reuse the orchestrator's entity check for `explicit_entities` and mid-sentence proper nouns."""
     permitted_upper = set(allowed_tickers or ()) | set(_COMMON_UPPER_ACRONYMS)
     norm_allowed = _expand_allowed_entity_tokens(allowed_entities, metrics_by_id)
 
@@ -687,18 +472,26 @@ def _find_unknown_entity_in_text(
         ):
             return ent
 
-    for token in re.findall(r"\b[A-Z][A-Za-z0-9.\-]*\b", stripped_text):
+    for match in re.finditer(r"\b[A-Z][A-Za-z0-9.\-]*\b", stripped_text):
+        token = match.group(0)
         if token.isupper() and 2 <= len(token) <= 5 and token in permitted_upper:
             continue
-        norm_tok = _normalise_entity_token(token)
-        if len(norm_tok) < 3 or norm_tok in _COMMON_PROSE_WORDS:
-            continue
         if token.upper() in permitted_upper:
+            continue
+        # Ordinary sentence-initial Titlecase word (e.g. "Consider broader exposure...") is prose, not a company
+        prefix = stripped_text[: match.start()].strip()
+        rest = stripped_text[match.end() :]
+        is_sentence_start = not prefix or prefix[-1] in ".!?"
+        next_is_cap = bool(re.match(r"^\s+[A-Z][a-z]", rest))
+        if is_sentence_start and token[1:].islower() and not next_is_cap:
+            continue
+        norm_tok = _normalise_entity_token(token)
+        if len(norm_tok) < 3:
             continue
         if norm_tok in norm_allowed or any(
             norm_tok in allowed or allowed in norm_tok
             for allowed in norm_allowed
-            if len(allowed) >= 4
+            if len(allowed) >= 3
         ):
             continue
         return token

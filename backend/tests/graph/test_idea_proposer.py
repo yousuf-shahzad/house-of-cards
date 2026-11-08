@@ -310,7 +310,15 @@ def test_verify_rationale_rejects_made_up_company_name() -> None:
     allowed_tickers = {"IVV", "QQQ", "XLK", "EEM", "VTV", "RSP", "TSMC"}
     allowed_entities = {"taiwan semiconductor manufacturing", "tsmc", "apple"}
 
-    # Grounded entity passes
+    # Grounded entity and normal sentence-start verbs (e.g. "Consider") pass
+    consider_text, consider_err = verify_and_render_proposal_rationale(
+        "Consider broader exposure for {{metric:top_sector}}.",
+        metrics_by_id={"top_sector": 0.51},
+        allowed_entities={"technology"},
+    )
+    assert consider_err is None
+    assert consider_text == "Consider broader exposure for 51.0%."
+
     ok_text, ok_err = verify_and_render_proposal_rationale(
         "Shifting out of XLK into VTV lowers your {{metric:dep.ALIAS:TSMC}} Taiwan Semiconductor reliance.",
         metrics_by_id=metrics_lookup,
