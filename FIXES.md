@@ -30,9 +30,18 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
+### FIX-67 · high · BUG: the US never appears under Countries (Gawyn, 11:55)
+`tickerinside/files.py` `country_of(symbol)` only reads an exchange suffix, so US listings (Apple, Nvidia, Microsoft…) get country=null. That's ~70–80% of a typical portfolio, and the simulator's Country tab and the Risk page's largest country never show the US.
+- Fix: US-exchange listing with no suffix → "US" (except depositary receipts); at company level, prefer a reported country over an inferred one. Add regression tests.
+- **Owner:** Yousuf's Codex (board worker) · **Status:** assigned
+
+### FIX-68 · medium · UX: Dependencies shows "Scan 15 more" only after the first scan (Gawyn, 11:55)
+Before the first scan, show only "Find dependencies". After it, show "Scan 15 more" (top 30).
+- **Owner:** Yousuf's Gemini (with FIX-63 E+F) · **Status:** assigned
+
 ### FIX-66 · medium · UX: a scan stuck at 0% "Reading reports" looks frozen (Gawyn, 11:50)
 Show what it's doing under the progress bar: "Reading Apple's annual report…" or "Read 3 of 15 companies", from `job.companies[].status`. While at 0%, also show an elapsed timer and an animated bar. Applies to Full Dependencies, guide Step 4 and Simple Dependencies.
-- **Owner:** Yousuf's Gemini (after FIX-63 E+F) · **Status:** assigned
+- **Owner:** Yousuf's Claude builds `app/ui/` `scanActivity` + `<ScanActivity>`; Yousuf's Gemini mounts it in the 3 places · **Status:** assigned
 
 ### FIX-64 · medium · BUG: Simple view tells you to "pin this row" for an unknown ticker (Kendrick's Claude, FIX-62)
 Simple Portfolio and every Simple "Finish your portfolio" card (`simple/index.tsx:142`) show "Price could not be loaded; pin this row to a percentage." Simple view has no pin control, and the real cause is an unknown ticker.
