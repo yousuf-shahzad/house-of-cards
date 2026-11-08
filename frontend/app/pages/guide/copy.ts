@@ -162,7 +162,7 @@ export const GUIDE_STEP_INFO: Readonly<Record<GuideStepMeta["id"], TabInfoGuide>
       "Most people know which ETFs they bought, but not which individual companies sit inside each basket or how much money lands in each stock.",
     keyDetails: [
       "Shares vs %: Enter share counts and we calculate each ETF's dollar value and portfolio share automatically.",
-      "Official sources: Holdings come from SEC N-PORT filings and iShares disclosures.",
+      "Official sources: Holdings come from official fund reports and iShares disclosures.",
     ],
   },
   own: {
@@ -190,11 +190,11 @@ export const GUIDE_STEP_INFO: Readonly<Record<GuideStepMeta["id"], TabInfoGuide>
   risks: {
     title: "About Step 4 · Hidden supply-chain risks",
     whatsHere:
-      "Suppliers, chip foundries, customers, and factory locations that your largest companies rely on, extracted from their official SEC annual reports (10-K / 20-F).",
+      "Suppliers, chip foundries, customers, and factory locations that your largest companies rely on, extracted from their official company annual reports.",
     whyItMatters:
       "Companies that look separate in your portfolio—like Nvidia, AMD, Broadcom, and Intel—can all rely on the same single supplier (like TSMC) or manufacturing region.",
     keyDetails: [
-      "Verified quotes only: Every link is kept only if its exact quote appears word-for-word in the SEC filing.",
+      "Verified quotes only: Every link is kept only if its exact quote appears word-for-word in the company annual report.",
       "No false comfort: Companies that don't name suppliers in their annual report (like Apple) are shown as 'not disclosed', never 'safe'.",
     ],
   },
@@ -229,21 +229,21 @@ export const PAGE_INFO_COPY: Readonly<Record<string, TabInfoGuide>> = {
     whatsHere:
       "Build or edit your ETF portfolio using share counts (default) or percentage weights, or load a pre-verified starter portfolio.",
     whyItMatters:
-      "Sets the baseline weights used across every other tab to calculate your look-through company exposures, ETF overlap, and supply-chain risks.",
+      "Sets the baseline weights used across every other tab to calculate the companies inside your ETFs, ETF overlap, and supply-chain risks.",
     keyDetails: [
       "Share valuation: Uses cached USD share prices to turn share counts into exact portfolio percentages.",
-      "Coverage & dates: Shows each fund's filing source (SEC N-PORT or iShares) and reporting date.",
+      "Coverage & dates: Shows each fund's source (official fund reports or iShares) and reporting date.",
     ],
   },
   exposures: {
     title: "About the Exposures tab · What's here & why",
     whatsHere:
-      "A complete look-through breakdown of every individual company you own across all of your ETFs, ranked by your true combined portfolio percentage.",
+      "A complete breakdown of the companies inside your ETFs, ranked by your true combined portfolio percentage.",
     whyItMatters:
       "ETFs hide individual stocks inside a fund wrapper. This tab opens every ETF basket so you can see where your money actually lands and which funds contribute to each stock.",
     keyDetails: [
       "Per-ETF stacked bars & rows: Click any company row to see how much each of your ETFs contributes to that holding.",
-      "Entity resolution: Merges split share classes (e.g. GOOG + GOOGL) by ISIN/CIK so a company's true weight isn't split in two.",
+      "Split tickers merged: Merges share classes like GOOG and GOOGL so a company's true weight isn't split in two.",
       "True coverage: If an ETF has unmapped cash or missing data, we report the exact coverage rather than silently scaling weights.",
     ],
   },
@@ -261,11 +261,11 @@ export const PAGE_INFO_COPY: Readonly<Record<string, TabInfoGuide>> = {
   dependencies: {
     title: "About the Dependencies tab · What's here & why",
     whatsHere:
-      "An X-ray of who your largest companies rely on—suppliers, chip foundries, customers, and factory locations—extracted from official SEC Form 10-K and 20-F annual reports.",
+      "An X-ray of who your largest companies rely on—suppliers, chip foundries, customers, and factory locations—extracted from official company annual reports.",
     whyItMatters:
-      "Standard portfolio trackers stop at stock tickers. Even when you own several separate chip or hardware stocks, SEC filings can reveal that they all rely on the same foundry or supplier.",
+      "Standard portfolio trackers stop at stock tickers. Even when you own several separate chip or hardware stocks, company annual reports can reveal that they all rely on the same foundry or supplier.",
     keyDetails: [
-      "Verbatim evidence: Click any percentage, graph line, or citation chip to open the exact word-for-word sentence from the SEC filing.",
+      "Verbatim evidence: Click any percentage, graph line, or citation chip to open the exact word-for-word sentence from the company annual report.",
       "Coverage bar: Shows how much of your portfolio has verified disclosures vs. companies that file annual reports without naming suppliers (like Apple) or sit outside the scan window.",
       "Light vs. Go deeper: Light double-checks the riskiest links in each report; Go deeper investigates more of them, for longer, including other companies' filings.",
     ],
@@ -284,11 +284,11 @@ export const PAGE_INFO_COPY: Readonly<Record<string, TabInfoGuide>> = {
   risk: {
     title: "About the Risk & data tab",
     whatsHere:
-      "Portfolio-wide concentration metrics (HHI and effective holdings count), GICS sector breakdown, and filing freshness/staleness audit.",
+      "Portfolio-wide concentration score, effective holdings count, industry breakdown, and report freshness audit.",
     whyItMatters:
       "Summarises how concentrated your portfolio is by company and industry, and flags ageing ETF holdings reports (noted after 35 days, staleness warning after 100 days).",
     keyDetails: [
-      "Effective holdings (1/HHI): Shows how many equally weighted stocks your portfolio behaves like.",
+      "Effective holdings (from the concentration score): Shows how many equally weighted stocks your portfolio behaves like.",
       "Audit trail: Lists every data source, filing date, and coverage share.",
     ],
   },

@@ -319,10 +319,17 @@ export default function RisksStep({ showLearnMore = true }: RiskStepProps) {
   const running = !error && (status === "starting" || status === "polling" || (stale && analysisStatus === "ready"));
   const liveResearch = job?.research ?? [];
 
-  const activePhase = job?.phase ?? "reading";
-  const stepsDone = job?.steps_done || job?.progress_done || 0;
+  const activePhase = status === "starting" ? "reading" : (job?.phase ?? "reading");
+  const stepsDone = status === "starting" ? 0 : (job?.steps_done || job?.progress_done || 0);
   const stepsTotal = job?.steps_total || job?.progress_total || job?.companies.length || 15;
-  const rawPct = job?.status === "done" ? 100 : stepsTotal > 0 ? (stepsDone / stepsTotal) * 100 : 0;
+  const rawPct =
+    status === "starting"
+      ? 0
+      : job?.status === "done"
+        ? 100
+        : stepsTotal > 0
+          ? (stepsDone / stepsTotal) * 100
+          : 0;
   const progressRef = useRef<{ jobId: string | null; pct: number; status: string | null }>({
     jobId: null,
     pct: 0,
@@ -334,7 +341,7 @@ export default function RisksStep({ showLearnMore = true }: RiskStepProps) {
     job?.job_id,
     rawPct,
     progressRef.current.status,
-    job?.status ?? status,
+    status === "starting" ? "starting" : (job?.status ?? status),
   );
   const progressPct = progressRef.current.pct;
   const phases: Array<{ id: "reading" | "researching" | "synthesising"; label: string }> = [
@@ -390,18 +397,14 @@ export default function RisksStep({ showLearnMore = true }: RiskStepProps) {
 
     body = (
       <>
+        {canGoDeeper && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="secondary" size="small" disabled={running} onClick={() => goDeeper()}>
+              {running && depth === "thorough" ? RISKS_COPY.goingDeeper : RISKS_COPY.goDeeper}
+            </Button>
+          </div>
+        )}
         {progressBlock}
-        <ul className="flex flex-col gap-3">
-          {buildFindings(result).map((finding) => (
-            <li
-              key={finding.key}
-              className="flex flex-col gap-1 rounded-2xl border border-border-button-default bg-background-secondary-default p-4"
-            >
-              <span className="text-headline-medium text-text-primary">{finding.text}</span>
-              {finding.note ? <span className="text-body-2-regular text-text-secondary">{finding.note}</span> : null}
-            </li>
-          ))}
-        </ul>
         {showConcernsSection && (
           <section className="flex flex-col gap-3" aria-labelledby="guide-risks-concerns">
             <h3 id="guide-risks-concerns" className="text-body-semibold text-text-primary">
@@ -425,13 +428,17 @@ export default function RisksStep({ showLearnMore = true }: RiskStepProps) {
             </div>
           </details>
         )}
-        {canGoDeeper && (
-          <div>
-            <Button variant="secondary" size="small" disabled={running} onClick={() => goDeeper()}>
-              {running && depth === "thorough" ? RISKS_COPY.goingDeeper : RISKS_COPY.goDeeper}
-            </Button>
-          </div>
-        )}
+        <ul className="flex flex-col gap-3">
+          {buildFindings(result).map((finding) => (
+            <li
+              key={finding.key}
+              className="flex flex-col gap-1 rounded-2xl border border-border-button-default bg-background-secondary-default p-4"
+            >
+              <span className="text-headline-medium text-text-primary">{finding.text}</span>
+              {finding.note ? <span className="text-body-2-regular text-text-secondary">{finding.note}</span> : null}
+            </li>
+          ))}
+        </ul>
       </>
     );
   } else if (running) {
