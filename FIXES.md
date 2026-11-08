@@ -48,12 +48,17 @@ Gawyn wants concrete ideas ("add this ETF to help fix this diversification issue
 
 **1. AI proposer** (Gawyn's Gemini; new `backend/hoc/graph/idea_proposer.py`, next to the orchestrator; uses the existing Gemini client without changing `hoc/ai`):
 - **Input from Python:** the portfolio's issues. That means the largest industry (same ≥40% rule as the verdict on screen 3 and the Risk page), the biggest dependencies, top 10, and effective N, all as metric ids. It also gets the current holdings, and a pinned universe of loadable ETFs (about 15–20: broad, equal-weight, value, international, sector funds). Each ETF comes with its name, category and largest industry, computed by Python.
-- **Asks the model (Flash, for speed)** for up to 5 proposals. Each one is:
+- **Asks the model (Argon, `gemini-4-argon`, the orchestrator's model; Gawyn's call, for accuracy)** for up to 5 proposals. Each one is:
   - `add`: put fraction f of the portfolio into ETF Z, scaling the rest; or
   - `swap`: move f from held ETF Y into ETF Z;
   - with f in {0.1, 0.2, 0.3}, the issue id it addresses, and a short `rationale`. Numbers in the rationale appear only as `{{metric:id}}` placeholders.
 - **Behaviour:** versioned prompt, JSON schema, cached per (holdings, issues, prompt version, model).
 - **On a missing key, error or timeout:** return no proposals with an `ai_status`.
+- **Argon is slow (about 45 s), so it runs in the background:**
+  - the first request returns the rules ideas at once with `ai_status: "pending"`;
+  - the AI ideas replace them when they're verified;
+  - results are cached on disk, so restarts and repeat clicks are free;
+  - the startup warm-up also prepares AI ideas for the example portfolios, so the demo is instant.
 
 **2. Python verifier and ranker** (Yousuf's Codex; `portfolio/ideas.py`, after FIX-20). It rejects any proposal that:
 - uses a ticker outside the universe;
@@ -72,14 +77,14 @@ Survivors are measured with cache-only compare on one company set (FIX-20). Pyth
   - `rationale: str | None`, the verified and rendered text;
   - `add_fraction` widens to 0.1 / 0.2 / 0.3.
 - **`ChangeIdeasResponse`:**
-  - `ai_status: "ok" | "missing_api_key" | "failed" | "timeout" | "not_used"`;
+  - `ai_status: "ok" | "pending" | "missing_api_key" | "failed" | "timeout" | "not_used"`;
   - `model` and `prompt_version`;
   - `rejected_proposals: [{ticker, action, reason}]`, so the UI can say "the AI suggested 5, we kept 3".
 
 **4. UI** (Bekarys's Claude):
 - **Cards:** idea cards show the rationale and an "AI idea, checked with your numbers" note. Rules ideas are labelled as such.
 - **Swaps:** they move shares from the source ETF.
-- **Retry:** retry once while the AI is pending.
+- **Polling:** while `ai_status` is `pending`, show the rules ideas with "AI is checking more ideas…". Re-request about every 3 s, for up to about 90 s, and swap in the AI ideas when they arrive.
 - **Live check (lead):** sample portfolio. Every shown idea improves its named issue by the shown amount; the AI and fallback paths both work, including with no key.
 - **Owners:** Gawyn's Gemini (proposer) + Yousuf's Codex (verifier, contract, FIX-20 first) + Bekarys's Claude (UI) · **Status:** assigned; the rules-only version is merged (#177–#179)
 
