@@ -292,7 +292,7 @@ export function DashboardSidebar({
 }: {
   /** Rendered inside the mobile drawer: always expanded, close button instead of collapse. */
   workspaceName?: string;
-  /** Minimal mode: an image (URL) shown left of the product name, and alone when collapsed. */
+  /** Minimal mode: an image (URL) shown left of the product name; hidden with the name when collapsed. */
   workspaceIcon?: string;
   mobile?: boolean;
   onClose?: () => void;
@@ -428,7 +428,8 @@ export function DashboardSidebar({
           >
             {minimal ? (
               <span className="flex items-center gap-2 text-body-medium whitespace-nowrap text-text-primary">
-                {workspaceIcon && (
+                {/* Collapsed: the logo hides along with the name (Gawyn); only the expand toggle stays. */}
+                {workspaceIcon && !collapsed && (
                   <img src={workspaceIcon} alt="" aria-hidden width={24} height={24} className="size-6 shrink-0 rounded-md" />
                 )}
                 {collapsed ? (workspaceIcon ? null : workspaceName?.charAt(0)) : workspaceName}
