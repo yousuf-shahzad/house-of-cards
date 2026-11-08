@@ -1046,7 +1046,7 @@ class ResearchLoop:
         insights_budget = (
             self.insights_timeout_s
             if self.total_timeout_s >= DEFAULT_TOTAL_TIMEOUT_SECONDS
-            else min(self.insights_timeout_s, max(0.001, self.total_timeout_s - (time.monotonic() - started)))
+            else min(self.insights_timeout_s, self.total_timeout_s)
         )
         merged = merge_research_findings(
             result,
