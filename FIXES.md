@@ -56,13 +56,10 @@ In the FIX-1 live check, 4 of 23 light findings stopped after one tool call ("st
 - After it merges, Bekarys's Gemini re-runs the held-out eval at thorough depth to see whether deeper research changes links.
 - **Owner:** Kendrick's Gemini (+ Bekarys's Claude for job limits) · **Status:** plan approved (an 8-worker research pool; light 40 s and thorough 85 s per company)
 
-### FIX-21 · medium · Docs quote the old swap figure
-After FIX-20, the XLK → VTV swap is 12.39% → 6.30% (−6.10 pts), not 4.69% (−7.71 pts).
-- Fix: update README.md, docs/hoc/DEMO.md and PITCH_DECK.md.
-- Also add the FIX-8 result honestly: on the held-out set, light research double-checks findings but changes no links, so precision and recall stay 88.4% / 57.4% (+0.0 pp). Don't claim the agents raise accuracy; say they verify, and that they made 2+ lookups with 0 circular confirmations.
-- Also (from Yousuf's deck review): PITCH_DECK.md slide 3 names Apple as one of the 4 companies behind the 12.39% TSMC figure. In our data they are Nvidia 6.89% + Broadcom 2.28% + AMD 2.04% + Intel 1.19%. Apple doesn't name its component suppliers.
-- **Owner:** Gawyn's Gemini · **Status:** assigned
-
+### FIX-21 · medium · Docs: say what the research agents did on the held-out eval
+Done in #195 (checked by the lead): swap figure 12.39% → 6.30% (−6.10 pts), +20% XLU 12.39% → 9.92%, and slide 3 names Nvidia, Broadcom, AMD and Intel.
+- Still to do: add the FIX-8 result honestly to README, DEMO and PITCH_DECK. Light research double-checks findings (18/18 with 2+ lookups, 0 circular) but changes no links on the held-out set, so precision and recall stay 88.4% / 96.1% / 57.4% (+0.0 pp). Don't say the agents raise accuracy.
+- **Owner:** Gawyn's Gemini · **Status:** assigned (after the "Consider" checker fix)
 ### FIX-17 · high · Change ideas: AI proposes, Python verifies (Gawyn, 07:08)
 Gawyn wants concrete ideas ("add this ETF to help fix this diversification issue") on screen 5 and in Try a change, in both views. **The AI proposes the changes and Python verifies them**, the same pattern as the AI summaries.
 
