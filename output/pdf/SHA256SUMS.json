@@ -1,0 +1,18 @@
+{
+  "ETF-benchmark-evidence.zip": {
+    "bytes": 137496,
+    "sha256": "3bd1c75f5cbb6e8e4d7d30c3a5fa395a8f9bcc506dceb653ded19cdf72d83bc8"
+  },
+  "ETF-pair-comparisons.csv": {
+    "bytes": 8519,
+    "sha256": "2573f7b47421bcf31dcf2e0c9862d391e02abfb78805a1730bc526d03763f3b6"
+  },
+  "ETF-portfolio-checks.csv": {
+    "bytes": 1724,
+    "sha256": "cffe9841cdc56d63db3b036ce8906a61c14d03396b029cc391c7367b0cc94fe4"
+  },
+  "house-of-cards-etf-accuracy-report.pdf": {
+    "bytes": 297197,
+    "sha256": "6fc890bc656337c6041b5a3457ff5280b2d4b8d7770a43f3eb97b02d680158a1"
+  }
+}
