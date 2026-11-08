@@ -61,7 +61,7 @@ export default function PortfolioPage() {
             <span className="flex items-center gap-2 text-body-regular text-text-secondary">
               <Spinner size="sm" aria-label="Analysing" /> Analysing your portfolio…
             </span>
-          ) : status === "ready" ? (
+          ) : status === "ready" && !stale ? (
             <ButtonLink href="#/exposures" size="small" trailingIcon={RiArrowRightLine}>
               See what you really own
             </ButtonLink>
