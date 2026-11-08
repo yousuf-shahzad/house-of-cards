@@ -89,20 +89,51 @@ def test_reweighting_uses_each_portfolio_exposure_and_unions_duplicate_edges():
     CompareResponse.model_validate_json(result.model_dump_json())
 
 
-def test_top_n_selection_is_independent_and_concentration_uses_full_analysis():
+def test_top_n_union_keeps_dependent_company_below_candidate_cutoff_and_full_concentration():
     before = analysis([(A, .6), (B, .3), (C, .1)])
     after = analysis([(B, .7), (A, .2), (C, .1)], "ZZSCEN")
     result = compare(before, after, {A: [edge()], B: [], C: [edge(C)]}, top_n=1)
-    assert result.baseline_top_n_weight == .6
-    assert result.candidate_top_n_weight == .7
+    assert result.baseline_top_n_weight == pytest.approx(.9)
+    assert result.candidate_top_n_weight == pytest.approx(.9)
     dep = next(d for d in result.dependency_deltas if d.metric_id.startswith("dep.") and d.unit == "fraction")
-    assert dep.baseline == .6 and dep.candidate is None and dep.delta is None
+    assert (dep.baseline, dep.candidate, dep.delta) == pytest.approx((.6, .2, -.4))
+    assert any("union" in note and "shared company set" in note for note in result.notes)
     conc = {d.name: d for d in result.concentration_deltas}
     assert list(conc) == ["top5", "top10", "top20", "effective_n", "largest_company", "top_sector"]
     assert conc["top5"].baseline == conc["top5"].candidate == 1
     assert conc["effective_n"].baseline == pytest.approx(1/(.6**2+.3**2+.1**2))
     assert conc["effective_n"].candidate == pytest.approx(1/(.7**2+.2**2+.1**2))
     assert conc["largest_company"].delta == pytest.approx(.1)
+
+
+def test_top_n_union_counts_candidate_entrant_at_its_lower_baseline_weight():
+    before = analysis([(A, .6), (B, .3), (C, .1)])
+    after = analysis([(B, .7), (A, .2), (C, .1)], "ZZSCEN")
+    result = compare(before, after, {A: [], B: [edge(B)], C: []}, top_n=1)
+    dep = next(d for d in result.dependency_deltas if d.metric_id.startswith("dep.") and d.unit == "fraction")
+    assert (dep.baseline, dep.candidate, dep.delta) == pytest.approx((.3, .7, .4))
+
+
+def test_top_n_union_marks_uncached_company_below_candidate_cutoff_unknown():
+    before = analysis([(A, .6), (B, .3), (C, .1)])
+    after = analysis([(B, .7), (A, .2), (C, .1)], "ZZSCEN")
+    result = compare(before, after, {B: [], C: []}, top_n=1)
+    assert result.status == "partial"
+    assert [(c.company_key, c.exposure) for c in result.candidate_unanalysed] == [(A, .2)]
+    assert not any(d.metric_id.startswith("dep.") for d in result.dependency_deltas)
+
+
+def test_top_n_union_sums_shared_dependency_once_per_company_at_actual_weights():
+    before = analysis([(A, .6), (B, .3), (C, .1)])
+    after = analysis([(C, .5), (A, .32), (B, .18)], "ZZSCEN")
+    # A drops from top one but remains held. No dependency improvement comes from
+    # crossing that cutoff, and B remains outside the selected union on both sides.
+    result = compare(before, after, {A: [edge(), edge(edge_id="zz-duplicate")],
+                                      B: [edge(B, edge_id="zz-outside")], C: []}, top_n=1)
+    dep = next(d for d in result.dependency_deltas if d.metric_id.startswith("dep.") and d.unit == "fraction")
+    assert (dep.baseline, dep.candidate, dep.delta) == pytest.approx((.6, .32, -.28))
+    count = next(d for d in result.dependency_deltas if d.metric_id.endswith(".companies"))
+    assert (count.baseline, count.candidate, count.delta) == (1, 1, 0)
 
 
 @pytest.mark.parametrize(("baseline_sectors", "candidate_sectors", "expected"), [

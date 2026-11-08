@@ -145,11 +145,13 @@ def compare_portfolios(
     aliases: Aliases | None = None,
     company_statuses: Mapping[str, CompanyStatus] | None = None,
 ) -> CompareResponse:
-    """Compare analyses using each side's top N and a shared verified cache snapshot.
+    """Compare analyses on the union of both top-N company sets and one cache snapshot.
 
     Caller runs the two ETF analyses and obtains the snapshot with
     ``read_cached_extractions``. Concentration uses the full analyses, independently of
-    dependency top N. Missing metric values remain None (including delta), per C0-v3.
+    dependency selection. Each side uses its actual exposure for every selected company
+    it holds, even below its own top N. The returned weights cover this shared window.
+    Missing metric values remain None (including delta), per C0-v3.
     Optional known run statuses distinguish unavailable SEC filings from cache misses;
     this helper never discovers filing availability itself.
     """
@@ -159,8 +161,9 @@ def compare_portfolios(
             (h.ticker, h.allocation) for h in analysis.request.holdings
         ):
             raise ValueError("Compare analyses must correspond to the requested portfolios.")
-    baseline_top = _top(baseline, request.top_n)
-    candidate_top = _top(candidate, request.top_n)
+    company_keys = {c.company_key for analysis in (baseline, candidate) for c in _top(analysis, request.top_n)}
+    baseline_top = [c for c in _top(baseline, len(baseline.exposures)) if c.company_key in company_keys]
+    candidate_top = [c for c in _top(candidate, len(candidate.exposures)) if c.company_key in company_keys]
     aliases = aliases if aliases is not None else load_aliases()
     before = _metrics(baseline, baseline_top, cached_extractions, aliases)
     after = _metrics(candidate, candidate_top, cached_extractions, aliases)
@@ -192,7 +195,9 @@ def compare_portfolios(
     scenario_uncached = [c for c in missing if company_statuses.get(c.company_key) != "no_sec_filing"]
     baseline_uncached = [c for c in baseline_top if c.company_key not in cached_extractions
                          and company_statuses.get(c.company_key) != "no_sec_filing"]
-    notes = [("Uses each portfolio's top companies and the latest cached filing extractions; "
+    notes = [("Uses the union of both portfolios' top companies at each portfolio's actual weights, "
+              "including companies below its own top N. Coverage weights refer to this shared company set. "
+              "Uses the latest cached filing extractions; "
               "no new filings or model calls. Concentration uses the full portfolio analysis.")]
     for label, companies in (("scenario", candidate_top), ("current portfolio", baseline_top)):
         for company in companies:
