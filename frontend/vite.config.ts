@@ -8,7 +8,7 @@ export default defineConfig({
     // Backend routes only: a bare "/api" would also catch source files in ./api/.
     // Add every new top-level backend route here, or `npm run dev` can't reach it.
     proxy: {
-      "^/api/(health|analysis|examples|etfs|valuation|dependencies)(/|$)": "http://127.0.0.1:8000",
+      "^/api/(health|analysis|examples|etfs|valuation|dependencies|compare|research)(/|$)": "http://127.0.0.1:8000",
     },
   },
 });

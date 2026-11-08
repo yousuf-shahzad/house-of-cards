@@ -2,6 +2,7 @@
 // Each page owner edits only app/pages/<key>/, so pages never touch shared files.
 import { lazy, type ComponentType, type LazyExoticComponent } from "react";
 import {
+  RiArrowLeftRightLine,
   RiBarChartHorizontalLine,
   RiGridLine,
   RiLinksLine,
@@ -10,7 +11,7 @@ import {
   RiShieldCheckLine,
 } from "@remixicon/react";
 
-export type PageKey = "portfolio" | "exposures" | "overlap" | "network" | "dependencies" | "risk";
+export type PageKey = "portfolio" | "exposures" | "overlap" | "network" | "dependencies" | "compare" | "risk";
 
 export type PageDefinition = {
   key: PageKey;
@@ -67,6 +68,15 @@ export const pages: readonly PageDefinition[] = [
     title: "What your companies depend on",
     description: "Suppliers, customers and facilities found in company filings, with the evidence.",
     Component: lazy(() => import("./pages/dependencies")),
+  },
+  {
+    key: "compare",
+    label: "Compare",
+    href: "#/compare",
+    icon: RiArrowLeftRightLine,
+    title: "Compare a change",
+    description: "Try a different allocation and see how your dependencies and concentration would change.",
+    Component: lazy(() => import("./pages/compare")),
   },
   {
     key: "risk",

@@ -4,6 +4,7 @@ import "@/styles/globals.css";
 import "@/site.css";
 import "@/suite/suite.css";
 import { AnalysisProvider } from "./analysis";
+import { ScenarioProvider } from "./scenario";
 import { Workspace } from "./workspace";
 
 createRoot(document.getElementById("root")!).render(
@@ -19,7 +20,9 @@ createRoot(document.getElementById("root")!).render(
       Skip to content
     </a>
     <AnalysisProvider>
-      <Workspace />
+      <ScenarioProvider>
+        <Workspace />
+      </ScenarioProvider>
     </AnalysisProvider>
   </DirectionProvider>,
 );
