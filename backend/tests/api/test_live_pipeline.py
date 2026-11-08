@@ -119,7 +119,8 @@ def test_live_pipeline_reverse_wiring(make_service, tmp_path):
     company = service.analyse(PortfolioRequest(holdings=HOLDINGS)).exposures[0].model_copy(
         update={"company_key": "CIK:0009990001"})
     searched, passed = [], {}
-    pipeline.fetcher.names_in_other_filings = lambda name, *, exclude_cik=None: searched.append((name, exclude_cik)) or ["F"]
+    pipeline.fetcher.names_in_other_filings = (
+        lambda name, *, exclude_cik=None, limit: searched.append((name, exclude_cik, limit)) or ["F"])
 
     def fake_reverse(company_arg, filings, *, cache_only, top_n_company_keys, resolve_target_key):
         passed.update(filings=filings, cache_only=cache_only, keys=top_n_company_keys,
@@ -128,6 +129,22 @@ def test_live_pipeline_reverse_wiring(make_service, tmp_path):
 
     pipeline.extractor.extract_reverse = fake_reverse
     result = pipeline.reverse(company, cache_only=True)
-    assert searched == [(company.company_name, "0009990001")]
+    assert searched == [(company.company_name, "0009990001", 3)]  # HOC_DEPS_REVERSE_LIMIT default
     assert passed == {"filings": ["F"], "cache_only": True, "keys": {"CIK:0009990001"}, "resolves": "CIK:0009990001"}
     assert result.edges == [] and result.cached
+
+
+def test_reverse_limit_zero_turns_reverse_links_off(make_service, tmp_path):
+    service, _ = make_service()
+    _, pipeline = build(service, tmp_path)
+    pipeline.reverse_limit = 0
+    pipeline.fetcher.names_in_other_filings = lambda *a, **k: (_ for _ in ()).throw(AssertionError("searched"))
+    company = service.analyse(PortfolioRequest(holdings=HOLDINGS)).exposures[0]
+    assert pipeline.reverse(company, cache_only=False).edges == []
+
+
+def test_reverse_limit_setting():
+    assert Settings().deps_reverse_limit == 3
+    assert Settings.from_env({"HOC_DEPS_REVERSE_LIMIT": "0"}).deps_reverse_limit == 0
+    assert Settings.from_env({"HOC_DEPS_REVERSE_LIMIT": "7"}).deps_reverse_limit == 7
+    assert Settings.from_env({"HOC_DEPS_REVERSE_LIMIT": "99"}).deps_reverse_limit == 3  # out of range: default

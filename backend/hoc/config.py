@@ -13,6 +13,7 @@ DEFAULT_CORS = ("http://127.0.0.1:5173", "http://localhost:5173")
 DEFAULT_EXTRACTOR_MODEL = "gemini-3.8-flash"
 DEFAULT_ORCHESTRATOR_MODEL = "gemini-4-argon"
 DEFAULT_DEPS_TOP_N = 15
+DEFAULT_DEPS_REVERSE_LIMIT = 3
 
 
 def _flag(value: str | None) -> bool:
@@ -46,6 +47,8 @@ class Settings:
     gemini_extractor_model: str = DEFAULT_EXTRACTOR_MODEL
     gemini_orchestrator_model: str = DEFAULT_ORCHESTRATOR_MODEL
     deps_top_n: int = DEFAULT_DEPS_TOP_N
+    deps_reverse_limit: int = DEFAULT_DEPS_REVERSE_LIMIT
+    """Other filers' documents searched per company for reverse links (0 = reverse links off)."""
 
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None) -> Settings:
@@ -65,4 +68,6 @@ class Settings:
             gemini_orchestrator_model=(env.get("HOC_GEMINI_ORCHESTRATOR_MODEL", "").strip()
                                        or DEFAULT_ORCHESTRATOR_MODEL),
             deps_top_n=_int(env.get("HOC_DEPS_TOP_N"), DEFAULT_DEPS_TOP_N, low=1, high=30),
+            deps_reverse_limit=_int(env.get("HOC_DEPS_REVERSE_LIMIT"), DEFAULT_DEPS_REVERSE_LIMIT,
+                                    low=0, high=10),
         )

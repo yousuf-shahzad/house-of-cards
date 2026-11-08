@@ -282,3 +282,29 @@ def test_reverse_runs_cache_only_at_warm_up(setup):
     _, service, pipeline = setup(ReversePipeline())
     service.submit_dependencies(DependencyRequest(holdings=HOLDINGS, top_n=2), cache_only=True)
     assert pipeline.reverse_calls and all(cache_only for _, cache_only in pipeline.reverse_calls)
+
+
+def test_every_forward_step_runs_before_any_reverse_step(setup):
+    order = []
+
+    class Ordered(ReversePipeline):
+        def extract(self, company, filing, *, cache_only):
+            order.append("forward")
+            return super().extract(company, filing, cache_only=cache_only)
+
+        def reverse(self, company, *, cache_only):
+            order.append("reverse")
+            return super().reverse(company, cache_only=cache_only)
+
+    client, _, _ = setup(Ordered())
+    post(client)
+    assert order == ["forward"] * 3 + ["reverse"] * 3
+
+
+def test_reverse_is_skipped_once_the_time_budget_is_spent(setup, monkeypatch):
+    monkeypatch.setattr("hoc.jobs.REVERSE_BUDGET_SECONDS", -1.0)
+    client, _, pipeline = setup(ReversePipeline())
+    job = post(client).json()
+    assert pipeline.reverse_calls == []
+    assert all(c["status"] == "cached" and c["verified_edges"] == 2 for c in job["companies"])  # forward intact
+    assert all("time budget" in c["message"] for c in job["companies"])
