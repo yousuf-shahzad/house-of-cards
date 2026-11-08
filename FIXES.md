@@ -34,7 +34,7 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 ## Open
 
 ### FIX-54 · high · BUG: Full-view pages spin forever or show an old result when the portfolio is invalid (bug hunt batch 2)
-- **(a) Exposures** (`exposures/index.tsx:781`) checks `stale || status === "loading"`, so an invalid edit shows an endless "Updating" spinner, and UNKNOWN_TICKER shows the spinner and the error together. Fix: spinner only while loading; show the error, or "finish your portfolio", for error/invalid. **Owner:** Yousuf's Codex, together with its FIX-43 Exposures edits.
+- **(a) Exposures** (`exposures/index.tsx:781`) checks `stale || status === "loading"`, so an invalid edit shows an endless "Updating" spinner, and UNKNOWN_TICKER shows the spinner and the error together. Done in #241. Lead check: an invalid draft shows "Finish your portfolio… This is the last valid analysis." with Edit portfolio, and no spinner.
 - **(b) Risk** (`risk/index.tsx:381`) has the same pattern. **Owner:** Gawyn's Gemini.
 - **(c) Portfolio + analysis state:** done in #240. The Portfolio link now requires `!stale`. The `analysis.tsx` error report did not reproduce: in % mode, ZZZZ shows the error and clearing it clears the error.
 - **Status:** assigned
