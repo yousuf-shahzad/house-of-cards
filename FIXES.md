@@ -93,12 +93,12 @@ Found by Yousuf's Claude in review of #174. The backend reuses the job_id when a
 ### FIX-8 · medium · The evaluation doesn't show the effect of the research agents
 - Fix: after FIX-1 and FIX-2 merge, run `uv run hoc eval --live` with light agents. EVAL.md then reports precision and recall before vs after the agents, with confidence intervals. Do no tuning on the 10 held-out companies.
 - Also add an agentic acceptance check to `hoc eval`. From a result it reports tool calls per finding, `search_filings` use, whether thorough contains light, and duplicate `unnamed_customer` links, so FIX-1, FIX-2 and FIX-14 are judged by numbers.
-- **Owner:** Bekarys's Gemini (A3) · **Status:** acceptance check now; live eval when FIX-1, FIX-2 and FIX-14 merge (branch `28-fix-8-eval-agentic`)
+- **Owner:** Bekarys's Gemini (A3) · **Status:** acceptance check ready (`hoc eval --check-agentic`, branch `28-fix-8-eval-agentic`); live eval runs when FIX-1, FIX-2 and FIX-14 merge
 
 ### FIX-9 · medium · Final QA of both views
 - Fix: once everything above merges, audit the full and simple views end to end; send problems to their owners.
 - Also test with no AI key or SEC contact: page 4 must say "The AI check couldn't run on this computer" (FIX-4 was checked in code only).
-- **Owner:** Bekarys's Gemini · **Status:** in progress. QA what's already merged now, and re-check each new merge.
+- **Owner:** Bekarys's Gemini · **Status:** interim QA passed on everything merged through #183, including a live no-key/no-contact test of page 4; final pass after FIX-1 and FIX-17.
 
 ### FIX-11 · low · Research findings appear only when the scan ends
 The plan asked for the research trace to show live during the run.
@@ -118,7 +118,7 @@ The plan asked for the research trace to show live during the run.
 - FIX-6 pitch deck leads with the held-out eval (88.4% / 96.1% precision, 57.4% recall, 1 of 79), 40% verified coverage — #167
 - FIX-12 all links cite a real 10-K Item (Microsoft, Alphabet sections fixed; 132/132 quotes exact) — #169
 - FIX-13 PR #25 closed by Bekarys (branch kept)
-- FIX-3 short AI cards on simple pages 4–5, "Read more", a splitter that keeps "Co., Ltd." whole; FIX-4 "couldn't run on this computer" (#151, checked in code); FIX-5 page 4 progress bar and "Go deeper" that updates in place — #166
+- FIX-3 short AI cards on simple pages 4–5, "Read more", a splitter that keeps "Co., Ltd." whole; FIX-4 "couldn't run on this computer" (#151; live-tested by QA with no key and no contact); FIX-5 page 4 progress bar and "Go deeper" that updates in place — #166
 - Try a change: starts from your portfolio, updates on its own, 4 rows — #156, #163
 - Dependencies page progress bar and a single "Go deeper" — #160, #161
 - Research agents, first version (follow-ups are FIX-1 and FIX-2) — #162
