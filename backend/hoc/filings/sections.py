@@ -15,13 +15,18 @@ import re
 SECTIONS_10K = ("1", "1A", "2")
 SECTIONS_20F = ("3", "3D", "4", "5")
 """20-F risk factors are Item 3.D; when only "Item 3" is headed, its span includes them."""
-MIN_SECTION_CHARS = 2000
-"""A section shorter than this is treated as not found (a TOC line or a stub)."""
+MIN_SECTION_CHARS = 200
+"""Reject TOC lines/stubs, but keep real short sections (e.g. Alphabet's ~300-char Item 2)."""
 FALLBACK_CHARS = 160_000
 """Without usable sections, send at most this much of the document (never all of ASML's 20-F)."""
 CONCENTRATION_WINDOW = 600
 
-_HEADING = re.compile(r"(?<![A-Za-z])ITEM\s+(\d{1,2})\s*\.?\s*([A-D](?![a-z]))?\s*[.:\-]?\s*(?-i:(?=[A-Z]))", re.IGNORECASE)
+_HEADING = re.compile(
+    r"(?<![A-Za-z])ITEM\s+(?>(\d{1,2})(?!\d)\s*\.?\s*([A-D](?![a-z]))?)"
+    r"\s*[.:\-]?\s*(?-i:(?=[A-Z]))",
+    re.IGNORECASE,
+)
+"""The item identifier is atomic: 'Item 1A when ...' must never backtrack into Item 1 + title 'A'."""
 _CROSS_REF = re.compile(r"(?:\bsee|\bin|\bunder|\bof|\band|\bthis|\bour|[\"'(,])\s*(?:part\s+i+\s*,?\s*)?$", re.IGNORECASE)
 _CONCENTRATION = re.compile(
     r"10\s?%\s+or\s+more|more\s+than\s+10\s?%|concentration\s+of|\d{1,2}(?:\.\d)?\s?%\s+of\s+(?:our\s+)?(?:total\s+)?"

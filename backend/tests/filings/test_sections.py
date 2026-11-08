@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import pytest
+
+from hoc.ai.verifier import resolve_quote_section, verify_quote
 from hoc.filings.sections import FALLBACK_CHARS, find_sections, section_map
 from hoc.filings.text import normalise
 
@@ -60,3 +63,49 @@ def test_20f_headings_without_a_space_after_the_number():
                      f"ITEM 4.INFORMATION ON THE COMPANY {FILLER} ITEM 5.OPERATING REVIEW {FILLER} ITEM 6.DIRECTORS {FILLER}")
     sections, quality = section_map(text, "20-F")
     assert quality == "sections" and {"3", "4", "5"} <= set(sections) and "3D" not in sections
+
+
+@pytest.mark.parametrize("item", ["1A", "1B", "1C", "3D"])
+def test_lowercase_page_header_does_not_backtrack_into_another_item(item):
+    quote = "Our operations depend on ZZ Foundry for the supply of advanced chips."
+    text = normalise(
+        f"Item {item}. RISK FACTORS {FILLER} "
+        f"17 PART I Item {item} when supplies are disrupted, we face delays. {quote} {FILLER} "
+        "Item 2. PROPERTIES Our headquarters are in Arizona."
+    )
+    sections = find_sections(text, (item, "1", "3"))
+    assert set(sections) == {item}
+    assert quote in text[slice(*sections[item])]
+    assert resolve_quote_section(quote, text, sections) == item
+
+
+@pytest.mark.parametrize("heading", ["ITEM 2. PROPERTIES", "ITEM 2.PROPERTIES"])
+@pytest.mark.parametrize("repetitions", [1, 5])
+def test_short_properties_section_keeps_its_item_label(heading, repetitions):
+    quote = "We own and lease offices and data centers in Asia, Europe, and North America."
+    properties = (
+        "Our headquarters are in Example City. "
+        f"{quote} We believe these facilities are suitable for our operations. "
+        "The facilities are maintained in good condition. "
+    ) * repetitions
+    text = normalise(
+        "TABLE OF CONTENTS Item 1. Business 3 Item 1A. Risk Factors 9 "
+        "Item 2. Properties 24 Item 3. Legal Proceedings 24 "
+        f"Item 1. Business {FILLER} Item 1A. Risk Factors {FILLER} "
+        f"{heading} {properties} ITEM 3. LEGAL PROCEEDINGS Not applicable."
+    )
+    sections, quality = section_map(text, "10-K")
+    start, end = sections["2"]
+    assert quality == "sections" and 200 <= end - start < 2000
+    assert text[start:end].startswith(heading)
+    assert "LEGAL PROCEEDINGS" not in text[start:end]
+    assert verify_quote(quote, text)
+    assert resolve_quote_section(quote, text, sections) == "2"
+
+
+def test_short_toc_entries_are_not_sections():
+    text = normalise(
+        "TABLE OF CONTENTS Item 1. Business 3 Item 1A. Risk Factors 9 "
+        "Item 2. Properties 24 Item 3. Legal Proceedings 24"
+    )
+    assert section_map(text, "10-K") == ({"document": (0, len(text))}, "fallback")
