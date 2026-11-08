@@ -280,10 +280,11 @@ const ideasCache = new Map<string, ChangeIdeasResponse>();
 
 type IdeasState = { key: string; status: "loading" | "ready" | "error"; response: ChangeIdeasResponse | null };
 
-function useChangeIdeas(): IdeasState | null {
+function useChangeIdeas(): { ideas: IdeasState | null; retry: () => void } {
   const { draft: current } = useAnalysis();
   const { inputs, key } = current;
   const [state, setState] = useState<IdeasState | null>(null);
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     if (!inputs) return;
     const done = ideasCache.get(key);
@@ -318,8 +319,9 @@ function useChangeIdeas(): IdeasState | null {
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [key, inputs]);
-  return inputs && state?.key === key ? state : null;
+  }, [key, inputs, attempt]);
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
+  return { ideas: inputs && state?.key === key ? state : null, retry };
 }
 
 /** Loads an idea into Try a change: your shares plus whole shares of the new ETF worth f / (1 - f) of your
@@ -359,8 +361,8 @@ function ideaHeadline(idea: ChangeIdea): string {
   const dep = idea.biggest_dependency_delta;
   let what: string | null = null;
   if (idea.addresses === "dependency" && dep && dep.baseline !== null && dep.candidate !== null) {
-    const label = deltaLabel(dep);
-    what = `${label.charAt(0).toLowerCase()}${label.slice(1)} ${formatPct(dep.baseline, 1)} → ${formatPct(dep.candidate, 1)}`;
+    const label = deltaLabel(dep).replace(/^Depends on /, "depends on ");
+    what = `${label} ${formatPct(dep.baseline, 1)} → ${formatPct(dep.candidate, 1)}`;
   } else if (idea.addresses === "effective_n") {
     const n = row("effective_n");
     if (n) what = `behaves like ${Math.round(n.baseline)} → ${Math.round(n.candidate)} holdings`;
@@ -377,7 +379,7 @@ function ideaHeadline(idea: ChangeIdea): string {
 
 /** Up to three ETF ideas with "Try this". `onTried` runs after an idea is loaded into Try a change. */
 export function ChangeIdeas({ heading = "Ideas to try", onTried }: { heading?: string; onTried?: () => void }) {
-  const ideas = useChangeIdeas();
+  const { ideas, retry } = useChangeIdeas();
   const loadIdea = useLoadIdea();
   const [loading, setLoading] = useState<string | null>(null);
   if (!ideas) return null;
@@ -402,10 +404,19 @@ export function ChangeIdeas({ heading = "Ideas to try", onTried }: { heading?: s
           Ideas couldn't load right now. You can still try your own change.
         </p>
       )}
-      {ideas.status === "ready" && list.length === 0 && (
+      {ideas.status === "ready" && list.length === 0 && ideas.response?.status === "ok" && (
         <p className="text-body-2-regular text-text-secondary">
           None of the ETFs we can check would clearly improve your mix right now.
         </p>
+      )}
+      {ideas.status === "ready" && list.length === 0 && ideas.response?.status === "partial" && (
+        // "partial" with nothing yet means the backend is still loading the candidate ETFs, not "no gain".
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-body-2-regular text-text-secondary">Still checking the ETFs. Try again in a moment.</p>
+          <Button variant="ghost" size="small" leadingIcon={RiRefreshLine} onClick={retry}>
+            Try again
+          </Button>
+        </div>
       )}
       {list.length > 0 && (
         <ul className="grid grid-cols-1 gap-3 md:grid-cols-3">
