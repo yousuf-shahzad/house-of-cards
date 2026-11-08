@@ -259,7 +259,11 @@ function ClaimCard({
     }
   }
 
-  const hasDetails = hasMoreText || sources > 0 || (claim.plain_title && claim.plain_title.trim() !== claim.title.trim());
+  const hasDetails =
+    hasMoreText ||
+    sources > 0 ||
+    claim.cited_metric_ids.length > 0 ||
+    Boolean(claim.plain_title && claim.plain_title.trim() !== claim.title.trim());
 
   return (
     <article
@@ -279,7 +283,7 @@ function ClaimCard({
       <p className="text-body-2-regular text-text-secondary">
         {fullDetail ? fullText : shortText}
       </p>
-      {claim.cited_metric_ids.length > 0 && (
+      {fullDetail && claim.cited_metric_ids.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">
           {claim.cited_metric_ids.map((metricId) => {
             const metric = metricById.get(metricId);
@@ -974,6 +978,12 @@ function ResearchPanel({
   );
 }
 
+function importanceTooltip(edge: VerifiedEdge, shortLabel: string): string {
+  const base = `${shortLabel}: how much this link matters to the company, judged from the filing (not a portfolio share)`;
+  const reasons = edge.importance?.reasons ?? [];
+  return reasons.length > 0 ? `${base} — ${reasons.join(" · ")}` : base;
+}
+
 function EdgeEvidenceCard({
   edge,
   exposureMap,
@@ -1014,9 +1024,14 @@ function EdgeEvidenceCard({
             </Chip>
           )}
           {importanceMeta && edge.importance && (
-            <Chip variant="caption" color={importanceMeta.badgeColor}>
-              {`${importanceMeta.shortLabel} (${Math.round(edge.importance.score * 100)}%)`}
-            </Chip>
+            <span
+              title={importanceTooltip(edge, importanceMeta.shortLabel)}
+              className="inline-flex"
+            >
+              <Chip variant="caption" color={importanceMeta.badgeColor}>
+                {importanceMeta.shortLabel}
+              </Chip>
+            </span>
           )}
           {edge.qualifier && (
             <Chip variant="caption" color="orange">
@@ -1912,7 +1927,7 @@ function DependenciesPageContent() {
           const stepsDone = job?.steps_done || job?.progress_done || 0;
           const stepsTotal = job?.steps_total || job?.progress_total || topExposures.length || 15;
           const progressPct = progressRef.current.pct;
-          const liveResearch = (job as { research?: readonly ResearchFinding[] } | null)?.research ?? [];
+          const liveResearch = job?.research ?? [];
           const phases: Array<{ id: "reading" | "researching" | "synthesising"; label: string }> = [
             { id: "reading", label: "Reading reports" },
             { id: "researching", label: "Double-checking findings" },
@@ -2016,12 +2031,12 @@ function DependenciesPageContent() {
         })()}
       </section>
 
-      {!result && isRunning && ((job as { research?: readonly ResearchFinding[] } | null)?.research?.length ?? 0) > 0 && (
+      {!result && isRunning && (job?.research?.length ?? 0) > 0 && (
         <ResearchPanel
           researchStatus={researchStatus}
           researchJob={researchJob}
           researchError={researchError}
-          resultResearch={[...((job as { research?: readonly ResearchFinding[] } | null)?.research ?? [])]}
+          resultResearch={[...(job?.research ?? [])]}
           researchDepth={currentDepth}
           isDepRunning={isRunning}
           edgeById={edgeById}
@@ -2333,8 +2348,8 @@ function DependenciesPageContent() {
             researchJob={researchJob}
             researchError={researchError}
             resultResearch={
-              isRunning && ((job as { research?: readonly ResearchFinding[] } | null)?.research?.length ?? 0) > 0
-                ? [...((job as { research?: readonly ResearchFinding[] } | null)?.research ?? [])]
+              isRunning && (job?.research?.length ?? 0) > 0
+                ? [...(job?.research ?? [])]
                 : result.research ?? []
             }
             researchDepth={isRunning ? currentDepth : result.research_depth ?? "none"}
@@ -2514,30 +2529,36 @@ function DependenciesPageContent() {
               </div>
             }
           >
-            <div className="flex flex-wrap items-center gap-3 text-caption-1-regular text-text-secondary">
-              {(
-                [
-                  "sole_source",
-                  "foundry",
-                  "contract_manufacturer",
-                  "supplier",
-                  "customer",
-                  "key_input",
-                  "facility",
-                ] as const
-              ).map((typeKey) => {
-                const meta = EDGE_TYPE_META[typeKey];
-                return (
-                  <span key={typeKey} className="inline-flex items-center gap-1.5">
-                    <span
-                      className="inline-block h-2.5 w-2.5 rounded-full"
-                      style={{ backgroundColor: meta.color }}
-                      aria-hidden
-                    />
-                    <span>{meta.shortLabel}</span>
-                  </span>
-                );
-              })}
+            <div className="flex flex-col gap-1.5 text-caption-1-regular text-text-secondary">
+              <div className="flex flex-wrap items-center gap-3">
+                {(
+                  [
+                    "sole_source",
+                    "foundry",
+                    "contract_manufacturer",
+                    "supplier",
+                    "customer",
+                    "key_input",
+                    "facility",
+                  ] as const
+                ).map((typeKey) => {
+                  const meta = EDGE_TYPE_META[typeKey];
+                  return (
+                    <span key={typeKey} className="inline-flex items-center gap-1.5">
+                      <span
+                        className="inline-block h-2.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: meta.color }}
+                        aria-hidden
+                      />
+                      <span>{meta.shortLabel}</span>
+                    </span>
+                  );
+                })}
+              </div>
+              <p className="text-text-tertiary">
+                Line thickness = how much of your money is in that company (colors and badges show
+                relationship type and importance tier).
+              </p>
             </div>
 
             {graph && graph.edges.length > 0 ? (
@@ -2658,11 +2679,14 @@ function DependenciesPageContent() {
                                   </Chip>
                                 )}
                                 {tierMeta && edge.importance && (
-                                  <Chip variant="caption" color={tierMeta.badgeColor}>
-                                    {`${tierMeta.shortLabel} (${Math.round(
-                                      edge.importance.score * 100,
-                                    )}%)`}
-                                  </Chip>
+                                  <span
+                                    title={importanceTooltip(edge, tierMeta.shortLabel)}
+                                    className="inline-flex"
+                                  >
+                                    <Chip variant="caption" color={tierMeta.badgeColor}>
+                                      {tierMeta.shortLabel}
+                                    </Chip>
+                                  </span>
                                 )}
                                 {edge.interpretation?.status === "flagged" && (
                                   <Chip variant="caption" color="yellow">
@@ -2890,8 +2914,8 @@ function DependenciesPageContent() {
                 {drawerEdge.importance && (
                   <p>
                     <strong className="text-text-primary">Importance scoring (R-IMP):</strong>{" "}
-                    Tier <code className="font-mono">{drawerEdge.importance.tier}</code> (score{" "}
-                    {drawerEdge.importance.score.toFixed(2)})
+                    Tier <code className="font-mono">{drawerEdge.importance.tier}</code> (heuristic
+                    rank {drawerEdge.importance.score.toFixed(2)} of 1.00, not a portfolio share)
                     {drawerEdge.importance.reasons.length > 0
                       ? ` — ${drawerEdge.importance.reasons.join(" · ")}`
                       : "."}

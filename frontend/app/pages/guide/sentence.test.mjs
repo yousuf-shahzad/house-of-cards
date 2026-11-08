@@ -158,4 +158,20 @@ test("formatFindingOneLiner produces one concise plain-English line per finding 
     ),
     "Checked: Broadcom (undisclosed major customer) — not finished in time",
   );
+  assert.equal(
+    formatFindingOneLiner("Nvidia -> OpenAI (jv_partner)", "unresolved"),
+    "Checked: Nvidia's partnership with OpenAI — still unclear",
+  );
+  assert.equal(
+    formatFindingOneLiner("Broadcom -> Apple Inc. (customer)", "confirmed"),
+    "Checked: Broadcom's sales to Apple — confirmed",
+  );
+  assert.equal(
+    formatFindingOneLiner("Qualcomm Inc. -> Arm Ltd. (licensing)", "revised"),
+    "Checked: Qualcomm's licensing with Arm — updated",
+  );
+  assert.equal(
+    formatFindingOneLiner("Apple Inc. single-source reliance on Japan", "confirmed"),
+    "Checked: Apple's reliance on Japan — confirmed",
+  );
 });
