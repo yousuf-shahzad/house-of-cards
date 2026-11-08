@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { splitFirstSentence } from "./sentence.ts";
+import {
+  monotonicProgressPct,
+  pickMostOverlappingPair,
+  splitFirstSentence,
+} from "./sentence.ts";
 
 test("splitFirstSentence does not split on Co., Ltd.", () => {
   const input =
@@ -44,4 +48,40 @@ test("splitFirstSentence returns single sentence unchanged when no second senten
   const [first, rest] = splitFirstSentence(input);
   assert.equal(first, input);
   assert.equal(rest, "");
+});
+
+test("pickMostOverlappingPair picks the highest weighted_overlap instead of pairs[0] (FIX-16)", () => {
+  const pairs = [
+    { etf_a: "IVV", etf_b: "QQQ", weighted_overlap: 0.4882, shared_companies: 89 },
+    { etf_a: "IVV", etf_b: "XLK", weighted_overlap: 0.3412, shared_companies: 68 },
+    { etf_a: "QQQ", etf_b: "XLK", weighted_overlap: 0.5011, shared_companies: 43 },
+    { etf_a: "IVV", etf_b: "EEM", weighted_overlap: 0.0, shared_companies: 0 },
+  ];
+  const best = pickMostOverlappingPair(pairs);
+  assert.deepEqual(best, {
+    etf_a: "QQQ",
+    etf_b: "XLK",
+    weighted_overlap: 0.5011,
+    shared_companies: 43,
+  });
+  assert.equal(pickMostOverlappingPair([]), null);
+});
+
+test("monotonicProgressPct never decreases for the same job_id and resets on a new job_id (FIX-18)", () => {
+  let state = monotonicProgressPct(null, 0, "job_1", (15 / 16) * 100);
+  assert.equal(state.jobId, "job_1");
+  assert.equal(state.pct, 94);
+
+  // When steps_total grows (e.g. 16 -> 50), percentage must not drop for job_1
+  state = monotonicProgressPct(state.jobId, state.pct, "job_1", (15 / 50) * 100);
+  assert.equal(state.pct, 94);
+
+  // Rises normally when raw percentage exceeds previous max
+  state = monotonicProgressPct(state.jobId, state.pct, "job_1", (49 / 50) * 100);
+  assert.equal(state.pct, 98);
+
+  // Resets when a new job_id starts
+  state = monotonicProgressPct(state.jobId, state.pct, "job_2", 10);
+  assert.equal(state.jobId, "job_2");
+  assert.equal(state.pct, 10);
 });

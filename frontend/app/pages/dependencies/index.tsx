@@ -13,7 +13,7 @@
 //    sites listed separately under their holdings
 // 7. SEC Filing Evidence Drawer + inline Evidence Inspector (verbatim quote, 10-K/20-F form, filing date, section, SEC link)
 
-import { useCallback, useMemo, useState, type KeyboardEvent } from "react";
+import { useCallback, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import {
   RiAlertLine,
   RiArrowRightUpLine,
@@ -59,6 +59,7 @@ import {
   useDependencies,
   type ResearchRunStatus,
 } from "@/app/dependencies-state";
+import { monotonicProgressPct } from "@/app/pages/guide/sentence";
 import { formatPct, Pct } from "@/app/ui/pct";
 import { Chip, type ChipColor } from "@/components/base/badges/chip";
 import { StatusDot } from "@/components/base/badges/status-dot";
@@ -1544,6 +1545,7 @@ function DependenciesPageContent() {
   const showMissingKeyBanner =
     missingKeyCompanies.length > 0 || result?.insights.status === "missing_api_key";
   const showMissingSecBanner = missingSecContactCompanies.length > 0;
+  const progressRef = useRef<{ jobId: string | null; pct: number }>({ jobId: null, pct: 0 });
 
   // ---------- 1. Empty / Loading / Error states when no portfolio analysis exists ----------
   if (!analysis) {
@@ -1791,7 +1793,14 @@ function DependenciesPageContent() {
           const activePhase = job?.phase ?? "reading";
           const stepsDone = job?.steps_done || job?.progress_done || 0;
           const stepsTotal = job?.steps_total || job?.progress_total || topExposures.length || 15;
-          const progressPct = stepsTotal > 0 ? Math.min(100, Math.round((stepsDone / stepsTotal) * 100)) : 0;
+          const rawPct = stepsTotal > 0 ? (stepsDone / stepsTotal) * 100 : 0;
+          progressRef.current = monotonicProgressPct(
+            progressRef.current.jobId,
+            progressRef.current.pct,
+            job?.job_id,
+            rawPct,
+          );
+          const progressPct = progressRef.current.pct;
           const liveResearch = (job as { research?: readonly ResearchFinding[] } | null)?.research ?? [];
           const phases: Array<{ id: "reading" | "researching" | "synthesising"; label: string }> = [
             { id: "reading", label: "Reading reports" },
