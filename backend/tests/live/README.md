@@ -33,3 +33,29 @@ coverage reconciliation and exposure totals. It uses the production TickerInside
 The TickerInside XLK smoke checks disclosure freshness, attribution/licence,
 reference identifiers, sector weights and derivative exclusion. Source failures
 are not silently skipped by these tests.
+
+## v3 cache-only replay
+
+After warming the demo's holdings, filings and dependency extraction cache, run:
+
+```sh
+HOC_LIVE=1 HOC_LIVE_CACHE_DIR=/path/to/backend/.cache uv run pytest tests/live/test_v3_cache.py -v
+```
+
+These two tests force offline reads (including expired HTTP cache entries), remove
+Gemini keys, and fail on any attempted Gemini call or external socket connection.
+A cache miss fails visibly; these tests never warm the cache or spend Gemini quota.
+`HOC_LIVE_CACHE_DIR` defaults to this checkout's `backend/.cache`, so a separate
+worktree usually needs the original checkout's cache path. No cache data is committed.
+The filings reader requires a contact string even offline; if `HOC_SEC_CONTACT`
+is absent, these tests use an offline-only placeholder that cannot reach the network.
+
+The Compare test checks that swapping the us-core-tilt allocations for IVV 40%,
+QQQ 10%, VTV 30%, EEM 20% lowers `dep.ALIAS:TSMC`, with a consistent negative delta.
+The dependency replay checks that all 15 company runs finish with cached or known
+unavailable-filing statuses, every returned edge has importance and interpretation,
+flagged edges are capped at medium, and all five coverage buckets sum to one
+within 1e-6. Empty or incomplete caches fail instead of passing vacuously.
+Exact edge counts and exposure percentages are not pinned because cache contents
+and holdings dates differ between operators. JUnit properties record the observed
+TSMC values, edge count and coverage total when `--junitxml=...` is supplied.
