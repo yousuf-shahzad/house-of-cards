@@ -555,7 +555,7 @@
   ],
   "vint_rejected_edges": [],
   "quote_rejected_count": 0,
-  "research_depth": "light",
+  "research_depth": "thorough",
   "agentic_edges": [
     {
       "edge_id": "edge_a3521924a54d",
@@ -589,7 +589,7 @@
         "status": "confirmed",
         "method": "rules+model",
         "flags": [],
-        "reason": "The quote explicitly names Apple Inc. as one of the filer's key customers.",
+        "reason": "The quote explicitly confirms that Apple accounted for 67%, 69%, and 66% of the company's net revenue through various sales channels, directly establishing Apple as a major customer.",
         "model": "gemini-3.8-flash"
       }
     },
@@ -985,7 +985,7 @@
         "status": "confirmed",
         "method": "rules+model",
         "flags": [],
-        "reason": "The filing lists the Newbury Park, California semiconductor wafer fabrication facility under key facilities.",
+        "reason": "The filing confirms that Skyworks operates and consolidates wafer fabrication manufacturing operations into its facility in Newbury Park, California.",
         "model": "gemini-3.8-flash"
       }
     },
@@ -1056,10 +1056,10 @@
       },
       "interpretation": {
         "status": "confirmed",
-        "method": "rules",
+        "method": "rules+model",
         "flags": [],
-        "reason": null,
-        "model": null
+        "reason": "The filing explicitly notes relationships with suppliers to ensure adequate sources of raw materials and components needed for manufacturing, specifying gallium among these materials.",
+        "model": "gemini-3.8-flash"
       }
     },
     {
@@ -1107,7 +1107,7 @@
       "subject": "Skyworks Solutions, Inc.'s undisclosed customer (Unnamed customer)",
       "question": "Do Skyworks Solutions, Inc.'s or peer SEC filings name or corroborate Unnamed customer?",
       "outcome": "confirmed",
-      "explanation": "The unnamed customer accounting for greater than ten percent of net revenue is revised to Apple, as the filing identifies that \"Our key customers include Amazon, Apple Inc.\" and specifically notes sales to Apple across the periods.",
+      "explanation": "Confirmed customer concentration disclosure \"Our key customers include Amazon, Apple Inc.\" in the filing.",
       "steps": [
         {
           "index": 1,
@@ -1137,9 +1137,22 @@
         },
         {
           "index": 3,
+          "action": "search_filings",
+          "query": "Skyworks Solutions, Inc.",
+          "summary": "Cross-filing search for Skyworks Solutions, Inc. in CIK: found \"ted a multi-year, strategic 5G licensing agreement in excess of $50 million; •introduced in November 2022, jointly with Skyworks Solutions, \".",
+          "filing": {
+            "company_key": "CIK:0000004127",
+            "form": "10-K",
+            "accession": "0000004127-25-000085",
+            "filed": "2025-11-07",
+            "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+          }
+        },
+        {
+          "index": 4,
           "action": "conclude",
           "query": "Unnamed customer",
-          "summary": "The unnamed customer accounting for greater than ten percent of net revenue is revised to Apple, as the filing identifies that \"Our key customers include Amazon, Apple Inc.\" and specifically notes sales to Apple across the periods.",
+          "summary": "Confirmed customer concentration disclosure \"Our key customers include Amazon, Apple Inc.\" in the filing.",
           "filing": {
             "company_key": "CIK:0000004127",
             "form": "10-K",
@@ -1162,7 +1175,7 @@
       "subject": "Skyworks Solutions, Inc. counterparty Apple Inc.",
       "question": "Can counterparty Apple Inc. in Skyworks Solutions, Inc.'s filing be verified and resolved?",
       "outcome": "confirmed",
-      "explanation": "The filing confirms that Apple is a customer, stating: \"During fiscal 2025, fiscal 2024, and fiscal 2023, Apple, through sales to multiple distributors, contract manufacturers, and direct sales for multiple applications including smartphones, tablets, desktop, and notebook computers, watches and other devices, in the aggregate accounted for 67%, 69%, and 66% of the Company's net revenue, respectively.\"",
+      "explanation": "The customer relationship with Apple Inc. is corroborated by a separate passage in the filing stating that \"Apple, through sales to multiple distributors, contract manufacturers, and direct sales for multiple applications including smartphones, tablets, desktop, and notebook computers, watches and other devices, in the aggregate accounted for 67%, 69%, and 66% of the Company's net revenue, respectively.\"",
       "steps": [
         {
           "index": 1,
@@ -1192,9 +1205,22 @@
         },
         {
           "index": 3,
+          "action": "search_filings",
+          "query": "Skyworks Solutions",
+          "summary": "Cross-filing search for Skyworks Solutions in CIK:, CIK: found \"orporation, Renesas Electronics Corporation, Shanghai Awinic Technology Co., Ltd., Shenzhen Goodix Technology Co, Ltd., Skyworks Solutions I\".",
+          "filing": {
+            "company_key": "CIK:0000004127",
+            "form": "10-K",
+            "accession": "0000004127-25-000085",
+            "filed": "2025-11-07",
+            "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+          }
+        },
+        {
+          "index": 4,
           "action": "conclude",
           "query": "Apple Inc.",
-          "summary": "The filing confirms that Apple is a customer, stating: \"During fiscal 2025, fiscal 2024, and fiscal 2023, Apple, through sales to multiple distributors, contract manufacturers, and direct sales for multiple applications including smartphones, tablets, desktop, and notebook computers, watches and other devices, in the aggregate accounted for 67%, 69%, and 66% of the Company's net revenue, respectively.\"",
+          "summary": "The customer relationship with Apple Inc. is corroborated by a separate passage in the filing stating that \"Apple, through sales to multiple distributors, contract manufacturers, and direct sales for multiple applications including smartphones, tablets, desktop, and notebook computers, watches and other devices, in the aggregate accounted for 67%, 69%, and 66% of the Company's net revenue, respectively.\"",
           "filing": {
             "company_key": "CIK:0000004127",
             "form": "10-K",
@@ -1209,10 +1235,144 @@
       ],
       "rejected_edge_ids": [],
       "new_edges": []
+    },
+    {
+      "finding_id": "res_single_edge_24849d4ad216",
+      "kind": "single_source",
+      "subject": "Skyworks Solutions, Inc. single-source reliance on Newbury Park, California semiconductor wafer fabrication facility",
+      "question": "Is Skyworks Solutions, Inc.'s critical reliance on Newbury Park, California semiconductor wafer fabrication facility corroborated in the filing or peer filings?",
+      "outcome": "confirmed",
+      "explanation": "The facility edge is confirmed by corroborating disclosures in the filing stating that the company plans to optimize its factory footprint by \"consolidating such manufacturing into Newbury Park, California.\" as well as Item disclosures noting \"Newbury Park, California Owned 111,600 Manufacturing and office space\".",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "Newbury Park",
+          "summary": "Found independent filing passage \"In addition, we announced in August 2025 that we took action aimed to optimize our U.S. factory footprint by planning for the closure of our\" matching Newbury Park.",
+          "filing": {
+            "company_key": "CIK:0000004127",
+            "form": "10-K",
+            "accession": "0000004127-25-000085",
+            "filed": "2025-11-07",
+            "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "search_filings",
+          "query": "Skyworks \"Newbury Park\"",
+          "summary": "Cross-filing search for Skyworks \"Newbury Park\" in CIK: found \"ted a multi-year, strategic 5G licensing agreement in excess of $50 million; •introduced in November 2022, jointly with Skyworks Solutions, \".",
+          "filing": {
+            "company_key": "CIK:0000004127",
+            "form": "10-K",
+            "accession": "0000004127-25-000085",
+            "filed": "2025-11-07",
+            "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "read_section",
+          "query": "Item 1",
+          "summary": "Read section and extracted verified passage \"Our competitors include Analog Devices, Broadcom, Cirrus Logic, Murata Manufacturing, NXP Semiconductors, Qorvo, Qualcomm, and Texas Instrum\".",
+          "filing": {
+            "company_key": "CIK:0000004127",
+            "form": "10-K",
+            "accession": "0000004127-25-000085",
+            "filed": "2025-11-07",
+            "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+          }
+        },
+        {
+          "index": 4,
+          "action": "conclude",
+          "query": "Newbury Park, California semiconductor wafer fabrication facility",
+          "summary": "The facility edge is confirmed by corroborating disclosures in the filing stating that the company plans to optimize its factory footprint by \"consolidating such manufacturing into Newbury Park, California.\" as well as Item disclosures noting \"Newbury Park, California Owned 111,600 Manufacturing and office space\".",
+          "filing": {
+            "company_key": "CIK:0000004127",
+            "form": "10-K",
+            "accession": "0000004127-25-000085",
+            "filed": "2025-11-07",
+            "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [
+        "edge_24849d4ad216"
+      ],
+      "rejected_edge_ids": [],
+      "new_edges": []
+    },
+    {
+      "finding_id": "res_single_edge_3b40a2a2300d",
+      "kind": "single_source",
+      "subject": "Skyworks Solutions, Inc. single-source reliance on gallium",
+      "question": "Is Skyworks Solutions, Inc.'s critical reliance on gallium corroborated in the filing or peer filings?",
+      "outcome": "confirmed",
+      "explanation": "The filing confirms that Skyworks Solutions relies on raw materials including gallium and manufactures gallium arsenide wafers, noting that \"creases in demand from the semiconductor industry for such raw materials and components (including, but not limited to, gallium, germanium, and other critical minerals and rare earth metals), as well as increased demand for commodities in general, can result in tighter supplies and higher costs.\" and \"We rely on foundries to provide silicon-based products and to supplement our gallium arsenide wafer manufacturing capacity.\"",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "gallium",
+          "summary": "Found independent filing passage \"We are dependent upon third parties for the manufacture, assembly, and testing of our products. We rely on foundries to provide silicon-base\" matching gallium.",
+          "filing": {
+            "company_key": "CIK:0000004127",
+            "form": "10-K",
+            "accession": "0000004127-25-000085",
+            "filed": "2025-11-07",
+            "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "search_filings",
+          "query": "Skyworks \"gallium\"",
+          "summary": "Cross-filing search for Skyworks \"gallium\" in CIK: found \"ted a multi-year, strategic 5G licensing agreement in excess of $50 million; •introduced in November 2022, jointly with Skyworks Solutions, \".",
+          "filing": {
+            "company_key": "CIK:0000004127",
+            "form": "10-K",
+            "accession": "0000004127-25-000085",
+            "filed": "2025-11-07",
+            "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "read_section",
+          "query": "Item 1",
+          "summary": "Read section and extracted verified passage \"Capitalizing on both organic growth and strategic acquisitions, we are targeting high-growth verticals, while at the same time, seeking to d\".",
+          "filing": {
+            "company_key": "CIK:0000004127",
+            "form": "10-K",
+            "accession": "0000004127-25-000085",
+            "filed": "2025-11-07",
+            "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+          }
+        },
+        {
+          "index": 4,
+          "action": "conclude",
+          "query": "gallium",
+          "summary": "The filing confirms that Skyworks Solutions relies on raw materials including gallium and manufactures gallium arsenide wafers, noting that \"creases in demand from the semiconductor industry for such raw materials and components (including, but not limited to, gallium, germanium, and other critical minerals and rare earth metals), as well as increased demand for commodities in general, can result in tighter supplies and higher costs.\" and \"We rely on foundries to provide silicon-based products and to supplement our gallium arsenide wafer manufacturing capacity.\"",
+          "filing": {
+            "company_key": "CIK:0000004127",
+            "form": "10-K",
+            "accession": "0000004127-25-000085",
+            "filed": "2025-11-07",
+            "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [
+        "edge_3b40a2a2300d"
+      ],
+      "rejected_edge_ids": [],
+      "new_edges": []
     }
   ],
   "agentic_rejected_edge_ids": [],
-  "agentic_steps_done": 6,
-  "agentic_steps_total": 6,
+  "agentic_steps_done": 16,
+  "agentic_steps_total": 16,
   "agentic_interpretation_rejected": 0
 }

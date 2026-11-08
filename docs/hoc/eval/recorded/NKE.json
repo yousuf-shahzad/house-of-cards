@@ -341,7 +341,7 @@
   ],
   "vint_rejected_edges": [],
   "quote_rejected_count": 0,
-  "research_depth": "light",
+  "research_depth": "thorough",
   "agentic_edges": [
     {
       "edge_id": "edge_d3ccd3a1052a",
@@ -554,10 +554,10 @@
       },
       "interpretation": {
         "status": "confirmed",
-        "method": "rules",
+        "method": "rules+model",
         "flags": [],
-        "reason": null,
-        "model": null
+        "reason": "The quote directly confirms that Air Manufacturing Innovation manufactures cushioning components used in Nike footwear, supporting a supplier/manufacturing dependency relationship.",
+        "model": "gemini-3.8-flash"
       }
     },
     {
@@ -679,7 +679,7 @@
       "subject": "NIKE, Inc.'s undisclosed customer (Unnamed customer)",
       "question": "Do NIKE, Inc.'s or peer SEC filings name or corroborate Unnamed customer?",
       "outcome": "unresolved",
-      "explanation": "The observed statement refers to an aggregate group rather than an individual customer: \"During fiscal 2026, NIKE's three largest customers outside of the United States accounted for approximately 16% of total non-U.S. sales.\" Because the filing only provides aggregated figures for multiple customers and does not identify a specific single unnamed customer meeting dependency criteria, the edge is rejected.",
+      "explanation": "Filing leaves specific counterparty identities undisclosed in the inspected sections.",
       "steps": [
         {
           "index": 1,
@@ -709,9 +709,22 @@
         },
         {
           "index": 3,
+          "action": "search_filings",
+          "query": "NIKE, Inc.",
+          "summary": "Cross-filing search for NIKE, Inc. in CIK:, CIK: found \"Feedstock sourcing for the facility, of which there is abundant supply from textile waste in India, is well advanced. Loop has signed a mult\".",
+          "filing": {
+            "company_key": "CIK:0000320187",
+            "form": "10-K",
+            "accession": "0000320187-26-000088",
+            "filed": "2026-07-15",
+            "url": "https://www.sec.gov/Archives/edgar/data/320187/000032018726000088/nke-20260531.htm"
+          }
+        },
+        {
+          "index": 4,
           "action": "conclude",
           "query": "Unnamed customer",
-          "summary": "The observed statement refers to an aggregate group rather than an individual customer: \"During fiscal 2026, NIKE's three largest customers outside of the United States accounted for approximately 16% of total non-U.S. sales.\" Because the filing only provides aggregated figures for multiple customers and does not identify a specific single unnamed customer meeting dependency criteria, the edge is rejected.",
+          "summary": "Filing leaves specific counterparty identities undisclosed in the inspected sections.",
           "filing": {
             "company_key": "CIK:0000320187",
             "form": "10-K",
@@ -731,7 +744,7 @@
       "subject": "NIKE, Inc. counterparty Sojitz Corporation of America",
       "question": "Can counterparty Sojitz Corporation of America in NIKE, Inc.'s filing be verified and resolved?",
       "outcome": "unresolved",
-      "explanation": "Counterparty in \"Since 1972, Sojitz Corporation of America (\"Sojitz America\"), a large Japanese trading company and the sole owner of our redeemable preferred stock, has performed import-export financing services for us.\" remains unresolved as an external entity.",
+      "explanation": "No additional corroborating passages regarding \"Sojitz Corporation of America\" were found in other filings or separate sections beyond the initial filing statement.",
       "steps": [
         {
           "index": 1,
@@ -750,7 +763,7 @@
           "index": 2,
           "action": "search_filings",
           "query": "Sojitz Corporation of America NIKE",
-          "summary": "Searched peer SEC filings for Sojitz Corporation of America NIKE; no additional corroborating passages found.",
+          "summary": "Cross-filing search for Sojitz Corporation of America NIKE in CIK:, CIK: found \"Feedstock sourcing for the facility, of which there is abundant supply from textile waste in India, is well advanced. Loop has signed a mult\".",
           "filing": {
             "company_key": "CIK:0000320187",
             "form": "10-K",
@@ -761,9 +774,154 @@
         },
         {
           "index": 3,
+          "action": "read_section",
+          "query": "Item 1",
+          "summary": "Read section and extracted verified passage \"We sell our products through NIKE Direct operations, which are comprised of both NIKE-owned retail stores and sales through our digital plat\".",
+          "filing": {
+            "company_key": "CIK:0000320187",
+            "form": "10-K",
+            "accession": "0000320187-26-000088",
+            "filed": "2026-07-15",
+            "url": "https://www.sec.gov/Archives/edgar/data/320187/000032018726000088/nke-20260531.htm"
+          }
+        },
+        {
+          "index": 4,
           "action": "conclude",
           "query": "Sojitz Corporation of America",
-          "summary": "Counterparty in \"Since 1972, Sojitz Corporation of America (\"Sojitz America\"), a large Japanese trading company and the sole owner of our redeemable preferred stock, has performed import-export financing services for us.\" remains unresolved as an external entity.",
+          "summary": "No additional corroborating passages regarding \"Sojitz Corporation of America\" were found in other filings or separate sections beyond the initial filing statement.",
+          "filing": {
+            "company_key": "CIK:0000320187",
+            "form": "10-K",
+            "accession": "0000320187-26-000088",
+            "filed": "2026-07-15",
+            "url": "https://www.sec.gov/Archives/edgar/data/320187/000032018726000088/nke-20260531.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [],
+      "rejected_edge_ids": [],
+      "new_edges": []
+    },
+    {
+      "finding_id": "res_unresolved_edge_db8132253be5",
+      "kind": "unresolved_counterparty",
+      "subject": "NIKE, Inc. counterparty Air Manufacturing Innovation",
+      "question": "Can counterparty Air Manufacturing Innovation in NIKE, Inc.'s filing be verified and resolved?",
+      "outcome": "confirmed",
+      "explanation": "Corroborating disclosure in Section confirms: \"Air Manufacturing Innovation manufactures cushioning components used in footwear at NIKE-owned and leased facilities located near Beaverton, Oregon, and in Dong Nai City, Vietnam, as well as at NIKE-owned facilities in St. Charles, Missouri.\"",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "Air Manufacturing Innovation",
+          "summary": "Found independent filing passage \"Air Manufacturing Innovation manufactures cushioning components used in footwear at NIKE-owned and leased facilities located near Beaverton,\" matching Air Manufacturing Innovation.",
+          "filing": {
+            "company_key": "CIK:0000320187",
+            "form": "10-K",
+            "accession": "0000320187-26-000088",
+            "filed": "2026-07-15",
+            "url": "https://www.sec.gov/Archives/edgar/data/320187/000032018726000088/nke-20260531.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "search_filings",
+          "query": "Air Manufacturing Innovation",
+          "summary": "Cross-filing search for Air Manufacturing Innovation in CIK:, CIK: found \"Feedstock sourcing for the facility, of which there is abundant supply from textile waste in India, is well advanced. Loop has signed a mult\".",
+          "filing": {
+            "company_key": "CIK:0000320187",
+            "form": "10-K",
+            "accession": "0000320187-26-000088",
+            "filed": "2026-07-15",
+            "url": "https://www.sec.gov/Archives/edgar/data/320187/000032018726000088/nke-20260531.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "read_section",
+          "query": "Item 1",
+          "summary": "Read section and extracted verified passage \"We place considerable emphasis on innovation and high-quality construction in the development and manufacturing of our products.\".",
+          "filing": {
+            "company_key": "CIK:0000320187",
+            "form": "10-K",
+            "accession": "0000320187-26-000088",
+            "filed": "2026-07-15",
+            "url": "https://www.sec.gov/Archives/edgar/data/320187/000032018726000088/nke-20260531.htm"
+          }
+        },
+        {
+          "index": 4,
+          "action": "conclude",
+          "query": "Air Manufacturing Innovation",
+          "summary": "Corroborating disclosure in Section confirms: \"Air Manufacturing Innovation manufactures cushioning components used in footwear at NIKE-owned and leased facilities located near Beaverton, Oregon, and in Dong Nai City, Vietnam, as well as at NIKE-owned facilities in St. Charles, Missouri.\"",
+          "filing": {
+            "company_key": "CIK:0000320187",
+            "form": "10-K",
+            "accession": "0000320187-26-000088",
+            "filed": "2026-07-15",
+            "url": "https://www.sec.gov/Archives/edgar/data/320187/000032018726000088/nke-20260531.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [
+        "edge_db8132253be5"
+      ],
+      "rejected_edge_ids": [],
+      "new_edges": []
+    },
+    {
+      "finding_id": "res_single_edge_2f3ebb25d868",
+      "kind": "single_source",
+      "subject": "NIKE, Inc. single-source reliance on St. Charles, Missouri",
+      "question": "Is NIKE, Inc.'s critical reliance on St. Charles, Missouri corroborated in the filing or peer filings?",
+      "outcome": "unresolved",
+      "explanation": "External searches did not corroborate the specific Air Manufacturing Innovation facility in \"St. Charles, Missouri\", only finding an unrelated offtake agreement where \"Loop has signed a multi-year offtake agreement with Nike, Inc., which will serve as an anchor customer for the facility.\" Because no independent external corroboration or alternative filing disclosure confirmed the specific facility edge beyond the initial passage, the item remains unresolved.",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "St. Charles, Missouri",
+          "summary": "Searched filing for St. Charles, Missouri; no exact phrase match in primary text.",
+          "filing": {
+            "company_key": "CIK:0000320187",
+            "form": "10-K",
+            "accession": "0000320187-26-000088",
+            "filed": "2026-07-15",
+            "url": "https://www.sec.gov/Archives/edgar/data/320187/000032018726000088/nke-20260531.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "find_in_filing",
+          "query": "St. Charles",
+          "summary": "Searched filing for St. Charles; no exact phrase match in primary text.",
+          "filing": {
+            "company_key": "CIK:0000320187",
+            "form": "10-K",
+            "accession": "0000320187-26-000088",
+            "filed": "2026-07-15",
+            "url": "https://www.sec.gov/Archives/edgar/data/320187/000032018726000088/nke-20260531.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "search_filings",
+          "query": "St. Charles, Missouri",
+          "summary": "Cross-filing search for St. Charles, Missouri in CIK:, CIK: found \"Feedstock sourcing for the facility, of which there is abundant supply from textile waste in India, is well advanced. Loop has signed a mult\".",
+          "filing": {
+            "company_key": "CIK:0000320187",
+            "form": "10-K",
+            "accession": "0000320187-26-000088",
+            "filed": "2026-07-15",
+            "url": "https://www.sec.gov/Archives/edgar/data/320187/000032018726000088/nke-20260531.htm"
+          }
+        },
+        {
+          "index": 4,
+          "action": "conclude",
+          "query": "St. Charles, Missouri",
+          "summary": "External searches did not corroborate the specific Air Manufacturing Innovation facility in \"St. Charles, Missouri\", only finding an unrelated offtake agreement where \"Loop has signed a multi-year offtake agreement with Nike, Inc., which will serve as an anchor customer for the facility.\" Because no independent external corroboration or alternative filing disclosure confirmed the specific facility edge beyond the initial passage, the item remains unresolved.",
           "filing": {
             "company_key": "CIK:0000320187",
             "form": "10-K",
@@ -779,7 +937,7 @@
     }
   ],
   "agentic_rejected_edge_ids": [],
-  "agentic_steps_done": 6,
-  "agentic_steps_total": 6,
+  "agentic_steps_done": 16,
+  "agentic_steps_total": 16,
   "agentic_interpretation_rejected": 0
 }

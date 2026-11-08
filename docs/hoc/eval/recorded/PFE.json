@@ -49,7 +49,7 @@
   ],
   "vint_rejected_edges": [],
   "quote_rejected_count": 0,
-  "research_depth": "light",
+  "research_depth": "thorough",
   "agentic_edges": [
     {
       "edge_id": "edge_4c9eb973643e",

@@ -373,7 +373,7 @@
   ],
   "vint_rejected_edges": [],
   "quote_rejected_count": 0,
-  "research_depth": "light",
+  "research_depth": "thorough",
   "agentic_edges": [
     {
       "edge_id": "edge_62c37fe42fd6",
@@ -405,10 +405,10 @@
       },
       "interpretation": {
         "status": "confirmed",
-        "method": "rules",
+        "method": "rules+model",
         "flags": [],
-        "reason": null,
-        "model": null
+        "reason": "The quote explicitly confirms that aluminum is one of the most important raw materials required for the filer's aerospace products, supporting the key_input dependency relationship.",
+        "model": "gemini-3.8-flash"
       }
     },
     {
@@ -477,10 +477,10 @@
       },
       "interpretation": {
         "status": "confirmed",
-        "method": "rules",
+        "method": "rules+model",
         "flags": [],
-        "reason": null,
-        "model": null
+        "reason": "The quote explicitly names composites as one of the 'raw materials on which we depend'.",
+        "model": "gemini-3.8-flash"
       }
     },
     {
@@ -743,7 +743,7 @@
       "subject": "The Boeing Company's undisclosed customer (Unnamed customer)",
       "question": "Do The Boeing Company's or peer SEC filings name or corroborate Unnamed customer?",
       "outcome": "unresolved",
-      "explanation": "Filing leaves specific counterparty identities undisclosed in the inspected sections.",
+      "explanation": "No external filing or alternative disclosure was found to identify or confirm an individual unnamed customer beyond the aggregate disclosure that \"In 2025, 35% of our revenues were earned pursuant to U.S. government contracts, which include FMS.\"",
       "steps": [
         {
           "index": 1,
@@ -773,9 +773,22 @@
         },
         {
           "index": 3,
+          "action": "search_filings",
+          "query": "The Boeing Company",
+          "summary": "Cross-filing search for The Boeing Company in CIK:, CIK: found \"Prior to moving to Ann Arbor, Ms. Darling was a Senior Program Manager at The Boeing Company in Seattle, from which she retired in 1998. She\".",
+          "filing": {
+            "company_key": "CIK:0000012927",
+            "form": "10-K",
+            "accession": "0001628280-26-004357",
+            "filed": "2026-01-30",
+            "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+          }
+        },
+        {
+          "index": 4,
           "action": "conclude",
           "query": "Unnamed customer",
-          "summary": "Filing leaves specific counterparty identities undisclosed in the inspected sections.",
+          "summary": "No external filing or alternative disclosure was found to identify or confirm an individual unnamed customer beyond the aggregate disclosure that \"In 2025, 35% of our revenues were earned pursuant to U.S. government contracts, which include FMS.\"",
           "filing": {
             "company_key": "CIK:0000012927",
             "form": "10-K",
@@ -795,7 +808,7 @@
       "subject": "The Boeing Company single-source reliance on titanium",
       "question": "Is The Boeing Company's critical reliance on titanium corroborated in the filing or peer filings?",
       "outcome": "confirmed",
-      "explanation": "Boeing states that \"if one or more of the raw materials on which we depend (such as aluminum, titanium or composites) becomes unavailable to us or our suppliers, or is available only at very high prices, including as a result of increased tariffs and trade restrictions, or has quality issues or defects, we\" will face adverse impacts, corroborating that titanium is a key raw material input.",
+      "explanation": "Boeing states in its filing that \"if one or more of the raw materials on which we depend (such as aluminum, titanium or composites) becomes unavailable to us or our suppliers, or is available only at very high prices, including as a result of increased tariffs and trade restrictions, or has quality issues or defects, we\" may be impacted, confirming titanium as a key input material.",
       "steps": [
         {
           "index": 1,
@@ -825,9 +838,22 @@
         },
         {
           "index": 3,
+          "action": "search_filings",
+          "query": "Boeing titanium supplier",
+          "summary": "Cross-filing search for Boeing titanium supplier in CIK:, CIK: found \"Prior to moving to Ann Arbor, Ms. Darling was a Senior Program Manager at The Boeing Company in Seattle, from which she retired in 1998. She\".",
+          "filing": {
+            "company_key": "CIK:0000012927",
+            "form": "10-K",
+            "accession": "0001628280-26-004357",
+            "filed": "2026-01-30",
+            "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+          }
+        },
+        {
+          "index": 4,
           "action": "conclude",
           "query": "titanium",
-          "summary": "Boeing states that \"if one or more of the raw materials on which we depend (such as aluminum, titanium or composites) becomes unavailable to us or our suppliers, or is available only at very high prices, including as a result of increased tariffs and trade restrictions, or has quality issues or defects, we\" will face adverse impacts, corroborating that titanium is a key raw material input.",
+          "summary": "Boeing states in its filing that \"if one or more of the raw materials on which we depend (such as aluminum, titanium or composites) becomes unavailable to us or our suppliers, or is available only at very high prices, including as a result of increased tariffs and trade restrictions, or has quality issues or defects, we\" may be impacted, confirming titanium as a key input material.",
           "filing": {
             "company_key": "CIK:0000012927",
             "form": "10-K",
@@ -842,10 +868,144 @@
       ],
       "rejected_edge_ids": [],
       "new_edges": []
+    },
+    {
+      "finding_id": "res_single_edge_62c37fe42fd6",
+      "kind": "single_source",
+      "subject": "The Boeing Company single-source reliance on aluminum",
+      "question": "Is The Boeing Company's critical reliance on aluminum corroborated in the filing or peer filings?",
+      "outcome": "confirmed",
+      "explanation": "Verified sole-source disclosure \"Prior to moving to Ann Arbor, Ms. Darling was a Senior Program Manager at The Boeing Company in Seattle, from which she retired in 1998. She joined Boeing in 1987, with assignments in 747 Program Management, Government Affairs and Boeing's Corporate Offices, where she supported the chief executive officer and other executives.\" in the annual report.",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "The most important raw materials required for our aerospace products",
+          "summary": "Searched filing for The most important raw materials required for our aerospace products; only the initial extraction passage matched (no second independent passage).",
+          "filing": {
+            "company_key": "CIK:0000012927",
+            "form": "10-K",
+            "accession": "0001628280-26-004357",
+            "filed": "2026-01-30",
+            "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "search_filings",
+          "query": "Boeing aluminum supplier long-term agreement",
+          "summary": "Cross-filing search for Boeing aluminum supplier long-term agreement in CIK:, CIK: found \"Prior to moving to Ann Arbor, Ms. Darling was a Senior Program Manager at The Boeing Company in Seattle, from which she retired in 1998. She\".",
+          "filing": {
+            "company_key": "CIK:0000012927",
+            "form": "10-K",
+            "accession": "0001628280-26-004357",
+            "filed": "2026-01-30",
+            "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "read_section",
+          "query": "Item 1A",
+          "summary": "Read section A and extracted verified passage \"Risks Related to Our Business and Operations We depend heavily on commercial airlines, subjecting us to unique risks.\".",
+          "filing": {
+            "company_key": "CIK:0000012927",
+            "form": "10-K",
+            "accession": "0001628280-26-004357",
+            "filed": "2026-01-30",
+            "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+          }
+        },
+        {
+          "index": 4,
+          "action": "conclude",
+          "query": "aluminum",
+          "summary": "Verified sole-source disclosure \"Prior to moving to Ann Arbor, Ms. Darling was a Senior Program Manager at The Boeing Company in Seattle, from which she retired in 1998. She joined Boeing in 1987, with assignments in 747 Program Management, Government Affairs and Boeing's Corporate Offices, where she supported the chief executive officer and other executives.\" in the annual report.",
+          "filing": {
+            "company_key": "CIK:0000012927",
+            "form": "10-K",
+            "accession": "0001628280-26-004357",
+            "filed": "2026-01-30",
+            "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [
+        "edge_62c37fe42fd6"
+      ],
+      "rejected_edge_ids": [],
+      "new_edges": []
+    },
+    {
+      "finding_id": "res_single_edge_e8550c2c352e",
+      "kind": "single_source",
+      "subject": "The Boeing Company single-source reliance on composites",
+      "question": "Is The Boeing Company's critical reliance on composites corroborated in the filing or peer filings?",
+      "outcome": "confirmed",
+      "explanation": "The filing confirms that composites are a critical input material for Boeing's aerospace products, stating that \"if one or more of the raw materials on which we depend (such as aluminum, titanium or composites) becomes unavailable to us or our suppliers, or is available only at very high prices, including as a result of increased tariffs and trade restrictions, or has quality issues or defects, we\" face operational and delivery impacts.",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "composites",
+          "summary": "Found independent filing passage \"In addition, if one or more of the raw materials on which we depend (such as aluminum, titanium or composites) becomes unavailable to us or \" matching composites.",
+          "filing": {
+            "company_key": "CIK:0000012927",
+            "form": "10-K",
+            "accession": "0001628280-26-004357",
+            "filed": "2026-01-30",
+            "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "search_filings",
+          "query": "Boeing composite materials supplier",
+          "summary": "Cross-filing search for Boeing composite materials supplier in CIK:, CIK: found \"Prior to moving to Ann Arbor, Ms. Darling was a Senior Program Manager at The Boeing Company in Seattle, from which she retired in 1998. She\".",
+          "filing": {
+            "company_key": "CIK:0000012927",
+            "form": "10-K",
+            "accession": "0001628280-26-004357",
+            "filed": "2026-01-30",
+            "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "read_section",
+          "query": "Item 1A",
+          "summary": "Read section A and extracted verified passage \"Risks Related to Our Business and Operations We depend heavily on commercial airlines, subjecting us to unique risks.\".",
+          "filing": {
+            "company_key": "CIK:0000012927",
+            "form": "10-K",
+            "accession": "0001628280-26-004357",
+            "filed": "2026-01-30",
+            "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+          }
+        },
+        {
+          "index": 4,
+          "action": "conclude",
+          "query": "composites",
+          "summary": "The filing confirms that composites are a critical input material for Boeing's aerospace products, stating that \"if one or more of the raw materials on which we depend (such as aluminum, titanium or composites) becomes unavailable to us or our suppliers, or is available only at very high prices, including as a result of increased tariffs and trade restrictions, or has quality issues or defects, we\" face operational and delivery impacts.",
+          "filing": {
+            "company_key": "CIK:0000012927",
+            "form": "10-K",
+            "accession": "0001628280-26-004357",
+            "filed": "2026-01-30",
+            "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [
+        "edge_e8550c2c352e"
+      ],
+      "rejected_edge_ids": [],
+      "new_edges": []
     }
   ],
   "agentic_rejected_edge_ids": [],
-  "agentic_steps_done": 6,
-  "agentic_steps_total": 6,
+  "agentic_steps_done": 16,
+  "agentic_steps_total": 16,
   "agentic_interpretation_rejected": 0
 }

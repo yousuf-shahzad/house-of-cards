@@ -301,7 +301,7 @@
   ],
   "vint_rejected_edges": [],
   "quote_rejected_count": 0,
-  "research_depth": "light",
+  "research_depth": "thorough",
   "agentic_edges": [
     {
       "edge_id": "edge_045a9cdb4eed",
@@ -333,10 +333,10 @@
       },
       "interpretation": {
         "status": "confirmed",
-        "method": "rules+model",
+        "method": "rules",
         "flags": [],
-        "reason": "The quote explicitly identifies Apple Inc. as the company's largest end customer, accounting for a significant percentage of total revenue through sales to contract manufacturers.",
-        "model": "gemini-3.8-flash"
+        "reason": null,
+        "model": null
       }
     },
     {
@@ -369,10 +369,10 @@
       },
       "interpretation": {
         "status": "confirmed",
-        "method": "rules",
+        "method": "rules+model",
         "flags": [],
-        "reason": null,
-        "model": null
+        "reason": "The quote explicitly confirms Samsung Electronics Co., Ltd. is a customer accounting for approximately 10%, 10%, and 12% of total revenue in fiscal years 2026, 2025, and 2024.",
+        "model": "gemini-3.8-flash"
       }
     },
     {
@@ -477,10 +477,10 @@
       },
       "interpretation": {
         "status": "confirmed",
-        "method": "rules",
+        "method": "rules+model",
         "flags": [],
-        "reason": null,
-        "model": null
+        "reason": "The quote explicitly confirms that the filer maintains internal assembly facilities in Germany.",
+        "model": "gemini-3.8-flash"
       }
     },
     {
@@ -629,6 +629,19 @@
         },
         {
           "index": 3,
+          "action": "search_filings",
+          "query": "Qorvo Apple contract manufacturers",
+          "summary": "Searched peer SEC filings for Qorvo Apple contract manufacturers; no additional corroborating passages found.",
+          "filing": {
+            "company_key": "CIK:0001604778",
+            "form": "10-K",
+            "accession": "0001628280-26-032873",
+            "filed": "2026-05-08",
+            "url": "https://www.sec.gov/Archives/edgar/data/1604778/000162828026032873/rfmd-20260328.htm"
+          }
+        },
+        {
+          "index": 4,
           "action": "conclude",
           "query": "Apple Inc.",
           "summary": "Independent corroboration found in the filing notes: \"The Company provides products to its largest end customer, Apple Inc., through sales to multiple contract manufacturers, which in the aggregate accounted for approximately 50%, 47% and 46% of total revenue in fiscal years 2026, 2025 and 2024, respectively.\"",
@@ -653,7 +666,7 @@
       "subject": "Qorvo, Inc. single-source reliance on Samsung Electronics Co., Ltd.",
       "question": "Is Qorvo, Inc.'s critical reliance on Samsung Electronics Co., Ltd. corroborated in the filing or peer filings?",
       "outcome": "confirmed",
-      "explanation": "Corroborating disclosures across the filing confirm Samsung Electronics Co., Ltd. as a significant customer, stating \"Samsung Electronics Co., Ltd., accounted for approximately 10%, 10% and 12% of total revenue in fiscal years 2026, 2025 and 2024, respectively.\"",
+      "explanation": "The customer relationship is corroborated by a distinct passage in the filing stating that \"Samsung Electronics Co., Ltd., accounted for approximately 10%, 10% and 12% of total revenue in fiscal years 2026, 2025 and 2024, respectively.\"",
       "steps": [
         {
           "index": 1,
@@ -683,9 +696,22 @@
         },
         {
           "index": 3,
+          "action": "search_filings",
+          "query": "Qorvo Samsung Electronics customer revenue",
+          "summary": "Searched peer SEC filings for Qorvo Samsung Electronics customer revenue; no additional corroborating passages found.",
+          "filing": {
+            "company_key": "CIK:0001604778",
+            "form": "10-K",
+            "accession": "0001628280-26-032873",
+            "filed": "2026-05-08",
+            "url": "https://www.sec.gov/Archives/edgar/data/1604778/000162828026032873/rfmd-20260328.htm"
+          }
+        },
+        {
+          "index": 4,
           "action": "conclude",
           "query": "Samsung Electronics Co., Ltd.",
-          "summary": "Corroborating disclosures across the filing confirm Samsung Electronics Co., Ltd. as a significant customer, stating \"Samsung Electronics Co., Ltd., accounted for approximately 10%, 10% and 12% of total revenue in fiscal years 2026, 2025 and 2024, respectively.\"",
+          "summary": "The customer relationship is corroborated by a distinct passage in the filing stating that \"Samsung Electronics Co., Ltd., accounted for approximately 10%, 10% and 12% of total revenue in fiscal years 2026, 2025 and 2024, respectively.\"",
           "filing": {
             "company_key": "CIK:0001604778",
             "form": "10-K",
@@ -700,10 +726,140 @@
       ],
       "rejected_edge_ids": [],
       "new_edges": []
+    },
+    {
+      "finding_id": "res_single_edge_7ce50a2d7edd",
+      "kind": "single_source",
+      "subject": "Qorvo, Inc. single-source reliance on Germany",
+      "question": "Is Qorvo, Inc.'s critical reliance on Germany corroborated in the filing or peer filings?",
+      "outcome": "unresolved",
+      "explanation": "Initial disclosure \"In fiscal 2026, our internal assembly facilities were located in Costa Rica, Germany and the U.S.\" was not corroborated by a second passage or peer filing.",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "internal assembly facilities were located in Costa Rica, Germany",
+          "summary": "Searched filing for internal assembly facilities were located in Costa Rica, Germany; only the initial extraction passage matched (no second independent passage).",
+          "filing": {
+            "company_key": "CIK:0001604778",
+            "form": "10-K",
+            "accession": "0001628280-26-032873",
+            "filed": "2026-05-08",
+            "url": "https://www.sec.gov/Archives/edgar/data/1604778/000162828026032873/rfmd-20260328.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "search_filings",
+          "query": "Qorvo Germany facility",
+          "summary": "Searched peer SEC filings for Qorvo Germany facility; no additional corroborating passages found.",
+          "filing": {
+            "company_key": "CIK:0001604778",
+            "form": "10-K",
+            "accession": "0001628280-26-032873",
+            "filed": "2026-05-08",
+            "url": "https://www.sec.gov/Archives/edgar/data/1604778/000162828026032873/rfmd-20260328.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "search_filings",
+          "query": "Qorvo Germany facility assembly packaging",
+          "summary": "Searched peer SEC filings for Qorvo Germany facility assembly packaging; no additional corroborating passages found.",
+          "filing": {
+            "company_key": "CIK:0001604778",
+            "form": "10-K",
+            "accession": "0001628280-26-032873",
+            "filed": "2026-05-08",
+            "url": "https://www.sec.gov/Archives/edgar/data/1604778/000162828026032873/rfmd-20260328.htm"
+          }
+        },
+        {
+          "index": 4,
+          "action": "conclude",
+          "query": "Germany",
+          "summary": "Initial disclosure \"In fiscal 2026, our internal assembly facilities were located in Costa Rica, Germany and the U.S.\" was not corroborated by a second passage or peer filing.",
+          "filing": {
+            "company_key": "CIK:0001604778",
+            "form": "10-K",
+            "accession": "0001628280-26-032873",
+            "filed": "2026-05-08",
+            "url": "https://www.sec.gov/Archives/edgar/data/1604778/000162828026032873/rfmd-20260328.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [],
+      "rejected_edge_ids": [],
+      "new_edges": []
+    },
+    {
+      "finding_id": "res_single_edge_dbeaa56bc419",
+      "kind": "single_source",
+      "subject": "Qorvo, Inc. single-source reliance on Oregon",
+      "question": "Is Qorvo, Inc.'s critical reliance on Oregon corroborated in the filing or peer filings?",
+      "outcome": "unresolved",
+      "explanation": "Searching external filings to corroborate Qorvo wafer fabrication facility dependency.",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "Oregon",
+          "summary": "Found independent filing passage \"We face risks associated with the operation of our manufacturing facilities. We operate wafer fabrication facilities in Oregon and Texas. We\" matching Oregon.",
+          "filing": {
+            "company_key": "CIK:0001604778",
+            "form": "10-K",
+            "accession": "0001628280-26-032873",
+            "filed": "2026-05-08",
+            "url": "https://www.sec.gov/Archives/edgar/data/1604778/000162828026032873/rfmd-20260328.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "search_filings",
+          "query": "Qorvo Hillsboro Oregon wafer fabrication",
+          "summary": "Searched peer SEC filings for Qorvo Hillsboro Oregon wafer fabrication; no additional corroborating passages found.",
+          "filing": {
+            "company_key": "CIK:0001604778",
+            "form": "10-K",
+            "accession": "0001628280-26-032873",
+            "filed": "2026-05-08",
+            "url": "https://www.sec.gov/Archives/edgar/data/1604778/000162828026032873/rfmd-20260328.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "search_filings",
+          "query": "Qorvo Hillsboro Oregon fabrication facility",
+          "summary": "Searched peer SEC filings for Qorvo Hillsboro Oregon fabrication facility; no additional corroborating passages found.",
+          "filing": {
+            "company_key": "CIK:0001604778",
+            "form": "10-K",
+            "accession": "0001628280-26-032873",
+            "filed": "2026-05-08",
+            "url": "https://www.sec.gov/Archives/edgar/data/1604778/000162828026032873/rfmd-20260328.htm"
+          }
+        },
+        {
+          "index": 4,
+          "action": "conclude",
+          "query": "Oregon",
+          "summary": "Searching external filings to corroborate Qorvo wafer fabrication facility dependency.",
+          "filing": {
+            "company_key": "CIK:0001604778",
+            "form": "10-K",
+            "accession": "0001628280-26-032873",
+            "filed": "2026-05-08",
+            "url": "https://www.sec.gov/Archives/edgar/data/1604778/000162828026032873/rfmd-20260328.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [],
+      "rejected_edge_ids": [],
+      "new_edges": []
     }
   ],
   "agentic_rejected_edge_ids": [],
-  "agentic_steps_done": 6,
-  "agentic_steps_total": 6,
+  "agentic_steps_done": 16,
+  "agentic_steps_total": 16,
   "agentic_interpretation_rejected": 0
 }

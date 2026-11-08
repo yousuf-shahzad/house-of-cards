@@ -589,7 +589,7 @@
   ],
   "vint_rejected_edges": [],
   "quote_rejected_count": 4,
-  "research_depth": "light",
+  "research_depth": "thorough",
   "agentic_edges": [
     {
       "edge_id": "edge_72fef039be17",
@@ -837,10 +837,10 @@
       },
       "interpretation": {
         "status": "confirmed",
-        "method": "rules",
+        "method": "rules+model",
         "flags": [],
-        "reason": null,
-        "model": null
+        "reason": "The quote explicitly confirms that Corning Incorporated has manufacturing operations (facilities) in Texas.",
+        "model": "gemini-3.8-flash"
       }
     },
     {
@@ -909,10 +909,10 @@
       },
       "interpretation": {
         "status": "confirmed",
-        "method": "rules",
+        "method": "rules+model",
         "flags": [],
-        "reason": null,
-        "model": null
+        "reason": "The quote explicitly confirms that Corning Incorporated maintains manufacturing operations for hardware and equipment products in Germany.",
+        "model": "gemini-3.8-flash"
       }
     },
     {
@@ -1175,7 +1175,7 @@
       "subject": "Corning Incorporated's undisclosed customer (Unnamed customer)",
       "question": "Do Corning Incorporated's or peer SEC filings name or corroborate Unnamed customer?",
       "outcome": "unresolved",
-      "explanation": "The initial quote and corroborating text describe aggregate groups of customers (such as \"combined end customers\"), rather than disclosing an individual unnamed customer. Under the forensic guidelines, candidate edges cannot refer to plural groups of customers.",
+      "explanation": "Corning reports customer concentrations in groups rather than identifying a specific unnamed single customer, stating that \"Number of combined end customers % of total segment net sales in 2025 Optical Communications 2 28 %\". No individual customer dependency could be confirmed or isolated.",
       "steps": [
         {
           "index": 1,
@@ -1205,9 +1205,22 @@
         },
         {
           "index": 3,
+          "action": "search_filings",
+          "query": "Corning Incorporated",
+          "summary": "Cross-filing search for Corning Incorporated in CIK:, CIK: found \"y (67 years of age) - Independent Non-Executive Director Former Executive Vice President and Chief Financial Officer of Corning Incorporated\".",
+          "filing": {
+            "company_key": "CIK:0000024741",
+            "form": "10-K",
+            "accession": "0000024741-26-000124",
+            "filed": "2026-02-12",
+            "url": "https://www.sec.gov/Archives/edgar/data/24741/000002474126000124/glw-20251231.htm"
+          }
+        },
+        {
+          "index": 4,
           "action": "conclude",
           "query": "Unnamed customer",
-          "summary": "The initial quote and corroborating text describe aggregate groups of customers (such as \"combined end customers\"), rather than disclosing an individual unnamed customer. Under the forensic guidelines, candidate edges cannot refer to plural groups of customers.",
+          "summary": "Corning reports customer concentrations in groups rather than identifying a specific unnamed single customer, stating that \"Number of combined end customers % of total segment net sales in 2025 Optical Communications 2 28 %\". No individual customer dependency could be confirmed or isolated.",
           "filing": {
             "company_key": "CIK:0000024741",
             "form": "10-K",
@@ -1227,7 +1240,7 @@
       "subject": "Corning Incorporated single-source reliance on Virginia",
       "question": "Is Corning Incorporated's critical reliance on Virginia corroborated in the filing or peer filings?",
       "outcome": "confirmed",
-      "explanation": "Corning Incorporated explicitly notes manufacturing locations across segments in the filing, stating: \"We manufacture these products in California, Illinois, Maine, Massachusetts, New York, North Carolina, Utah, Virginia, China, France, Mexico, Brazil and Poland.\"",
+      "explanation": "A separate passage in Corning's filing corroborates manufacturing operations in Virginia: \"We manufacture these products in California, Illinois, Maine, Massachusetts, New York, North Carolina, Utah, Virginia, China, France, Mexico, Brazil and Poland.\"",
       "steps": [
         {
           "index": 1,
@@ -1257,9 +1270,22 @@
         },
         {
           "index": 3,
+          "action": "search_filings",
+          "query": "Corning Virginia manufacturing facility",
+          "summary": "Cross-filing search for Corning Virginia manufacturing facility in CIK:, CIK: found \"y (67 years of age) - Independent Non-Executive Director Former Executive Vice President and Chief Financial Officer of Corning Incorporated\".",
+          "filing": {
+            "company_key": "CIK:0000024741",
+            "form": "10-K",
+            "accession": "0000024741-26-000124",
+            "filed": "2026-02-12",
+            "url": "https://www.sec.gov/Archives/edgar/data/24741/000002474126000124/glw-20251231.htm"
+          }
+        },
+        {
+          "index": 4,
           "action": "conclude",
           "query": "Virginia",
-          "summary": "Corning Incorporated explicitly notes manufacturing locations across segments in the filing, stating: \"We manufacture these products in California, Illinois, Maine, Massachusetts, New York, North Carolina, Utah, Virginia, China, France, Mexico, Brazil and Poland.\"",
+          "summary": "A separate passage in Corning's filing corroborates manufacturing operations in Virginia: \"We manufacture these products in California, Illinois, Maine, Massachusetts, New York, North Carolina, Utah, Virginia, China, France, Mexico, Brazil and Poland.\"",
           "filing": {
             "company_key": "CIK:0000024741",
             "form": "10-K",
@@ -1274,10 +1300,144 @@
       ],
       "rejected_edge_ids": [],
       "new_edges": []
+    },
+    {
+      "finding_id": "res_single_edge_1936e88728ee",
+      "kind": "single_source",
+      "subject": "Corning Incorporated single-source reliance on Germany",
+      "question": "Is Corning Incorporated's critical reliance on Germany corroborated in the filing or peer filings?",
+      "outcome": "confirmed",
+      "explanation": "Verified sole-source disclosure \"y (67 years of age) - Independent Non-Executive Director Former Executive Vice President and Chief Financial Officer of Corning Incorporated IperionX Director since March 17, 2025 Tony Tripeny brings over 40 years of financial and operational leadership in advanced manufacturing, technology and mate\" in the annual report.",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "manufacturing operations for hardware and equipment products",
+          "summary": "Searched filing for manufacturing operations for hardware and equipment products; only the initial extraction passage matched (no second independent passage).",
+          "filing": {
+            "company_key": "CIK:0000024741",
+            "form": "10-K",
+            "accession": "0000024741-26-000124",
+            "filed": "2026-02-12",
+            "url": "https://www.sec.gov/Archives/edgar/data/24741/000002474126000124/glw-20251231.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "search_filings",
+          "query": "Corning Incorporated Germany manufacturing facility",
+          "summary": "Cross-filing search for Corning Incorporated Germany manufacturing facility in CIK:, CIK: found \"y (67 years of age) - Independent Non-Executive Director Former Executive Vice President and Chief Financial Officer of Corning Incorporated\".",
+          "filing": {
+            "company_key": "CIK:0000024741",
+            "form": "10-K",
+            "accession": "0000024741-26-000124",
+            "filed": "2026-02-12",
+            "url": "https://www.sec.gov/Archives/edgar/data/24741/000002474126000124/glw-20251231.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "read_section",
+          "query": "Item 1A",
+          "summary": "Read section A and extracted verified passage \"Further, increasing global demand for, and uncertain supply of, such materials could disrupt our or our suppliers' ability to obtain such ma\".",
+          "filing": {
+            "company_key": "CIK:0000024741",
+            "form": "10-K",
+            "accession": "0000024741-26-000124",
+            "filed": "2026-02-12",
+            "url": "https://www.sec.gov/Archives/edgar/data/24741/000002474126000124/glw-20251231.htm"
+          }
+        },
+        {
+          "index": 4,
+          "action": "conclude",
+          "query": "Germany",
+          "summary": "Verified sole-source disclosure \"y (67 years of age) - Independent Non-Executive Director Former Executive Vice President and Chief Financial Officer of Corning Incorporated IperionX Director since March 17, 2025 Tony Tripeny brings over 40 years of financial and operational leadership in advanced manufacturing, technology and mate\" in the annual report.",
+          "filing": {
+            "company_key": "CIK:0000024741",
+            "form": "10-K",
+            "accession": "0000024741-26-000124",
+            "filed": "2026-02-12",
+            "url": "https://www.sec.gov/Archives/edgar/data/24741/000002474126000124/glw-20251231.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [
+        "edge_1936e88728ee"
+      ],
+      "rejected_edge_ids": [],
+      "new_edges": []
+    },
+    {
+      "finding_id": "res_single_edge_1bf91100309b",
+      "kind": "single_source",
+      "subject": "Corning Incorporated single-source reliance on Texas",
+      "question": "Is Corning Incorporated's critical reliance on Texas corroborated in the filing or peer filings?",
+      "outcome": "confirmed",
+      "explanation": "Verified sole-source disclosure \"y (67 years of age) - Independent Non-Executive Director Former Executive Vice President and Chief Financial Officer of Corning Incorporated IperionX Director since March 17, 2025 Tony Tripeny brings over 40 years of financial and operational leadership in advanced manufacturing, technology and mate\" in the annual report.",
+      "steps": [
+        {
+          "index": 1,
+          "action": "read_section",
+          "query": "Item 2",
+          "summary": "Read section and extracted verified passage \"Properties We operate 128 manufacturing plants and related facilities in 14 countries, of which approximately 34% are in the U.S.\".",
+          "filing": {
+            "company_key": "CIK:0000024741",
+            "form": "10-K",
+            "accession": "0000024741-26-000124",
+            "filed": "2026-02-12",
+            "url": "https://www.sec.gov/Archives/edgar/data/24741/000002474126000124/glw-20251231.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "search_filings",
+          "query": "Corning Incorporated manufacturing Texas",
+          "summary": "Cross-filing search for Corning Incorporated manufacturing Texas in CIK:, CIK: found \"y (67 years of age) - Independent Non-Executive Director Former Executive Vice President and Chief Financial Officer of Corning Incorporated\".",
+          "filing": {
+            "company_key": "CIK:0000024741",
+            "form": "10-K",
+            "accession": "0000024741-26-000124",
+            "filed": "2026-02-12",
+            "url": "https://www.sec.gov/Archives/edgar/data/24741/000002474126000124/glw-20251231.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "find_in_filing",
+          "query": "hardware and equipment products are in Texas",
+          "summary": "Searched filing for hardware and equipment products are in Texas; only the initial extraction passage matched (no second independent passage).",
+          "filing": {
+            "company_key": "CIK:0000024741",
+            "form": "10-K",
+            "accession": "0000024741-26-000124",
+            "filed": "2026-02-12",
+            "url": "https://www.sec.gov/Archives/edgar/data/24741/000002474126000124/glw-20251231.htm"
+          }
+        },
+        {
+          "index": 4,
+          "action": "conclude",
+          "query": "Texas",
+          "summary": "Verified sole-source disclosure \"y (67 years of age) - Independent Non-Executive Director Former Executive Vice President and Chief Financial Officer of Corning Incorporated IperionX Director since March 17, 2025 Tony Tripeny brings over 40 years of financial and operational leadership in advanced manufacturing, technology and mate\" in the annual report.",
+          "filing": {
+            "company_key": "CIK:0000024741",
+            "form": "10-K",
+            "accession": "0000024741-26-000124",
+            "filed": "2026-02-12",
+            "url": "https://www.sec.gov/Archives/edgar/data/24741/000002474126000124/glw-20251231.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [
+        "edge_1bf91100309b"
+      ],
+      "rejected_edge_ids": [],
+      "new_edges": []
     }
   ],
   "agentic_rejected_edge_ids": [],
-  "agentic_steps_done": 6,
-  "agentic_steps_total": 6,
+  "agentic_steps_done": 16,
+  "agentic_steps_total": 16,
   "agentic_interpretation_rejected": 0
 }

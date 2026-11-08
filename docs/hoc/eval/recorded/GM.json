@@ -517,7 +517,7 @@
   ],
   "vint_rejected_edges": [],
   "quote_rejected_count": 0,
-  "research_depth": "light",
+  "research_depth": "thorough",
   "agentic_edges": [
     {
       "edge_id": "edge_d9b6a0afc098",
@@ -1061,6 +1061,19 @@
         },
         {
           "index": 3,
+          "action": "search_filings",
+          "query": "Ultium Cells Warren, Ohio LG Energy Solution",
+          "summary": "Searched peer SEC filings for Ultium Cells Warren, Ohio LG Energy Solution; no additional corroborating passages found.",
+          "filing": {
+            "company_key": "CIK:0001467858",
+            "form": "10-K",
+            "accession": "0001467858-26-000013",
+            "filed": "2026-01-27",
+            "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+          }
+        },
+        {
+          "index": 4,
           "action": "conclude",
           "query": "Warren, Ohio",
           "summary": "Initial disclosure \"Our EV portfolio takes advantage of integrated supply chain development, including battery cell production from Ultium Cells Holdings LLC (a joint venture with LG Energy Solution) in plants in Warren, Ohio and Spring Hill, Tennessee.\" was not corroborated by a second passage or peer filing.",
@@ -1113,6 +1126,19 @@
         },
         {
           "index": 3,
+          "action": "search_filings",
+          "query": "Ultium Cells Holdings LLC Spring Hill",
+          "summary": "Searched peer SEC filings for Ultium Cells Holdings LLC Spring Hill; no additional corroborating passages found.",
+          "filing": {
+            "company_key": "CIK:0001467858",
+            "form": "10-K",
+            "accession": "0001467858-26-000013",
+            "filed": "2026-01-27",
+            "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+          }
+        },
+        {
+          "index": 4,
           "action": "conclude",
           "query": "Spring Hill, Tennessee",
           "summary": "Initial disclosure \"Our EV portfolio takes advantage of integrated supply chain development, including battery cell production from Ultium Cells Holdings LLC (a joint venture with LG Energy Solution) in plants in Warren, Ohio and Spring Hill, Tennessee.\" was not corroborated by a second passage or peer filing.",
@@ -1128,10 +1154,140 @@
       "confirmed_edge_ids": [],
       "rejected_edge_ids": [],
       "new_edges": []
+    },
+    {
+      "finding_id": "res_single_edge_097a856e62e0",
+      "kind": "single_source",
+      "subject": "General Motors Company single-source reliance on precious metals",
+      "question": "Is General Motors Company's critical reliance on precious metals corroborated in the filing or peer filings?",
+      "outcome": "unresolved",
+      "explanation": "Searching filings to fulfill REQUIRE_SEARCH_FILINGS requirement before concluding.",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "precious metals",
+          "summary": "Found independent filing passage \"or other inputs that we and our suppliers use in manufacturing products, systems, components, and parts, such as steel, precious metals, non\" matching precious metals.",
+          "filing": {
+            "company_key": "CIK:0001467858",
+            "form": "10-K",
+            "accession": "0001467858-26-000013",
+            "filed": "2026-01-27",
+            "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "search_filings",
+          "query": "General Motors precious metals supply",
+          "summary": "Searched peer SEC filings for General Motors precious metals supply; no additional corroborating passages found.",
+          "filing": {
+            "company_key": "CIK:0001467858",
+            "form": "10-K",
+            "accession": "0001467858-26-000013",
+            "filed": "2026-01-27",
+            "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "search_filings",
+          "query": "General Motors precious metals supplier",
+          "summary": "Searched peer SEC filings for General Motors precious metals supplier; no additional corroborating passages found.",
+          "filing": {
+            "company_key": "CIK:0001467858",
+            "form": "10-K",
+            "accession": "0001467858-26-000013",
+            "filed": "2026-01-27",
+            "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+          }
+        },
+        {
+          "index": 4,
+          "action": "conclude",
+          "query": "precious metals",
+          "summary": "Searching filings to fulfill REQUIRE_SEARCH_FILINGS requirement before concluding.",
+          "filing": {
+            "company_key": "CIK:0001467858",
+            "form": "10-K",
+            "accession": "0001467858-26-000013",
+            "filed": "2026-01-27",
+            "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [],
+      "rejected_edge_ids": [],
+      "new_edges": []
+    },
+    {
+      "finding_id": "res_single_edge_3ac0d2582895",
+      "kind": "single_source",
+      "subject": "General Motors Company single-source reliance on copper",
+      "question": "Is General Motors Company's critical reliance on copper corroborated in the filing or peer filings?",
+      "outcome": "unresolved",
+      "explanation": "Searching other SEC filings to corroborate GM copper suppliers and satisfy the search filings requirement.",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "copper",
+          "summary": "Found independent filing passage \"At December 31, 2025 we used derivative instruments such as commodity forwards, swaps, and options to hedge a portion of our exposures with \" matching copper.",
+          "filing": {
+            "company_key": "CIK:0001467858",
+            "form": "10-K",
+            "accession": "0001467858-26-000013",
+            "filed": "2026-01-27",
+            "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "search_filings",
+          "query": "General Motors \"copper\"",
+          "summary": "Searched peer SEC filings for General Motors \"copper\"; no additional corroborating passages found.",
+          "filing": {
+            "company_key": "CIK:0001467858",
+            "form": "10-K",
+            "accession": "0001467858-26-000013",
+            "filed": "2026-01-27",
+            "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "search_filings",
+          "query": "General Motors \"copper\"",
+          "summary": "Searched peer SEC filings for General Motors \"copper\"; no additional corroborating passages found.",
+          "filing": {
+            "company_key": "CIK:0001467858",
+            "form": "10-K",
+            "accession": "0001467858-26-000013",
+            "filed": "2026-01-27",
+            "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+          }
+        },
+        {
+          "index": 4,
+          "action": "conclude",
+          "query": "copper",
+          "summary": "Searching other SEC filings to corroborate GM copper suppliers and satisfy the search filings requirement.",
+          "filing": {
+            "company_key": "CIK:0001467858",
+            "form": "10-K",
+            "accession": "0001467858-26-000013",
+            "filed": "2026-01-27",
+            "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [],
+      "rejected_edge_ids": [],
+      "new_edges": []
     }
   ],
   "agentic_rejected_edge_ids": [],
-  "agentic_steps_done": 6,
-  "agentic_steps_total": 6,
+  "agentic_steps_done": 16,
+  "agentic_steps_total": 16,
   "agentic_interpretation_rejected": 0
 }
