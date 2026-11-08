@@ -297,6 +297,9 @@ def test_facility_country_resolution_and_unplaced_count() -> None:
         "RO",
         "Romania",
     )
+    assert canonical_country_info("Cambodia") == ("KH", "Cambodia")
+    assert canonical_country_info("Cambodian footwear factories") == ("KH", "Cambodia")
+    assert canonical_country_info("Phnom Penh, Cambodia") == ("KH", "Cambodia")
 
     # 3. Single-country evidence_quote fallback vs multi-country quote rejection
     assert canonical_country_info(
