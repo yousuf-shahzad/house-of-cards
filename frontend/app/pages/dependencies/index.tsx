@@ -101,6 +101,7 @@ const COMPANY_STATUS_META: Record<
   done: { label: "Analysed", chipColor: "lime", dotColor: "green", isSkipped: false },
   cached: { label: "Cached", chipColor: "lime", dotColor: "green", isSkipped: false },
   extracting: { label: "Extracting…", chipColor: "blue", dotColor: "indigo", isSkipped: false },
+  researching: { label: "Double-checking…", chipColor: "blue", dotColor: "indigo", isSkipped: false },
   fetching: { label: "Fetching filing…", chipColor: "cyan", dotColor: "indigo", isSkipped: false },
   queued: { label: "Queued", chipColor: "neutral", dotColor: "indigo", isSkipped: false },
   no_sec_filing: {

@@ -33,6 +33,12 @@ class DependencyRequest(_Model):
     holdings: Annotated[list[PortfolioItem], Field(min_length=1, max_length=50)]
     """The same allocations as POST /api/analysis (fractions). The top_n companies come from its analysis."""
     top_n: Annotated[int, Field(ge=1, le=30)] = DEFAULT_TOP_N
+    depth: ResearchDepth = "light"
+    """v3.1: how far each company's agent investigates its own uncertain findings. Part of the job id, so a
+    'thorough' run is a separate job that reuses cached extractions and light findings."""
+
+
+ResearchDepth = Literal["light", "thorough"]
 
 
 FilingForm = Literal["10-K", "20-F"]
@@ -59,6 +65,7 @@ CompanyStatus = Literal[
     "sec_contact_missing",  # HOC_SEC_CONTACT not set, so SEC filings can't be fetched
     "missing_api_key",      # GEMINI_API_KEY not set and nothing cached for this filing
     "error",
+    "researching",          # v3.1: the company's agent is investigating its own uncertain findings
 ]
 
 
@@ -165,6 +172,11 @@ class InsightClaim(_Model):
     """Rendered text: every number in it came from a cited metric via {{metric:<id>}}."""
     cited_metric_ids: list[str] = []
     cited_edge_ids: list[str] = []
+    plain_title: str | None = None
+    """v3.1: beginner title, <= 8 words; dropped by Python if it fails verification."""
+    plain_text: str | None = None
+    """v3.1: beginner one-liner, <= 25 words, at most 1 number and only via a {{metric:<id>}} placeholder (rendered
+    like `text`); dropped by Python if it fails verification."""
 
 
 InsightsStatus = Literal["ok", "metrics_only", "missing_api_key", "no_verified_edges", "error"]
@@ -246,10 +258,14 @@ class DependencyResult(_Model):
     counts: DependencyCounts
     attributions: list[Attribution] = []
     coverage: CoverageReport | None = None
+    research: list[ResearchFinding] = []
+    """v3.1: findings from the run's own agentic loop (each company's agent investigating its uncertain items)."""
+    research_depth: Literal["none", "light", "thorough"] = "none"
     """v3: None until C-COV is wired in."""
 
 
 JobStatus = Literal["queued", "running", "done", "error"]
+JobPhase = Literal["queued", "reading", "researching", "synthesising", "done"]
 
 
 class DependencyJob(_Model):
@@ -260,6 +276,11 @@ class DependencyJob(_Model):
     status: JobStatus
     progress_done: int = 0
     progress_total: int = 0
+    phase: JobPhase = "queued"
+    """v3.1: reading (fetch + extract) -> researching (the agentic loop) -> synthesising (metrics + insights) -> done."""
+    steps_done: int = 0
+    steps_total: int = 0
+    """v3.1: progress across all phases (companies read + research steps + synthesis), for a progress bar."""
     companies: list[CompanyRunStatus] = []
     result: DependencyResult | None = None
     error: ErrorBody | None = None
@@ -320,3 +341,10 @@ class ResearchJob(_Model):
     findings: list[ResearchFinding] = []
     result: DependencyResult | None = None
     error: ErrorBody | None = None
+
+
+# DependencyResult.research refers to ResearchFinding, which is defined later in this module, so rebuild the
+# models that embed it once every class exists.
+DependencyResult.model_rebuild()
+DependencyJob.model_rebuild()
+ResearchJob.model_rebuild()

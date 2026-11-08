@@ -409,9 +409,13 @@ export interface ValuationResponse {
 
 export const DEFAULT_TOP_N = 15;
 
+export type ResearchDepth = "light" | "thorough";
+
 export interface DependencyRequest {
   holdings: PortfolioItem[];
   top_n?: number;
+  /** v3.1: how far each company's agent investigates (part of the job id). Default "light". */
+  depth?: ResearchDepth;
 }
 
 export type FilingForm = "10-K" | "20-F";
@@ -435,7 +439,8 @@ export type CompanyStatus =
   | "unsupported_form"
   | "sec_contact_missing"
   | "missing_api_key"
-  | "error";
+  | "error"
+  | "researching";
 
 export interface CompanyRunStatus {
   company_key: string;
@@ -542,6 +547,10 @@ export interface InsightClaim {
   text: string;
   cited_metric_ids: string[];
   cited_edge_ids: string[];
+  /** v3.1: beginner title (<= 8 words), or null if the model's version failed verification. */
+  plain_title: string | null;
+  /** v3.1: beginner one-liner (<= 25 words, numbers only from cited metrics), or null. */
+  plain_text: string | null;
 }
 
 export type InsightsStatus = "ok" | "metrics_only" | "missing_api_key" | "no_verified_edges" | "error";
@@ -622,9 +631,14 @@ export interface DependencyResult {
   attributions: Attribution[];
   /** v3: null until C-COV is wired in. */
   coverage: CoverageReport | null;
+  /** v3.1: findings from the run's own agentic loop. */
+  research: ResearchFinding[];
+  research_depth: "none" | "light" | "thorough";
 }
 
 export type JobStatus = "queued" | "running" | "done" | "error";
+/** v3.1: reading (fetch + extract) -> researching (agentic loop) -> synthesising (metrics + insights) -> done. */
+export type JobPhase = "queued" | "reading" | "researching" | "synthesising" | "done";
 
 /** POST /api/dependencies (200 if done from cache, 202 otherwise) and GET /api/dependencies/{job_id}. Poll every 1-2 s. */
 export interface DependencyJob {
@@ -632,6 +646,10 @@ export interface DependencyJob {
   status: JobStatus;
   progress_done: number;
   progress_total: number;
+  /** v3.1: progress bar across all phases. */
+  phase: JobPhase;
+  steps_done: number;
+  steps_total: number;
   companies: CompanyRunStatus[];
   result: DependencyResult | null;
   error: ErrorResponse["error"] | null;
@@ -708,7 +726,8 @@ export interface MetricDelta {
   delta: number | null;
 }
 
-export type ConcentrationName = "top5" | "top10" | "top20" | "effective_n" | "largest_company";
+/** top_sector (v3.1): the largest industry's share of the portfolio. */
+export type ConcentrationName = "top5" | "top10" | "top20" | "effective_n" | "largest_company" | "top_sector";
 
 export interface ConcentrationDelta {
   name: ConcentrationName;

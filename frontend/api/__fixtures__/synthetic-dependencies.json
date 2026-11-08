@@ -4,6 +4,9 @@
   "status": "done",
   "progress_done": 3,
   "progress_total": 3,
+  "phase": "done",
+  "steps_done": 9,
+  "steps_total": 9,
   "companies": [
     {
       "company_key": "CIK:9990000001",
@@ -64,7 +67,8 @@
           "allocation": 0.4
         }
       ],
-      "top_n": 15
+      "top_n": 15,
+      "depth": "light"
     },
     "companies": [
       {
@@ -331,7 +335,9 @@
           ],
           "cited_edge_ids": [
             "e-alp-facility-tw"
-          ]
+          ],
+          "plain_title": "A lot is made in Taiwan",
+          "plain_text": "34.00% of your money depends on factories in Taiwan."
         }
       ],
       "flaws": [
@@ -347,7 +353,9 @@
           "cited_edge_ids": [
             "e-alp-foundry-eps",
             "e-bet-foundry-eps"
-          ]
+          ],
+          "plain_title": "One chip factory behind two holdings",
+          "plain_text": "58.00% of your money relies on one chip maker."
         }
       ],
       "rejected_claims_count": 1
@@ -436,7 +444,45 @@
           "weight": 0.24
         }
       ]
-    }
+    },
+    "research": [
+      {
+        "finding_id": "auto-1",
+        "kind": "single_source",
+        "subject": "ZZ Alpha Corp's sole-source foundry",
+        "question": "Is ZZ Epsilon Semiconductor really ZZ Alpha Corp's only foundry?",
+        "outcome": "confirmed",
+        "explanation": "ZZ Alpha Corp's risk factors repeat that ZZ Epsilon is its sole foundry.",
+        "steps": [
+          {
+            "index": 1,
+            "action": "find_in_filing",
+            "query": "sole source",
+            "summary": "2 verified passages in ZZ Alpha Corp's 10-K, Item 1A",
+            "filing": {
+              "company_key": "CIK:9990000001",
+              "form": "10-K",
+              "accession": "9990000001-26-000001",
+              "filed": "2026-10-30",
+              "url": "https://example.invalid/synthetic/zzalp-10k"
+            }
+          },
+          {
+            "index": 2,
+            "action": "conclude",
+            "query": null,
+            "summary": "Confirmed by 2 verified passages",
+            "filing": null
+          }
+        ],
+        "confirmed_edge_ids": [
+          "e-alp-foundry-eps"
+        ],
+        "rejected_edge_ids": [],
+        "new_edges": []
+      }
+    ],
+    "research_depth": "light"
   },
   "error": null
 }

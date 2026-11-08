@@ -110,3 +110,46 @@ def test_compare_fixture_invariants():
         assert mags == sorted(mags, reverse=True)
     for c in resp.concentration_deltas:
         assert abs(c.delta - (c.candidate - c.baseline)) <= 1e-9
+
+
+# ---------- C0-v3.1 ----------
+
+def test_v31_request_depth_defaults_light_and_is_bounded():
+    items = [PortfolioItem(ticker="ZZAAA", allocation=1.0)]
+    from hoc.contract import DependencyRequest
+    assert DependencyRequest(holdings=items).depth == "light"
+    assert DependencyRequest(holdings=items, depth="thorough").depth == "thorough"
+    with pytest.raises(ValidationError):
+        DependencyRequest(holdings=items, depth="deep")
+
+
+def test_v31_job_progress_and_research_fields():
+    job = DependencyJob.model_validate(_load("synthetic-dependencies.json"))
+    assert job.phase in ("queued", "reading", "researching", "synthesising", "done")
+    assert 0 <= job.steps_done <= job.steps_total
+    result = job.result
+    assert result is not None and result.research_depth in ("none", "light", "thorough")
+    edge_ids = {e.edge_id for e in result.edges}
+    for finding in result.research:
+        assert finding.steps and finding.steps[-1].action == "conclude"
+        assert set(finding.confirmed_edge_ids) <= edge_ids
+    # Defaults keep v3 payloads valid.
+    assert DependencyJob(job_id="x", status="queued").phase == "queued"
+
+
+def test_v31_plain_insight_fields_are_short():
+    import re
+    result = DependencyJob.model_validate(_load("synthetic-dependencies.json")).result
+    for claim in result.insights.flaws + result.insights.suggestions:
+        if claim.plain_title is not None:
+            assert len(claim.plain_title.split()) <= 8
+        if claim.plain_text is not None:
+            assert len(claim.plain_text.split()) <= 25
+            assert "{{metric:" not in claim.plain_text  # rendered, like `text`
+            assert len(re.findall(r"\d+(?:\.\d+)?%?", claim.plain_text)) <= 1
+
+
+def test_v31_compare_top_sector_delta():
+    resp = CompareResponse.model_validate(_load("synthetic-compare.json"))
+    top = [c for c in resp.concentration_deltas if c.name == "top_sector"]
+    assert len(top) == 1 and abs(top[0].delta - (top[0].candidate - top[0].baseline)) <= 1e-9

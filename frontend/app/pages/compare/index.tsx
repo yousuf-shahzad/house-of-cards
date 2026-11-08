@@ -112,6 +112,7 @@ const CONCENTRATION_META: Record<ConcentrationName, { label: string; kind: "frac
   top20: { label: "Top 20 companies", kind: "fraction", higherIsBetter: false },
   effective_n: { label: "Effective number of companies", kind: "number", higherIsBetter: true },
   largest_company: { label: "Largest single company", kind: "fraction", higherIsBetter: false },
+  top_sector: { label: "Largest industry", kind: "fraction", higherIsBetter: false },
 };
 
 function ConcentrationTable({ deltas }: { deltas: ConcentrationDelta[] }) {

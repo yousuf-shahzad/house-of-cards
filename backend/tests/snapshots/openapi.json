@@ -299,7 +299,8 @@
               "unsupported_form",
               "sec_contact_missing",
               "missing_api_key",
-              "error"
+              "error",
+              "researching"
             ],
             "title": "Status",
             "type": "string"
@@ -480,7 +481,8 @@
               "top10",
               "top20",
               "effective_n",
-              "largest_company"
+              "largest_company",
+              "top_sector"
             ],
             "title": "Name",
             "type": "string"
@@ -833,6 +835,18 @@
             "title": "Job Id",
             "type": "string"
           },
+          "phase": {
+            "default": "queued",
+            "enum": [
+              "queued",
+              "reading",
+              "researching",
+              "synthesising",
+              "done"
+            ],
+            "title": "Phase",
+            "type": "string"
+          },
           "progress_done": {
             "default": 0,
             "title": "Progress Done",
@@ -862,6 +876,16 @@
             ],
             "title": "Status",
             "type": "string"
+          },
+          "steps_done": {
+            "default": 0,
+            "title": "Steps Done",
+            "type": "integer"
+          },
+          "steps_total": {
+            "default": 0,
+            "title": "Steps Total",
+            "type": "integer"
           }
         },
         "required": [
@@ -874,6 +898,15 @@
       "DependencyRequest": {
         "additionalProperties": false,
         "properties": {
+          "depth": {
+            "default": "light",
+            "enum": [
+              "light",
+              "thorough"
+            ],
+            "title": "Depth",
+            "type": "string"
+          },
           "holdings": {
             "items": {
               "$ref": "#/components/schemas/PortfolioItem"
@@ -952,6 +985,24 @@
           },
           "request": {
             "$ref": "#/components/schemas/DependencyRequest"
+          },
+          "research": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ResearchFinding"
+            },
+            "title": "Research",
+            "type": "array"
+          },
+          "research_depth": {
+            "default": "none",
+            "enum": [
+              "none",
+              "light",
+              "thorough"
+            ],
+            "title": "Research Depth",
+            "type": "string"
           }
         },
         "required": [
@@ -1774,6 +1825,28 @@
             ],
             "title": "Kind",
             "type": "string"
+          },
+          "plain_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plain Text"
+          },
+          "plain_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plain Title"
           },
           "severity": {
             "enum": [
