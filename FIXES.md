@@ -30,6 +30,10 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
+### FIX-69 · medium · UX: Try a change shows the current portfolio (read-only, left) beside the new one (editable, right) (Gawyn, 12:14)
+Same in Simple ("Your changed portfolio") and Full ("Your new mix" on Compare). Identical row formatting, with the left card read-only. Two columns at ≥ 1024 px, stacked on narrow screens. In Full, the left card replaces CurrentSummary's ticker list.
+- **Owner:** Yousuf's Claude (`app/ui/try-a-change.tsx`, `draft-editor.tsx`, `pages/compare/`, `pages/simple/`) · **Status:** assigned (after the #281 live check)
+
 ### FIX-66 · medium · UX: a scan stuck at 0% "Reading reports" looks frozen (Gawyn, 11:50)
 Show what it's doing under the progress bar: "Reading Apple's annual report…" or "Read 3 of 15 companies", from `job.companies[].status`. While at 0%, also show an elapsed timer and an animated bar. Applies to Full Dependencies, guide Step 4 and Simple Dependencies.
 - **Owner:** Yousuf's Claude built `<ScanActivity>` (#278); Yousuf's Gemini mounts it (#281, lead-approved on code; live check by Yousuf's Claude) · **Status:** in review
