@@ -1,4 +1,4 @@
-"""Per-company Gemini dependency extractor, section packer, quote verifier, and I-API seam.
+"""Per-company Gemini dependency extractor, reverse-link extractor, section packer, and I-API seam.
 
 Owner: package G-AI (Kendrick's Gemini).
 Rules (docs/hoc/PLAN-v2.md & docs/hoc/CONTRACT.md section 7):
@@ -8,13 +8,15 @@ Rules (docs/hoc/PLAN-v2.md & docs/hoc/CONTRACT.md section 7):
   (using `hoc.filings.text.normalise`).
 - Produces frozen `hoc.contract.VerifiedEdge` models with `FilingRef`.
 - Exposes `DependencyExtractor.extract(company, filing, *, cache_only: bool = False) -> Extraction`
-  raising `CompanyUnavailable(status, message)` on `missing_api_key` / `no_sec_filing` /
-  `unsupported_form` / `sec_contact_missing` / `error`, matching I-API's pipeline seam.
+  and `DependencyExtractor.extract_reverse(company, filings, *, cache_only: bool = False) -> Extraction`
+  (capped at `MAX_REVERSE_HITS = 10` filings per company, keeping only edges whose target resolves
+  deterministically to a top-N company, and deduplicating `edge_id` across forward and reverse).
 """
 
 from __future__ import annotations
 
 import hashlib
+import re
 from collections.abc import Callable, Collection, Iterable, Mapping
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
@@ -40,6 +42,7 @@ from hoc.contract import (
 from hoc.contract.dependencies import CompanyStatus, EdgeType, FilingForm, TargetKind
 
 MAX_PACKED_CHARS = 160_000
+MAX_REVERSE_HITS = 10
 
 EDGE_TYPES: tuple[EdgeType, ...] = (
     "supplier",
@@ -121,25 +124,39 @@ EXTRACTOR_SYSTEM_INSTRUCTION = (
 )
 
 _SECTION_PRIORITY: tuple[str, ...] = (
-    "Item 1",
-    "Item 4",
-    "Item 2",
-    "Item 5",
+    "1",
+    "item 1",
+    "4",
+    "item 4",
+    "2",
+    "item 2",
+    "5",
+    "item 5",
     "concentration",
-    "Item 1A",
-    "Item 3.D",
+    "1a",
+    "item 1a",
+    "3d",
+    "item 3.d",
+    "3",
+    "item 3",
     "reverse_links",
+    "document",
+)
+
+_CORP_SUFFIX_RE = re.compile(
+    r"\b(inc|incorporated|corp|corporation|co|company|ltd|limited|llc|plc|nv|n\.v\.|se|ag|sa|holdings|holding|group|the)\b\.?",
+    re.IGNORECASE,
 )
 
 
 @dataclass(frozen=True)
 class Extraction:
-    """Return value of `DependencyExtractor.extract(company, filing, *, cache_only)` for I-API."""
+    """Return value of `DependencyExtractor.extract` and `extract_reverse` for I-API."""
 
     edges: list[VerifiedEdge]
-    rejected: int
-    quality: Literal["sections", "fallback"]
-    cached: bool
+    rejected: int = 0
+    quality: Literal["sections", "fallback"] | None = "sections"
+    cached: bool = False
     model: str | None = None
 
 
@@ -187,13 +204,24 @@ def make_edge_id(
     return f"edge_{digest}"
 
 
+def dedupe_edges(*edge_iterables: Iterable[VerifiedEdge]) -> list[VerifiedEdge]:
+    """Deduplicate `VerifiedEdge` items across forward and reverse passes by `edge_id`."""
+    by_id: dict[str, VerifiedEdge] = {}
+    for iterable in edge_iterables:
+        for edge in iterable:
+            existing = by_id.get(edge.edge_id)
+            if existing is None or (edge.sole_source and not existing.sole_source):
+                by_id[edge.edge_id] = edge
+    return list(by_id.values())
+
+
 def _section_rank(sec_name: str) -> tuple[int, str]:
     cleaned = sec_name.strip().lower()
     for i, p in enumerate(_SECTION_PRIORITY):
-        if cleaned == p.lower():
+        if cleaned == p:
             return (i, sec_name)
     for i, p in enumerate(_SECTION_PRIORITY):
-        if p.lower() in cleaned and not (p.lower() == "item 1" and "1a" in cleaned):
+        if len(p) >= 4 and p in cleaned and not (p == "item 1" and "1a" in cleaned):
             return (i, sec_name)
     return (99, sec_name)
 
@@ -311,6 +339,13 @@ def _parse_form(val: str | None) -> FilingForm:
     return "20-F" if "20-F" in cleaned else "10-K"
 
 
+def _clean_corp_name(name: str) -> str:
+    norm = normalise_for_verify(name).casefold()
+    stripped = _CORP_SUFFIX_RE.sub(" ", norm)
+    cleaned = re.sub(r"[^a-z0-9]+", " ", stripped).strip()
+    return re.sub(r"\s+", " ", cleaned)
+
+
 def verify_and_build_edges(
     raw_edges: Iterable[Mapping[str, Any]],
     *,
@@ -367,7 +402,6 @@ def verify_and_build_edges(
             resolved = resolve_target_key(raw_target)
             if isinstance(resolved, str) and resolved.strip():
                 candidate_key = resolved.strip()
-                # Ignore self-loop if resolver resolves to the source company itself
                 if candidate_key == source_company_key:
                     rejected_count += 1
                     continue
@@ -428,8 +462,47 @@ def _coerce_company(company: Any) -> tuple[str, str]:
     return k, n
 
 
+def _coerce_reverse_filer(hit: Any) -> tuple[str, str, Any]:
+    """Extract `(source_company_key, source_company_name, filing_obj)` from a reverse-link hit."""
+    if isinstance(hit, tuple) and len(hit) >= 2:
+        if len(hit) == 2:
+            company, filing = hit
+            k, n = _coerce_company(company)
+            return k, n, filing
+        return str(hit[0]), str(hit[1]), hit[2]
+    if isinstance(hit, Mapping):
+        filing_obj = hit.get("filing", hit)
+        cik = str(hit.get("cik") or getattr(filing_obj, "cik", "") or "").strip()
+        k = str(hit.get("company_key") or (f"CIK:{cik.zfill(10)}" if cik.isdigit() else cik) or "")
+        n = str(
+            hit.get("company_name")
+            or hit.get("filer_name")
+            or hit.get("entity_name")
+            or hit.get("name")
+            or getattr(filing_obj, "company_name", None)
+            or getattr(filing_obj, "filer_name", None)
+            or k
+        )
+        return k, n, filing_obj
+
+    cik = str(getattr(hit, "cik", "") or "").strip()
+    k = str(
+        getattr(hit, "company_key", None)
+        or (f"CIK:{cik.zfill(10)}" if cik.isdigit() else cik)
+        or ""
+    )
+    n = str(
+        getattr(hit, "company_name", None)
+        or getattr(hit, "filer_name", None)
+        or getattr(hit, "entity_name", None)
+        or getattr(hit, "name", None)
+        or k
+    )
+    return k, n, hit
+
+
 class DependencyExtractor:
-    """High-level per-company and multi-company dependency extractor with disk caching."""
+    """High-level per-company, reverse-link, and multi-company dependency extractor with disk caching."""
 
     prompt_version: str = PROMPT_VERSION
 
@@ -438,6 +511,7 @@ class DependencyExtractor:
         client: GeminiClient | Any,
         cache: ExtractionCache | None = None,
         *,
+        filing_fetcher: Any = None,
         prompt_version: str = PROMPT_VERSION,
         max_concurrency: int = DEFAULT_MAX_CONCURRENCY,
         resolve_target_key: Callable[[str], str | None] | None = None,
@@ -445,6 +519,7 @@ class DependencyExtractor:
     ) -> None:
         self.client = client
         self.cache = cache
+        self.filing_fetcher = filing_fetcher
         self.prompt_version = prompt_version
         self.max_concurrency = max(1, int(max_concurrency))
         self.resolve_target_key = resolve_target_key
@@ -465,7 +540,7 @@ class DependencyExtractor:
         """I-API pipeline seam: extract verified edges for `(company, filing)`.
 
         Returns `Extraction(edges, rejected, quality, cached, model)`.
-        Raises `CompanyUnavailable(status, message)` when:
+        Raises `hoc.contract.CompanyUnavailable(status, message)` when:
         - `filing` indicates an unavailable status (`no_sec_filing`, `unsupported_form`, `sec_contact_missing`)
         - `cache_only=True` and the filing is not cached (`missing_api_key`)
         - uncached and `not client.has_api_key` (`missing_api_key`)
@@ -475,6 +550,7 @@ class DependencyExtractor:
         outcome = self.extract_company(
             company_key=company_key,
             company_name=company_name,
+            company_obj=company,
             filing=filing,
             canonical_text=canonical_text,
             sections=sections,
@@ -497,11 +573,129 @@ class DependencyExtractor:
             model=outcome.model,
         )
 
+    def extract_reverse(
+        self,
+        company: Any,
+        filings: Iterable[Any],
+        *,
+        cache_only: bool = False,
+        top_n_company_keys: Collection[str] | None = None,
+        resolve_target_key: Callable[[str], str | None] | None = None,
+    ) -> Extraction:
+        """Extract reverse-link edges from other filers' sections (`names_in_other_filings` hits).
+
+        - Caps hits per company at `MAX_REVERSE_HITS` (10).
+        - Runs the same extractor + quote verifier over each other filer's sections (reusing
+          `ExtractionCache` keyed by `(other_company_key, accession, model, prompt_version)` so
+          filers already extracted in the forward pass cost 0 extra Gemini calls).
+        - Keeps ONLY verified edges whose `target_key` resolves deterministically to a top-N
+          portfolio company (`top_n_company_keys` / `portfolio_company_keys` / `company.company_key`).
+        - Deduplicates `edge_id` across all hits.
+        """
+        target_key, target_name = _coerce_company(company)
+        target_clean = _clean_corp_name(target_name)
+        target_symbols = {
+            str(s).strip().upper()
+            for s in (getattr(company, "symbols", None) or ())
+            if str(s).strip()
+        }
+        allowed_targets: set[str] = set(
+            top_n_company_keys
+            if top_n_company_keys is not None
+            else (self.portfolio_company_keys or ())
+        )
+        if target_key:
+            allowed_targets.add(target_key)
+
+        base_resolver = resolve_target_key or self.resolve_target_key
+
+        def _reverse_resolver(raw_name: str) -> str | None:
+            if base_resolver is not None:
+                resolved = base_resolver(raw_name)
+                if isinstance(resolved, str) and resolved.strip() and not resolved.strip().startswith("NAME:"):
+                    return resolved.strip()
+            cleaned = _clean_corp_name(raw_name)
+            if cleaned and target_clean and cleaned == target_clean:
+                return target_key
+            if raw_name.strip().upper() in target_symbols:
+                return target_key
+            return None
+
+        hits = list(filings)[:MAX_REVERSE_HITS]
+        if not hits:
+            return Extraction(edges=[], rejected=0, quality="sections", cached=True)
+
+        kept_by_id: dict[str, VerifiedEdge] = {}
+        total_rejected = 0
+        all_cached = True
+        any_fallback = False
+        any_processed = False
+        missing_key_seen = False
+        last_model: str | None = None
+
+        for hit in hits:
+            other_key, other_name, filing_obj = _coerce_reverse_filer(hit)
+            if not other_key or other_key == target_key:
+                continue
+            other_in_portfolio = bool(
+                self.portfolio_company_keys is not None and other_key in self.portfolio_company_keys
+            )
+            outcome = self.extract_company(
+                company_key=other_key,
+                company_name=other_name,
+                filing=filing_obj,
+                cache_only=cache_only,
+                source_in_portfolio=other_in_portfolio,
+                portfolio_company_keys=allowed_targets,
+                resolve_target_key=_reverse_resolver,
+            )
+            if outcome.status == "missing_api_key":
+                missing_key_seen = True
+                continue
+            if outcome.status not in {"done", "cached"}:
+                continue
+
+            any_processed = True
+            if not outcome.from_cache:
+                all_cached = False
+            if outcome.extraction_quality == "fallback":
+                any_fallback = True
+            if outcome.model:
+                last_model = outcome.model
+            total_rejected += outcome.rejected_count
+
+            for edge in outcome.edges:
+                if edge.target_key is not None and edge.target_key in allowed_targets:
+                    updated_edge = (
+                        edge
+                        if edge.target_in_portfolio
+                        else edge.model_copy(update={"target_in_portfolio": True})
+                    )
+                    existing = kept_by_id.get(updated_edge.edge_id)
+                    if existing is None or (updated_edge.sole_source and not existing.sole_source):
+                        kept_by_id[updated_edge.edge_id] = updated_edge
+
+        if not any_processed and missing_key_seen:
+            raise CompanyUnavailable(
+                "missing_api_key",
+                f"GEMINI_API_KEY is not set and reverse filings for {target_key} are not cached.",
+            )
+
+        quality: Literal["sections", "fallback"] = "fallback" if any_fallback else "sections"
+        return Extraction(
+            edges=list(kept_by_id.values()),
+            rejected=total_rejected,
+            quality=quality,
+            cached=all_cached if any_processed else True,
+            model=last_model,
+        )
+
     def extract_company(
         self,
         *,
         company_key: str,
         company_name: str,
+        company_obj: Any = None,
         filing: Any = None,
         canonical_text: str | None = None,
         sections: Mapping[str, tuple[int, int] | str] | None = None,
@@ -550,6 +744,30 @@ class DependencyExtractor:
                 or getattr(filing, "extraction_quality", None)
             )
 
+        # If a FilingRef (without .text) was passed and we have a shared FilingFetcher, look up the full Filing
+        acc = (accession or "").strip()
+        if not canonical_text and self.filing_fetcher is not None and acc:
+            memo = getattr(self.filing_fetcher, "_memo", None)
+            full_filing = memo.get(acc) if isinstance(memo, Mapping) else None
+            if full_filing is None and company_obj is not None and hasattr(self.filing_fetcher, "for_company"):
+                try:
+                    full_filing = self.filing_fetcher.for_company(company_obj)
+                except CompanyUnavailable as exc:
+                    return CompanyExtractionOutcome(
+                        company_key=company_key,
+                        company_name=company_name,
+                        status=exc.status,
+                        error_message=exc.message,
+                    )
+            if full_filing is not None:
+                canonical_text = getattr(full_filing, "text", None) or getattr(full_filing, "canonical_text", None)
+                sections = sections if sections is not None else getattr(full_filing, "sections", None)
+                extraction_quality = (
+                    extraction_quality
+                    or getattr(full_filing, "quality", None)
+                    or getattr(full_filing, "extraction_quality", None)
+                )
+
         quality: Literal["sections", "fallback"] = (
             "fallback" if extraction_quality == "fallback" else "sections"
         )
@@ -564,7 +782,6 @@ class DependencyExtractor:
             )
 
         text = (canonical_text or "").strip()
-        acc = (accession or "").strip()
         form_typed = _parse_form(form)
         filed_date = _parse_date(filed)
         url_str = (filing_url or f"https://www.sec.gov/Archives/edgar/data/{acc}").strip()

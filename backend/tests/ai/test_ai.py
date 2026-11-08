@@ -21,6 +21,7 @@ from hoc.ai import (
     EXTRACTION_SCHEMA,
     GEMINI_INTERACTIONS_URL,
     MAX_PACKED_CHARS,
+    MAX_REVERSE_HITS,
     PROMPT_VERSION,
     CompanyUnavailable,
     DependencyExtractor,
@@ -28,11 +29,12 @@ from hoc.ai import (
     FakeGeminiClient,
     GeminiClient,
     GeminiMissingKeyError,
+    dedupe_edges,
     pack_filing_sections,
     verify_quote,
 )
 from hoc.config import Settings
-from hoc.contract import CompanyExposure, VerifiedEdge
+from hoc.contract import CompanyExposure, FilingRef, VerifiedEdge
 from hoc.core.cache import DiskCache
 from hoc.core.http import CachedResponse, FakeHttpClient
 
@@ -422,3 +424,95 @@ def test_extract_many_isolates_per_company_failure(tmp_path: Path):
     assert outcomes[0].verified_count >= 1
     assert outcomes[1].verified_count == 0
     assert PROMPT_VERSION == extractor.prompt_version
+
+
+def test_extractor_resolves_filing_ref_via_filing_fetcher(tmp_path: Path):
+    """When hoc/jobs.py passes a FilingRef (without .text), extractor resolves it via filing_fetcher._memo."""
+    cache = ExtractionCache(DiskCache(tmp_path))
+    fake_ai = FakeGeminiClient(include_mutated_quotes=True)
+    filing_obj = _make_filing()
+
+    class StubFilingFetcher:
+        def __init__(self, f: SyntheticFiling) -> None:
+            self._memo = {f.accession: f}
+
+    extractor = DependencyExtractor(
+        fake_ai,
+        cache,
+        filing_fetcher=StubFilingFetcher(filing_obj),
+    )
+    filing_ref = FilingRef(
+        company_key=filing_obj.company_key,
+        form="10-K",
+        accession=filing_obj.accession,
+        filed=filing_obj.filed,
+        url=filing_obj.url,
+    )
+    result = extractor.extract(("CIK:0009990001", "ZZAlpha Corp"), filing_ref)
+    assert result.quality == "sections"
+    assert len(result.edges) >= 3
+    assert result.rejected == 2
+
+
+def test_extract_reverse_filters_to_top_n_caps_at_10_and_dedupes_forward(tmp_path: Path):
+    """extract_reverse runs over other filers' sections, keeps only edges whose target_key
+    resolves deterministically to a top-N company, caps at 10 hits, and dedupes with forward pass.
+    """
+    cache = ExtractionCache(DiskCache(tmp_path))
+    fake_ai = FakeGeminiClient(include_mutated_quotes=True)
+    # Only TSMC ("ALIAS:TSMC") and ZZAlpha ("CIK:0009990001") are top-N portfolio companies.
+    # ZZFAB ("CIK:0009990002") resolves deterministically, but is NOT in top_n_company_keys.
+    resolver = {
+        "Taiwan Semiconductor Manufacturing": "ALIAS:TSMC",
+        "TSMC": "ALIAS:TSMC",
+        "ZZFAB": "CIK:0009990002",
+    }.get
+    top_n_keys = {"CIK:0009990001", "ALIAS:TSMC"}
+
+    extractor = DependencyExtractor(
+        fake_ai,
+        cache,
+        resolve_target_key=resolver,
+        portfolio_company_keys=top_n_keys,
+    )
+
+    # 1) Forward pass on filer CIK:0009990001 (which is also in top-N)
+    filer_1 = _make_filing()
+    forward_res = extractor.extract(("CIK:0009990001", "ZZAlpha Corp"), filer_1)
+    calls_after_forward = len(fake_ai.calls)
+    assert calls_after_forward == 1
+
+    # 2) Build 12 reverse candidate filings (including filer_1 + 11 other filers).
+    # extract_reverse must cap at MAX_REVERSE_HITS = 10.
+    reverse_filings = [filer_1]
+    for idx in range(2, 14):
+        ck = f"CIK:{9990000 + idx:010d}"
+        reverse_filings.append(
+            SyntheticFiling(
+                company_key=ck,
+                form="10-K",
+                accession=f"{9990000 + idx:010d}-26-000001",
+                filed=date(2026, 10, 15),
+                url=f"https://www.sec.gov/Archives/edgar/data/{9990000 + idx}/filing.htm",
+                canonical_text=SYNTHETIC_FILING_TEXT,
+                sections={"Item 1": (0, len(SYNTHETIC_FILING_TEXT))},
+            )
+        )
+    assert len(reverse_filings) == 13
+    assert MAX_REVERSE_HITS == 10
+
+    reverse_res = extractor.extract_reverse(("ALIAS:TSMC", "TSMC"), reverse_filings)
+    # Only 10 reverse filings processed; filer_1 hit the disk cache from the forward pass,
+    # so only 9 new LLM calls were made.
+    assert len(fake_ai.calls) - calls_after_forward == 9
+    assert len(reverse_res.edges) == 10
+    # Every kept reverse edge must resolve deterministically to a top-N portfolio company ("ALIAS:TSMC"),
+    # never to non-top-N "CIK:0009990002" or unresolved "SK Hynix" / geographic targets.
+    assert all(e.target_key == "ALIAS:TSMC" for e in reverse_res.edges)
+    assert all(e.target_in_portfolio is True for e in reverse_res.edges)
+    # And the edge connecting CIK:0009990001 -> ALIAS:TSMC in forward_res and reverse_res shares edge_id,
+    # so dedupe_edges removes the duplicate.
+    combined = dedupe_edges(forward_res.edges, reverse_res.edges)
+    edge_ids = [e.edge_id for e in combined]
+    assert len(edge_ids) == len(set(edge_ids))
+    assert len(combined) == len(forward_res.edges) + len(reverse_res.edges) - 1
