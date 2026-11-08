@@ -95,11 +95,11 @@ const SECTOR_COLORS: Record<Sector, ChipColor> = {
 
 const IDENTITY_META: Record<
   IdentityStatus,
-  { label: string; chipColor: ChipColor; dotColor: "green" | "yellow" | "indigo" }
+  { label: string; description: string; chipColor: ChipColor; dotColor: "green" | "yellow" | "indigo" }
 > = {
-  resolved: { label: "Resolved", chipColor: "lime", dotColor: "green" },
-  partial: { label: "Partial", chipColor: "yellow", dotColor: "yellow" },
-  unmatched: { label: "Unmatched", chipColor: "rose", dotColor: "indigo" },
+  resolved: { label: "Company matched", description: "Matched to a known company, combining its share classes where identified.", chipColor: "lime", dotColor: "green" },
+  partial: { label: "Ticker only", description: "Matched by ticker only; other share classes may be listed separately.", chipColor: "yellow", dotColor: "yellow" },
+  unmatched: { label: "Name only", description: "Not matched to a known company. This is the name the fund reported.", chipColor: "rose", dotColor: "indigo" },
 };
 
 type ChartDatum = {
@@ -376,7 +376,7 @@ export default function ExposuresPage() {
       },
       {
         accessorKey: "company_name",
-        header: "Company & underlying securities",
+        header: "Company & share classes",
         cell: ({ row }) => {
           const item = row.original;
           const isExpanded = !!expandedKeys[item.company_key];
@@ -498,7 +498,7 @@ export default function ExposuresPage() {
                   {item.securities.length > 0 && (
                     <div className="flex flex-col gap-1.5 border-t border-separator-border pt-2.5">
                       <span className="text-caption-1-semibold text-text-secondary">
-                        Resolved securities ({item.securities.length})
+                        Share classes and listings ({item.securities.length})
                       </span>
                       <div className="flex flex-wrap gap-2">
                         {item.securities.map((sec) => (
@@ -512,9 +512,6 @@ export default function ExposuresPage() {
                               </span>
                             )}
                             <span className="text-text-secondary">{sec.name}</span>
-                            <span className="font-mono text-text-tertiary">
-                              {sec.security_id_type.toUpperCase()}: {sec.security_id}
-                            </span>
                             <Pct
                               value={sec.exposure}
                               digits={2}
@@ -548,19 +545,16 @@ export default function ExposuresPage() {
       },
       {
         accessorKey: "identity_status",
-        header: "Identity",
+        header: "Name match",
         cell: ({ row }) => {
           const item = row.original;
           const meta = IDENTITY_META[item.identity_status];
           return (
             <div className="flex flex-col items-start gap-1">
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5" title={meta.description}>
                 <StatusDot color={meta.dotColor} />
                 <span className="text-body-2-medium text-text-primary">{meta.label}</span>
               </div>
-              <span className="font-mono text-caption-1-regular text-text-tertiary">
-                {item.company_key}
-              </span>
             </div>
           );
         },
@@ -677,7 +671,7 @@ export default function ExposuresPage() {
         >
           <Spinner size="md" />
           <p className="text-body-medium text-text-primary">
-            Computing look-through company exposures…
+            Adding up the companies inside your ETFs…
           </p>
           <p className="text-body-2-regular text-text-secondary">
             Resolving underlying holdings and aggregating effective portfolio weights.
@@ -850,7 +844,7 @@ export default function ExposuresPage() {
       >
         <div className="flex flex-col justify-between gap-2 rounded-2xl border border-border-button-default bg-background-secondary-default p-4">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-body-2-medium text-text-secondary">Look-through coverage</span>
+            <span className="text-body-2-medium text-text-secondary">Holdings traced to companies</span>
             <RiPieChart2Line className="size-4 text-foreground-icon-tertiary" aria-hidden />
           </div>
           <div className="flex items-baseline gap-2">
@@ -883,13 +877,13 @@ export default function ExposuresPage() {
               {analysis.concentration.distinct_companies.toLocaleString()}
             </span>
             <span className="text-caption-1-regular text-text-tertiary tabular-nums">
-              from {analysis.concentration.distinct_securities.toLocaleString()} securities
+              from {analysis.concentration.distinct_securities.toLocaleString()} share classes and listings
             </span>
           </div>
           <p className="text-caption-1-regular text-text-tertiary">
             {mergedClassCompanyCount > 0
-              ? `${mergedClassCompanyCount} multi-class ${mergedClassCompanyCount === 1 ? "issuer" : "issuers"} merged (e.g. share classes)`
-              : "Resolved across CIK, LEI, alias, and ISIN keys"}
+              ? `Share classes combined for ${mergedClassCompanyCount} ${mergedClassCompanyCount === 1 ? "company" : "companies"}`
+              : "Matched across the holdings reported by your ETFs"}
           </p>
         </div>
 
@@ -1195,14 +1189,14 @@ export default function ExposuresPage() {
               </div>
               <p className="text-caption-1-regular text-text-tertiary">
                 Select any company row or Details button to expand per-ETF contributions and merged
-                security listings.
+                share classes.
               </p>
             </div>
 
             <div className="flex w-full flex-wrap items-center gap-2.5 lg:w-auto lg:justify-end">
               <SearchField
                 aria-label="Search companies, tickers, or identifiers"
-                placeholder="Search company, symbol, CIK/ISIN…"
+                placeholder="Search companies or tickers…"
                 value={query}
                 onChange={(next) => {
                   setQuery(next);
@@ -1257,7 +1251,7 @@ export default function ExposuresPage() {
               </Select>
 
               <Select
-                aria-label="Filter by identity status"
+                aria-label="Filter by name matching"
                 className="shrink-0"
                 popoverClassName="min-w-40"
                 selectedKey={identityFilter}
@@ -1266,17 +1260,17 @@ export default function ExposuresPage() {
                   resetPage();
                 }}
               >
-                <SelectItem id="all" textValue="All identities">
-                  All identities
+                <SelectItem id="all" textValue="All name matches">
+                  All name matches
                 </SelectItem>
-                <SelectItem id="resolved" textValue="Resolved">
-                  Resolved
+                <SelectItem id="resolved" textValue="Company matched">
+                  Company matched
                 </SelectItem>
-                <SelectItem id="partial" textValue="Partial">
-                  Partial
+                <SelectItem id="partial" textValue="Ticker only">
+                  Ticker only
                 </SelectItem>
-                <SelectItem id="unmatched" textValue="Unmatched">
-                  Unmatched
+                <SelectItem id="unmatched" textValue="Name only">
+                  Name only
                 </SelectItem>
               </Select>
 

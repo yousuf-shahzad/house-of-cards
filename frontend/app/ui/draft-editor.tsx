@@ -62,11 +62,11 @@ const ISSUE_TEXT: Record<InputMode, Record<ShownIssue, string>> = {
     "too-many-etfs": `Use at most ${MAX_ETFS} ETFs.`,
     "invalid-ticker": "Tickers use letters, numbers, dots or dashes, up to 12 characters.",
     "duplicate-ticker": "Each ETF can appear only once.",
-    "invalid-allocation": "Give every pinned ETF a percentage between 0 and 100.",
-    "invalid-shares": "Enter how many shares you hold of every unpinned ETF (up to 1,000,000,000), or type a % to pin it.",
-    "pinned-over-100": "Pinned ETFs add up to more than 100%. Lower a pinned %, or unpin a row.",
+    "invalid-allocation": "Give every ETF fixed at a % a percentage between 0 and 100.",
+    "invalid-shares": "Enter how many shares you hold of each ETF (up to 1,000,000,000), or type a % to fix that row.",
+    "pinned-over-100": "Fixed percentages add up to more than 100%. Lower a %, or switch a row back to shares.",
     "nothing-to-rescale":
-      "The unpinned ETFs have no value to fill the rest of 100%. Enter some shares, or pin rows to total 100%.",
+      "Enter shares for the ETFs without a fixed %, or set fixed percentages that total 100%.",
   },
 };
 
@@ -78,7 +78,7 @@ const SHARES_ONLY_TEXT: Partial<Record<ShownIssue, string>> = {
 
 function sumMessage(totalPct: number, mode: InputMode): string {
   const gap = Math.abs(100 - totalPct).toFixed(2);
-  const what = mode === "shares" ? "pinned ETFs" : "allocations";
+  const what = mode === "shares" ? "fixed percentages" : "allocations";
   return totalPct < 100 ? `Add ${gap}% more to your ${what} to reach 100%.` : `Remove ${gap}% to get back to 100%.`;
 }
 
@@ -114,7 +114,7 @@ function ValuationIssues({ issues, blocked }: { issues: ValuationIssue[]; blocke
   if (blocked && !shown.some((issue) => issue.severity === "blocking")) {
     return (
       <p className="text-body-regular text-text-error-primary">
-        Some ETFs can't be valued yet. Fix the rows marked above{sharesOnly ? "" : ", or type a % to pin them"}.
+        Some ETFs can't be valued yet. Fix the rows marked above{sharesOnly ? "" : ", or type a % to fix their share of the portfolio"}.
       </p>
     );
   }
@@ -176,7 +176,8 @@ function DraftStatus({ extra, extraMessages }: { extra?: ReactNode; extraMessage
           {mode === "shares" && valuation.status !== "off" && typeof totalValue === "number" && totalValue > 0 && (
             <span className="text-body-regular text-text-secondary" style={tabular}>
               {/* The backend's total_value covers unpinned rows only. */}
-              {rows.some((row) => row.pinned) ? "Unpinned shares worth" : "Shares worth"} {money(totalValue)}
+              {rows.some((row) => row.pinned) ? "Value from share counts (USD):" : "Total portfolio value (USD):"} {money(totalValue)}
+              {rows.some((row) => row.pinned) && " (excludes rows fixed at a %)"}
             </span>
           )}
         </div>
@@ -286,7 +287,7 @@ function PriceLine({ row, priced }: { row: DraftRow; priced?: ValuationRowResult
       <span className="text-body-2-regular text-text-secondary">
         {sharesOnly
           ? "Fixed at this % until you enter how many shares you hold."
-          : "Pinned: the other ETFs rescale by value around this %."}
+          : "Fixed at this %. The other ETFs split the remaining % by their share values."}
       </span>
     );
   }
@@ -365,7 +366,7 @@ function SharesRow({ row, report, flagged }: { row: DraftRow; report?: EtfReport
           </span>
         ) : (
         <NumberField
-          aria-label={`Allocation for ${label}, percent${row.pinned ? ", pinned" : ", from shares"}`}
+          aria-label={`Allocation for ${label}, percent${row.pinned ? ", fixed" : ", from shares"}`}
           placeholder="%"
           hideSteppers
           fieldClassName={row.pinned ? "border border-border-button-active" : "border border-border-button-default"}
@@ -388,14 +389,14 @@ function SharesRow({ row, report, flagged }: { row: DraftRow; report?: EtfReport
             variant="ghost"
             size="small"
             leadingIcon={RiUnpinLine}
-            aria-label={`Unpin ${label}`}
+            aria-label={`Use shares for ${label}`}
             onClick={() => updateRow(row.id, { pinned: false })}
           >
-            Unpin
+            Use shares
           </Button>
         ) : (
           <span className="flex items-center gap-1 text-body-2-regular text-text-tertiary">
-            <RiPushpinLine aria-hidden className="size-4" /> Type a % to pin
+            <RiPushpinLine aria-hidden className="size-4" /> Or type a % to fix this row
           </span>
         )}
       </div>

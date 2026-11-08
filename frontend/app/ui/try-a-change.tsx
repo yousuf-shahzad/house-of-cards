@@ -113,7 +113,7 @@ const CONCENTRATION_META: Record<ConcentrationName, { label: string; kind: "frac
   top5: { label: "Top 5 companies", kind: "fraction", higherIsBetter: false },
   top10: { label: "Top 10 companies", kind: "fraction", higherIsBetter: false },
   top20: { label: "Top 20 companies", kind: "fraction", higherIsBetter: false },
-  effective_n: { label: "Effective number of companies", kind: "number", higherIsBetter: true },
+  effective_n: { label: "Behaves like", kind: "number", higherIsBetter: true },
   largest_company: { label: "Largest single company", kind: "fraction", higherIsBetter: false },
   top_sector: { label: "Largest industry", kind: "fraction", higherIsBetter: false },
 };
@@ -133,7 +133,7 @@ function ConcentrationTable({ deltas }: { deltas: ConcentrationDelta[] }) {
         <tbody>
           {deltas.map((row) => {
             const meta = CONCENTRATION_META[row.name] ?? { label: row.name, kind: "number", higherIsBetter: false };
-            const show = (value: number) => (meta.kind === "fraction" ? formatPct(value, 2) : value.toFixed(1));
+            const show = (value: number) => (meta.kind === "fraction" ? formatPct(value, 2) : `${value.toFixed(1)} holdings`);
             const change =
               meta.kind === "fraction"
                 ? formatChange(row.delta, "fraction")
@@ -571,9 +571,14 @@ export function TryAChange({ editorTitle = "Your new mix" }: { editorTitle?: str
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-headline-small text-text-primary">{editorTitle}</h2>
-          <Button variant="ghost" size="small" leadingIcon={RiRefreshLine} onClick={resetToCurrent}>
-            Reset to my portfolio
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="ghost" size="small" leadingIcon={RiRefreshLine} onClick={resetToCurrent}>
+              Reset to my portfolio
+            </Button>
+            <Button variant="secondary" size="small" disabled={applying || !ready} title="Switch to this mix and scan its dependencies" onClick={() => { void makeScenarioCurrent(); }}>
+              {applying ? "Applying portfolio…" : "Use this as my portfolio"}
+            </Button>
+          </div>
         </div>
         <DraftEditor
           draft={scenario}
@@ -675,11 +680,6 @@ export function TryAChange({ editorTitle = "Your new mix" }: { editorTitle?: str
                         </li>
                       ))}
                     </ul>
-                    <div>
-                      <Button variant="secondary" size="small" trailingIcon={RiArrowRightLine} disabled={applying || !ready} onClick={() => { void makeScenarioCurrent(); }}>
-                        {applying ? "Applying portfolio…" : "Make this my portfolio and find its dependencies"}
-                      </Button>
-                    </div>
                   </>
                 )}
               </div>
