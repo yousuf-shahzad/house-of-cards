@@ -6,6 +6,10 @@
 .vercel-tools
 .venv
 .playwright-cli
+.pytest-vercel
+.pytest_cache
+.ruff_cache
+**/__pycache__
 output
 slides
 validation
