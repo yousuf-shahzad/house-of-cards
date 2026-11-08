@@ -1,0 +1,37 @@
+{
+  "company": {"name": "Skyworks Solutions, Inc.", "cik": "0000004127", "ticker": "SWKS"},
+  "filing": {"form": "10-K", "accession": "0000004127-25-000085", "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"},
+  "annotator": "Bekarys's Claude",
+  "relationships": [
+    {"id": "SWKS-B1", "edge_type": "customer", "target_name": "Apple Inc.", "target_kind": "company", "direction": "target_depends_on_company",
+     "quote": "Apple, through sales to multiple distributors and contract manufacturers for multiple applications including smartphones, tablets, desktop and notebook computers, watches, and other devices, constituted more than ten percent of our net revenue.",
+     "importance": "critical", "notes": "Only customer above 10%; three accounts hold 82% of receivables. The filing also lists many 'key customers' without percentages (Amazon, Samsung, Google...)."},
+    {"id": "SWKS-B2", "edge_type": "foundry", "target_name": "semiconductor foundries in the Asia-Pacific region", "target_kind": "region", "direction": "depends_on_target",
+     "quote": "including third-party packaging, assembly, and test facilities and semiconductor foundries located in the Asia-Pacific region",
+     "importance": "high", "notes": "Region only; foundries supply silicon-based products and extra GaAs capacity."},
+    {"id": "SWKS-B3", "edge_type": "facility", "target_name": "wafer fabrication facilities in Newbury Park, California and Woburn, Massachusetts", "target_kind": "facility", "direction": "depends_on_target",
+     "quote": "our semiconductor wafer fabrication facilities in Newbury Park, California, and Woburn, Massachusetts; our SAW, TC-SAW, and BAW filter wafer processing facilities in Osaka, Japan; and our packaging, assembly and test facilities in Mexicali, Mexico, and in Singapore for filters",
+     "importance": "critical", "notes": "country: US (production; Woburn being consolidated into Newbury Park)"},
+    {"id": "SWKS-B4", "edge_type": "facility", "target_name": "filter wafer processing facilities in Osaka, Japan", "target_kind": "facility", "direction": "depends_on_target",
+     "quote": "our semiconductor wafer fabrication facilities in Newbury Park, California, and Woburn, Massachusetts; our SAW, TC-SAW, and BAW filter wafer processing facilities in Osaka, Japan; and our packaging, assembly and test facilities in Mexicali, Mexico, and in Singapore for filters",
+     "importance": "high", "notes": "country: JP (production)"},
+    {"id": "SWKS-B5", "edge_type": "facility", "target_name": "packaging, assembly and test facilities in Mexicali, Mexico", "target_kind": "facility", "direction": "depends_on_target",
+     "quote": "our semiconductor wafer fabrication facilities in Newbury Park, California, and Woburn, Massachusetts; our SAW, TC-SAW, and BAW filter wafer processing facilities in Osaka, Japan; and our packaging, assembly and test facilities in Mexicali, Mexico, and in Singapore for filters",
+     "importance": "high", "notes": "country: MX (production; ~3,260 union employees)"},
+    {"id": "SWKS-B6", "edge_type": "facility", "target_name": "Singapore Filter Manufacturing Facility", "target_kind": "facility", "direction": "depends_on_target",
+     "quote": "our semiconductor wafer fabrication facilities in Newbury Park, California, and Woburn, Massachusetts; our SAW, TC-SAW, and BAW filter wafer processing facilities in Osaka, Japan; and our packaging, assembly and test facilities in Mexicali, Mexico, and in Singapore for filters",
+     "importance": "high", "notes": "country: SG (production)"}
+  ],
+  "negatives": [
+    {"id": "SWKS-BN1", "target_name": "Qorvo", "kind": "competitor",
+     "quote": "Analog Devices, Broadcom, Cirrus Logic, Murata Manufacturing, NXP Semiconductors, Qorvo, Qualcomm, and Texas Instruments"},
+    {"id": "SWKS-BN2", "target_name": "Broadcom", "kind": "competitor",
+     "quote": "Analog Devices, Broadcom, Cirrus Logic, Murata Manufacturing, NXP Semiconductors, Qorvo, Qualcomm, and Texas Instruments"},
+    {"id": "SWKS-BN3", "target_name": "Murata Manufacturing", "kind": "competitor",
+     "quote": "Analog Devices, Broadcom, Cirrus Logic, Murata Manufacturing, NXP Semiconductors, Qorvo, Qualcomm, and Texas Instruments"},
+    {"id": "SWKS-BN4", "target_name": "foundries", "kind": "generic",
+     "quote": "We rely on foundries to provide silicon-based products and to supplement our gallium arsenide wafer manufacturing capacity."},
+    {"id": "SWKS-BN5", "target_name": "leased facilities", "kind": "hypothetical",
+     "quote": "If we are unable to renew existing leases or subleases on terms acceptable to us, we may be required to relocate our affected operations."}
+  ]
+}

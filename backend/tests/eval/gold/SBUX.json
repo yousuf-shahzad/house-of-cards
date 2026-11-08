@@ -1,0 +1,319 @@
+{
+  "company": {
+    "name": "Starbucks Corporation",
+    "cik": "0000829224",
+    "ticker": "SBUX"
+  },
+  "filing": {
+    "form": "10-K",
+    "accession": "0000829224-25-000114",
+    "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"
+  },
+  "annotators": [
+    "Yousuf's Codex",
+    "Bekarys's Claude"
+  ],
+  "adjudicator": "Gawyn's Claude",
+  "relationships": [
+    {
+      "id": "SBUX-1",
+      "edge_type": "facility",
+      "target_name": "China",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Kunshan, China 630,000 Roasting, warehousing and distribution",
+      "importance": "medium",
+      "tier": "core",
+      "source": "both",
+      "aliases": [
+        "roasting plant in Kunshan, China"
+      ],
+      "edge_type_alternatives": [],
+      "country": "CN",
+      "annotator_ids": [
+        "SBUX-11",
+        "SBUX-B7"
+      ],
+      "notes": "Item 2; CN roasting operation; not inferred from retail sales."
+    },
+    {
+      "id": "SBUX-2",
+      "edge_type": "facility",
+      "target_name": "United States",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "York, PA 1,957,000 Roasting, warehousing and distribution",
+      "importance": "high",
+      "tier": "core",
+      "source": "both",
+      "aliases": [
+        "roasting plants in York, PA, Minden, NV and Kent, WA"
+      ],
+      "edge_type_alternatives": [],
+      "country": "US",
+      "annotator_ids": [
+        "SBUX-10",
+        "SBUX-B6"
+      ],
+      "notes": "Item 2; US roasting operation, also Minden and Kent; production facility base 0.7."
+    },
+    {
+      "id": "SBUX-3",
+      "edge_type": "jv_partner",
+      "target_name": "Boyu Capital",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "our new strategic joint venture partner, Boyu Capital, to accelerate long-term growth in China",
+      "importance": "medium",
+      "tier": "core",
+      "source": "b",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SBUX-B3"
+      ],
+      "notes": "China JV."
+    },
+    {
+      "id": "SBUX-4",
+      "edge_type": "jv_partner",
+      "target_name": "Pepsi-Cola Company",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "We also license the rights to produce and distribute Starbucks-branded products to our 50% owned joint venture, The North American Coffee Partnership with the Pepsi-Cola Company, which develops and distributes bottled Starbucks® beverages, including Frappuccino coffee drinks, Starbucks Doubleshot espresso drinks, Starbucks® Iced Espresso Classics, and Starbucks® Iced Coffee.",
+      "importance": "medium",
+      "tier": "core",
+      "source": "both",
+      "aliases": [
+        "North American Coffee Partnership",
+        "Pepsi-Cola",
+        "PepsiCo",
+        "PepsiCo, Inc."
+      ],
+      "edge_type_alternatives": [
+        "contract_manufacturer"
+      ],
+      "country": null,
+      "annotator_ids": [
+        "SBUX-9",
+        "SBUX-B2"
+      ],
+      "notes": "Note 7 Equity Investments; explicit 50% JV with Pepsi-Cola (PepsiCo); jv_partner base 0.4."
+    },
+    {
+      "id": "SBUX-5",
+      "edge_type": "key_input",
+      "target_name": "almond milk",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "In addition to coffee, we also purchase significant amounts of dairy, particularly fluid milk, and to a lesser degree, plant-based dairy-free alternative products, such as oat milk and almond milk, to support the needs of our company-operated stores.",
+      "importance": "high",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SBUX-4"
+      ],
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "SBUX-6",
+      "edge_type": "key_input",
+      "target_name": "fluid milk",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "In addition to coffee, we also purchase significant amounts of dairy, particularly fluid milk, and to a lesser degree, plant-based dairy-free alternative products, such as oat milk and almond milk, to support the needs of our company-operated stores.",
+      "importance": "medium",
+      "tier": "core",
+      "source": "both",
+      "aliases": [
+        "dairy (fluid milk)"
+      ],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SBUX-2",
+        "SBUX-B5"
+      ],
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "SBUX-7",
+      "edge_type": "key_input",
+      "target_name": "green coffee beans",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We purchase green coffee beans from multiple coffee-producing regions around the world and custom roast them to our exacting standards for our many blends and single-origin coffees.",
+      "importance": "high",
+      "tier": "core",
+      "source": "both",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SBUX-1",
+        "SBUX-B4"
+      ],
+      "notes": "Item 1 Product Supply; expressly purchased coffee input, multiple regions; key_input base 0.6."
+    },
+    {
+      "id": "SBUX-8",
+      "edge_type": "contract_manufacturer",
+      "target_name": "Nestlé",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "Nestlé controls distribution of Starbucks packaged coffee products outside of Starbucks stores through the Global Coffee Alliance, and in some cases, also roasts and packages these products.",
+      "importance": "high",
+      "tier": "core",
+      "source": "both",
+      "aliases": [
+        "Global Coffee Alliance",
+        "Nestle",
+        "Nestlé S.A."
+      ],
+      "edge_type_alternatives": [
+        "customer",
+        "jv_partner"
+      ],
+      "country": null,
+      "annotator_ids": [
+        "SBUX-8",
+        "SBUX-B1"
+      ],
+      "notes": "Item 1 Product Supply; explicitly roasts/packages Starbucks products, in addition to distribution; contract manufacturer base 0.85."
+    },
+    {
+      "id": "SBUX-9",
+      "edge_type": "key_input",
+      "target_name": "oat milk",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "In addition to coffee, we also purchase significant amounts of dairy, particularly fluid milk, and to a lesser degree, plant-based dairy-free alternative products, such as oat milk and almond milk, to support the needs of our company-operated stores.",
+      "importance": "high",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SBUX-3"
+      ],
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "SBUX-10",
+      "edge_type": "key_input",
+      "target_name": "paper",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We also purchase a broad range of paper and plastic products, such as cups and cutlery, from several companies to support the needs of our retail stores as well as our manufacturing and distribution operations.",
+      "importance": "high",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SBUX-6"
+      ],
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "SBUX-11",
+      "edge_type": "key_input",
+      "target_name": "plastic",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We also purchase a broad range of paper and plastic products, such as cups and cutlery, from several companies to support the needs of our retail stores as well as our manufacturing and distribution operations.",
+      "importance": "high",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SBUX-7"
+      ],
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "SBUX-12",
+      "edge_type": "key_input",
+      "target_name": "tea",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "Products other than whole bean coffees and coffee beverages sold in Starbucks stores include tea and a number of ready-to-drink beverages that are purchased from several specialty suppliers, usually under long-term supply contracts.",
+      "importance": "high",
+      "tier": "extended",
+      "source": "a",
+      "aliases": [],
+      "edge_type_alternatives": [],
+      "country": null,
+      "annotator_ids": [
+        "SBUX-5"
+      ],
+      "notes": "Item 1; explicit present-tense disclosure."
+    }
+  ],
+  "negatives": [
+    {
+      "id": "SBUX-N1",
+      "target_name": "specialty coffee retailers and shops",
+      "kind": "competitor",
+      "quote": "Our primary competitors for coffee beverage sales are specialty coffee retailers and shops.",
+      "source": "a"
+    },
+    {
+      "id": "SBUX-N2",
+      "target_name": "large competitors in the quick-service restaurant sector",
+      "kind": "competitor",
+      "quote": "We continue to experience direct competition from large competitors in the quick-service restaurant sector and the ready-to-drink coffee beverage market, in addition to both well-established and start-up companies in many international markets.",
+      "source": "a"
+    },
+    {
+      "id": "SBUX-N3",
+      "target_name": "third-party warehouses",
+      "kind": "generic",
+      "quote": "In addition to the locations listed above, we hold inventory at various locations managed by third-party warehouses.",
+      "source": "a"
+    },
+    {
+      "id": "SBUX-N4",
+      "target_name": "organizations and associations establishing export quotas",
+      "kind": "hypothetical",
+      "quote": "In addition, green coffee prices have been affected in the past, and may be affected in the future, by the actions of certain organizations and associations that have historically attempted to influence prices of green coffee through agreements establishing export quotas or by restricting coffee supplies.",
+      "source": "a"
+    },
+    {
+      "id": "SBUX-N5",
+      "target_name": "a limited number of suppliers",
+      "kind": "generic",
+      "quote": "For certain products, we depend on a limited number of suppliers",
+      "source": "b"
+    },
+    {
+      "id": "SBUX-N6",
+      "target_name": "competitors",
+      "kind": "competitor",
+      "quote": "substantial competition from new entrants, consolidations by competitors, and other competitive activities",
+      "source": "b"
+    },
+    {
+      "id": "SBUX-N7",
+      "target_name": "dairy suppliers (non-delivery)",
+      "kind": "negated",
+      "quote": "that the risk of non-delivery of sufficient fluid milk and plant-based dairy-free alternatives to support our stores generally is remote.",
+      "source": "b"
+    },
+    {
+      "id": "SBUX-N8",
+      "target_name": "specialty tea and ready-to-drink suppliers",
+      "kind": "generic",
+      "quote": "a number of ready-to-drink beverages that are purchased from several specialty suppliers, usually under long-term supply contracts.",
+      "source": "b"
+    }
+  ]
+}

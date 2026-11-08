@@ -1,0 +1,38 @@
+{
+  "company": {"name": "Corning Incorporated", "cik": "0000024741", "ticker": "GLW"},
+  "filing": {"form": "10-K", "accession": "0000024741-26-000124", "url": "https://www.sec.gov/Archives/edgar/data/24741/000002474126000124/glw-20251231.htm"},
+  "annotator": "Bekarys's Claude",
+  "relationships": [
+    {"id": "GLW-B1", "edge_type": "facility", "target_name": "display glass manufacturing operations in China", "target_kind": "facility", "direction": "depends_on_target",
+     "quote": "We have display glass manufacturing operations in China, South Korea and Taiwan",
+     "importance": "high", "notes": "country: CN (production)"},
+    {"id": "GLW-B2", "edge_type": "facility", "target_name": "display glass manufacturing operations in South Korea", "target_kind": "facility", "direction": "depends_on_target",
+     "quote": "We have display glass manufacturing operations in China, South Korea and Taiwan",
+     "importance": "high", "notes": "country: KR (production)"},
+    {"id": "GLW-B3", "edge_type": "facility", "target_name": "display glass manufacturing operations in Taiwan", "target_kind": "facility", "direction": "depends_on_target",
+     "quote": "We have display glass manufacturing operations in China, South Korea and Taiwan",
+     "importance": "high", "notes": "country: TW (production)"},
+    {"id": "GLW-B4", "edge_type": "facility", "target_name": "manufacturing plants in the U.S.", "target_kind": "facility", "direction": "depends_on_target",
+     "quote": "We operate 128 manufacturing plants and related facilities in 14 countries, of which approximately 34% are in the U.S.",
+     "importance": "high", "notes": "country: US (production)"},
+    {"id": "GLW-B5", "edge_type": "customer", "target_name": "three combined Display end customers", "target_kind": "unnamed_customer", "direction": "target_depends_on_company",
+     "quote": "The following table details the number of combined customers of our reportable segments that accounted for a large percentage of segment net sales",
+     "importance": "high", "notes": "Per the table: Display 3 customers = 59% of segment sales; Automotive 3 = 61%; Optical 2 = 28%. Segment-level, unnamed."},
+    {"id": "GLW-B6", "edge_type": "customer", "target_name": "Apple", "target_kind": "company", "direction": "target_depends_on_company",
+     "quote": "We collaborated with Apple to deliver durable glass with infused color for the back of Apple’s iPhone 15 and iPhone 15 Plus devices.",
+     "importance": "medium", "notes": "Named customer, no percentage given."},
+    {"id": "GLW-B7", "edge_type": "key_input", "target_name": "precious metals", "target_kind": "material", "direction": "depends_on_target",
+     "quote": "as well as precious metals which are used in our production processes",
+     "importance": "medium", "notes": "Alternate suppliers exist for many materials."}
+  ],
+  "negatives": [
+    {"id": "GLW-BN1", "target_name": "Samsung Display Co., Ltd.", "kind": "unrelated",
+     "quote": "Pursuant to the Share Repurchase Agreement (“SRA”) with Samsung Display Co., Ltd."},
+    {"id": "GLW-BN2", "target_name": "sole-sourced suppliers", "kind": "generic",
+     "quote": "products are currently sole-sourced or available only from a limited number of suppliers"},
+    {"id": "GLW-BN3", "target_name": "large and varied manufacturers", "kind": "competitor",
+     "quote": "We compete with many large and varied manufacturers, both domestic and foreign."},
+    {"id": "GLW-BN4", "target_name": "suppliers with capacity limitations", "kind": "hypothetical",
+     "quote": "From time to time, our suppliers may experience capacity limitations in their own operations or may eliminate certain product lines."}
+  ]
+}
