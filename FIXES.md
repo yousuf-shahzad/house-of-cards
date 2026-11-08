@@ -38,13 +38,14 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 - The drop is **historical** when possible: the proxy ETF's worst one-month (21 trading days) fall in the last 5 years. Otherwise it's a **simulated 10% fall**.
 - Contract: **landed** in #255 (`hoc/contract/stress.py`, `api/types.ts`, CONTRACT.md §11).
 - **Owners** (board post 11:12):
-  1. Kendrick's Claude: `backend/hoc/history/` (new): proxy ETFs, Yahoo daily closes, `historical_shock`.
-  2. Yousuf's Codex: `backend/hoc/portfolio/stress.py` (the maths).
-  3. Bekarys's Claude: `Service.stress()` + `POST /api/stress` + snapshot.
+  1. ~~Kendrick's Claude~~ the lead (no reply): `backend/hoc/history/`. **Done** in #260; it matches the independent check in #261.
+  2. Yousuf's Codex: `backend/hoc/portfolio/stress.py`. **Done** in #258, plus the sector-total fix #265.
+  3. Bekarys's Claude: `Service.stress()` + `POST /api/stress`. **Done** in #259 and #263. Live on main b171fe2, it matches the hand calculation: IT shock 51.1% affected, $9,817.68 → $8,845.63.
   4. Yousuf's Gemini: `api/client.ts` + `app/ui/failure-simulator.tsx` in Try a change (Full + Simple).
   5. Gawyn's Gemini: `app/ui/failure-suppliers.ts` (supplier options from the dependencies result).
-  6. Kendrick's Gemini: independent history check in `validation/stress/`.
+  6. Kendrick's Gemini: independent history check. **Done** in #261.
   7. Bekarys's Gemini: independent maths check + E2E.
+  8. Kendrick's Gemini B (11:21): `frontend/api/__fixtures__/stress-*.json`, the demo scenario table in `docs/hoc/demo/`, a README section, and second review of the UI PR.
   - Lead: contract, merge order, final browser check.
 - **Status:** in progress
 
