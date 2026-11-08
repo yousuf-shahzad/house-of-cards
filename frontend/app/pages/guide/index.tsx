@@ -4,11 +4,12 @@
 // Integrates with B-SHELL's useExperience() (app/experience.tsx) so the top-bar "Step N of 5"
 // and the stepper stay in sync and preserve the active step across Simple/Full view switches.
 
-import { useCallback, useEffect, type ComponentType } from "react";
+import { useCallback, useEffect, useState, type ComponentType } from "react";
 import { RiArrowLeftLine, RiArrowRightLine } from "@remixicon/react";
 import { useAnalysis } from "@/app/analysis";
 import { TOTAL_GUIDE_STEPS, useExperience } from "@/app/experience";
 import { Button } from "@/components/base/buttons/button";
+import { TryAChange } from "@/app/ui/try-a-change";
 import { ProgressBar } from "@/components/base/progress/progress";
 import { GUIDE_STEP_META, type GuideStepMeta } from "./copy";
 import RisksStep from "./step-4-risks";
@@ -22,6 +23,8 @@ export interface GuideStepProps {
   onBack: () => void;
   onStartOver?: () => void;
   onJumpToStep?: (step: number) => void;
+  /** Step 5: opens the "Try a change" sub-screen (F6). */
+  onTryChange?: () => void;
 }
 
 export interface GuideStepEntry {
@@ -44,12 +47,19 @@ export default function GuidePage() {
   const { status, analysis } = useAnalysis();
   const canProceedFromStep1 = status === "ready" && Boolean(analysis);
 
+  // F6: step 5's "Try a change" sub-screen. Leaving step 5 (Start over, the stepper) closes it.
+  const [tryingChange, setTryingChange] = useState(false);
+  const showTryChange = tryingChange && step === 5;
+  useEffect(() => {
+    if (step !== 5) setTryingChange(false);
+  }, [step]);
+
   const entry = GUIDE_STEPS[step - 1] ?? GUIDE_STEPS[0];
   const StepComponent = entry.Component;
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [step]);
+  }, [step, showTryChange]);
 
   const handleNext = useCallback(() => {
     if (step === 1 && !canProceedFromStep1) return;
@@ -83,13 +93,27 @@ export default function GuidePage() {
           size="md"
         />
         <div className="flex flex-col gap-1 pt-1">
-          <h1 className="text-display-4-medium text-text-primary">{entry.meta.title}</h1>
-          <p className="text-body-regular text-text-secondary">{entry.meta.subtitle}</p>
+          <h1 className="text-display-4-medium text-text-primary">{showTryChange ? "Try a change" : entry.meta.title}</h1>
+          <p className="text-body-regular text-text-secondary">
+            {showTryChange
+              ? "Change your ETFs below. The comparison with your portfolio updates each time you change a value."
+              : entry.meta.subtitle}
+          </p>
         </div>
       </header>
 
       {/* Active step body */}
-      <StepComponent onNext={handleNext} onBack={handleBack} onStartOver={handleStartOver} onJumpToStep={setStep} />
+      {showTryChange ? (
+        <TryAChange editorTitle="Your changed portfolio" />
+      ) : (
+        <StepComponent
+          onNext={handleNext}
+          onBack={handleBack}
+          onStartOver={handleStartOver}
+          onJumpToStep={setStep}
+          onTryChange={() => setTryingChange(true)}
+        />
+      )}
 
       {/* Big Back / Next navigation footer */}
       <nav
@@ -97,15 +121,21 @@ export default function GuidePage() {
         className="flex flex-wrap items-center justify-between gap-3 border-t border-separator-border pt-4"
       >
         <div>
-          {step > 1 && (
-            <Button
-              variant="secondary"
-              size="medium"
-              leadingIcon={RiArrowLeftLine}
-              onClick={handleBack}
-            >
-              Back
+          {showTryChange ? (
+            <Button variant="secondary" size="medium" leadingIcon={RiArrowLeftLine} onClick={() => setTryingChange(false)}>
+              Back to the ideas
             </Button>
+          ) : (
+            step > 1 && (
+              <Button
+                variant="secondary"
+                size="medium"
+                leadingIcon={RiArrowLeftLine}
+                onClick={handleBack}
+              >
+                Back
+              </Button>
+            )
           )}
         </div>
 

@@ -7,7 +7,7 @@ import { Button } from "@/components/base/buttons/button";
 import { ClaimCards, type RiskStepProps, topClaims } from "./step-4-risks";
 import { NEXT_COPY } from "./copy";
 
-export default function NextStep({ onJumpToStep, onStartOver }: RiskStepProps) {
+export default function NextStep({ onJumpToStep, onStartOver, onTryChange }: RiskStepProps & { onTryChange?: () => void }) {
   const { status, job, stale } = useDependencies();
   const { openExpertPage, setStep } = useExperience();
   const result = !stale && status === "done" ? job?.result ?? null : null;
@@ -22,7 +22,11 @@ export default function NextStep({ onJumpToStep, onStartOver }: RiskStepProps) {
         <p className="text-body-2-regular text-text-secondary">{NEXT_COPY.waiting}</p>
       )}
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-        <Button variant="primary" onClick={() => openExpertPage("#/compare")} title={NEXT_COPY.tryChangeNote}>
+        <Button
+          variant="primary"
+          onClick={() => (onTryChange ? onTryChange() : openExpertPage("#/compare"))}
+          title={NEXT_COPY.tryChangeNote}
+        >
           {NEXT_COPY.tryChange}
         </Button>
         <Button variant="secondary" onClick={() => openExpertPage("#/dependencies")} title={NEXT_COPY.seeEverythingNote}>

@@ -1,11 +1,11 @@
 "use client";
-// The Compare page's Scenario: an editable copy of the Current portfolio plus the latest
-// comparison. Mounted at the app root (inside AnalysisProvider) so it survives tab switches.
+// The "Try a change" Scenario (Compare page + guide step 5): an editable copy of the Current portfolio
+// plus the latest comparison. Mounted at the app root (inside AnalysisProvider) so it survives tab switches.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { api, ApiError } from "@/api/client";
 import type { CompareResponse } from "@/api/types";
 import { useAnalysis } from "@/app/analysis";
-import { usePortfolioDraft, type PortfolioDraft } from "@/app/portfolio-draft";
+import { usePortfolioDraft, type DraftRow, type InputMode, type PortfolioDraft } from "@/app/portfolio-draft";
 
 export type CompareStatus = "idle" | "loading" | "ready" | "error";
 
@@ -23,6 +23,10 @@ type ScenarioContextValue = {
 
 const ScenarioContext = createContext<ScenarioContextValue | null>(null);
 
+/** What a draft holds, ignoring row ids (copyFrom makes new ones). */
+const rowsSignature = (rows: readonly DraftRow[], mode: InputMode) =>
+  JSON.stringify([mode, rows.map((row) => [row.ticker, row.allocationPct, row.shares, row.pinned])]);
+
 export function ScenarioProvider({ children }: { children: ReactNode }) {
   const { draft: current } = useAnalysis();
   const scenario = usePortfolioDraft();
@@ -32,17 +36,20 @@ export function ScenarioProvider({ children }: { children: ReactNode }) {
   const [comparedKey, setComparedKey] = useState<string | null>(null);
   const controller = useRef<AbortController | null>(null);
 
+  // The Scenario follows Current until the user edits it: a sample first lands as pinned % rows and turns
+  // into shares only once priced, so a one-off seed would keep the temporary rows (F6 review).
+  const lastCopied = useRef<string | null>(null);
+  const currentSignature = rowsSignature(current.rows, current.mode);
+  const untouched = scenario.rows.length === 0 || rowsSignature(scenario.rows, scenario.mode) === lastCopied.current;
+
   const resetToCurrent = useCallback(() => {
+    lastCopied.current = rowsSignature(current.rows, current.mode);
     scenario.copyFrom(current.rows, current.mode);
   }, [scenario, current.rows, current.mode]);
 
-  // Seed the Scenario from Current the first time Current has rows.
-  const seeded = useRef(false);
   useEffect(() => {
-    if (seeded.current || current.rows.length === 0 || scenario.rows.length > 0) return;
-    seeded.current = true;
-    scenario.copyFrom(current.rows, current.mode);
-  }, [current.rows, current.mode, scenario]);
+    if (untouched && currentSignature !== lastCopied.current) resetToCurrent();
+  }, [untouched, currentSignature, resetToCurrent]);
 
   const pairKey = `${current.key}|${scenario.key}`;
   const compare = useCallback(() => {
