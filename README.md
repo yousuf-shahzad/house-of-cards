@@ -23,8 +23,19 @@ This is a proof of concept, not investment advice, and it does not trade or simu
 
 ## What it shows
 
-- **Portfolio builder**: add or remove ETFs, set allocations with inputs or sliders (they must total 100%),
-  or load a verified example portfolio. Every change re-runs the analysis.
+- **Beginner mode (guided view, v3.1)**: on every load, a welcome dialog asks *"Have you analysed an ETF portfolio
+  before?"* Choosing **"I'm new: guide me"** opens a 5-step plain-English walkthrough (`#/guide`, no sidebar,
+  no jargon) that triggers the agentic AI supply-chain check automatically in the background from Step 2:
+  1. **Pick your ETFs** (opens in **shares** by default — sample portfolios load as whole shares worth ~$10,000, or switch to `%` / **Split evenly**),
+  2. **What you really own** (top 5 companies as plain sentences + the most-overlapping ETF pair),
+  3. **How spread out is it?** (combined company + industry verdict chip via `diversificationVerdict` — e.g. **"Concentrated in one industry"** when the top industry is $\ge 40\%$ — top-10 share, effective equal holdings, top 3 industries),
+  4. **Hidden risks** (phased progress bar + **Go deeper** option, top supplier dependency, top non-US factory country, checked portfolio share, and concise `plain_title`/`plain_text` AI flaws with **Read more**),
+  5. **What could you do?** (concise `plain_title`/`plain_text` AI suggestions + real-time **Try a change** inside the guide, **See everything** -> `#/dependencies`, or **Start over**).
+  Choosing **"I'm experienced: show everything"** opens the full dashboard, and a **Simple view / Full view**
+  switch in the top bar toggles between both views at any time while keeping your portfolio and current step.
+- **Portfolio builder**: add or remove ETFs (defaults to **shares**, with a `%` toggle), set allocations, or load
+  a verified example portfolio (valued as whole shares worth ~$10,000 at latest exchange closes). Every change
+  re-runs the analysis.
 - **Shares input** (v2): switch to **Shares**, enter how many shares you hold (fractions allowed), and each
   ETF is valued at its latest **exchange close** (from TickerInside; not NAV) to give its %. Typing a % on a
   row **pins** it, and the other rows rescale by value to fill the rest. A missing, invalid or non-USD price
@@ -47,10 +58,13 @@ This is a proof of concept, not investment advice, and it does not trade or simu
   importance reasons, and a link to the filing. Clicking **Investigate gaps** runs a bounded multi-step
   agentic research loop across SEC filings to follow up on flagged edges, unnamed customers, single-source
   bottlenecks, and zero-disclosure holdings.
-- **Compare** (v3): edit a candidate **Scenario** (in % or shares) alongside your current portfolio and press
-  **Compare** to see which supplier, critical, and country dependencies go down or up (e.g. swapping 15 pts of
-  QQQ + 15 pts of XLK into 30% VTV cuts TSMC dependency from **12.39% to 4.69%, -7.71 pts**, and top-10
-  concentration from **37.14% to 24.98%**), using cached verified extractions with zero Gemini calls.
+- **Compare / Try a change** (v3/v3.1): edit a candidate **Scenario** (defaults to **shares**, seeded from your
+  current portfolio) in real time (~500 ms auto-compare, both on `#/compare` and inside the guided view's
+  **Try a change** screen) to see four headline before/after rows — biggest dependency change, top industry
+  share (`top_sector`), top-10 concentration, and effective equal holdings — plus full deltas under **More
+  details** (e.g. swapping 15 pts of QQQ + 15 pts of XLK into 30% VTV cuts TSMC dependency from **12.39% to
+  4.69%, -7.71 pts**, and top-10 concentration from **37.14% to 24.98%**), using cached verified extractions
+  with zero Gemini calls.
 
 Every number comes from deterministic Python on the backend. The only LLM use is the Dependencies page,
 and even there the model never produces a number or a company match (see "How it works").

@@ -56,14 +56,28 @@ The Dependencies page reads top to bottom: audit & coverage bar, AI synthesis, k
 - **2:25, prove it & investigate gaps (graph + research loop):** click a TSMC edge to open the evidence drawer
   (verbatim quote, section, form, filing date, importance tier/reasons, interpretation badge, and SEC link). Click
   **Investigate gaps** (`A-RES`) to run the bounded agentic research loop over SEC filings for flagged edges,
-  undisclosed customers, and zero-disclosure holdings — every new finding passes the same verbatim quote and
-  interpretation checks before merging.
+  undisclosed customers ($\ge 10\%$ revenue), and zero-disclosure holdings — on `us-core-tilt` (`~65 s` live, instant
+  from replay cache), `Nvidia -> OpenAI` stays `unresolved` (agreement not final), four unnamed big customers are
+  confirmed with verbatim passages (Nvidia 22%, Apple 13%, Broadcom 32%, Micron 17%), and anonymised table rows like
+  TSMC's `Customer A` are normalised to `Unnamed customer (Customer A)` (`unnamed_customer`), while keeping the Argon
+  AI synthesis intact.
 - **2:40, act on it (Compare):** open **Compare** (`#/compare`). The Scenario is seeded from your current portfolio
   (`IVV 40 / QQQ 25 / XLK 15 / EEM 20`). Cut `QQQ` to **10%**, remove `XLK`, and add **VTV 30%** (`IVV 40 / QQQ 10 /
   VTV 30 / EEM 20`), then click **Compare**. Instantly (cache-only, zero Gemini or SEC calls):
   - **TSMC dependency drops from 12.39% to 4.69% (-7.71 pts)**.
   - **Top-10 concentration drops from 37.14% to 24.98%**, and **effective companies more than double from 49.8 to 107.0**.
   - Unanalysed scenario holdings are listed explicitly, with a one-click button to make the scenario your active portfolio.
+
+## Beginner Mode (Guided View, `#/guide`)
+
+On every page load, a welcome modal asks **"Have you analysed an ETF portfolio before?"** with two choices:
+- **"I'm new: guide me"** opens the 5-step guided view (`#/guide`) with no sidebar, a slim top bar (`Step N of 5` + **Simple view / Full view** switch), and plain-English cards (zero jargon: no `HHI`, `GICS`, `look-through`, `10-K`/`20-F`, `CIK`, metric IDs, `"edges"`, tier names, or `"orchestrator"`):
+  1. **Step 1 — Pick your ETFs:** Opens in **shares** by default (with a `%` toggle). Load a sample portfolio in one click (valued as whole shares worth ~$10,000 at latest exchange closes) or enter your own ETFs.
+  2. **Step 2 — What you really own:** Top 5 companies as plain sentences (*"7.37% of your money ends up in Apple, through 3 of your ETFs"*) plus one sentence for the most-overlapping ETF pair (*"IVV and QQQ overlap by 48.82%"*). Entering Step 2 automatically starts the agentic supply-chain check (`light` depth by default) in the background.
+  3. **Step 3 — How spread out is it?:** Combined company + industry concentration verdict chip (**Concentrated in one industry** when the top industry is $\ge 40\%$, matching the full Risk page and noting that **50.64%** sits in **Technology**), *"Your 10 biggest companies are 37.14% of your money"*, *"It behaves like about 50 equal holdings"*, and the top 3 industries.
+  4. **Step 4 — Hidden risks:** Shows a phased progress bar (*"Reading reports -> Double-checking findings -> Writing summary"*) and live/cached results from the background supply-chain check — 3 plain findings (biggest supplier dependency **12.39% on TSMC**, biggest non-US factory country **China 19.03%**, and checked portfolio share **40.43%**), concise `plain_title` + `plain_text` AI cards (with **Read more** for full detail), and a **Go deeper** option (`thorough` depth).
+  5. **Step 5 — What could you do?:** The AI's top 2 diversification suggestions (`plain_title` + `plain_text`) plus three actions: **Try a change** (opens the real-time before/after comparison right inside the simple view, showing 4 headline rows including `top_sector`), **See everything** (switches to Full view on `#/dependencies`), and **Start over**.
+- **"I'm experienced: show everything"** opens the full 7-page dashboard above. Toggling the top-bar **Simple view / Full view** switch mid-flow keeps the active portfolio and returns to the same step when switching back.
 
 ## Running the v3 Gold Evaluation Benchmark
 
@@ -74,7 +88,7 @@ uv run hoc eval          # offline replay (default): reproduces all numbers in d
 uv run hoc eval --live   # full extraction + judge evaluation over the 10 held-out 10-Ks (115 core + 107 extended + 79 hard negatives)
 ```
 
-Headline benchmark numbers ([`docs/hoc/EVAL.md`](EVAL.md)): **88.4% [83.2%, 92.5%]** blind precision (**96.1% [89.6%, 100.0%]** pooled precision, 124/129; blind F1 **69.6% [51.9%, 82.7%]**, pooled F1 **71.9% [53.3%, 85.1%]**), **57.4% [35.3%, 76.0%]** core recall (66/115; inter-annotator F1 = **0.49**), **1.3% [0.0%, 3.9%]** hard-negative false-positive rate (**1/79**), **100.0%** direction accuracy (124/124), **100.0%** facility-country accuracy (**39/39**), and importance-tier quadratic weighted Cohen's $\kappa = \mathbf{0.475\ [0.382,\ 0.631]}$ (54/79). (On the 10 held-out filings V-INT filtered **0** edges beyond quote verification; its live contribution is on `us-core-tilt`, where it flagged the tentative `Nvidia -> OpenAI` disclosure.)
+Headline benchmark numbers ([`docs/hoc/EVAL.md`](EVAL.md)): **88.4% [83.2%, 92.5%]** blind precision (**96.1% [89.6%, 100.0%]** pooled precision, 124/129; blind F1 **69.6% [51.9%, 82.7%]**, pooled F1 **71.9% [53.3%, 85.1%]**), **57.4% [35.3%, 76.0%]** core recall (66/115; inter-annotator F1 = **0.49**), **1.3% [0.0%, 3.9%]** hard-negative false-positive rate (**1/79**), **100.0%** direction accuracy (124/124), **100.0%** facility-country accuracy (**39/39**), and importance-tier quadratic weighted Cohen's $\kappa = \mathbf{0.475\ [0.382,\ 0.631]}$ (54/79). (On the 10 held-out filings V-INT filtered **0** edges beyond quote verification; its live contribution is on `us-core-tilt`, where it rejected the `AMD -> Sanmina` divestiture and flagged the tentative `Nvidia -> OpenAI` disclosure.)
 
 ## If something goes wrong
 
