@@ -57,6 +57,7 @@ const SUMMARY_TEXT: Record<string, string> = {
 };
 
 const COMPANIES_SUFFIX = ".companies";
+const UNNAMED_CUSTOMERS = "Undisclosed major customers";
 
 export function metricKind(metricId: string): MetricKind {
   if (metricId.startsWith("dep.")) return "depends_on";
@@ -78,7 +79,7 @@ export function metricSubject(metric: MetricFact): string {
     const hit = pattern.exec(metric.label);
     if (hit) {
       const subject = hit[1].trim();
-      return isUnnamed(subject) ? "Undisclosed major customers" : subject;
+      return isUnnamed(subject) ? UNNAMED_CUSTOMERS : subject;
     }
   }
   return metric.label;
@@ -99,7 +100,7 @@ function explain(kind: MetricKind, subject: string, companies: number | null): s
         ? "of your portfolio is in companies with key sites there"
         : `of your portfolio is in ${plural(companies, "company", "companies")} with key sites there`;
     case "customer":
-      return subject === "Undisclosed major customers"
+      return subject === UNNAMED_CUSTOMERS
         ? "of your portfolio is in companies that rely on a big customer they don't name (each a different one)"
         : "of your portfolio is in companies that name it as a major customer";
     case "single_point":
@@ -147,15 +148,21 @@ export function buildSummaryFacts(metrics: readonly MetricFact[]): SummaryFact[]
 /** A short human name for a cited metric, e.g. "Depends on TSMC" or "Companies with key sites in China". */
 export function metricCitationLabel(metric: MetricFact): string {
   const id = metric.metric_id;
-  if (id.endsWith(COMPANIES_SUFFIX)) {
-    const kind = metricKind(id);
-    const subject = metricSubject(metric);
-    return kind === "facility" ? `Companies with key sites in ${subject}` : `Companies relying on ${subject}`;
-  }
   const kind = metricKind(id);
+  const subject = metricSubject(metric);
+  const unnamedCustomer = kind === "customer" && subject === UNNAMED_CUSTOMERS;
+  if (id.endsWith(COMPANIES_SUFFIX)) {
+    if (kind === "facility") return `Companies with key sites in ${subject}`;
+    if (unnamedCustomer) return "Companies with an undisclosed major customer";
+    if (kind === "customer") return `Companies naming ${subject} as a major customer`;
+    return `Companies relying on ${subject}`;
+  }
   if (kind === "summary") return SUMMARY_TEXT[id] ? capitalise(SUMMARY_TEXT[id]) : metric.label;
   if (kind === "other") return metric.label;
-  return `${CATEGORY[kind]} ${metricSubject(metric)}`;
+  if (unnamedCustomer) return UNNAMED_CUSTOMERS;
+  if (kind === "customer") return `Major customer: ${subject}`;
+  if (kind === "single_point") return `Single point of failure: ${subject}`;
+  return `${CATEGORY[kind]} ${subject}`;
 }
 
 function capitalise(text: string): string {
