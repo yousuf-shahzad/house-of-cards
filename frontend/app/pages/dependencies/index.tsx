@@ -62,6 +62,7 @@ import {
 import {
   formatFindingOneLiner,
   monotonicProgressPct,
+  plainCounterpartyText,
   splitFirstSentence,
 } from "@/app/pages/guide/sentence";
 import { claimMetricOneLiner } from "@/app/pages/guide/step-4-risks";
@@ -173,7 +174,9 @@ const CLAIM_SEVERITY_META: Record<
 
 /** The backend message for a company, with its internal key (e.g. ALIAS:SAMSUNG_ELEC) shown as its name. */
 function companyMessage(company: CompanyRunStatus): string {
-  return (company.message ?? "").split(company.company_key).join(company.company_name);
+  return plainCounterpartyText(
+    (company.message ?? "").split(company.company_key).join(company.company_name),
+  );
 }
 
 function analysisErrorCopy(error: ApiError): string {
@@ -514,7 +517,7 @@ function CoveragePanel({
       <div
         role="img"
         aria-label={`Portfolio dependency coverage: ${coverage.buckets
-          .map((b) => `${b.label} ${formatPct(b.weight, 1)}`)
+          .map((b) => `${plainCounterpartyText(b.label)} ${formatPct(b.weight, 1)}`)
           .join(", ")}`}
         className="flex h-3.5 w-full overflow-hidden rounded-full border border-separator-border bg-background-tertiary-default"
       >
@@ -529,7 +532,7 @@ function CoveragePanel({
                 width: `${pctWidth}%`,
                 backgroundColor: meta.color,
               }}
-              title={`${bucket.label}: ${formatPct(bucket.weight, 2)} (${bucket.companies} ${
+              title={`${plainCounterpartyText(bucket.label)}: ${formatPct(bucket.weight, 2)} (${bucket.companies} ${
                 bucket.companies === 1 ? "company" : "companies"
               })`}
               className="h-full transition-all duration-300 first:rounded-s-full last:rounded-e-full"
@@ -563,7 +566,9 @@ function CoveragePanel({
               <span className="text-display-4-medium text-text-primary tabular-nums">
                 <Pct value={bucket.weight} digits={2} />
               </span>
-              <span className="text-caption-1-regular text-text-secondary">{bucket.label}</span>
+              <span className="text-caption-1-regular text-text-secondary">
+                {plainCounterpartyText(bucket.label)}
+              </span>
             </div>
           );
         })}
@@ -598,7 +603,7 @@ function CoveragePanel({
                     className="mt-0.5 size-4 shrink-0 text-foreground-icon-secondary"
                     aria-hidden
                   />
-                  <span>{gap.message}</span>
+                  <span>{plainCounterpartyText(gap.message)}</span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   {typeof gap.weight === "number" && (
@@ -684,7 +689,8 @@ function ResearchFindingCard({
     finding.outcome,
     finding.explanation,
   );
-  const [shortExplanation, restExplanation] = splitFirstSentence(finding.explanation ?? "");
+  const cleanExplanation = plainCounterpartyText(finding.explanation ?? "");
+  const [shortExplanation, restExplanation] = splitFirstSentence(cleanExplanation);
   const hasTraceOrMore = Boolean(restExplanation || finding.steps.length > 0);
 
   return (
@@ -701,7 +707,7 @@ function ResearchFindingCard({
       <div className="flex flex-col gap-1">
         <h5 className="text-body-semibold text-text-primary">{oneLiner}</h5>
         <p className="mt-0.5 text-body-2-regular text-text-secondary">
-          {showTrace ? finding.explanation : shortExplanation}
+          {showTrace ? cleanExplanation : shortExplanation}
         </p>
       </div>
 

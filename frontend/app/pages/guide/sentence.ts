@@ -99,13 +99,26 @@ const CORP_SUFFIX_RE =
 const TRAILING_TAG_RE = /\s*\(([a-z_]+)\)\s*$/i;
 const ARROW_SPLIT_RE = /\s*(?:→|->)\s*/;
 const INLINE_RELIANCE_RE =
-  /^(.+?)\s+(?:single-source\s+)?(reliance on|partnership with|sales to|licensing with)\s+(.+)$/i;
+  /^(.+?)\s+(?:single-source\s+)?(reliance on|partnership with|sales to|licensing with|counterparty)\s+(.+)$/i;
 
 const TAG_RELATION_LABELS: Record<string, string> = {
   jv_partner: "partnership with",
   customer: "sales to",
   licensing: "licensing with",
+  unresolved_counterparty: "link to",
+  counterparty: "link to",
 };
+
+/**
+ * FIX-61: Replaces technical "counterparty" / "counterparties" wording with
+ * plain-English "supplier or partner names" / "suppliers & partners" / "partner".
+ */
+export function plainCounterpartyText(text: string): string {
+  return text
+    .replace(/\bcounterparty identities\b/gi, "supplier or partner names")
+    .replace(/\bcounterparties\b/gi, "suppliers & partners")
+    .replace(/\bcounterparty\b/gi, "partner");
+}
 
 function cleanEntityName(raw: string): string {
   return raw
@@ -129,9 +142,9 @@ const PLAIN_OUTCOME_LABELS: Record<string, string> = {
 };
 
 /**
- * FIX-29 Part B & FIX-32: Formats a research finding into a single beginner-friendly plain line,
+ * FIX-29 Part B, FIX-32 & FIX-61: Formats a research finding into a single beginner-friendly plain line,
  * e.g. "Checked: Apple's reliance on Japan — confirmed" or
- * "Checked: Nvidia's partnership with OpenAI — still unclear".
+ * "Checked: Broadcom's link to TSMC — updated".
  */
 export function formatFindingOneLiner(
   subject: string,
@@ -150,23 +163,25 @@ export function formatFindingOneLiner(
     const src = cleanEntityName(left ?? "");
     const tgt = cleanEntityName(right ?? "");
     if (src && tgt) {
-      plainSubject = `${possessiveName(src)} ${relationPhrase} ${tgt}`;
+      plainSubject = `${possessiveName(src)} ${relationPhrase} ${plainCounterpartyText(tgt)}`;
     }
   } else if (raw.includes(" — ")) {
     const [left, right] = raw.split(" — ", 2);
     const src = cleanEntityName(left ?? "");
-    plainSubject = src && right ? `${src} (${right.trim()})` : raw;
+    const cleanRight = right ? plainCounterpartyText(right.trim()) : "";
+    plainSubject = src && cleanRight ? `${src} (${cleanRight})` : plainCounterpartyText(raw);
   } else {
     const inlineMatch = raw.match(INLINE_RELIANCE_RE);
     if (inlineMatch) {
       const src = cleanEntityName(inlineMatch[1] ?? "");
-      const rel = (inlineMatch[2] ?? "reliance on").toLowerCase();
+      const rawRel = (inlineMatch[2] ?? "reliance on").toLowerCase();
+      const rel = rawRel === "counterparty" ? "link to" : rawRel;
       const tgt = cleanEntityName(inlineMatch[3] ?? "");
       if (src && tgt) {
-        plainSubject = `${possessiveName(src)} ${rel} ${tgt}`;
+        plainSubject = `${possessiveName(src)} ${rel} ${plainCounterpartyText(tgt)}`;
       }
     } else {
-      plainSubject = cleanEntityName(raw) || raw;
+      plainSubject = plainCounterpartyText(cleanEntityName(raw) || raw);
     }
   }
 

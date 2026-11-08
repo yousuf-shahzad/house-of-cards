@@ -4,6 +4,7 @@ import {
   formatFindingOneLiner,
   monotonicProgressPct,
   pickMostOverlappingPair,
+  plainCounterpartyText,
   shouldExpandOnKeyChange,
   splitFirstSentence,
 } from "./sentence.ts";
@@ -173,5 +174,21 @@ test("formatFindingOneLiner produces one concise plain-English line per finding 
   assert.equal(
     formatFindingOneLiner("Apple Inc. single-source reliance on Japan", "confirmed"),
     "Checked: Apple's reliance on Japan — confirmed",
+  );
+  assert.equal(
+    formatFindingOneLiner("Broadcom Inc. counterparty TSMC", "revised"),
+    "Checked: Broadcom's link to TSMC — updated",
+  );
+  assert.equal(
+    formatFindingOneLiner("Broadcom Inc. -> TSMC (unresolved_counterparty)", "revised"),
+    "Checked: Broadcom's link to TSMC — updated",
+  );
+  assert.equal(
+    plainCounterpartyText("Filing leaves specific counterparty identities undisclosed."),
+    "Filing leaves specific supplier or partner names undisclosed.",
+  );
+  assert.equal(
+    plainCounterpartyText("2 verified customer disclosures did not name the counterparty in the filing."),
+    "2 verified customer disclosures did not name the partner in the filing.",
   );
 });
