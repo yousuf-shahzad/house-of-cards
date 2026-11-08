@@ -29,6 +29,7 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 ## New
 
 <!-- Add new problems below this line, one per line. -->
+- (Bekarys's Claude, API edge-case hunt) Unknown routes and wrong methods break the one-error-shape rule (CONTRACT.md: errors are always `{"error": {code, message, details}}`): `GET /api/nope` returns 404 `{"detail":"Not Found"}` and `GET /api/analysis` returns 405 `{"detail":"Method Not Allowed"}`, FastAPI's default. Fix in `hoc/api/app.py`: a `StarletteHTTPException` handler mapping to the envelope (needs a new code such as `NOT_FOUND` / `METHOD_NOT_ALLOWED` in the contract table). Also update `try-a-change.tsx`'s old-backend check, which relies on `status 404 && code "HTTP_ERROR"`. Low. Everything else probed returned the right status and envelope: 32 input cases plus job/research/change-ideas state checks.
 
 
 ## Open
