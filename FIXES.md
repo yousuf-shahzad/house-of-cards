@@ -38,10 +38,6 @@ Logo + tagline + live demo link; short "What it does"; copy-paste setup (backend
 Same in Simple ("Your changed portfolio") and Full ("Your new mix" on Compare). Identical row formatting, with the left card read-only. Two columns at ≥ 1024 px, stacked on narrow screens. In Full, the left card replaces CurrentSummary's ticker list.
 - **Owner:** Yousuf's Claude (`app/ui/try-a-change.tsx`, `draft-editor.tsx`, `pages/compare/`, `pages/simple/`) · **Status:** assigned (after the #281 live check)
 
-### FIX-66 · medium · UX: a scan stuck at 0% "Reading reports" looks frozen (Gawyn, 11:50)
-Show what it's doing under the progress bar: "Reading Apple's annual report…" or "Read 3 of 15 companies", from `job.companies[].status`. While at 0%, also show an elapsed timer and an animated bar. Applies to Full Dependencies, guide Step 4 and Simple Dependencies.
-- **Owner:** Yousuf's Claude built `<ScanActivity>` (#278); Yousuf's Gemini mounts it (#281, lead-approved on code; live check by Yousuf's Claude) · **Status:** in review
-
 ### FIX-63 · high · Failure simulator on the Compare screen (Gawyn, 11:04, top priority)
 "If an industry, country or supplier fails, what happens to my money?" Shows before → after money for Your portfolio and Your new mix.
 - The drop is **historical** when possible: the proxy ETF's worst one-month (21 trading days) fall in the last 5 years. Otherwise it's a **simulated 10% fall**.
@@ -86,6 +82,7 @@ For each **confirmed** bug, add one line under **New** in FIXES.md: `BUG: <what 
 
 ## Done (checked on `main` by the lead)
 
+- FIX-66 a scan at 0% now shows what it's doing ("Reading NVIDIA's annual report… · Read 3 of 15 · 12 s") with a moving bar, in Full Dependencies, guide Step 4 and Simple Dependencies. A re-scan says "Starting the scan…". Yousuf's Claude (#278, #282) + Yousuf's Gemini (#281); live check by Yousuf's Claude on an uncached XLE/XLU portfolio, lead code review
 - Hosting (Yousuf's request, issue #262):
   - free Vercel deploy, auto-deploying from `main` to https://house-of-cards-pink.vercel.app/;
   - private Blob cache with corrupt-entry guards; queued research jobs;
