@@ -3,6 +3,7 @@
 
 import { useDependencies } from "@/app/dependencies-state";
 import { useExperience } from "@/app/experience";
+import { ChangeIdeas } from "@/app/ui/try-a-change";
 import { Button } from "@/components/base/buttons/button";
 import { ClaimCards, isCoverageNotAnalysed, type RiskStepProps, topClaims } from "./step-4-risks";
 import { NEXT_COPY, RISKS_COPY } from "./copy";
@@ -31,6 +32,7 @@ export default function NextStep({ onJumpToStep, onStartOver, onTryChange }: Ris
       ) : (
         <p className="text-body-2-regular text-text-secondary">{NEXT_COPY.waiting}</p>
       )}
+      <ChangeIdeas onTried={() => (onTryChange ? onTryChange() : openExpertPage("#/compare"))} />
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <Button
           variant="primary"
