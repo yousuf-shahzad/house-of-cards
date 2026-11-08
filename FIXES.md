@@ -19,10 +19,10 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
-### FIX-25 · low · AI swaps into XLV or VTV are rejected for "missing industry labels"
-In the live FIX-17 check, Argon proposed swaps into XLV (a health-care sector fund) and VTV. The verifier rejected both with "New missing industry labels cannot count as a diversification gain". XLV should have a clear industry breakdown.
-- Fix: check whether these ETFs' sectors load (or fall back to the fund-reported breakdown, as `analysis.sectors` does). If they're genuinely unknown, say so in the rejection reason ("XLV's industry breakdown isn't available").
-- **Owner:** Yousuf's Codex · **Status:** assigned
+### FIX-26 · low · AI idea text can show a number without saying what it is
+Live: the VTV idea's rationale reads "...reduces reliance on 12.41%". The placeholder rendered TSMC's dependency value without its name.
+- Fix: the rationale checker rejects (or the renderer rewrites) a dependency placeholder that isn't next to the company it describes, e.g. "12.41% reliance on Taiwan Semiconductor". Add a test.
+- **Owner:** Gawyn's Gemini (`hoc/graph/idea_proposer.py`) · **Status:** assigned
 
 ### FIX-23 · high · Dependencies page is overloaded and scrolls too long (Gawyn, 07:40)
 Make these four sections collapsible:
@@ -127,6 +127,7 @@ The plan asked for the research trace to show live during the run.
 
 ## Done (checked on `main` by the lead)
 
+- FIX-25 AI swaps into XLV and VTV accepted under a worst-case industry check (live: XLK→XLV Technology 51.1% → 41.2%; QQQ→VTV → 41.8%; all 3 AI ideas match compare) — #201
 - FIX-24 the idea proposer reaches Argon (the invalid timeout argument is gone; timeouts classified by type) — #199
 - FIX-21 docs: swap 12.39% → 6.30% (−6.10 pts), XLU 9.92%, slide 3 companies Nvidia/Broadcom/AMD/Intel, and the honest held-out agent result (+0.0 pp, no accuracy claims) — #195, #198
 - FIX-8 before/after eval on the 10 held-out 10-Ks (light agents): precision 88.4% blind / 96.1% pooled and core recall 57.4%, all unchanged (+0.0 pp); 18 findings, 0 links added or removed; agentic check PASS (18/18 make 2+ tool calls, 0 circular). Reproduced offline by the lead — #196
