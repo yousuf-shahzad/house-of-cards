@@ -71,6 +71,7 @@ import {
 } from "@/components/base/segmented-control/segmented-control";
 import { Spinner } from "@/components/base/spinner/spinner";
 import { cx } from "@/utils/cx";
+import { CollapsibleSection } from "./collapsible-section";
 import { buildMetricCards, buildSummaryFacts, metricCitationLabel } from "./metrics";
 import {
   buildDependencyGraph,
@@ -295,18 +296,20 @@ function InsightsPanel({ insights, ...citations }: CitationProps & { insights: I
     },
   ];
   return (
-    <section
-      aria-label="AI synthesis: critical flaws and diversification ideas"
-      className="flex flex-col gap-4 rounded-3xl border border-border-button-default bg-background-secondary-default p-5"
-    >
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <RiSparklingLine className="size-5 text-text-primary" aria-hidden />
-          <h3 className="text-headline-small text-text-primary">AI synthesis: critical flaws &amp; diversification ideas</h3>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+    <CollapsibleSection
+      storageKey="hoc.dependencies.section.insights"
+      ariaLabel="AI synthesis: critical flaws and diversification ideas"
+      icon={<RiSparklingLine className="size-5 text-text-primary" aria-hidden />}
+      title="AI synthesis: critical flaws & diversification ideas"
+      badges={
+        <>
           <Chip variant="caption" color={status.chipColor}>
             {status.label}
+          </Chip>
+          <Chip variant="caption" color="neutral">
+            {`${insights.flaws.length} ${insights.flaws.length === 1 ? "flaw" : "flaws"} · ${
+              insights.suggestions.length
+            } ${insights.suggestions.length === 1 ? "idea" : "ideas"}`}
           </Chip>
           {insights.model && (
             <Chip variant="caption" color="purple">
@@ -315,15 +318,17 @@ function InsightsPanel({ insights, ...citations }: CitationProps & { insights: I
           )}
           {insights.rejected_claims_count > 0 && (
             <Chip variant="caption" color="orange">
-              {insights.rejected_claims_count} unchecked {insights.rejected_claims_count === 1 ? "claim" : "claims"} dropped
+              {insights.rejected_claims_count} unchecked{" "}
+              {insights.rejected_claims_count === 1 ? "claim" : "claims"} dropped
             </Chip>
           )}
-        </div>
-        <p className="text-body-2-regular text-text-secondary">
-          {status.note ??
-            "Written by the AI from the verified filing quotes. Every number in it was checked against the calculated numbers, and claims that failed were dropped. Advisory only, not investment advice."}
-        </p>
-      </div>
+        </>
+      }
+      summary={
+        status.note ??
+        "Written by the AI from the verified filing quotes. Every number in it was checked against the calculated numbers, and claims that failed were dropped. Advisory only, not investment advice."
+      }
+    >
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {columns.map((column) => (
           <div key={column.key} className="flex flex-col gap-3">
@@ -343,7 +348,7 @@ function InsightsPanel({ insights, ...citations }: CitationProps & { insights: I
           </div>
         ))}
       </div>
-    </section>
+    </CollapsibleSection>
   );
 }
 
@@ -733,35 +738,27 @@ function ResearchPanel({
   const rejectedCount = findings.filter((f) => f.outcome === "rejected").length;
 
   return (
-    <section
-      aria-label="Investigate uncertain findings"
-      className="flex flex-col gap-4 rounded-3xl border border-border-button-default bg-background-secondary-default p-5"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <RiSparklingLine className="size-5 text-text-primary" aria-hidden />
-            <h3 className="text-headline-small text-text-primary">
-              Investigate uncertain findings
-            </h3>
-            <Chip variant="caption" color="purple">
-              {findings.length > 0
-                ? `${findings.length} investigated (${researchDepth === "thorough" ? "thorough" : "light"})`
-                : `Investigates uncertain & critical items`}
+    <CollapsibleSection
+      storageKey="hoc.dependencies.section.research"
+      ariaLabel="Investigate uncertain findings"
+      icon={<RiSparklingLine className="size-5 text-text-primary" aria-hidden />}
+      title="Investigate uncertain findings"
+      badges={
+        <>
+          <Chip variant="caption" color="purple">
+            {findings.length > 0
+              ? `${findings.length} investigated (${researchDepth === "thorough" ? "thorough" : "light"})`
+              : `Investigates uncertain & critical items`}
+          </Chip>
+          {(researchJob?.result || findings.length > 0) && (
+            <Chip variant="caption" color="lime">
+              Merged into graph &amp; metrics
             </Chip>
-            {(researchJob?.result || findings.length > 0) && (
-              <Chip variant="caption" color="lime">
-                Merged into graph &amp; metrics
-              </Chip>
-            )}
-          </div>
-          <p className="text-body-2-regular text-text-secondary">
-            Runs a bounded agentic research loop over SEC EDGAR 10-K/20-F filings to cross-check
-            flagged interpretations, undisclosed major customers, single-source bottlenecks, and
-            holdings with zero initial disclosures. Every new quote is verified verbatim in Python.
-          </p>
-        </div>
-
+          )}
+        </>
+      }
+      summary="Runs a bounded agentic research loop over SEC EDGAR 10-K/20-F filings to cross-check flagged interpretations, undisclosed major customers, single-source bottlenecks, and holdings with zero initial disclosures. Every new quote is verified verbatim in Python."
+      headerActions={
         <Button
           variant="primary"
           size="small"
@@ -777,100 +774,107 @@ function ResearchPanel({
               ? "Re-run investigation"
               : "Investigate gaps"}
         </Button>
-      </div>
-
-      {isInvestigating && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="flex flex-col gap-2.5 rounded-2xl border border-separator-border bg-background-primary-default p-4"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-2 text-body-2-medium text-text-primary">
-            <div className="flex items-center gap-2">
-              <Spinner size="sm" />
-              <span>
-                Searching SEC EDGAR filings and verifying passages (
-                {researchJob?.progress_done ?? 0} of {researchJob?.progress_total || 6} items)…
-              </span>
-            </div>
-            {researchJob?.research_id && (
-              <span className="font-mono text-caption-1-regular text-text-tertiary">
-                Research {researchJob.research_id.slice(0, 12)}
-              </span>
-            )}
-          </div>
-          {researchJob && researchJob.progress_total > 0 && (
-            <div className="h-2 w-full overflow-hidden rounded-full bg-background-tertiary-default">
-              <div
-                className="h-full rounded-full bg-text-primary transition-all duration-300"
-                style={{
-                  width: `${Math.min(
-                    100,
-                    Math.round((researchJob.progress_done / researchJob.progress_total) * 100),
-                  )}%`,
-                }}
-              />
+      }
+      subHeader={
+        <>
+          {isInvestigating && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="flex flex-col gap-2.5 rounded-2xl border border-separator-border bg-background-primary-default p-4"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2 text-body-2-medium text-text-primary">
+                <div className="flex items-center gap-2">
+                  <Spinner size="sm" />
+                  <span>
+                    Searching SEC EDGAR filings and verifying passages (
+                    {researchJob?.progress_done ?? 0} of {researchJob?.progress_total || 6} items)…
+                  </span>
+                </div>
+                {researchJob?.research_id && (
+                  <span className="font-mono text-caption-1-regular text-text-tertiary">
+                    Research {researchJob.research_id.slice(0, 12)}
+                  </span>
+                )}
+              </div>
+              {researchJob && researchJob.progress_total > 0 && (
+                <div className="h-2 w-full overflow-hidden rounded-full bg-background-tertiary-default">
+                  <div
+                    className="h-full rounded-full bg-text-primary transition-all duration-300"
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        Math.round((researchJob.progress_done / researchJob.progress_total) * 100),
+                      )}%`,
+                    }}
+                  />
+                </div>
+              )}
             </div>
           )}
-        </div>
-      )}
 
-      {researchStatus === "error" && researchError && (
-        <div
-          role="alert"
-          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border-error-default bg-background-primary-default px-4 py-3"
-        >
-          <div className="flex items-center gap-2 text-body-2-medium text-text-error-primary">
-            <RiErrorWarningLine className="size-4 shrink-0" aria-hidden />
-            <span>{researchError.message}</span>
-          </div>
-          <Button
-            variant="secondary"
-            size="xs"
-            leadingIcon={RiRefreshLine}
-            onClick={onRunResearch}
-          >
-            Try again
-          </Button>
-        </div>
-      )}
+          {researchStatus === "error" && researchError && (
+            <div
+              role="alert"
+              className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border-error-default bg-background-primary-default px-4 py-3"
+            >
+              <div className="flex items-center gap-2 text-body-2-medium text-text-error-primary">
+                <RiErrorWarningLine className="size-4 shrink-0" aria-hidden />
+                <span>{researchError.message}</span>
+              </div>
+              <Button
+                variant="secondary"
+                size="xs"
+                leadingIcon={RiRefreshLine}
+                onClick={onRunResearch}
+              >
+                Try again
+              </Button>
+            </div>
+          )}
 
-      {findings.length > 0 && (
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-2 text-caption-1-regular text-text-secondary">
-            <span className="font-medium text-text-primary">
-              {findings.length} {findings.length === 1 ? "finding" : "findings"} investigated:
-            </span>
-            {confirmedCount > 0 && (
-              <Chip variant="caption" color="lime">
-                {`${confirmedCount} confirmed`}
-              </Chip>
-            )}
-            {newEdgesCount > 0 && (
-              <Chip variant="caption" color="cyan">
-                {`${newEdgesCount} new verified ${newEdgesCount === 1 ? "edge" : "edges"}`}
-              </Chip>
-            )}
-            {rejectedCount > 0 && (
-              <Chip variant="caption" color="rose">
-                {`${rejectedCount} rejected`}
-              </Chip>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-            {findings.map((finding) => (
-              <ResearchFindingCard
-                key={finding.finding_id}
-                finding={finding}
-                edgeById={edgeById}
-                selectEdge={selectEdge}
-              />
-            ))}
-          </div>
+          {findings.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 text-caption-1-regular text-text-secondary">
+              <span className="font-medium text-text-primary">
+                {findings.length} {findings.length === 1 ? "finding" : "findings"} investigated:
+              </span>
+              {confirmedCount > 0 && (
+                <Chip variant="caption" color="lime">
+                  {`${confirmedCount} confirmed`}
+                </Chip>
+              )}
+              {newEdgesCount > 0 && (
+                <Chip variant="caption" color="cyan">
+                  {`${newEdgesCount} new verified ${newEdgesCount === 1 ? "edge" : "edges"}`}
+                </Chip>
+              )}
+              {rejectedCount > 0 && (
+                <Chip variant="caption" color="rose">
+                  {`${rejectedCount} rejected`}
+                </Chip>
+              )}
+            </div>
+          )}
+        </>
+      }
+    >
+      {findings.length > 0 ? (
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          {findings.map((finding) => (
+            <ResearchFindingCard
+              key={finding.finding_id}
+              finding={finding}
+              edgeById={edgeById}
+              selectEdge={selectEdge}
+            />
+          ))}
         </div>
+      ) : (
+        <p className="rounded-2xl border border-separator-border bg-background-primary-default p-4 text-body-2-regular text-text-secondary">
+          No agentic research findings have been recorded for this scan yet.
+        </p>
       )}
-    </section>
+    </CollapsibleSection>
   );
 }
 
@@ -2333,24 +2337,25 @@ function DependenciesPageContent() {
           )}
 
           {/* 6. Bipartite SVG Dependency Graph + Evidence Inspector */}
-          <section
-            aria-label="Supply-chain and counterparty dependency graph"
-            className="flex flex-col gap-4 rounded-3xl border border-border-button-default bg-background-secondary-default p-5"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-col gap-0.5">
-                <div className="flex items-center gap-2">
-                  <RiLinksLine className="size-5 text-text-primary" aria-hidden />
-                  <h3 className="text-headline-small text-text-primary">
-                    Verified Counterparty & Supply-Chain Graph
-                  </h3>
-                </div>
-                <p className="text-caption-1-regular text-text-secondary">
-                  Showing {graph?.targets.length ?? 0} of {graph?.totalTargetsBeforeLimit ?? 0}{" "}
-                  counterparties ({graph?.edges.length ?? 0} verified edges). Click any line or
-                  circle to inspect its verbatim SEC filing quote.
-                </p>
-              </div>
+          <CollapsibleSection
+            storageKey="hoc.dependencies.section.graph"
+            ariaLabel="Supply-chain and counterparty dependency graph"
+            icon={<RiLinksLine className="size-5 text-text-primary" aria-hidden />}
+            title="Verified Counterparty & Supply-Chain Graph"
+            badges={
+              <Chip variant="caption" color="neutral">
+                {`${graph?.targets.length ?? 0} of ${
+                  graph?.totalTargetsBeforeLimit ?? 0
+                } counterparties · ${graph?.edges.length ?? 0} edges`}
+              </Chip>
+            }
+            summary={`Showing ${graph?.targets.length ?? 0} of ${
+              graph?.totalTargetsBeforeLimit ?? 0
+            } counterparties (${
+              graph?.edges.length ?? 0
+            } verified edges). Click any line or circle to inspect its verbatim SEC filing quote.`}
+            forceExpand={Boolean(selectedEdgeId || selectedNodeId)}
+            headerActions={
               <div className="flex max-w-full flex-wrap items-center gap-2">
                 {graph && graph.totalTargetsBeforeLimit > DEFAULT_TARGET_LIMIT && (
                   <Button
@@ -2408,8 +2413,8 @@ function DependenciesPageContent() {
                   </SegmentedControl>
                 </div>
               </div>
-            </div>
-
+            }
+          >
             <div className="flex flex-wrap items-center gap-3 text-caption-1-regular text-text-secondary">
               {(
                 [
@@ -2605,36 +2610,31 @@ function DependenciesPageContent() {
                 </div>
               </details>
             )}
-          </section>
+          </CollapsibleSection>
 
-          {/* 6. Facility Concentration by Country (grouped strictly from backend `facility.<ISO2>` metrics) */}
-          <section
-            aria-label="Facility concentration by country"
-            className="flex flex-col gap-4 rounded-3xl border border-border-button-default bg-background-secondary-default p-5"
+          {/* 7. Facility Concentration by Country (grouped strictly from backend `facility.<ISO2>` metrics) */}
+          <CollapsibleSection
+            storageKey="hoc.dependencies.section.countries"
+            ariaLabel="Facility concentration by country"
+            icon={<RiGlobalLine className="size-5 text-text-primary" aria-hidden />}
+            title="Facility & Manufacturing Concentration by Country"
+            badges={
+              <Chip variant="caption" color="cyan">
+                {`${facilityRows.length} ${facilityRows.length === 1 ? "country" : "countries"}`}
+              </Chip>
+            }
+            summary="Grouped by canonical country from deterministic Python metrics, with named sites listed under each holding"
           >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <RiGlobalLine className="size-5 text-text-primary" aria-hidden />
-                <h3 className="text-headline-small text-text-primary">
-                  Facility & Manufacturing Concentration by Country
-                </h3>
-              </div>
-              <span className="text-caption-1-regular text-text-tertiary">
-                Grouped by canonical country from deterministic Python metrics, with named sites
-                listed under each holding
-              </span>
-            </div>
-
             {facilityRows.length === 0 ? (
               <p className="rounded-2xl border border-separator-border bg-background-primary-default p-5 text-body-2-regular text-text-secondary">
                 No verified facility or country edges were extracted for the current holdings.
               </p>
             ) : (
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-                <div className="flex flex-col justify-center rounded-2xl border border-separator-border bg-background-primary-default p-4 lg:col-span-5">
+              <div className="flex flex-col gap-4">
+                <div className="flex w-full flex-col justify-center rounded-2xl border border-separator-border bg-background-primary-default p-4">
                   <div
                     className="w-full"
-                    style={{ height: Math.max(200, facilityRows.length * 44) }}
+                    style={{ height: Math.min(240, Math.max(180, facilityRows.length * 36)) }}
                   >
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
@@ -2675,7 +2675,7 @@ function DependenciesPageContent() {
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-3 lg:col-span-7">
+                <div className="flex w-full flex-col gap-3">
                   {facilityRows.map((row) => (
                     <div
                       key={row.countryCode}
@@ -2737,7 +2737,7 @@ function DependenciesPageContent() {
                 </div>
               </div>
             )}
-          </section>
+          </CollapsibleSection>
         </div>
       )}
 
