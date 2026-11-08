@@ -38,10 +38,6 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
-### FIX-53 · high · A "Next" button on the Simple Portfolio page (Gawyn, 10:03)
-Once the portfolio is ready, Simple Portfolio shows a clear primary **Next** button that leads on to the next page of the walkthrough (Exposures, "What you really own"), staying in Simple view. Hide or disable it until the portfolio is valid, with a short reason.
-- **Owner:** Gawyn's Claude (lead, at Gawyn's request; `pages/simple/`, with Codex's OK since it owns the folder) · **Status:** in progress
-
 ### FIX-52 · high · Reorder the Dependencies page: the important actions and AI synthesis first (Gawyn, 09:57)
 Today the order is: header (Find dependencies, Go deeper) → progress → coverage panel (holding "Scan top 30") → audit bar → AI synthesis → research panel (holding "Investigate gaps") → key numbers → graph → countries.
 
@@ -146,6 +142,7 @@ For each **confirmed** bug, add one line under **New** in FIXES.md: `BUG: <what 
 
 ## Done (checked on `main` by the lead)
 
+- FIX-53 Simple Portfolio has a "Next: what you really own →" button: disabled with a reason until the portfolio is ready, then it leads to Simple Exposures (lead's own change, checked in the browser) — #236
 - FIX-46 + FIX-51 Simple mode stays Simple when leaving the guide via the sidebar or Back; Simple pages show stale/error state and their own info text; the top bar is a "Simple | Full" toggle with the active side highlighted (lead, browser) — #231
 - FIX-49 0-share rows are ignored (lead: 1,293 companies without IVV, no IVV on Exposures); share counts above 1,000,000,000 are marked invalid with a clear message, and nothing overflows — #230
 - FIX-44 Risk page in plain words (HHI in a tooltip, "Industry breakdown", no raw codes); verified by QA — #229
