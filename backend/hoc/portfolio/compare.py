@@ -29,6 +29,7 @@ from hoc.contract import (
     VerifiedEdge,
     wsum,
 )
+from hoc.contract.dependencies import CompanyStatus
 from hoc.core.cache import DiskCache
 from hoc.filings.names import NameResolver
 from hoc.graph.metrics import compute_dependency_metrics
@@ -139,12 +140,15 @@ def compare_portfolios(
     cached_extractions: Mapping[str, Sequence[VerifiedEdge]],
     *,
     aliases: Aliases | None = None,
+    company_statuses: Mapping[str, CompanyStatus] | None = None,
 ) -> CompareResponse:
     """Compare analyses using each side's top N and a shared verified cache snapshot.
 
     Caller runs the two ETF analyses and obtains the snapshot with
     ``read_cached_extractions``. Concentration uses the full analyses, independently of
     dependency top N. Missing metric values remain None (including delta), per C0-v3.
+    Optional known run statuses distinguish unavailable SEC filings from cache misses;
+    this helper never discovers filing availability itself.
     """
     for holdings, analysis in ((request.baseline, baseline), (request.candidate, candidate)):
         validate_request(PortfolioRequest(holdings=holdings))
@@ -167,7 +171,8 @@ def compare_portfolios(
             candidate=new.value if new is not None else None,
             delta=wsum([new.value, -old.value]) if old is not None and new is not None else None,
         ))
-    deltas.sort(key=lambda d: (-abs(d.delta if d.delta is not None else (
+    # Fractions describe portfolio exposure; counts must not outrank them by units alone.
+    deltas.sort(key=lambda d: (d.unit != "fraction", -abs(d.delta if d.delta is not None else (
         d.candidate if d.candidate is not None else d.baseline
     )), d.metric_id))
     concentration_deltas = []
@@ -180,16 +185,28 @@ def compare_portfolios(
         ))
     missing = [UnanalysedCompany(company_key=c.company_key, company_name=c.company_name, exposure=c.exposure)
                for c in candidate_top if c.company_key not in cached_extractions]
-    baseline_missing = sum(c.company_key not in cached_extractions for c in baseline_top)
+    company_statuses = company_statuses or {}
+    scenario_uncached = [c for c in missing if company_statuses.get(c.company_key) != "no_sec_filing"]
+    baseline_uncached = [c for c in baseline_top if c.company_key not in cached_extractions
+                         and company_statuses.get(c.company_key) != "no_sec_filing"]
     notes = [("Uses each portfolio's top companies and the latest cached filing extractions; "
               "no new filings or model calls. Concentration uses the full portfolio analysis.")]
-    if missing:
-        count = len(missing)
+    for label, companies in (("scenario", candidate_top), ("current portfolio", baseline_top)):
+        for company in companies:
+            if (company.company_key not in cached_extractions
+                    and company_statuses.get(company.company_key) == "no_sec_filing"):
+                notes.append(f"{company.company_name} in the {label} has no SEC filing; "
+                             "its dependencies cannot be extracted from an SEC filing.")
+    if scenario_uncached:
+        count = len(scenario_uncached)
         notes.append(f"Dependencies for {count} scenario {'company are' if count == 1 else 'companies are'} "
-                     "unknown until you run Find dependencies for this scenario.")
-    if baseline_missing:
-        notes.append(f"The current portfolio also has {baseline_missing} top "
-                     f"{'company' if baseline_missing == 1 else 'companies'} without a cached extraction.")
+                     "unknown without a cached extraction. Run Find dependencies for this scenario "
+                     "to analyse companies with available SEC filings.")
+    if baseline_uncached:
+        count = len(baseline_uncached)
+        notes.append(f"The current portfolio also has {count} top "
+                     f"{'company' if count == 1 else 'companies'} without a cached extraction; "
+                     "extraction requires an available SEC filing.")
     if any(delta.baseline is None or delta.candidate is None for delta in deltas):
         notes.append("A metric shown on only one side has no numeric delta; missing values are not treated as zero.")
     if baseline.coverage.missing_allocation > 0 or candidate.coverage.missing_allocation > 0:
