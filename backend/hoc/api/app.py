@@ -85,7 +85,9 @@ def warm_up(state) -> None:
             missing = [e.ticker for e in example.holdings if not e.verified]
             log.info("example %s: %s", example.id,
                      "ready" if not missing else f"NOT verified, missing {', '.join(missing)}")
-        _replay_dependencies(service, [e for e in examples if e.verified])
+        verified = [e for e in examples if e.verified]
+        _replay_dependencies(service, verified)
+        _warm_change_ideas(service, verified)
     except Exception:
         log.exception("warm-up failed; the first request will load the data instead")
         return
@@ -105,6 +107,15 @@ def _replay_dependencies(service: EtfService, examples) -> None:
         cached = sum(c.status in ("cached", "done") for c in job.companies)
         log.info("dependencies %s: %d/%d companies from cache (%s)", example.id, cached, len(job.companies),
                  job.status)
+
+
+def _warm_change_ideas(service: EtfService, examples) -> None:
+    """FIX-17: load the shortlisted ETFs (and each example's ideas) so the first "Ideas" click is fast.
+    Cache-only like /api/change-ideas: no filing fetch and no model call."""
+    for example in examples:
+        response = service.change_ideas(ChangeIdeasRequest(holdings=[
+            PortfolioItem(ticker=e.ticker, allocation=e.allocation) for e in example.holdings]))
+        log.info("change ideas %s: %d ready (%s)", example.id, len(response.ideas), response.status)
 
 
 def _start_warm_up(state) -> threading.Thread:
