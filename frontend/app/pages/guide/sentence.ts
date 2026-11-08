@@ -50,7 +50,7 @@ const ACTIVE_STATUSES = new Set(["queued", "running", "starting", "polling"]);
 /**
  * FIX-18 + FIX-19: Ensures the displayed progress percentage (0..100) never decreases
  * for the same running `job_id`, while resetting when a reused `job_id` transitions
- * from a terminal state (`done`/`error` or 100%) back to an active run (`queued`/`running`).
+ * from a terminal state (`done`/`error`) back to an active run (`queued`/`running`).
  */
 export function monotonicProgressPct(
   prevJobId: string | null,
@@ -64,11 +64,10 @@ export function monotonicProgressPct(
   const jobId = nextJobId ?? null;
   const status = nextStatus ?? null;
   const restartedReusedJob =
-    (prevStatus != null &&
-      TERMINAL_STATUSES.has(prevStatus) &&
-      status != null &&
-      ACTIVE_STATUSES.has(status)) ||
-    (prevPct >= 100 && clamped < 100 && status != null && ACTIVE_STATUSES.has(status));
+    prevStatus != null &&
+    TERMINAL_STATUSES.has(prevStatus) &&
+    status != null &&
+    ACTIVE_STATUSES.has(status);
 
   if (jobId && jobId === prevJobId && !restartedReusedJob) {
     return { jobId, pct: Math.max(prevPct, clamped), status };
