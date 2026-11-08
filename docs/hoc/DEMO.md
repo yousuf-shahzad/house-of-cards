@@ -30,22 +30,49 @@ runs, so **read the numbers off the screen**, not this page.
 - **1:10, enter shares, not percentages (Portfolio):** Switch to **Shares**: IVV **120**, QQQ **50**, and pin EEM
   at **20%**. Valued at the latest exchange closes: **$121,446.60**, IVV **58.39%**, QQQ **21.61%**, EEM **20%**.
   Unpinned rows rescale around the pinned one; the analysis updates on every page.
-The Dependencies page reads top to bottom: audit bar, AI synthesis, key numbers, graph, facilities.
+The Dependencies page reads top to bottom: audit & coverage bar, AI synthesis, key numbers, graph, facilities, and **Investigate gaps**.
 
-- **1:35, go one level deeper (Dependencies, audit bar):** Load the US core example again and open
+- **1:35, go one level deeper (Dependencies, audit & coverage bar):** Load the US core example again and open
   **Dependencies**. Find dependencies read the latest 10-K/20-F of the top 15 companies (14 had one; Samsung has
-  no SEC filing) plus other companies' filings that name them: **139 verified links from 22 filings**. Every quote
-  was checked word for word against its filing; the audit bar counts what was rejected.
+  no SEC filing) plus other companies' filings that name them: **139 verified links from 22 filings**.
+  - **Honest 100% coverage bar (v3):** **40.43%** verified (13 companies), **1.50%** analysed with no named
+    dependencies (Meta), **1.43%** no SEC filing (Samsung, reached via reverse links), and **56.64%** outside the
+    top-15 cutoff — with per-ETF verified shares (**XLK 63% / QQQ 52% / IVV 37% / EEM 15%**) and plain-English
+    coverage gaps.
+  - **Interpretation verification (v3):** Every quote was checked word for word against its filing and verified by
+    rules + an independent Flash judge on ±300 characters of context: **138 confirmed, 1 flagged** (`Nvidia ->
+    OpenAI`, flagged as tentative because the 10-K says *"agreement being finalized... no assurance"*).
 - **1:55, the AI synthesis:** read one **critical flaw** and one **diversification idea**. Every number in them is a
-  Python metric; a claim with any other number was dropped (the audit bar shows how many).
-- **2:15, the single point of failure (key numbers):** **12.39%** of the portfolio depends on **TSMC**, through
-  4 companies, and **9.42%** on Samsung, which has no SEC filing of its own and shows up only because other
-  companies' filings name it (Qualcomm's 10-K calls it a foundry, a supplier and a customer). "TSMC" and "Taiwan
-  Semiconductor Manufacturing Company Limited" are one node because names are matched exactly, never by the AI.
-- **2:35, prove it (graph):** click a TSMC edge. The evidence drawer shows the **verbatim quote**, the section, the
-  form, the filing date and the SEC link. Scroll on to facilities by country if time allows.
-- **2:50, close with the limits:** filings cover about **45%** of the portfolio, big customers are usually unnamed,
-  and annual reports can be a year old. House of Cards says so on screen instead of guessing.
+  Python metric (`hoc-orch-v3.0`, **0 rejected claims**); a claim with any other number is dropped automatically.
+- **2:10, relationship importance & single points of failure (key numbers):** Every edge is scored deterministically
+  into **28 critical / 71 high / 37 medium / 3 low** (all foundries and contract manufacturers are `critical`; TSMC
+  fabs are `high`; corporate HQs like Nvidia and Alphabet are `low`; customers scale by revenue share, e.g. 22% ->
+  `critical`, 13% -> `high`; flagged tentative edges are capped at `medium`). **12.39%** of the portfolio is
+  **critically dependent** on **TSMC** (`critical.ALIAS:TSMC = 12.39%`) through 4 companies, and **9.42%** depends
+  on Samsung via reverse links. Facility concentration by country places **188 of 189** cached facility edges into
+  canonical ISO-2 countries (**US 35.77%**, **China 19.03%**), leaving only region-only `"Asia"` unplaced.
+- **2:25, prove it & investigate gaps (graph + research loop):** click a TSMC edge to open the evidence drawer
+  (verbatim quote, section, form, filing date, importance tier/reasons, interpretation badge, and SEC link). Click
+  **Investigate gaps** to run the bounded agentic research loop over SEC filings for flagged edges, undisclosed
+  customers, and zero-disclosure holdings — every new finding passes the same verbatim quote and interpretation
+  checks before merging.
+- **2:40, act on it (Compare):** open **Compare** (`#/compare`). The Scenario is seeded from your current portfolio
+  (`IVV 40 / QQQ 25 / XLK 15 / EEM 20`). Cut `QQQ` to **10%**, remove `XLK`, and add **VTV 30%** (`IVV 40 / QQQ 10 /
+  VTV 30 / EEM 20`), then click **Compare**. Instantly (cache-only, zero Gemini or SEC calls):
+  - **TSMC dependency drops from 12.39% to 4.69% (-7.71 pts)**.
+  - **Top-10 concentration drops from 37.14% to 24.98%**, and **effective companies more than double from 49.8 to 107.0**.
+  - Unanalysed scenario holdings are listed explicitly, with a one-click button to make the scenario your active portfolio.
+
+## Running the v3 Gold Evaluation Benchmark
+
+From `backend/`:
+
+```bash
+uv run hoc eval          # offline verifier + V-INT rules + R-IMP check
+uv run hoc eval --live   # full extraction + judge evaluation over the 10 held-out 10-Ks (115 core + 97 extended + 79 hard negatives)
+```
+
+*(Live precision/recall/hard-negative rejection table in `docs/hoc/eval/RESULTS.md`: `TODO` once E-RUN `--live` completes.)*
 
 ## If something goes wrong
 
