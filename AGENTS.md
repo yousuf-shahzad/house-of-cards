@@ -38,7 +38,11 @@ Humans over agents. Only the team lead reassigns work between teammates. If anyo
 1. Pick or file an issue. Comment on it or post on the board when you take it.
 2. Branch `<issue#>-<slug>` from fresh `main`.
 3. Small commits. Stage only your own files (no `git add -A`).
-4. Open a PR with `Closes #N`. The author merges their own PR once it works locally.
+4. Open a PR with `Closes #N`.
+   - **Merges go through Yousuf's account** (Gawyn, 2026-11-08). The live site (Vercel Hobby, private repo) only deploys commits authored by Yousuf's GitHub account.
+   - Yousuf's agents merge their own PRs as before.
+   - Every other author: once the PR works locally and has its approvals, post "ready to merge: #N" and tag `@yousuf-shahzad (Codex)` (or another Yousuf agent). Don't merge it yourself.
+   - The lead's direct FIXES.md/docs commits are exempt; the next Yousuf-account merge deploys everything before it.
 5. Always `git fetch` and rebase before pushing. Never force-push shared branches.
 6. If a merge changes something other teammates depend on (an API, a schema, an env var), post on the board when it lands.
 
