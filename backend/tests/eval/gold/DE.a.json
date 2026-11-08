@@ -1,0 +1,211 @@
+{
+  "company": {
+    "name": "Deere & Company",
+    "cik": "0000315189",
+    "ticker": "DE"
+  },
+  "filing": {
+    "form": "10-K",
+    "accession": "0001104659-25-122321",
+    "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+  },
+  "annotator": "Yousuf's Codex",
+  "relationships": [
+    {
+      "id": "DE-1",
+      "edge_type": "key_input",
+      "target_name": "steel products",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We source raw materials, manufactured components, and replacement parts for our equipment, engines, and other products from leading suppliers globally. These materials and components include a variety of steel products, metal castings, forgings, plastics, hydraulics, electronics, and ready-to-assemble components made to certain specifications.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "DE-2",
+      "edge_type": "key_input",
+      "target_name": "metal castings",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We source raw materials, manufactured components, and replacement parts for our equipment, engines, and other products from leading suppliers globally. These materials and components include a variety of steel products, metal castings, forgings, plastics, hydraulics, electronics, and ready-to-assemble components made to certain specifications.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "DE-3",
+      "edge_type": "key_input",
+      "target_name": "forgings",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We source raw materials, manufactured components, and replacement parts for our equipment, engines, and other products from leading suppliers globally. These materials and components include a variety of steel products, metal castings, forgings, plastics, hydraulics, electronics, and ready-to-assemble components made to certain specifications.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "DE-4",
+      "edge_type": "key_input",
+      "target_name": "plastics",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "We source raw materials, manufactured components, and replacement parts for our equipment, engines, and other products from leading suppliers globally. These materials and components include a variety of steel products, metal castings, forgings, plastics, hydraulics, electronics, and ready-to-assemble components made to certain specifications.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "DE-5",
+      "edge_type": "key_input",
+      "target_name": "hydraulics",
+      "target_kind": "component",
+      "direction": "depends_on_target",
+      "quote": "We source raw materials, manufactured components, and replacement parts for our equipment, engines, and other products from leading suppliers globally. These materials and components include a variety of steel products, metal castings, forgings, plastics, hydraulics, electronics, and ready-to-assemble components made to certain specifications.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "DE-6",
+      "edge_type": "key_input",
+      "target_name": "electronics",
+      "target_kind": "component",
+      "direction": "depends_on_target",
+      "quote": "We source raw materials, manufactured components, and replacement parts for our equipment, engines, and other products from leading suppliers globally. These materials and components include a variety of steel products, metal castings, forgings, plastics, hydraulics, electronics, and ready-to-assemble components made to certain specifications.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "DE-7",
+      "edge_type": "key_input",
+      "target_name": "ready-to-assemble components",
+      "target_kind": "component",
+      "direction": "depends_on_target",
+      "quote": "We source raw materials, manufactured components, and replacement parts for our equipment, engines, and other products from leading suppliers globally. These materials and components include a variety of steel products, metal castings, forgings, plastics, hydraulics, electronics, and ready-to-assemble components made to certain specifications.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "DE-8",
+      "edge_type": "jv_partner",
+      "target_name": "Banco Bradesco S.A.",
+      "target_kind": "company",
+      "direction": "depends_on_target",
+      "quote": "For example, in the second quarter of fiscal year 2025, we completed a transaction with a Brazilian bank, Banco Bradesco S.A. (Bradesco), for Bradesco to invest and become 50% owner of our subsidiary in Brazil, Banco John Deere S.A.",
+      "importance": "medium",
+      "notes": "Item 1 Financial Services; transaction completed, co-owns bank (50%); JV base 0.4."
+    },
+    {
+      "id": "DE-9",
+      "edge_type": "facility",
+      "target_name": "United States",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "In the U.S. and Canada, the equipment operations own and operate 23 factory locations and lease and operate four locations for manufacturing purposes, as well as own and lease 12 facilities for distribution purposes.",
+      "importance": "high",
+      "notes": "Item 2; US manufacturing footprint separately corroborated by Augusta/Davenport/Waterloo in table."
+    },
+    {
+      "id": "DE-10",
+      "edge_type": "facility",
+      "target_name": "Canada",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "In the U.S. and Canada, the equipment operations own and operate 23 factory locations and lease and operate four locations for manufacturing purposes, as well as own and lease 12 facilities for distribution purposes.",
+      "importance": "high",
+      "notes": "Item 2; joint US/Canada manufacturing footprint, no allocation of factory counts by country inferred."
+    },
+    {
+      "id": "DE-11",
+      "edge_type": "facility",
+      "target_name": "Brazil",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Catalão, Brazil John Deere Brasil Ltda (Catalão) Factory PPA",
+      "importance": "high",
+      "notes": "Item 2; named factory (BR)."
+    },
+    {
+      "id": "DE-12",
+      "edge_type": "facility",
+      "target_name": "Finland",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Joensuu, Finland Finland Forestry Factory CF",
+      "importance": "high",
+      "notes": "Item 2; named factory (FI)."
+    },
+    {
+      "id": "DE-13",
+      "edge_type": "facility",
+      "target_name": "Spain",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Getafae, Spain John Deere Iberica, S.A. PPA, CF, SAT",
+      "importance": "high",
+      "notes": "Item 2 significant manufacturing properties table (ES)."
+    },
+    {
+      "id": "DE-14",
+      "edge_type": "facility",
+      "target_name": "Germany",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Mannheim, Germany John Deere Werke Mannheim Factory SAT, PPA",
+      "importance": "high",
+      "notes": "Item 2; named factory (DE)."
+    },
+    {
+      "id": "DE-15",
+      "edge_type": "facility",
+      "target_name": "Mexico",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Monterrey, Mexico Industrias John Deere SA de CV Factory SAT, PPA, CF",
+      "importance": "high",
+      "notes": "Item 2; named factory (MX)."
+    },
+    {
+      "id": "DE-16",
+      "edge_type": "facility",
+      "target_name": "India",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Pune, India John Deere Pune Works Factory SAT",
+      "importance": "high",
+      "notes": "Item 2; named factory (IN)."
+    },
+    {
+      "id": "DE-17",
+      "edge_type": "facility",
+      "target_name": "France",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Saran, France Saran Engine Factory SAT, PPA, CF",
+      "importance": "high",
+      "notes": "Item 2; named factory (FR)."
+    }
+  ],
+  "negatives": [
+    {
+      "id": "DE-N1",
+      "target_name": "AGCO Corporation",
+      "kind": "competitor",
+      "quote": "The competitive environment for the agriculture and turf operations includes some global competitors, such as AGCO Corporation, CLAAS KGaA mbH, CNH Industrial N.V., Kubota Tractor Corporation, and The Toro Company."
+    },
+    {
+      "id": "DE-N2",
+      "target_name": "CNH Industrial N.V.",
+      "kind": "competitor",
+      "quote": "The competitive environment for the agriculture and turf operations includes some global competitors, such as AGCO Corporation, CLAAS KGaA mbH, CNH Industrial N.V., Kubota Tractor Corporation, and The Toro Company."
+    },
+    {
+      "id": "DE-N3",
+      "target_name": "Kubota Tractor Corporation",
+      "kind": "competitor",
+      "quote": "The competitive environment for the agriculture and turf operations includes some global competitors, such as AGCO Corporation, CLAAS KGaA mbH, CNH Industrial N.V., Kubota Tractor Corporation, and The Toro Company."
+    },
+    {
+      "id": "DE-N4",
+      "target_name": "future joint ventures",
+      "kind": "hypothetical",
+      "quote": "Acquisitions and joint ventures we have entered into, or may enter into in the future, may involve significant challenges and risks, including that the acquisitions or joint ventures do not advance our business strategy, or fail to produce satisfactory returns on investment."
+    }
+  ]
+}

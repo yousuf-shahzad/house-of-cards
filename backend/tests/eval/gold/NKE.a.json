@@ -1,0 +1,271 @@
+{
+  "company": {
+    "name": "NIKE, Inc.",
+    "cik": "0000320187",
+    "ticker": "NKE"
+  },
+  "filing": {
+    "form": "10-K",
+    "accession": "0000320187-26-000088",
+    "url": "https://www.sec.gov/Archives/edgar/data/320187/000032018726000088/nke-20260531.htm"
+  },
+  "annotator": "Yousuf's Codex",
+  "relationships": [
+    {
+      "id": "NKE-1",
+      "edge_type": "contract_manufacturer",
+      "target_name": "Vietnam",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "For fiscal 2026, factories in Vietnam, Indonesia and China manufactured approximately 52%, 27% and 16% of total NIKE Brand footwear, respectively.",
+      "importance": "critical",
+      "notes": "Item 1 Manufacturing; country of contract production, not a named manufacturer; critical base 0.85."
+    },
+    {
+      "id": "NKE-2",
+      "edge_type": "contract_manufacturer",
+      "target_name": "Indonesia",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "For fiscal 2026, factories in Vietnam, Indonesia and China manufactured approximately 52%, 27% and 16% of total NIKE Brand footwear, respectively.",
+      "importance": "critical",
+      "notes": "Item 1 Manufacturing; country of contract production, not a named manufacturer; critical base 0.85."
+    },
+    {
+      "id": "NKE-3",
+      "edge_type": "contract_manufacturer",
+      "target_name": "China",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "For fiscal 2026, factories in Vietnam, Indonesia and China manufactured approximately 52%, 27% and 16% of total NIKE Brand footwear, respectively.",
+      "importance": "critical",
+      "notes": "Item 1 Manufacturing; country of contract production, not a named manufacturer; critical base 0.85."
+    },
+    {
+      "id": "NKE-4",
+      "edge_type": "contract_manufacturer",
+      "target_name": "Cambodia",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "For fiscal 2026, factories in Vietnam, Cambodia and China manufactured approximately 34%, 15% and 12% of total NIKE Brand apparel, respectively.",
+      "importance": "critical",
+      "notes": "Item 1 Manufacturing; country of contract apparel production; Vietnam and China already labelled above."
+    },
+    {
+      "id": "NKE-5",
+      "edge_type": "key_input",
+      "target_name": "natural and synthetic rubber",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "The principal materials used in our footwear products are natural and synthetic rubber, plastic compounds, foam cushioning materials, natural and synthetic leather, nylon, polyester and natural fiber textiles, as well as polyurethane films used to make NIKE Air-Sole cushioning components.",
+      "importance": "high",
+      "notes": "Item 1 Manufacturing; expressly used input; key_input base 0.6, no identified sole source."
+    },
+    {
+      "id": "NKE-6",
+      "edge_type": "key_input",
+      "target_name": "plastic compounds",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "The principal materials used in our footwear products are natural and synthetic rubber, plastic compounds, foam cushioning materials, natural and synthetic leather, nylon, polyester and natural fiber textiles, as well as polyurethane films used to make NIKE Air-Sole cushioning components.",
+      "importance": "high",
+      "notes": "Item 1 Manufacturing; expressly used input; key_input base 0.6, no identified sole source."
+    },
+    {
+      "id": "NKE-7",
+      "edge_type": "key_input",
+      "target_name": "foam cushioning materials",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "The principal materials used in our footwear products are natural and synthetic rubber, plastic compounds, foam cushioning materials, natural and synthetic leather, nylon, polyester and natural fiber textiles, as well as polyurethane films used to make NIKE Air-Sole cushioning components.",
+      "importance": "high",
+      "notes": "Item 1 Manufacturing; expressly used input; key_input base 0.6, no identified sole source."
+    },
+    {
+      "id": "NKE-8",
+      "edge_type": "key_input",
+      "target_name": "natural and synthetic leather",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "The principal materials used in our footwear products are natural and synthetic rubber, plastic compounds, foam cushioning materials, natural and synthetic leather, nylon, polyester and natural fiber textiles, as well as polyurethane films used to make NIKE Air-Sole cushioning components.",
+      "importance": "high",
+      "notes": "Item 1 Manufacturing; expressly used input; key_input base 0.6, no identified sole source."
+    },
+    {
+      "id": "NKE-9",
+      "edge_type": "key_input",
+      "target_name": "nylon",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "The principal materials used in our footwear products are natural and synthetic rubber, plastic compounds, foam cushioning materials, natural and synthetic leather, nylon, polyester and natural fiber textiles, as well as polyurethane films used to make NIKE Air-Sole cushioning components.",
+      "importance": "high",
+      "notes": "Item 1 Manufacturing; expressly used input; key_input base 0.6, no identified sole source."
+    },
+    {
+      "id": "NKE-10",
+      "edge_type": "key_input",
+      "target_name": "polyester",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "The principal materials used in our footwear products are natural and synthetic rubber, plastic compounds, foam cushioning materials, natural and synthetic leather, nylon, polyester and natural fiber textiles, as well as polyurethane films used to make NIKE Air-Sole cushioning components.",
+      "importance": "high",
+      "notes": "Item 1 Manufacturing; expressly used input; key_input base 0.6, no identified sole source."
+    },
+    {
+      "id": "NKE-11",
+      "edge_type": "key_input",
+      "target_name": "natural fiber textiles",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "The principal materials used in our footwear products are natural and synthetic rubber, plastic compounds, foam cushioning materials, natural and synthetic leather, nylon, polyester and natural fiber textiles, as well as polyurethane films used to make NIKE Air-Sole cushioning components.",
+      "importance": "high",
+      "notes": "Item 1 Manufacturing; expressly used input; key_input base 0.6, no identified sole source."
+    },
+    {
+      "id": "NKE-12",
+      "edge_type": "key_input",
+      "target_name": "polyurethane films",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "The principal materials used in our footwear products are natural and synthetic rubber, plastic compounds, foam cushioning materials, natural and synthetic leather, nylon, polyester and natural fiber textiles, as well as polyurethane films used to make NIKE Air-Sole cushioning components.",
+      "importance": "high",
+      "notes": "Item 1 Manufacturing; expressly used input; key_input base 0.6, no identified sole source."
+    },
+    {
+      "id": "NKE-13",
+      "edge_type": "key_input",
+      "target_name": "natural and synthetic fabrics",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "The principal materials used in our apparel products are natural and synthetic fabrics, yarns, trims and threads (both virgin and recycled); specialized performance fabrics designed to efficiently wick moisture away from the body, retain heat and repel rain and/or snow; and plastic and metal hardware.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "NKE-14",
+      "edge_type": "key_input",
+      "target_name": "yarns",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "The principal materials used in our apparel products are natural and synthetic fabrics, yarns, trims and threads (both virgin and recycled); specialized performance fabrics designed to efficiently wick moisture away from the body, retain heat and repel rain and/or snow; and plastic and metal hardware.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "NKE-15",
+      "edge_type": "key_input",
+      "target_name": "trims",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "The principal materials used in our apparel products are natural and synthetic fabrics, yarns, trims and threads (both virgin and recycled); specialized performance fabrics designed to efficiently wick moisture away from the body, retain heat and repel rain and/or snow; and plastic and metal hardware.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "NKE-16",
+      "edge_type": "key_input",
+      "target_name": "threads",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "The principal materials used in our apparel products are natural and synthetic fabrics, yarns, trims and threads (both virgin and recycled); specialized performance fabrics designed to efficiently wick moisture away from the body, retain heat and repel rain and/or snow; and plastic and metal hardware.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "NKE-17",
+      "edge_type": "key_input",
+      "target_name": "plastic and metal hardware",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "The principal materials used in our apparel products are natural and synthetic fabrics, yarns, trims and threads (both virgin and recycled); specialized performance fabrics designed to efficiently wick moisture away from the body, retain heat and repel rain and/or snow; and plastic and metal hardware.",
+      "importance": "high",
+      "notes": "Item 1; each listed target is explicitly disclosed."
+    },
+    {
+      "id": "NKE-18",
+      "edge_type": "facility",
+      "target_name": "United States",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Air Manufacturing Innovation manufactures cushioning components used in footwear at NIKE-owned and leased facilities located near Beaverton, Oregon, and in Dong Nai City, Vietnam, as well as at NIKE-owned facilities in St. Charles, Missouri.",
+      "importance": "high",
+      "notes": "Item 2; owned/leased manufacturing sites, US (Oregon/Missouri) and VN; production facility base 0.7."
+    },
+    {
+      "id": "NKE-19",
+      "edge_type": "facility",
+      "target_name": "Vietnam",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "Air Manufacturing Innovation manufactures cushioning components used in footwear at NIKE-owned and leased facilities located near Beaverton, Oregon, and in Dong Nai City, Vietnam, as well as at NIKE-owned facilities in St. Charles, Missouri.",
+      "importance": "high",
+      "notes": "Item 2; owned/leased manufacturing sites, US (Oregon/Missouri) and VN; production facility base 0.7."
+    },
+    {
+      "id": "NKE-20",
+      "edge_type": "facility",
+      "target_name": "Netherlands",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "We lease a similar, but smaller, administrative facility in Hilversum, the Netherlands, which serves as the headquarters for our EMEA geography and management of certain brand functions for our non-U.S. operations.",
+      "importance": "low",
+      "notes": "Item 2; EMEA headquarters, office base 0.3. Distribution-only facilities excluded per adjudicator policy."
+    },
+    {
+      "id": "NKE-21",
+      "edge_type": "facility",
+      "target_name": "China",
+      "target_kind": "country",
+      "direction": "depends_on_target",
+      "quote": "We also lease an office complex in Shanghai, China, our headquarters for our Greater China geography, occupied by employees focused on implementing our wholesale, NIKE Direct and merchandising strategies in the region, among other functions.",
+      "importance": "low",
+      "notes": "Item 2; Greater China headquarters, office base 0.3."
+    },
+    {
+      "id": "NKE-22",
+      "edge_type": "key_input",
+      "target_name": "cotton",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "Continued volatility in the availability and prices for commodities and raw materials we use in our products and in our supply chain (such as cotton or petroleum derivatives) has had and could have a material adverse effect on our costs, gross margins and profitability.",
+      "importance": "high",
+      "notes": "Item 1A; expressly materials used, not just a hypothetical supply interruption."
+    },
+    {
+      "id": "NKE-23",
+      "edge_type": "key_input",
+      "target_name": "petroleum derivatives",
+      "target_kind": "material",
+      "direction": "depends_on_target",
+      "quote": "Continued volatility in the availability and prices for commodities and raw materials we use in our products and in our supply chain (such as cotton or petroleum derivatives) has had and could have a material adverse effect on our costs, gross margins and profitability.",
+      "importance": "high",
+      "notes": "Item 1A; expressly materials used, not just a hypothetical supply interruption."
+    }
+  ],
+  "negatives": [
+    {
+      "id": "NKE-N1",
+      "target_name": "adidas",
+      "kind": "competitor",
+      "quote": "We compete internationally with a significant number of athletic and leisure footwear companies, athletic and leisure apparel companies, sports equipment companies and large companies having diversified lines of athletic and leisure footwear, apparel and equipment, including adidas, Anta, ASICS, Deckers, Li Ning, lululemon athletica, New Balance, On, Puma, Under Armour and V.F. Corporation, among others."
+    },
+    {
+      "id": "NKE-N2",
+      "target_name": "customer accounting for 10% or more",
+      "kind": "negated",
+      "quote": "No customer accounted for 10% or more of our consolidated Revenues during fiscal 2026."
+    },
+    {
+      "id": "NKE-N3",
+      "target_name": "Tier 2 suppliers",
+      "kind": "generic",
+      "quote": "We are also supplied, primarily indirectly, by a number of materials suppliers (\"Tier 2 suppliers\"), who provide the principal materials used in footwear and apparel finished goods products."
+    },
+    {
+      "id": "NKE-N4",
+      "target_name": "counterparty financial institutions",
+      "kind": "hypothetical",
+      "quote": "If our counterparty financial institutions default on their obligations to us or fail, we may incur significant losses."
+    }
+  ]
+}
