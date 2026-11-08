@@ -50,7 +50,7 @@ export const GUIDE_STEP_META: readonly GuideStepMeta[] = [
     id: "risks",
     shortLabel: "Hidden risks",
     title: "4. Hidden supply-chain risks",
-    subtitle: "Your companies can still depend on the same key suppliers, customers, or factory locations.",
+    subtitle: "See which suppliers, customers, or factory locations your biggest companies share.",
     learnMoreHref: "#/dependencies",
     learnMoreLabel: "Learn more on the full Dependencies page",
   },
@@ -59,7 +59,7 @@ export const GUIDE_STEP_META: readonly GuideStepMeta[] = [
     id: "next",
     shortLabel: "What could you do?",
     title: "5. What could you do next?",
-    subtitle: "Ideas to reduce concentration and test how a change in your ETFs would shift your risks.",
+    subtitle: "Ways to spread out your risk and test a different ETF mix.",
     learnMoreHref: "#/compare",
     learnMoreLabel: "Learn more on the full Compare page",
   },
@@ -99,7 +99,7 @@ export function openInFullView(href: string): void {
 
 export const RISKS_COPY = {
   title: "Hidden risks",
-  intro: "We read the annual reports of your biggest companies to see who they rely on.",
+  intro: "From your biggest companies' annual reports, here is who they rely on.",
   reading: (n: number) => `Reading ${n} company annual reports…`,
   phasedProgress: "Reading reports → Double-checking findings → Writing summary",
   phaseReading: "Reading reports",
@@ -129,7 +129,7 @@ export const RISKS_COPY = {
 } as const;
 
 export const NEXT_COPY = {
-  intro: "A few ideas to make your portfolio less dependent on the same places and companies.",
+  intro: "Ways to rely less on the same companies and places.",
   waiting: "The ideas will appear here when the check on the previous step has finished.",
   none: "The AI didn't suggest any specific changes.",
   tryChange: "Try a change",
@@ -271,7 +271,7 @@ export const PAGE_INFO_COPY: Readonly<Record<string, TabInfoGuide>> = {
     keyDetails: [
       "Verbatim evidence: Click any percentage, graph line, or citation chip to open the exact word-for-word sentence from the SEC filing.",
       "Coverage bar: Shows how much of your portfolio has verified disclosures vs. companies that file annual reports without naming suppliers (like Apple) or sit outside the scan window.",
-      "Light vs. Go deeper: Light mode checks your top holdings' filings; 'Go deeper' runs cross-company filing searches to investigate uncertain links.",
+      "Light vs. Go deeper: Light double-checks the riskiest links in each report; Go deeper investigates more of them, for longer, including other companies' filings.",
     ],
   },
   compare: {

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  formatFindingOneLiner,
   monotonicProgressPct,
   pickMostOverlappingPair,
   shouldExpandOnKeyChange,
@@ -131,4 +132,30 @@ test("shouldExpandOnKeyChange expands only when expandKey changes to a non-null 
   step = shouldExpandOnKeyChange(step.prevKey, null);
   assert.equal(step.shouldExpand, false);
   assert.equal(step.prevKey, null);
+});
+
+test("formatFindingOneLiner produces one concise plain-English line per finding (FIX-29)", () => {
+  assert.equal(
+    formatFindingOneLiner("Apple Inc. → Japan (facility)", "confirmed"),
+    "Checked: Apple's reliance on Japan — confirmed",
+  );
+  assert.equal(
+    formatFindingOneLiner(
+      "NVIDIA Corp. → Taiwan Semiconductor Manufacturing Co., Ltd. (foundry)",
+      "confirmed",
+    ),
+    "Checked: NVIDIA's reliance on Taiwan Semiconductor Manufacturing — confirmed",
+  );
+  assert.equal(
+    formatFindingOneLiner("Advanced Micro Devices, Inc. → Sanmina Corp.", "rejected"),
+    "Checked: Advanced Micro Devices' reliance on Sanmina — ruled out",
+  );
+  assert.equal(
+    formatFindingOneLiner(
+      "Broadcom Inc. — undisclosed major customer",
+      "unresolved",
+      "Not finished in time: step budget reached after 3 lookups.",
+    ),
+    "Checked: Broadcom (undisclosed major customer) — not finished in time",
+  );
 });

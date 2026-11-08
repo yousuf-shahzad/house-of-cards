@@ -59,7 +59,12 @@ import {
   useDependencies,
   type ResearchRunStatus,
 } from "@/app/dependencies-state";
-import { monotonicProgressPct } from "@/app/pages/guide/sentence";
+import {
+  formatFindingOneLiner,
+  monotonicProgressPct,
+  splitFirstSentence,
+} from "@/app/pages/guide/sentence";
+import { claimMetricOneLiner } from "@/app/pages/guide/step-4-risks";
 import { PAGE_INFO_COPY } from "@/app/pages/guide/copy";
 import { TabInfoBanner } from "@/app/pages/guide";
 import { formatPct, Pct } from "@/app/ui/pct";
@@ -222,19 +227,58 @@ type CitationProps = {
 const CITATION_CHIP =
   "inline-flex cursor-pointer items-center gap-1 rounded-md border border-border-button-default bg-background-secondary-default px-2 py-0.5 text-start text-caption-1-regular text-text-primary hover:bg-background-primary-hover focus-visible:outline-2 focus-visible:outline-border-focus-ring";
 
-/** One AI claim: its text, the numbers it cites in plain words, and its filing quotes folded away. */
-function ClaimCard({ claim, metricById, edgeById, selectEdge }: CitationProps & { claim: InsightClaim }) {
+/** One AI claim: shows concise plain_title + plain_text (<= 25 words) by default, with "Full detail" toggle for technical text & filing quotes (FIX-29). */
+function ClaimCard({
+  claim,
+  metrics,
+  metricById,
+  edgeById,
+  selectEdge,
+}: CitationProps & { claim: InsightClaim; metrics: readonly MetricFact[] }) {
+  const [fullDetail, setFullDetail] = useState(false);
   const sev = CLAIM_SEVERITY_META[claim.severity] ?? CLAIM_SEVERITY_META.warning;
   const sources = claim.cited_edge_ids.length;
+
+  const plainTitle = claim.plain_title?.trim() || claim.title;
+  const fullText = claim.text.trim();
+
+  let shortText: string;
+  let hasMoreText: boolean;
+  if (claim.plain_text?.trim()) {
+    shortText = claim.plain_text.trim();
+    hasMoreText = Boolean(fullText && fullText !== shortText);
+  } else {
+    const oneLiner = claimMetricOneLiner(claim, metrics);
+    if (oneLiner) {
+      shortText = oneLiner;
+      hasMoreText = Boolean(fullText && fullText !== shortText);
+    } else {
+      const [first, rest] = splitFirstSentence(fullText);
+      shortText = first;
+      hasMoreText = Boolean(rest);
+    }
+  }
+
+  const hasDetails = hasMoreText || sources > 0 || (claim.plain_title && claim.plain_title.trim() !== claim.title.trim());
+
   return (
-    <article className={cx("flex flex-col gap-2.5 rounded-2xl border bg-background-primary-default p-4", sev.borderClass)}>
+    <article
+      className={cx(
+        "flex flex-col gap-2.5 rounded-2xl border bg-background-primary-default p-4",
+        sev.borderClass,
+      )}
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h5 className="text-body-medium text-text-primary">{claim.title}</h5>
+        <h5 className="text-body-medium text-text-primary">
+          {fullDetail ? claim.title : plainTitle}
+        </h5>
         <Chip variant="caption" color={sev.chipColor}>
           {sev.label}
         </Chip>
       </div>
-      <p className="text-body-2-regular text-text-secondary">{claim.text}</p>
+      <p className="text-body-2-regular text-text-secondary">
+        {fullDetail ? fullText : shortText}
+      </p>
       {claim.cited_metric_ids.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">
           {claim.cited_metric_ids.map((metricId) => {
@@ -248,38 +292,58 @@ function ClaimCard({ claim, metricById, edgeById, selectEdge }: CitationProps & 
                 onClick={() => firstEdgeId && selectEdge(firstEdgeId, true)}
                 className={CITATION_CHIP}
               >
-                {metric ? `${metricCitationLabel(metric)}: ${formatMetricValue(metric)}` : "Cited number"}
+                {metric
+                  ? `${metricCitationLabel(metric)}: ${formatMetricValue(metric)}`
+                  : "Cited number"}
               </button>
             );
           })}
         </div>
       )}
-      {sources > 0 && (
-        <details>
-          <summary className="cursor-pointer text-caption-1-regular text-text-tertiary">
-            {sources === 1 ? "1 source in the filings" : `${sources} sources in the filings`}
-          </summary>
-          <div className="flex flex-wrap gap-1.5 pt-2">
-            {claim.cited_edge_ids.map((edgeId) => {
-              const edge = edgeById.get(edgeId);
-              return (
-                <button key={edgeId} type="button" onClick={() => selectEdge(edgeId, true)} className={CITATION_CHIP}>
-                  <RiDoubleQuotesL className="size-3" aria-hidden />
-                  <span>
-                    {edge ? `${edge.source_company_name} → ${edge.target_name} (${edge.filing.form})` : "Filing quote"}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </details>
+      {fullDetail && sources > 0 && (
+        <div className="flex flex-wrap gap-1.5 border-t border-separator-border pt-2">
+          {claim.cited_edge_ids.map((edgeId) => {
+            const edge = edgeById.get(edgeId);
+            return (
+              <button
+                key={edgeId}
+                type="button"
+                onClick={() => selectEdge(edgeId, true)}
+                className={CITATION_CHIP}
+              >
+                <RiDoubleQuotesL className="size-3" aria-hidden />
+                <span>
+                  {edge
+                    ? `${edge.source_company_name} → ${edge.target_name} (${edge.filing.form})`
+                    : "Filing quote"}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {hasDetails && (
+        <div className="flex items-center">
+          <Button
+            variant="ghost"
+            size="xs"
+            aria-expanded={fullDetail}
+            onClick={() => setFullDetail((prev) => !prev)}
+          >
+            {fullDetail ? "Show less" : "Full detail"}
+          </Button>
+        </div>
       )}
     </article>
   );
 }
 
 /** The AI synthesis: critical flaws and diversification ideas, each citing checked numbers and quotes. */
-function InsightsPanel({ insights, ...citations }: CitationProps & { insights: Insights }) {
+function InsightsPanel({
+  insights,
+  metrics,
+  ...citations
+}: CitationProps & { insights: Insights; metrics: readonly MetricFact[] }) {
   const status = INSIGHTS_STATUS_META[insights.status] ?? INSIGHTS_STATUS_META.error;
   const columns = [
     {
@@ -328,7 +392,7 @@ function InsightsPanel({ insights, ...citations }: CitationProps & { insights: I
       }
       summary={
         status.note ??
-        "Written by the AI from the verified filing quotes. Every number in it was checked against the calculated numbers, and claims that failed were dropped. Advisory only, not investment advice."
+        "Plain-English takeaways from the verified filing quotes, with every number checked by Python (not investment advice)."
       }
     >
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -345,7 +409,14 @@ function InsightsPanel({ insights, ...citations }: CitationProps & { insights: I
                 {column.empty}
               </p>
             ) : (
-              column.claims.map((claim) => <ClaimCard key={claim.claim_id} claim={claim} {...citations} />)
+              column.claims.map((claim) => (
+                <ClaimCard
+                  key={claim.claim_id}
+                  claim={claim}
+                  metrics={metrics}
+                  {...citations}
+                />
+              ))
             )}
           </div>
         ))}
@@ -432,7 +503,7 @@ function CoveragePanel({
           </Chip>
         </div>
         <span className="text-caption-1-regular text-text-tertiary">
-          100% look-through portfolio coverage across 5 deterministic buckets
+          How much of your portfolio has verified supply-chain disclosures in SEC annual reports.
         </span>
       </div>
 
@@ -601,6 +672,7 @@ function ResearchFindingCard({
   edgeById: ReadonlyMap<string, VerifiedEdge>;
   selectEdge: (edgeId: string, openDrawer: boolean) => void;
 }) {
+  const [showTrace, setShowTrace] = useState(false);
   const kindMeta = RESEARCH_KIND_META[finding.kind] ?? {
     label: finding.kind,
     chipColor: "neutral" as ChipColor,
@@ -609,6 +681,13 @@ function ResearchFindingCard({
     label: finding.outcome,
     chipColor: "neutral" as ChipColor,
   };
+  const oneLiner = formatFindingOneLiner(
+    finding.subject,
+    finding.outcome,
+    finding.explanation,
+  );
+  const [shortExplanation, restExplanation] = splitFirstSentence(finding.explanation ?? "");
+  const hasTraceOrMore = Boolean(restExplanation || finding.steps.length > 0);
 
   return (
     <article className="flex flex-col gap-3 rounded-2xl border border-separator-border bg-background-primary-default p-4">
@@ -622,13 +701,13 @@ function ResearchFindingCard({
       </div>
 
       <div className="flex flex-col gap-1">
-        <h5 className="text-body-semibold text-text-primary">{finding.subject}</h5>
-        <p className="text-caption-1-regular text-text-tertiary italic">{finding.question}</p>
-        <p className="mt-1 text-body-2-regular text-text-secondary">{finding.explanation}</p>
+        <h5 className="text-body-semibold text-text-primary">{oneLiner}</h5>
+        <p className="mt-0.5 text-body-2-regular text-text-secondary">
+          {showTrace ? finding.explanation : shortExplanation}
+        </p>
       </div>
 
-      {/* Agentic tool step trace */}
-      {finding.steps.length > 0 && (
+      {showTrace && finding.steps.length > 0 && (
         <div className="flex flex-col gap-1.5 rounded-xl border border-separator-border bg-background-secondary-default p-3">
           <span className="text-caption-1-semibold text-text-primary">
             Agentic verification trace ({finding.steps.length}{" "}
@@ -668,6 +747,21 @@ function ResearchFindingCard({
               </li>
             ))}
           </ol>
+        </div>
+      )}
+
+      {hasTraceOrMore && (
+        <div className="flex items-center">
+          <Button
+            variant="ghost"
+            size="xs"
+            aria-expanded={showTrace}
+            onClick={() => setShowTrace((prev) => !prev)}
+          >
+            {showTrace
+              ? "Show less"
+              : `Full detail (${finding.steps.length} ${finding.steps.length === 1 ? "step" : "steps"})`}
+          </Button>
         </div>
       )}
 
@@ -759,7 +853,7 @@ function ResearchPanel({
           )}
         </>
       }
-      summary="Runs a bounded agentic research loop over SEC EDGAR 10-K/20-F filings to cross-check flagged interpretations, undisclosed major customers, single-source bottlenecks, and holdings with zero initial disclosures. Every new quote is verified verbatim in Python."
+      summary="Double-checks uncertain links and missing customer names across SEC annual reports."
       headerActions={
         <Button
           variant="primary"
@@ -1685,9 +1779,8 @@ function DependenciesPageContent() {
               </Chip>
             </div>
             <p className="text-body-2-regular text-text-secondary">
-              Gemini sub-agents extract suppliers, foundries, contract manufacturers, key inputs,
-              customers, and facility locations from SEC filings. Python verifies every quote
-              verbatim and computes deterministic exposure metrics.
+              See which suppliers, customers, and factory locations your biggest companies rely on,
+              verified word-for-word in their SEC annual reports.
             </p>
             <div className="pt-1">
               <TabInfoBanner info={PAGE_INFO_COPY.dependencies} />
@@ -2005,7 +2098,8 @@ function DependenciesPageContent() {
                 </h3>
               </div>
               <span className="text-caption-1-regular text-text-tertiary">
-                As of {result.as_of_date} · Zero unverified edges or numbers are ever drawn
+                As of {result.as_of_date} — only word-for-word filing quotes and Python-checked
+                numbers are shown.
               </span>
             </div>
 
@@ -2227,6 +2321,7 @@ function DependenciesPageContent() {
           {/* 4. AI synthesis, straight after the audit bar so the key findings come first */}
           <InsightsPanel
             insights={result.insights}
+            metrics={result.metrics}
             metricById={metricById}
             edgeById={edgeById}
             selectEdge={selectEdge}
@@ -2258,8 +2353,8 @@ function DependenciesPageContent() {
               <div className="flex flex-col gap-1">
                 <h3 className="text-headline-small text-text-primary">Key numbers</h3>
                 <p className="text-body-2-regular text-text-secondary">
-                  Calculated directly from the verified filing quotes, not by the AI. Each of your
-                  companies is counted once, so the percentages never double-count.
+                  Calculated by Python from the verified filing quotes, counting each of your
+                  companies once.
                 </p>
               </div>
               {summaryFacts.length > 0 && (
@@ -2355,11 +2450,9 @@ function DependenciesPageContent() {
                 } counterparties · ${graph?.edges.length ?? 0} edges`}
               </Chip>
             }
-            summary={`Showing ${graph?.targets.length ?? 0} of ${
-              graph?.totalTargetsBeforeLimit ?? 0
-            } counterparties (${
+            summary={`Click any company or line to read the exact sentence from its SEC annual report (${
               graph?.edges.length ?? 0
-            } verified edges). Click any line or circle to inspect its verbatim SEC filing quote.`}
+            } verified links).`}
             expandKey={selectedEdgeId ?? selectedNodeId}
             headerActions={
               <div className="flex max-w-full flex-wrap items-center gap-2">
@@ -2629,7 +2722,7 @@ function DependenciesPageContent() {
                 {`${facilityRows.length} ${facilityRows.length === 1 ? "country" : "countries"}`}
               </Chip>
             }
-            summary="Grouped by canonical country from deterministic Python metrics, with named sites listed under each holding"
+            summary="Share of your portfolio in companies that report key factories or offices in each country."
           >
             {facilityRows.length === 0 ? (
               <p className="rounded-2xl border border-separator-border bg-background-primary-default p-5 text-body-2-regular text-text-secondary">
