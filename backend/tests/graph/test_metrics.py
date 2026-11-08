@@ -254,6 +254,9 @@ def test_reverse_link_customer_edge_maps_to_supplier_dependency() -> None:
     assert "dep.CIK:8880000009" in summary.metrics_by_id
     assert summary.metrics_by_id["dep.CIK:8880000009"].value == pytest.approx(0.34)
     assert summary.metrics_by_id["spof.CIK:8880000009"].value == pytest.approx(0.34)
+    # FIX-33: Reverse customer disclosure must not raise the buyer's critical.* metric
+    assert "critical.CIK:8880000009" not in summary.metrics_by_id
+    assert summary.suppliers[0].critical_dependent_weight == pytest.approx(0.0)
 
 
 def test_facility_country_resolution_and_unplaced_count() -> None:
