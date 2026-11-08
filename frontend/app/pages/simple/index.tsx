@@ -5,13 +5,14 @@ import { useExperience } from "@/app/experience";
 import type { PageKey } from "@/app/registry";
 import { diversificationVerdict } from "@/app/ui/concentration";
 import { etfVisual } from "@/app/ui/etf-color";
-import { ServerError } from "@/app/ui/draft-editor";
+import { plainValuationIssue, ServerError } from "@/app/ui/draft-editor";
 import { Pct } from "@/app/ui/pct";
 import { TryAChange } from "@/app/ui/try-a-change";
 import { Chip } from "@/components/base/badges/chip";
 import { Button, ButtonLink } from "@/components/base/buttons/button";
 import { Spinner } from "@/components/base/spinner/spinner";
 import { plainSectorName } from "../guide/copy";
+import { hasMaterialCoverageGap } from "./issues";
 import { SimplePortfolio } from "./portfolio";
 import { buildGraph, truncate, WIDTH } from "../network/graph";
 import { SimpleDependencies } from "./dependencies";
@@ -139,13 +140,13 @@ export default function SimplePage({ pageKey }: { pageKey: PageKey }) {
   if (status === "loading") return <Card title="Updating your portfolio"><div role="status" className="flex items-center gap-3"><Spinner size="sm" aria-label="Loading portfolio" />Adding up the holdings inside your ETFs…</div></Card>;
   if (stale || (rows.length > 0 && !validation.valid)) return <Card title="Finish your portfolio">
     <p role="status" className="text-body-regular text-text-secondary">{stale ? "Your portfolio has changed. Previous results are hidden until your ETFs and shares are valid." : "Complete your ETFs and shares on Portfolio before viewing these results."}</p>
-    {valuation.result?.issues.filter((issue) => issue.severity === "blocking").map((issue, index) => <p key={index} role="alert" className="text-body-regular text-text-error-primary">{issue.ticker ? `${issue.ticker}: ` : ""}{issue.message}</p>)}
+    {valuation.result?.issues.filter((issue) => issue.severity === "blocking").map((issue, index) => <p key={index} role="alert" className="text-body-regular text-text-error-primary">{plainValuationIssue(issue, { withTicker: true })}</p>)}
     <div><ButtonLink href="#/portfolio" variant="secondary">Edit portfolio</ButtonLink></div>
   </Card>;
   if (!analysis || stale || status !== "ready") return <Card title="Start with your portfolio"><p className="text-body-regular text-text-secondary">Load a sample or enter your ETFs to see this page's results.</p><div><ButtonLink href="#/portfolio" variant="secondary">Go to Portfolio</ButtonLink></div></Card>;
 
   return <div className="flex flex-col gap-5" data-testid={`simple-${pageKey}`}>
-    {(analysis.coverage.covered_weight < analysis.coverage.total_allocation - 0.000001 || analysis.warnings.length > 0) && <div role="status" className="rounded-2xl border border-separator-border p-4 text-body-2-regular text-text-secondary">
+    {hasMaterialCoverageGap(analysis) && <div role="status" className="rounded-2xl border border-separator-border p-4 text-body-2-regular text-text-secondary">
       Some holdings or company details are missing. These results cover the data we could load. <a href="#/risk" className="underline">Check data coverage</a>.
     </div>}
     {pageKey === "exposures" && <Companies analysis={analysis} />}
