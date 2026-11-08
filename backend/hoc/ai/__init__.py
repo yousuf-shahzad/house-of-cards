@@ -1,16 +1,13 @@
-"""Package G-AI: Gemini Interactions REST client, fake client, quote verifier, cache, and extractor.
+"""Package G-AI: Gemini Interactions client, deterministic quote verifier, disk cache, and dependency extractor.
 
 Owner: Kendrick's Gemini (`@kendricklow2008 (Gemini)`).
 """
 
-from __future__ import annotations
-
-from hoc.ai.cache import EXTRACTION_CACHE_NAMESPACE, ExtractionCache, make_extraction_cache_key
+from hoc.ai.cache import ExtractionCache
 from hoc.ai.client import (
     API_REVISION,
     DEFAULT_EXTRACTOR_MODEL,
     DEFAULT_MAX_CONCURRENCY,
-    DEFAULT_MAX_OUTPUT_TOKENS,
     DEFAULT_ORCHESTRATOR_MODEL,
     GEMINI_INTERACTIONS_URL,
     FakeGeminiClient,
@@ -21,8 +18,6 @@ from hoc.ai.client import (
     GeminiQuotaError,
     RestGeminiClient,
     extract_interaction_text,
-    resolve_api_key,
-    resolve_models,
 )
 from hoc.ai.extractor import (
     EDGE_TYPES,
@@ -41,18 +36,21 @@ from hoc.ai.extractor import (
     pack_filing_sections,
     verify_and_build_edges,
 )
-from hoc.ai.verifier import PROMPT_VERSION, normalise_for_verify, verify_quote
-
-prompt_version = PROMPT_VERSION
+from hoc.ai.verifier import (
+    PROMPT_VERSION,
+    find_quote_span,
+    is_generic_company_target,
+    normalise_for_verify,
+    resolve_quote_section,
+    verify_quote,
+)
 
 __all__ = [
     "API_REVISION",
     "DEFAULT_EXTRACTOR_MODEL",
     "DEFAULT_MAX_CONCURRENCY",
-    "DEFAULT_MAX_OUTPUT_TOKENS",
     "DEFAULT_ORCHESTRATOR_MODEL",
     "EDGE_TYPES",
-    "EXTRACTION_CACHE_NAMESPACE",
     "EXTRACTION_SCHEMA",
     "EXTRACTOR_SYSTEM_INSTRUCTION",
     "GEMINI_INTERACTIONS_URL",
@@ -75,13 +73,12 @@ __all__ = [
     "build_extraction_prompt",
     "dedupe_edges",
     "extract_interaction_text",
+    "find_quote_span",
+    "is_generic_company_target",
     "make_edge_id",
-    "make_extraction_cache_key",
     "normalise_for_verify",
     "pack_filing_sections",
-    "prompt_version",
-    "resolve_api_key",
-    "resolve_models",
+    "resolve_quote_section",
     "verify_and_build_edges",
     "verify_quote",
 ]
