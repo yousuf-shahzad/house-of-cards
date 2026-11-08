@@ -68,11 +68,11 @@ The Dependencies page reads top to bottom: audit & coverage bar, AI synthesis, k
 From `backend/`:
 
 ```bash
-uv run hoc eval          # offline verifier + V-INT rules + R-IMP check
-uv run hoc eval --live   # full extraction + judge evaluation over the 10 held-out 10-Ks (115 core + 97 extended + 79 hard negatives)
+uv run python -m hoc.cli eval          # offline replay (default): reproduces all 306 numbers in results.json with zero API calls
+uv run python -m hoc.cli eval --live   # full extraction + judge evaluation over the 10 held-out 10-Ks (115 core + 97 extended + 79 hard negatives)
 ```
 
-*(Live precision/recall/hard-negative rejection table in `docs/hoc/eval/RESULTS.md`: `TODO` once E-RUN `--live` completes.)*
+Headline benchmark numbers ([`docs/hoc/EVAL.md`](EVAL.md)): **88.4%** blind precision (**96.1%** pooled precision, 124/129), **57.4%** core recall (66/115), **1.3%** hard-negative false-positive rate (1/79), **100.0%** direction accuracy, and **100.0%** facility-country accuracy (39/39). (On the 10 held-out filings V-INT filtered 0 additional edges beyond quote verification; its live contribution is on `us-core-tilt`, where it flagged the tentative `Nvidia -> OpenAI` disclosure.)
 
 ## If something goes wrong
 
