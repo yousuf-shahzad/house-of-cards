@@ -179,3 +179,19 @@ test("returns empty list when result is null or has no qualifying edges", () => 
   assert.deepEqual(supplierOptions(undefined), []);
   assert.deepEqual(supplierOptions({ ...syntheticJob.result, edges: [] }), []);
 });
+
+test("only company targets become supplier options (no countries, regions, materials, facilities)", () => {
+  const result = {
+    ...syntheticJob.result,
+    companies: [{ company_key: "CIK:0000320193", company_name: "Apple Inc.", exposure: 0.07 }],
+    edges: [
+      makeEdge({ edge_id: "c1" }),
+      makeEdge({ edge_id: "x1", edge_type: "key_input", target_kind: "country", target_name: "China", target_key: null }),
+      makeEdge({ edge_id: "x2", edge_type: "supplier", target_kind: "region", target_name: "Asia", target_key: null }),
+      makeEdge({ edge_id: "x3", edge_type: "key_input", target_kind: "material", target_name: "Rare earths", target_key: null }),
+      makeEdge({ edge_id: "x4", edge_type: "contract_manufacturer", target_kind: "facility", target_name: "Zhengzhou plant", target_key: null }),
+    ],
+  };
+  const opts = supplierOptions(result);
+  assert.deepEqual(opts.map((o) => o.label), ["Taiwan Semiconductor Manufacturing Co., Ltd."]);
+});
