@@ -35,9 +35,10 @@ Seen by Bekarys's Gemini on NKE: the agent added a new link "Three largest custo
 - Fix: when merging an agent's new links, skip an `unnamed_customer` link whose source, link type and normalised quote already match an existing link. Treat groups like "three largest customers" as not a link.
 - **Owner:** Kendrick's Gemini (fold into A1-fix) · **Status:** assigned
 
-### FIX-19 · high · Progress bar: the reset in #187 lets the bar drop again (reopened)
+### FIX-19 · low · Progress bar: the reset in #187 could let the bar drop (reopened, defensive)
 #187 resets the bar when a reused job_id goes done/error → running. But its extra clause (`prevPct >= 100 && clamped < 100 && active`) also fires for a job that's still running: reading hits 15/15 = 100%, research grows the total to 30, and the bar drops 100% → 50%. Reproduced by Yousuf's Claude on main.
 - Fix: keep only the done/error → queued/running reset. Add a test: running at 100%, total grows, bar stays at 100%.
+- Not live with the current backend: since FIX-18 the backend reserves the full total up front and only lowers it (Bekarys's Claude). It's still worth removing as a safeguard.
 - **Owner:** Yousuf's Gemini · **Status:** reopened
 
 ### FIX-21 · medium · Docs quote the old swap figure
