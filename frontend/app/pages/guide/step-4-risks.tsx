@@ -11,10 +11,18 @@ import { useDependencies } from "@/app/dependencies-state";
 import { useExperience } from "@/app/experience";
 import { buildMetricCards, metricKind, metricSubject } from "@/app/pages/dependencies/metrics";
 import { formatPct } from "@/app/ui/pct";
-import { Chip } from "@/components/base/badges/chip";
+import { Chip, type ChipColor } from "@/components/base/badges/chip";
 import { Button } from "@/components/base/buttons/button";
 import { ProgressBar } from "@/components/base/progress/progress";
-import type { DependencyResult, EdgeType, InsightClaim, InsightsStatus, MetricFact } from "@/api/types";
+import type {
+  DependencyResult,
+  EdgeType,
+  InsightClaim,
+  InsightsStatus,
+  MetricFact,
+  ResearchFinding,
+  ResearchOutcome,
+} from "@/api/types";
 import { useAutoDependencies } from "./use-auto-dependencies";
 import { RISKS_COPY } from "./copy";
 import { splitFirstSentence } from "./sentence";
@@ -225,6 +233,42 @@ export function ClaimCards({
   );
 }
 
+const OUTCOME_BADGE: Record<ResearchOutcome, { label: string; color: ChipColor }> = {
+  confirmed: { label: "Confirmed", color: "lime" },
+  new_evidence: { label: "New evidence", color: "cyan" },
+  revised: { label: "Revised", color: "blue" },
+  rejected: { label: "Rejected", color: "rose" },
+  unresolved: { label: "Unresolved", color: "yellow" },
+};
+
+function ResearchFindingsList({ findings }: { findings: readonly ResearchFinding[] }) {
+  if (findings.length === 0) return null;
+  return (
+    <ul className="flex flex-col gap-2">
+      {findings.map((finding) => {
+        const badge = OUTCOME_BADGE[finding.outcome] ?? {
+          label: finding.outcome,
+          color: "neutral" as ChipColor,
+        };
+        return (
+          <li
+            key={finding.finding_id}
+            className="flex flex-col gap-1 rounded-xl border border-separator-border bg-background-primary-default p-3 text-caption-1-regular text-text-secondary"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-medium text-text-primary">{finding.subject}</span>
+              <Chip variant="caption" color={badge.color}>
+                {badge.label}
+              </Chip>
+            </div>
+            <span>{finding.explanation}</span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 export default function RisksStep(_props: RiskStepProps) {
   useAutoDependencies(); // safety net if step 2 was skipped
   const { status: analysisStatus } = useAnalysis();
@@ -234,6 +278,7 @@ export default function RisksStep(_props: RiskStepProps) {
   // Keep existing result visible in place while "Go deeper" polls on the same portfolio.
   const result = !stale ? job?.result ?? null : null;
   const running = !error && (status === "starting" || status === "polling" || (stale && analysisStatus === "ready"));
+  const liveResearch = (job as { research?: readonly ResearchFinding[] } | null)?.research ?? [];
 
   const activePhase = job?.phase ?? "reading";
   const stepsDone = job?.steps_done || job?.progress_done || 0;
@@ -269,6 +314,14 @@ export default function RisksStep(_props: RiskStepProps) {
         value={stepsDone}
         maxValue={stepsTotal}
       />
+      {liveResearch.length > 0 && (
+        <div className="flex flex-col gap-2 pt-1">
+          <span className="text-caption-1-semibold text-text-primary">
+            {RISKS_COPY.doubleCheckedTitle(liveResearch.length)}
+          </span>
+          <ResearchFindingsList findings={liveResearch} />
+        </div>
+      )}
     </div>
   ) : null;
 
@@ -279,6 +332,7 @@ export default function RisksStep(_props: RiskStepProps) {
     const showConcernsSection =
       !notAnalysed && (result.insights.status === "ok" || result.insights.status === "missing_api_key");
     const canGoDeeper = !notAnalysed && result.research_depth !== "thorough";
+    const completedResearch = result.research ?? [];
 
     body = (
       <>
@@ -306,6 +360,16 @@ export default function RisksStep(_props: RiskStepProps) {
               empty={result.insights.status === "ok" ? RISKS_COPY.noConcerns : undefined}
             />
           </section>
+        )}
+        {!running && completedResearch.length > 0 && (
+          <details className="flex flex-col gap-2 rounded-2xl border border-border-button-default bg-background-secondary-default p-4">
+            <summary className="cursor-pointer text-body-2-medium text-text-primary">
+              {RISKS_COPY.doubleCheckedTitle(completedResearch.length)}
+            </summary>
+            <div className="pt-3">
+              <ResearchFindingsList findings={completedResearch} />
+            </div>
+          </details>
         )}
         {canGoDeeper && (
           <div>

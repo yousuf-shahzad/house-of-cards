@@ -1792,6 +1792,7 @@ function DependenciesPageContent() {
           const stepsDone = job?.steps_done || job?.progress_done || 0;
           const stepsTotal = job?.steps_total || job?.progress_total || topExposures.length || 15;
           const progressPct = stepsTotal > 0 ? Math.min(100, Math.round((stepsDone / stepsTotal) * 100)) : 0;
+          const liveResearch = (job as { research?: readonly ResearchFinding[] } | null)?.research ?? [];
           const phases: Array<{ id: "reading" | "researching" | "synthesising"; label: string }> = [
             { id: "reading", label: "Reading reports" },
             { id: "researching", label: "Double-checking findings" },
@@ -1857,10 +1858,57 @@ function DependenciesPageContent() {
                   })}
                 </div>
               )}
+
+              {liveResearch.length > 0 && (
+                <div className="flex flex-col gap-2 rounded-xl border border-separator-border bg-background-secondary-default p-3">
+                  <span className="text-caption-1-semibold text-text-primary">
+                    Live research findings ({liveResearch.length} completed)
+                  </span>
+                  <ul className="flex flex-col gap-1.5">
+                    {liveResearch.map((finding) => {
+                      const outcomeMeta = RESEARCH_OUTCOME_META[finding.outcome] ?? {
+                        label: finding.outcome,
+                        chipColor: "neutral" as ChipColor,
+                      };
+                      return (
+                        <li
+                          key={finding.finding_id}
+                          className="flex flex-wrap items-baseline justify-between gap-2 text-caption-1-regular text-text-secondary"
+                        >
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <Chip variant="caption" color={outcomeMeta.chipColor}>
+                              {outcomeMeta.label}
+                            </Chip>
+                            <span className="font-medium text-text-primary">{finding.subject}</span>
+                            <span>— {finding.explanation}</span>
+                          </div>
+                          <span className="font-mono text-text-tertiary">
+                            {finding.steps.length} {finding.steps.length === 1 ? "step" : "steps"}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
             </div>
           );
         })()}
       </section>
+
+      {!result && isRunning && ((job as { research?: readonly ResearchFinding[] } | null)?.research?.length ?? 0) > 0 && (
+        <ResearchPanel
+          researchStatus={researchStatus}
+          researchJob={researchJob}
+          researchError={researchError}
+          resultResearch={[...((job as { research?: readonly ResearchFinding[] } | null)?.research ?? [])]}
+          researchDepth={currentDepth}
+          isDepRunning={isRunning}
+          edgeById={edgeById}
+          selectEdge={selectEdge}
+          onRunResearch={() => runResearch()}
+        />
+      )}
 
       {!result && !isRunning && (
         <section
@@ -2162,8 +2210,12 @@ function DependenciesPageContent() {
             researchStatus={researchStatus}
             researchJob={researchJob}
             researchError={researchError}
-            resultResearch={result.research ?? []}
-            researchDepth={result.research_depth ?? "none"}
+            resultResearch={
+              isRunning && ((job as { research?: readonly ResearchFinding[] } | null)?.research?.length ?? 0) > 0
+                ? [...((job as { research?: readonly ResearchFinding[] } | null)?.research ?? [])]
+                : result.research ?? []
+            }
+            researchDepth={isRunning ? currentDepth : result.research_depth ?? "none"}
             isDepRunning={isRunning}
             edgeById={edgeById}
             selectEdge={selectEdge}
