@@ -1166,5 +1166,1274 @@
     }
   ],
   "vint_rejected_edges": [],
-  "quote_rejected_count": 0
+  "quote_rejected_count": 0,
+  "research_depth": "light",
+  "agentic_edges": [
+    {
+      "edge_id": "edge_e60d52406d66",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "customer",
+      "target_name": "The Home Depot",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "mass retailer selling turf products",
+      "evidence_quote": "although the segment also builds turf products for sale by mass retailers, including The Home Depot and Lowe's.",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Customer relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_a31a7be471da",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "customer",
+      "target_name": "Lowe's",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "mass retailer selling turf products",
+      "evidence_quote": "although the segment also builds turf products for sale by mass retailers, including The Home Depot and Lowe's.",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Customer relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_0cc71be00b01",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "jv_partner",
+      "target_name": "Banco Bradesco S.A.",
+      "target_kind": "company",
+      "target_key": "ALIAS:BANCO_BRADESCO",
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "50% owner of Banco John Deere S.A.",
+      "evidence_quote": "In certain markets, financing is offered through cooperation agreements or joint ventures with other financial institutions. For example, in the second quarter of fiscal year 2025, we completed a transaction with a Brazilian bank, Banco Bradesco S.A. (Bradesco), for Bradesco to invest and become 50% owner of our subsidiary in Brazil, Banco John Deere S.A.",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.4,
+        "tier": "medium",
+        "reasons": [
+          "Joint-venture partner relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The filing confirms a transaction with Banco Bradesco S.A. to become a 50% owner of Deere's subsidiary Banco John Deere S.A. in a joint venture/cooperation agreement.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_448da3c0e5ef",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "key_input",
+      "target_name": "rare earth minerals",
+      "target_kind": "material",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "sourced significantly from China",
+      "evidence_quote": "certain of our products, including motors, batteries, and other components, rely on rare earth minerals for their manufacturing, of which a significant majority are sourced from China.",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.75,
+        "tier": "high",
+        "reasons": [
+          "Key input relationship",
+          "High concentration ('significant majority')",
+          "Dependency cue ('rely on')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The context explicitly confirms that certain Deere products rely on rare earth minerals for manufacturing.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_16d663adc642",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "John Deere Augusta Works Factory",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Augusta, Georgia",
+      "evidence_quote": "Augusta, Georgia John Deere Augusta Works Factory SAT",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('Factory')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_adc508626ecd",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "John Deere Brasil Ltda (Catalão) Factory",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Catalão, Brazil",
+      "evidence_quote": "Catalão, Brazil John Deere Brasil Ltda (Catalão) Factory PPA",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('Factory')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_2393df78224e",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "John Deere Davenport Works Factory",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Davenport, Iowa",
+      "evidence_quote": "Davenport, Iowa John Deere Davenport Works Factory CF",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('Factory')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_1552e231d378",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "John Deere Des Moines Works Factory",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Des Moines, Iowa",
+      "evidence_quote": "Des Moines, Iowa John Deere Des Moines Works Factory PPA",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('Factory')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_d78e7db85a95",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "John Deere Dubuque Works Factory",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Dubuque, Iowa",
+      "evidence_quote": "Dubuque, Iowa John Deere Dubuque Works Factory CF",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('Factory')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_d1f28f6c78cd",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "John Deere Harvester Works Factory",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "East Moline, Illinois",
+      "evidence_quote": "East Moline, Illinois John Deere Harvester Works Factory PPA",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('Factory')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The quote lists John Deere Harvester Works Factory in East Moline, Illinois as a company facility.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_f9c8882b2cb2",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Finland Forestry Factory",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Joensuu, Finland",
+      "evidence_quote": "Joensuu, Finland Finland Forestry Factory CF",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('Factory')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_a28e1b20e983",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "John Deere Turf Care Factory",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Fuquay, North Carolina",
+      "evidence_quote": "Fuquay, North Carolina John Deere Turf Care Factory SAT",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('Factory')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_71da8c6b700a",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "John Deere Iberica, S.A.",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Getafae, Spain",
+      "evidence_quote": "Getafae, Spain John Deere Iberica, S.A. PPA, CF, SAT",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Facility location"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_c30b4dbb6b10",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Kleemann GmbH",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Göppingen, Germany",
+      "evidence_quote": "Göppingen, Germany Kleemann GmbH CF",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Facility location"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The quote lists Kleemann GmbH in Göppingen, Germany as a facility operated by Deere.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_ac4e78b85a3f",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "John Deere Greeneville Factory",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Greeneville, Tennessee",
+      "evidence_quote": "Greeneville, Tennessee John Deere Greeneville Factory SAT",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('Factory')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The quote lists John Deere Greeneville Factory in Greeneville, Tennessee as an operating facility of Deere.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_f98822dd219f",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "John Deere Horicon Works Factory",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Horicon, Wisconsin",
+      "evidence_quote": "Horicon, Wisconsin John Deere Horicon Works Factory SAT",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('Factory')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_ce64ebf35414",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "John Deere Brazil SA Factory",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Horizontina, Brazil",
+      "evidence_quote": "Horizontina, Brazil John Deere Brazil SA Factory PPA",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('Factory')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_6d55ee9bf157",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Brazil Construction Factory",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Indaiatuba, Brazil",
+      "evidence_quote": "Indaiatuba, Brazil Brazil Construction Factory CF",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('Factory')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_859f30aead5a",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "John Deere Kernersville Factory",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Kernersville, North Carolina",
+      "evidence_quote": "Kernersville, North Carolina John Deere Kernersville Factory CF",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('Factory')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_a0f3d1ab163b",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Vögele AG",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Ludwigshafen am Rhein, Germany",
+      "evidence_quote": "Ludwigshafen am Rhein, Germany Vögele AG CF",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Facility location"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_3c86441e2766",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "John Deere Werke Mannheim Factory",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Mannheim, Germany",
+      "evidence_quote": "Mannheim, Germany John Deere Werke Mannheim Factory SAT, PPA",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('Factory')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_fab377ef81e2",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "John Deere Brazil Ltda Factory",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Montenegro, Brazil",
+      "evidence_quote": "Montenegro, Brazil John Deere Brazil Ltda Factory PPA",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('Factory')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_b0ddcd7acd24",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Industrias John Deere SA de CV Factory",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Monterrey, Mexico",
+      "evidence_quote": "Monterrey, Mexico Industrias John Deere SA de CV Factory SAT, PPA, CF",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('Factory')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_ea952bcd7947",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "John Deere Pune Works Factory",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Pune, India",
+      "evidence_quote": "Pune, India John Deere Pune Works Factory SAT",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('Factory')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_3602f08a9c74",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Saran Engine Factory",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Saran, France",
+      "evidence_quote": "Saran, France Saran Engine Factory SAT, PPA, CF",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('Factory')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_e6d82df316de",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Hamm AG",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Tirschenreuth, Germany",
+      "evidence_quote": "Tirschenreuth, Germany Hamm AG CF",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Facility location"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The quote lists Hamm AG in Tirschenreuth, Germany as a manufacturing facility in Deere's properties table.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_70bf7c23bd8c",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Torréon Engine Factory",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Torréon, Mexico",
+      "evidence_quote": "Torréon, Mexico Torréon Engine Factory PPA, SAT, CF",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('Factory')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_c8c04be58fa5",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "John Deere Engine Works",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Waterloo, Iowa",
+      "evidence_quote": "Waterloo, Iowa John Deere Engine Works John Deere Waterloo Foundry John Deere Waterloo Works PPA, CF",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('Foundry')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_3196f0780dd4",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "John Deere Waterloo Foundry",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Waterloo, Iowa",
+      "evidence_quote": "Waterloo, Iowa John Deere Engine Works John Deere Waterloo Foundry John Deere Waterloo Works PPA, CF",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('Foundry')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_0b20523d355e",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "John Deere Waterloo Works",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Waterloo, Iowa",
+      "evidence_quote": "Waterloo, Iowa John Deere Engine Works John Deere Waterloo Foundry John Deere Waterloo Works PPA, CF",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('Foundry')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_3c054dd1c60c",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Wirtgen GmbH",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Windhagen, Germany",
+      "evidence_quote": "Windhagen, Germany Wirtgen GmbH CF",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Facility location"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_bf85624e6106",
+      "source_company_key": "CIK:0000315189",
+      "source_company_name": "Deere & Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "John Deere Werke Zweibrücken Factory",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Zweibrücken, Germany",
+      "evidence_quote": "Zweibrücken, Germany John Deere Werke Zweibrücken Factory PPA, SAT",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000315189",
+        "form": "10-K",
+        "accession": "0001104659-25-122321",
+        "filed": "2025-12-18",
+        "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('Factory')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    }
+  ],
+  "agentic_findings": [
+    {
+      "finding_id": "res_single_edge_448da3c0e5ef",
+      "kind": "single_source",
+      "subject": "Deere & Company single-source reliance on rare earth minerals",
+      "question": "Is Deere & Company's critical reliance on rare earth minerals corroborated in the filing or peer filings?",
+      "outcome": "confirmed",
+      "explanation": "The filing confirms dependency on rare earth minerals as a key input, noting that \"The inability to obtain export permits for rare earth minerals could have a detrimental effect on our business.\"",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "rare earth minerals",
+          "summary": "Found independent filing passage \"The inability to obtain export permits for rare earth minerals could have a detrimental effect on our business.\" matching rare earth minerals.",
+          "filing": {
+            "company_key": "CIK:0000315189",
+            "form": "10-K",
+            "accession": "0001104659-25-122321",
+            "filed": "2025-12-18",
+            "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "find_in_filing",
+          "query": "rare earth",
+          "summary": "Found independent filing passage \"The inability to obtain export permits for rare earth minerals could have a detrimental effect on our business.\" matching rare earth.",
+          "filing": {
+            "company_key": "CIK:0000315189",
+            "form": "10-K",
+            "accession": "0001104659-25-122321",
+            "filed": "2025-12-18",
+            "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "conclude",
+          "query": "rare earth minerals",
+          "summary": "The filing confirms dependency on rare earth minerals as a key input, noting that \"The inability to obtain export permits for rare earth minerals could have a detrimental effect on our business.\"",
+          "filing": {
+            "company_key": "CIK:0000315189",
+            "form": "10-K",
+            "accession": "0001104659-25-122321",
+            "filed": "2025-12-18",
+            "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [
+        "edge_448da3c0e5ef"
+      ],
+      "rejected_edge_ids": [],
+      "new_edges": []
+    },
+    {
+      "finding_id": "res_single_edge_0b20523d355e",
+      "kind": "single_source",
+      "subject": "Deere & Company single-source reliance on John Deere Waterloo Works",
+      "question": "Is Deere & Company's critical reliance on John Deere Waterloo Works corroborated in the filing or peer filings?",
+      "outcome": "unresolved",
+      "explanation": "Initial disclosure \"Waterloo, Iowa John Deere Engine Works John Deere Waterloo Foundry John Deere Waterloo Works PPA, CF\" was not corroborated by a second passage or peer filing.",
+      "steps": [
+        {
+          "index": 1,
+          "action": "read_section",
+          "query": "Item 2",
+          "summary": "Read section and extracted verified passage \"Our properties are primarily used for manufacturing, marketing, parts distribution and warehousing, research and development, and administra\".",
+          "filing": {
+            "company_key": "CIK:0000315189",
+            "form": "10-K",
+            "accession": "0001104659-25-122321",
+            "filed": "2025-12-18",
+            "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "find_in_filing",
+          "query": "John Deere Waterloo Works",
+          "summary": "Searched filing for John Deere Waterloo Works; only the initial extraction passage matched (no second independent passage).",
+          "filing": {
+            "company_key": "CIK:0000315189",
+            "form": "10-K",
+            "accession": "0001104659-25-122321",
+            "filed": "2025-12-18",
+            "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "conclude",
+          "query": "John Deere Waterloo Works",
+          "summary": "Initial disclosure \"Waterloo, Iowa John Deere Engine Works John Deere Waterloo Foundry John Deere Waterloo Works PPA, CF\" was not corroborated by a second passage or peer filing.",
+          "filing": {
+            "company_key": "CIK:0000315189",
+            "form": "10-K",
+            "accession": "0001104659-25-122321",
+            "filed": "2025-12-18",
+            "url": "https://www.sec.gov/Archives/edgar/data/315189/000110465925122321/de-20251102x10k.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [],
+      "rejected_edge_ids": [],
+      "new_edges": []
+    }
+  ],
+  "agentic_rejected_edge_ids": [],
+  "agentic_steps_done": 6,
+  "agentic_steps_total": 6,
+  "agentic_interpretation_rejected": 0
 }
