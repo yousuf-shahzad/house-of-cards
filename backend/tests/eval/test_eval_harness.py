@@ -17,6 +17,8 @@ from hoc.contract.dependencies import (
     EdgeImportance,
     EdgeInterpretation,
     FilingRef,
+    ResearchFinding,
+    ResearchStep,
     VerifiedEdge,
 )
 from hoc.eval import (
@@ -32,6 +34,7 @@ from hoc.eval import (
     compare_annotator_docs,
     compatible_edge_types,
     compute_weighted_kappa,
+    evaluate_agentic_acceptance,
     evaluate_company,
     infer_edge_direction,
     load_gold_directory,
@@ -543,4 +546,261 @@ def test_adjudicated_gold_fields_tier_aliases_alternatives_and_country() -> None
     # Missing extended items (15 of 16) do NOT count as FN; only the 7 missing core items count as FN
     assert s.fn_after_vint == 7
     assert round(s.recall_after_vint, 4) == round(2 / 9, 4)
+
+
+def test_before_vs_after_agentic_metrics_and_markdown_section() -> None:
+    doc = GoldDocument(
+        company=GoldCompany(name="Pfizer Inc.", cik="0000078003", ticker="PFE"),
+        filing=GoldFiling(form="10-K", accession="0000078003-26-000026"),
+        relationships=[
+            GoldRelationship(
+                id="PFE-1",
+                edge_type="jv_partner",
+                target_name="BioNTech SE",
+                target_kind="company",
+                direction="depends_on_target",
+                quote="We collaborate with BioNTech SE under a global co-development agreement.",
+                importance="critical",
+                tier="core",
+                source="both",
+            ),
+            GoldRelationship(
+                id="PFE-2",
+                edge_type="customer",
+                target_name="McKesson Corporation",
+                target_kind="company",
+                direction="target_depends_on_company",
+                quote="McKesson Corporation accounted for 31% of our total biopharmaceutical revenues.",
+                importance="critical",
+                tier="core",
+                source="both",
+            ),
+        ],
+    )
+    e_biontech = _make_edge(
+        edge_type="jv_partner",
+        target_name="BioNTech SE",
+        target_kind="company",
+        quote="We collaborate with BioNTech SE under a global co-development agreement.",
+        source_company_key="CIK:0000078003",
+        accession="0000078003-26-000026",
+    )
+    e_mckesson = _make_edge(
+        edge_type="customer",
+        target_name="McKesson Corporation",
+        target_kind="company",
+        quote="McKesson Corporation accounted for 31% of our total biopharmaceutical revenues.",
+        source_company_key="CIK:0000078003",
+        accession="0000078003-26-000026",
+    )
+    e_fp_before = _make_edge(
+        edge_type="supplier",
+        target_name="Spurious Subsidiary Corp",
+        target_kind="company",
+        quote="Spurious Subsidiary Corp is a wholly-owned subsidiary.",
+        source_company_key="CIK:0000078003",
+        accession="0000078003-26-000026",
+    )
+
+    # Before agentic: 1 TP (BioNTech) + 1 FP (Spurious Subsidiary) -> P = 50%, R = 50% (1/2)
+    # After agentic: 2 TP (BioNTech + McKesson) + 0 FP (Spurious Subsidiary rejected) -> P = 100%, R = 100% (2/2)
+    bundle = evaluate_company(
+        doc,
+        [e_biontech, e_mckesson],
+        before_agentic_edges=[e_biontech, e_fp_before],
+        agentic_findings_count=2,
+        agentic_steps_done=4,
+        agentic_steps_total=6,
+        agentic_new_edges_count=1,
+        agentic_rejected_edges_count=1,
+    )
+    assert bundle.summary.precision_before_agentic == 0.5
+    assert bundle.summary.recall_before_agentic == 0.5
+    assert bundle.summary.precision_after_agentic == 1.0
+    assert bundle.summary.recall_after_agentic == 1.0
+
+    report = aggregate_eval_report([bundle], research_depth="light", bootstrap_iterations=100)
+    assert report.overall_before_agentic is not None
+    assert report.overall_after_agentic is not None
+    assert report.overall_before_agentic.precision.value == 0.5
+    assert report.overall_before_agentic.recall.value == 0.5
+    assert report.overall_after_agentic.precision.value == 1.0
+    assert report.overall_after_agentic.recall.value == 1.0
+    assert report.agentic_findings_total == 2
+    assert report.agentic_new_edges_total == 1
+    assert report.agentic_rejected_edges_total == 1
+
+    md = render_eval_markdown(report)
+    assert '### 3.1 Before vs. After Agentic Sub-Agents (`depth = "light"`)' in md
+    assert "`+50.0 pp`" in md
+
+
+def test_agentic_acceptance_check_fix1_fix2_fix14_and_cli(tmp_path: Path) -> None:
+    nke_quote = "Notice that during fiscal 2026, our three largest customers outside of the United States accounted for 14% of sales."
+    e_unnamed_orig = _make_edge(
+        edge_type="customer",
+        target_name="Unnamed Customer",
+        target_kind="unnamed_customer",
+        quote=nke_quote,
+        source_company_key="CIK:0000320187",
+        accession="0000320187-26-000088",
+    )
+    e_unnamed_dup_group = _make_edge(
+        edge_type="customer",
+        target_name="Three largest customers outside of the United States",
+        target_kind="unnamed_customer",
+        quote=nke_quote,
+        source_company_key="CIK:0000320187",
+        accession="0000320187-26-000088",
+    )
+    e_extra_light = _make_edge(
+        edge_type="supplier",
+        target_name="Bottler Partner Inc",
+        target_kind="company",
+        quote="Bottler Partner Inc supplies concentrates.",
+        source_company_key="CIK:0000320187",
+        accession="0000320187-26-000088",
+    )
+
+    # 1. Failing finding (FIX-1: only 1 tool call, 0 search_filings, circular quote match)
+    bad_finding = ResearchFinding(
+        finding_id=f"undisclosed_customer:{e_unnamed_orig.edge_id}",
+        kind="undisclosed_customer",
+        subject="NIKE, Inc.'s undisclosed customer",
+        question="Identify or verify the undisclosed customer.",
+        outcome="confirmed",
+        explanation=f'Verified filing context "{nke_quote}" confirms customer concentration.',
+        steps=[
+            ResearchStep(
+                index=1,
+                action="find_in_filing",
+                query="largest customers",
+                summary="Found customer passage.",
+                filing=e_unnamed_orig.filing,
+            ),
+            ResearchStep(
+                index=2,
+                action="conclude",
+                query="largest customers",
+                summary=f'Verified filing context "{nke_quote}" confirms customer concentration.',
+                filing=e_unnamed_orig.filing,
+            ),
+        ],
+        confirmed_edge_ids=[e_unnamed_orig.edge_id],
+        rejected_edge_ids=[],
+        new_edges=[e_unnamed_dup_group],
+    )
+
+    bad_report = evaluate_agentic_acceptance(
+        depth="light",
+        findings=[bad_finding],
+        edges=[e_unnamed_orig, e_unnamed_dup_group, e_extra_light],
+        thorough_edges=[e_unnamed_orig],  # missing e_extra_light and e_unnamed_dup_group
+    )
+    assert bad_report.findings_total == 1
+    assert bad_report.single_lookup_findings_count == 1
+    assert bad_report.findings_meeting_min_tool_calls == 0
+    assert bad_report.search_filings_calls_total == 0
+    assert bad_report.circular_confirmations_count == 1
+    assert bad_report.thorough_contains_light is False
+    assert e_extra_light.edge_id in bad_report.thorough_missing_light_edge_ids
+    assert bad_report.duplicate_unnamed_customer_edges_count == 1
+    assert bad_report.group_unnamed_customer_edges_count == 1
+    assert bad_report.fix_1_pass is False
+    assert bad_report.fix_2_pass is False
+    assert bad_report.fix_14_pass is False
+
+    # 2. Passing finding (FIX-1: 2 tool calls including search_filings + non-circular corroborating quote,
+    #    FIX-2: thorough contains all surviving light edges, FIX-14: no duplicate/group unnamed_customer)
+    good_finding = ResearchFinding(
+        finding_id=f"undisclosed_customer:{e_unnamed_orig.edge_id}",
+        kind="undisclosed_customer",
+        subject="NIKE, Inc.'s undisclosed customer",
+        question="Identify or verify the undisclosed customer.",
+        outcome="confirmed",
+        explanation='Cross-checked against Footnote 17: "No single customer accounted for 10% or more of total net sales in fiscal 2026."',
+        steps=[
+            ResearchStep(
+                index=1,
+                action="search_filings",
+                query="NIKE Brand footwear distributor",
+                summary="Searched peer filings.",
+                filing=e_unnamed_orig.filing,
+            ),
+            ResearchStep(
+                index=2,
+                action="read_section",
+                query="Item 1",
+                summary="Read Item 1 and Footnote 17.",
+                filing=e_unnamed_orig.filing,
+            ),
+            ResearchStep(
+                index=3,
+                action="conclude",
+                query="Unnamed Customer",
+                summary='Cross-checked against Footnote 17: "No single customer accounted for 10% or more of total net sales in fiscal 2026."',
+                filing=e_unnamed_orig.filing,
+            ),
+        ],
+        confirmed_edge_ids=[e_unnamed_orig.edge_id],
+        rejected_edge_ids=[],
+        new_edges=[],
+    )
+    good_report = evaluate_agentic_acceptance(
+        depth="light",
+        findings=[good_finding],
+        edges=[e_unnamed_orig, e_extra_light],
+        thorough_edges=[e_unnamed_orig, e_extra_light],
+    )
+    assert good_report.single_lookup_findings_count == 0
+    assert good_report.findings_meeting_min_tool_calls == 1
+    assert good_report.search_filings_calls_total == 1
+    assert good_report.circular_confirmations_count == 0
+    assert good_report.thorough_contains_light is True
+    assert good_report.duplicate_unnamed_customer_edges_count == 0
+    assert good_report.group_unnamed_customer_edges_count == 0
+    assert good_report.fix_1_pass is True
+    assert good_report.fix_2_pass is True
+    assert good_report.fix_14_pass is True
+
+    # 3. CLI --check-agentic on JSON payloads
+    light_json = tmp_path / "light.json"
+    thorough_json = tmp_path / "thorough.json"
+    light_json.write_text(
+        json.dumps(
+            {
+                "research_depth": "light",
+                "edges": [
+                    e_unnamed_orig.model_dump(mode="json"),
+                    e_extra_light.model_dump(mode="json"),
+                ],
+                "research": [good_finding.model_dump(mode="json")],
+            }
+        ),
+        encoding="utf-8",
+    )
+    thorough_json.write_text(
+        json.dumps(
+            {
+                "research_depth": "thorough",
+                "edges": [
+                    e_unnamed_orig.model_dump(mode="json"),
+                    e_extra_light.model_dump(mode="json"),
+                ],
+                "research": [good_finding.model_dump(mode="json")],
+            }
+        ),
+        encoding="utf-8",
+    )
+    rc = run_eval_cli(
+        [
+            "--check-agentic",
+            str(light_json),
+            "--check-agentic-thorough",
+            str(thorough_json),
+        ]
+    )
+    assert rc == 0
+
+
 

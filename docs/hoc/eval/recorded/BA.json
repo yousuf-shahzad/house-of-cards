@@ -372,5 +372,480 @@
     }
   ],
   "vint_rejected_edges": [],
-  "quote_rejected_count": 0
+  "quote_rejected_count": 0,
+  "research_depth": "light",
+  "agentic_edges": [
+    {
+      "edge_id": "edge_62c37fe42fd6",
+      "source_company_key": "CIK:0000012927",
+      "source_company_name": "The Boeing Company",
+      "source_in_portfolio": true,
+      "edge_type": "key_input",
+      "target_name": "aluminum",
+      "target_kind": "material",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "most important raw materials",
+      "evidence_quote": "The most important raw materials required for our aerospace products are aluminum (sheet, plate, forgings and extrusions), titanium (sheet, plate, forgings and extrusions) and composites (including carbon and boron).",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0000012927",
+        "form": "10-K",
+        "accession": "0001628280-26-004357",
+        "filed": "2026-01-30",
+        "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+      },
+      "importance": {
+        "score": 0.6,
+        "tier": "high",
+        "reasons": [
+          "Key input relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_00be890405e7",
+      "source_company_key": "CIK:0000012927",
+      "source_company_name": "The Boeing Company",
+      "source_in_portfolio": true,
+      "edge_type": "key_input",
+      "target_name": "titanium",
+      "target_kind": "material",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "most important raw materials",
+      "evidence_quote": "The most important raw materials required for our aerospace products are aluminum (sheet, plate, forgings and extrusions), titanium (sheet, plate, forgings and extrusions) and composites (including carbon and boron).",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0000012927",
+        "form": "10-K",
+        "accession": "0001628280-26-004357",
+        "filed": "2026-01-30",
+        "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+      },
+      "importance": {
+        "score": 0.6,
+        "tier": "high",
+        "reasons": [
+          "Key input relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The quote explicitly names titanium as one of the raw materials on which Boeing depends.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_e8550c2c352e",
+      "source_company_key": "CIK:0000012927",
+      "source_company_name": "The Boeing Company",
+      "source_in_portfolio": true,
+      "edge_type": "key_input",
+      "target_name": "composites",
+      "target_kind": "material",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "most important raw materials",
+      "evidence_quote": "The most important raw materials required for our aerospace products are aluminum (sheet, plate, forgings and extrusions), titanium (sheet, plate, forgings and extrusions) and composites (including carbon and boron).",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0000012927",
+        "form": "10-K",
+        "accession": "0001628280-26-004357",
+        "filed": "2026-01-30",
+        "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+      },
+      "importance": {
+        "score": 0.6,
+        "tier": "high",
+        "reasons": [
+          "Key input relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_646bd1ad97b4",
+      "source_company_key": "CIK:0000012927",
+      "source_company_name": "The Boeing Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Greater Seattle, WA",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "major location for Commercial Airplanes and Defense, Space & Security",
+      "evidence_quote": "Commercial Airplanes - Greater Seattle, WA; Wichita, KS; China; Greater Charleston, SC; Greater Los Angeles, CA; Tulsa, OK; Greater Portland, OR; Greater Salt Lake City, UT; Australia; Canada; Malaysia; and Mexico",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000012927",
+        "form": "10-K",
+        "accession": "0001628280-26-004357",
+        "filed": "2026-01-30",
+        "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Facility location"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_5eefe7c6c83a",
+      "source_company_key": "CIK:0000012927",
+      "source_company_name": "The Boeing Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Wichita, KS",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "major location for Commercial Airplanes and Defense, Space & Security",
+      "evidence_quote": "Commercial Airplanes - Greater Seattle, WA; Wichita, KS; China; Greater Charleston, SC; Greater Los Angeles, CA; Tulsa, OK; Greater Portland, OR; Greater Salt Lake City, UT; Australia; Canada; Malaysia; and Mexico",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000012927",
+        "form": "10-K",
+        "accession": "0001628280-26-004357",
+        "filed": "2026-01-30",
+        "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Facility location"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The quote lists Wichita, KS among the major facility locations for Boeing's Commercial Airplanes business.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_30ce7e7a0d69",
+      "source_company_key": "CIK:0000012927",
+      "source_company_name": "The Boeing Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Greater Charleston, SC",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "major location for Commercial Airplanes",
+      "evidence_quote": "Commercial Airplanes - Greater Seattle, WA; Wichita, KS; China; Greater Charleston, SC; Greater Los Angeles, CA; Tulsa, OK; Greater Portland, OR; Greater Salt Lake City, UT; Australia; Canada; Malaysia; and Mexico",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000012927",
+        "form": "10-K",
+        "accession": "0001628280-26-004357",
+        "filed": "2026-01-30",
+        "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Facility location"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The quote lists Greater Charleston, SC among the major facility locations for Boeing's Commercial Airplanes business.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_59f7adc73704",
+      "source_company_key": "CIK:0000012927",
+      "source_company_name": "The Boeing Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Greater St. Louis, MO",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "major location for Defense, Space & Security",
+      "evidence_quote": "Defense, Space & Security - Greater St. Louis, MO; Greater Seattle, WA; Greater Los Angeles, CA; Philadelphia, PA; Mesa, AZ; Wichita, KS; Huntsville, AL; Oklahoma City, OK; Heath, OH; Australia; Greater Washington, DC; Houston, TX; Kennedy Space Center and Greater Portland, OR",
+      "section": "2",
+      "filing": {
+        "company_key": "CIK:0000012927",
+        "form": "10-K",
+        "accession": "0001628280-26-004357",
+        "filed": "2026-01-30",
+        "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Facility location"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_8058aeca27ad",
+      "source_company_key": "CIK:0000012927",
+      "source_company_name": "The Boeing Company",
+      "source_in_portfolio": true,
+      "edge_type": "customer",
+      "target_name": "United States Department of War",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "defense related programs",
+      "evidence_quote": "We derive a substantial portion of our revenue from the U.S. government, primarily from defense related programs with the United States Department of War (DoW) and contracts with other government agencies, including NASA.",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0000012927",
+        "form": "10-K",
+        "accession": "0001628280-26-004357",
+        "filed": "2026-01-30",
+        "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Customer relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_dea2976ebbd3",
+      "source_company_key": "CIK:0000012927",
+      "source_company_name": "The Boeing Company",
+      "source_in_portfolio": true,
+      "edge_type": "customer",
+      "target_name": "NASA",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "contracts with other government agencies",
+      "evidence_quote": "We derive a substantial portion of our revenue from the U.S. government, primarily from defense related programs with the United States Department of War (DoW) and contracts with other government agencies, including NASA.",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0000012927",
+        "form": "10-K",
+        "accession": "0001628280-26-004357",
+        "filed": "2026-01-30",
+        "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Customer relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_715c0a243088",
+      "source_company_key": "CIK:0000012927",
+      "source_company_name": "The Boeing Company",
+      "source_in_portfolio": true,
+      "edge_type": "customer",
+      "target_name": "Unnamed customer",
+      "target_kind": "unnamed_customer",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "35% of revenue",
+      "evidence_quote": "In 2025, 35% of our revenues were earned pursuant to U.S. government contracts, which include FMS.",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0000012927",
+        "form": "10-K",
+        "accession": "0001628280-26-004357",
+        "filed": "2026-01-30",
+        "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+      },
+      "importance": {
+        "score": 0.9,
+        "tier": "critical",
+        "reasons": [
+          "Customer at >=20% of revenue ('35% of revenue')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    }
+  ],
+  "agentic_findings": [
+    {
+      "finding_id": "res_undisclosed_edge_715c0a243088",
+      "kind": "undisclosed_customer",
+      "subject": "The Boeing Company's undisclosed customer (Unnamed customer)",
+      "question": "Do The Boeing Company's or peer SEC filings name or corroborate Unnamed customer?",
+      "outcome": "unresolved",
+      "explanation": "Filing leaves specific counterparty identities undisclosed in the inspected sections.",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "pursuant to U.S. government contracts",
+          "summary": "Searched filing for pursuant to U.S. government contracts; no exact phrase match in primary text.",
+          "filing": {
+            "company_key": "CIK:0000012927",
+            "form": "10-K",
+            "accession": "0001628280-26-004357",
+            "filed": "2026-01-30",
+            "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "find_in_filing",
+          "query": "U.S. government contracts",
+          "summary": "Searched filing for U.S. government contracts; no exact phrase match in primary text.",
+          "filing": {
+            "company_key": "CIK:0000012927",
+            "form": "10-K",
+            "accession": "0001628280-26-004357",
+            "filed": "2026-01-30",
+            "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "conclude",
+          "query": "Unnamed customer",
+          "summary": "Filing leaves specific counterparty identities undisclosed in the inspected sections.",
+          "filing": {
+            "company_key": "CIK:0000012927",
+            "form": "10-K",
+            "accession": "0001628280-26-004357",
+            "filed": "2026-01-30",
+            "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [],
+      "rejected_edge_ids": [],
+      "new_edges": []
+    },
+    {
+      "finding_id": "res_single_edge_00be890405e7",
+      "kind": "single_source",
+      "subject": "The Boeing Company single-source reliance on titanium",
+      "question": "Is The Boeing Company's critical reliance on titanium corroborated in the filing or peer filings?",
+      "outcome": "confirmed",
+      "explanation": "Boeing states that \"if one or more of the raw materials on which we depend (such as aluminum, titanium or composites) becomes unavailable to us or our suppliers, or is available only at very high prices, including as a result of increased tariffs and trade restrictions, or has quality issues or defects, we\" will face adverse impacts, corroborating that titanium is a key raw material input.",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "titanium",
+          "summary": "Found independent filing passage \"In addition, if one or more of the raw materials on which we depend (such as aluminum, titanium or composites) becomes unavailable to us or \" matching titanium.",
+          "filing": {
+            "company_key": "CIK:0000012927",
+            "form": "10-K",
+            "accession": "0001628280-26-004357",
+            "filed": "2026-01-30",
+            "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "read_section",
+          "query": "Item 1A",
+          "summary": "Read section A and extracted verified passage \"Risks Related to Our Business and Operations We depend heavily on commercial airlines, subjecting us to unique risks.\".",
+          "filing": {
+            "company_key": "CIK:0000012927",
+            "form": "10-K",
+            "accession": "0001628280-26-004357",
+            "filed": "2026-01-30",
+            "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "conclude",
+          "query": "titanium",
+          "summary": "Boeing states that \"if one or more of the raw materials on which we depend (such as aluminum, titanium or composites) becomes unavailable to us or our suppliers, or is available only at very high prices, including as a result of increased tariffs and trade restrictions, or has quality issues or defects, we\" will face adverse impacts, corroborating that titanium is a key raw material input.",
+          "filing": {
+            "company_key": "CIK:0000012927",
+            "form": "10-K",
+            "accession": "0001628280-26-004357",
+            "filed": "2026-01-30",
+            "url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [
+        "edge_00be890405e7"
+      ],
+      "rejected_edge_ids": [],
+      "new_edges": []
+    }
+  ],
+  "agentic_rejected_edge_ids": [],
+  "agentic_steps_done": 6,
+  "agentic_steps_total": 6,
+  "agentic_interpretation_rejected": 0
 }

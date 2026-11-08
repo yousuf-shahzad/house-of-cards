@@ -228,5 +228,338 @@
     }
   ],
   "vint_rejected_edges": [],
-  "quote_rejected_count": 0
+  "quote_rejected_count": 0,
+  "research_depth": "light",
+  "agentic_edges": [
+    {
+      "edge_id": "edge_95b957477eb2",
+      "source_company_key": "CIK:0000829224",
+      "source_company_name": "Starbucks Corporation",
+      "source_in_portfolio": true,
+      "edge_type": "jv_partner",
+      "target_name": "Nestlé S.A.",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Global Coffee Alliance licensing and distribution partner",
+      "evidence_quote": "We also sell a variety of coffee and tea products and license our trademarks through other channels, such as licensed stores as well as grocery and foodservice through our Global Coffee Alliance with Nestlé S.A. (\"Nestlé\").",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0000829224",
+        "form": "10-K",
+        "accession": "0000829224-25-000114",
+        "filed": "2025-11-14",
+        "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"
+      },
+      "importance": {
+        "score": 0.4,
+        "tier": "medium",
+        "reasons": [
+          "Joint-venture partner relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The quote explicitly confirms an alliance/partnership with Nestlé S.A. ('Global Coffee Alliance') to sell coffee/tea products and license trademarks.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_e0657c8e2100",
+      "source_company_key": "CIK:0000829224",
+      "source_company_name": "Starbucks Corporation",
+      "source_in_portfolio": true,
+      "edge_type": "contract_manufacturer",
+      "target_name": "Nestlé",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "controls distribution of packaged coffee and roasts/packages products",
+      "evidence_quote": "Nestlé controls distribution of Starbucks packaged coffee products outside of Starbucks stores through the Global Coffee Alliance, and in some cases, also roasts and packages these products.",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0000829224",
+        "form": "10-K",
+        "accession": "0000829224-25-000114",
+        "filed": "2025-11-14",
+        "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"
+      },
+      "importance": {
+        "score": 0.85,
+        "tier": "critical",
+        "reasons": [
+          "Contract manufacturer relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The quote confirms Nestlé roasts and packages Starbucks packaged coffee products in some cases, supporting the contract manufacturer relationship.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_8027779671e0",
+      "source_company_key": "CIK:0000829224",
+      "source_company_name": "Starbucks Corporation",
+      "source_in_portfolio": true,
+      "edge_type": "jv_partner",
+      "target_name": "PepsiCo, Inc.",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "collaborative relationship for ready-to-drink businesses",
+      "evidence_quote": "while our global ready-to-drink businesses operate under collaborative relationships with PepsiCo, Inc., Nestlé, and others.",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0000829224",
+        "form": "10-K",
+        "accession": "0000829224-25-000114",
+        "filed": "2025-11-14",
+        "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"
+      },
+      "importance": {
+        "score": 0.4,
+        "tier": "medium",
+        "reasons": [
+          "Joint-venture partner relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_0cf373b56cc0",
+      "source_company_key": "CIK:0000829224",
+      "source_company_name": "Starbucks Corporation",
+      "source_in_portfolio": true,
+      "edge_type": "key_input",
+      "target_name": "green coffee beans",
+      "target_kind": "material",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "purchased from multiple coffee-producing regions",
+      "evidence_quote": "We purchase green coffee beans from multiple coffee-producing regions around the world and custom roast them to our exacting standards for our many blends and single-origin coffees.",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0000829224",
+        "form": "10-K",
+        "accession": "0000829224-25-000114",
+        "filed": "2025-11-14",
+        "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"
+      },
+      "importance": {
+        "score": 0.6,
+        "tier": "high",
+        "reasons": [
+          "Key input relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The quote explicitly states that Starbucks purchases green coffee beans from multiple regions to custom roast them for blends and coffees, confirming it as a key input.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_c9fdbeb07560",
+      "source_company_key": "CIK:0000829224",
+      "source_company_name": "Starbucks Corporation",
+      "source_in_portfolio": true,
+      "edge_type": "key_input",
+      "target_name": "dairy",
+      "target_kind": "material",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "fluid milk and plant-based dairy-free alternatives",
+      "evidence_quote": "In addition to coffee, we also purchase significant amounts of dairy, particularly fluid milk, and to a lesser degree, plant-based dairy-free alternative products, such as oat milk and almond milk, to support the needs of our company-operated stores.",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0000829224",
+        "form": "10-K",
+        "accession": "0000829224-25-000114",
+        "filed": "2025-11-14",
+        "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"
+      },
+      "importance": {
+        "score": 0.6,
+        "tier": "high",
+        "reasons": [
+          "Key input relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_4999a0a62b28",
+      "source_company_key": "CIK:0000829224",
+      "source_company_name": "Starbucks Corporation",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "China Farmer Support Center",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "farmer support center located in Yunnan Province",
+      "evidence_quote": "To help ensure the future supply of high-quality green coffee and to reinforce our leadership role in the coffee industry, Starbucks operates ten farmer support centers, including our China Farmer Support Center located in the Yunnan Province of this high-growth market.",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0000829224",
+        "form": "10-K",
+        "accession": "0000829224-25-000114",
+        "filed": "2025-11-14",
+        "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Facility location"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    }
+  ],
+  "agentic_findings": [
+    {
+      "finding_id": "res_unresolved_edge_e0657c8e2100",
+      "kind": "unresolved_counterparty",
+      "subject": "Starbucks Corporation counterparty Nestlé",
+      "question": "Can counterparty Nestlé in Starbucks Corporation's filing be verified and resolved?",
+      "outcome": "confirmed",
+      "explanation": "Multiple observed passages in the filing corroborate the commercial relationship with Nestl\u0000e, including the note that \"Our Channel Development business is heavily reliant on Nestl\u0000e, which holds global rights to distribute certain Starbucks branded packaged goods.\"",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "Global Coffee Alliance",
+          "summary": "Found independent filing passage \"We also sell a variety of coffee and tea products and license our trademarks through other channels, such as licensed stores as well as groc\" matching Global Coffee Alliance.",
+          "filing": {
+            "company_key": "CIK:0000829224",
+            "form": "10-K",
+            "accession": "0000829224-25-000114",
+            "filed": "2025-11-14",
+            "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "read_section",
+          "query": "Item 1A",
+          "summary": "Read section A and extracted verified passage \"Our Channel Development business is heavily reliant on Nestlé, which holds global rights to distribute certain Starbucks branded packaged go\".",
+          "filing": {
+            "company_key": "CIK:0000829224",
+            "form": "10-K",
+            "accession": "0000829224-25-000114",
+            "filed": "2025-11-14",
+            "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "conclude",
+          "query": "Nestlé",
+          "summary": "Multiple observed passages in the filing corroborate the commercial relationship with Nestl\u0000e, including the note that \"Our Channel Development business is heavily reliant on Nestl\u0000e, which holds global rights to distribute certain Starbucks branded packaged goods.\"",
+          "filing": {
+            "company_key": "CIK:0000829224",
+            "form": "10-K",
+            "accession": "0000829224-25-000114",
+            "filed": "2025-11-14",
+            "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [
+        "edge_e0657c8e2100"
+      ],
+      "rejected_edge_ids": [],
+      "new_edges": []
+    },
+    {
+      "finding_id": "res_single_edge_0cf373b56cc0",
+      "kind": "single_source",
+      "subject": "Starbucks Corporation single-source reliance on green coffee beans",
+      "question": "Is Starbucks Corporation's critical reliance on green coffee beans corroborated in the filing or peer filings?",
+      "outcome": "confirmed",
+      "explanation": "Independent passages in the filing corroborate green coffee beans as a key material input. The filing states: \"We buy coffee using fixed-price and price-to-be-fixed purchase commitments, depending on market conditions, to secure an adequate supply of quality green coffee.\" and \"We purchase, roast, and sell high-quality arabica coffee, which typically trades at a premium above the \"C\" commodity price.\"",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "green coffee",
+          "summary": "Found independent filing passage \"In addition, green coffee prices have been affected in the past, and may be affected in the future, by the actions of certain organizations \" matching green coffee.",
+          "filing": {
+            "company_key": "CIK:0000829224",
+            "form": "10-K",
+            "accession": "0000829224-25-000114",
+            "filed": "2025-11-14",
+            "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "read_section",
+          "query": "Item 1A",
+          "summary": "Read section A and extracted verified passage \"Risks Related to Supply Chain Increases in the cost of high-quality arabica coffee beans or other commodities or decreases in the availabili\".",
+          "filing": {
+            "company_key": "CIK:0000829224",
+            "form": "10-K",
+            "accession": "0000829224-25-000114",
+            "filed": "2025-11-14",
+            "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "conclude",
+          "query": "green coffee beans",
+          "summary": "Independent passages in the filing corroborate green coffee beans as a key material input. The filing states: \"We buy coffee using fixed-price and price-to-be-fixed purchase commitments, depending on market conditions, to secure an adequate supply of quality green coffee.\" and \"We purchase, roast, and sell high-quality arabica coffee, which typically trades at a premium above the \"C\" commodity price.\"",
+          "filing": {
+            "company_key": "CIK:0000829224",
+            "form": "10-K",
+            "accession": "0000829224-25-000114",
+            "filed": "2025-11-14",
+            "url": "https://www.sec.gov/Archives/edgar/data/829224/000082922425000114/sbux-20250928.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [
+        "edge_0cf373b56cc0"
+      ],
+      "rejected_edge_ids": [],
+      "new_edges": []
+    }
+  ],
+  "agentic_rejected_edge_ids": [],
+  "agentic_steps_done": 6,
+  "agentic_steps_total": 6,
+  "agentic_interpretation_rejected": 0
 }

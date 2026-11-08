@@ -554,5 +554,665 @@
     }
   ],
   "vint_rejected_edges": [],
-  "quote_rejected_count": 0
+  "quote_rejected_count": 0,
+  "research_depth": "light",
+  "agentic_edges": [
+    {
+      "edge_id": "edge_a3521924a54d",
+      "source_company_key": "CIK:0000004127",
+      "source_company_name": "Skyworks Solutions, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "customer",
+      "target_name": "Apple Inc.",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "more than 10% of net revenue",
+      "evidence_quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0000004127",
+        "form": "10-K",
+        "accession": "0000004127-25-000085",
+        "filed": "2025-11-07",
+        "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Customer at 10-20% of revenue ('more than 10% of net revenue')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The quote explicitly names Apple Inc. as one of the filer's key customers.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_4c9911bc7c3d",
+      "source_company_key": "CIK:0000004127",
+      "source_company_name": "Skyworks Solutions, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "customer",
+      "target_name": "Amazon",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "key customer",
+      "evidence_quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0000004127",
+        "form": "10-K",
+        "accession": "0000004127-25-000085",
+        "filed": "2025-11-07",
+        "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Customer relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_76c5fda131cc",
+      "source_company_key": "CIK:0000004127",
+      "source_company_name": "Skyworks Solutions, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "customer",
+      "target_name": "Cisco",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "key customer",
+      "evidence_quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0000004127",
+        "form": "10-K",
+        "accession": "0000004127-25-000085",
+        "filed": "2025-11-07",
+        "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Customer relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The quote directly lists Cisco under 'Our key customers include'.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_ecfe5e5b7c13",
+      "source_company_key": "CIK:0000004127",
+      "source_company_name": "Skyworks Solutions, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "customer",
+      "target_name": "Google",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "key customer",
+      "evidence_quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0000004127",
+        "form": "10-K",
+        "accession": "0000004127-25-000085",
+        "filed": "2025-11-07",
+        "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Customer relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_b8c468f1002c",
+      "source_company_key": "CIK:0000004127",
+      "source_company_name": "Skyworks Solutions, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "customer",
+      "target_name": "Microsoft",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "key customer",
+      "evidence_quote": "Our key customers include Amazon, Apple Inc. (\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, Itron, Lenovo, LG Electronics, Microsoft, Motorola, NETGEAR, Nokia, Northrop Grumman, OPPO, Rockwell Collins, Sagemcom",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0000004127",
+        "form": "10-K",
+        "accession": "0000004127-25-000085",
+        "filed": "2025-11-07",
+        "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Customer relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_7e759acbf131",
+      "source_company_key": "CIK:0000004127",
+      "source_company_name": "Skyworks Solutions, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "customer",
+      "target_name": "Samsung",
+      "target_kind": "company",
+      "target_key": "ALIAS:SAMSUNG_ELEC",
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "key customer",
+      "evidence_quote": "Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0000004127",
+        "form": "10-K",
+        "accession": "0000004127-25-000085",
+        "filed": "2025-11-07",
+        "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Customer relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "Samsung is explicitly listed as a key customer; competitor mentions appear in a subsequent separate sentence.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_527344c4559a",
+      "source_company_key": "CIK:0000004127",
+      "source_company_name": "Skyworks Solutions, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "customer",
+      "target_name": "Tesla",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "key customer",
+      "evidence_quote": "Rockwell Collins, Sagemcom, Samsung, Schneider Electric, Sierra Wireless, Sonos, Sony, Technicolor, Telit, Tesla, TP-Link, VIVO, and Xiaomi.",
+      "section": "1",
+      "filing": {
+        "company_key": "CIK:0000004127",
+        "form": "10-K",
+        "accession": "0000004127-25-000085",
+        "filed": "2025-11-07",
+        "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Customer relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "Tesla is explicitly listed as a key customer; competitor mentions appear in a separate sentence.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_bc723b6898e2",
+      "source_company_key": "CIK:0000004127",
+      "source_company_name": "Skyworks Solutions, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "customer",
+      "target_name": "Unnamed customer",
+      "target_kind": "unnamed_customer",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "greater than ten percent of our net revenue",
+      "evidence_quote": "In each of fiscal 2025, fiscal 2024, and fiscal 2023, one customer accounted for greater than ten percent of our net revenue.",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0000004127",
+        "form": "10-K",
+        "accession": "0000004127-25-000085",
+        "filed": "2025-11-07",
+        "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Customer relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_ddc2501bbaa6",
+      "source_company_key": "CIK:0000004127",
+      "source_company_name": "Skyworks Solutions, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Osaka, Japan wafer processing facilities",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "wafer processing facilities",
+      "evidence_quote": "We also operate our own wafer processing facilities in Osaka, Japan, as well as packaging, assembly, and test facilities in Singapore and in Mexicali, Mexico.",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0000004127",
+        "form": "10-K",
+        "accession": "0000004127-25-000085",
+        "filed": "2025-11-07",
+        "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('facilities')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The filing confirms that the company operates its own wafer processing facilities in Osaka, Japan.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_dd9def6f64e3",
+      "source_company_key": "CIK:0000004127",
+      "source_company_name": "Skyworks Solutions, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Singapore packaging, assembly, and test facilities",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "packaging, assembly, and test facilities",
+      "evidence_quote": "We also operate our own wafer processing facilities in Osaka, Japan, as well as packaging, assembly, and test facilities in Singapore and in Mexicali, Mexico.",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0000004127",
+        "form": "10-K",
+        "accession": "0000004127-25-000085",
+        "filed": "2025-11-07",
+        "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('facilities')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_a1d03055a442",
+      "source_company_key": "CIK:0000004127",
+      "source_company_name": "Skyworks Solutions, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Mexicali, Mexico packaging, assembly, and test facilities",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "packaging, assembly, and test facilities",
+      "evidence_quote": "We also operate our own wafer processing facilities in Osaka, Japan, as well as packaging, assembly, and test facilities in Singapore and in Mexicali, Mexico.",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0000004127",
+        "form": "10-K",
+        "accession": "0000004127-25-000085",
+        "filed": "2025-11-07",
+        "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('facilities')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_24849d4ad216",
+      "source_company_key": "CIK:0000004127",
+      "source_company_name": "Skyworks Solutions, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Newbury Park, California semiconductor wafer fabrication facility",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "semiconductor wafer fabrication facility",
+      "evidence_quote": "Our key facilities include, but are not limited to, our semiconductor wafer fabrication facilities in Newbury Park, California, and Woburn, Massachusetts",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0000004127",
+        "form": "10-K",
+        "accession": "0000004127-25-000085",
+        "filed": "2025-11-07",
+        "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('facilities')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The filing lists the Newbury Park, California semiconductor wafer fabrication facility under key facilities.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_7a710cbeb27f",
+      "source_company_key": "CIK:0000004127",
+      "source_company_name": "Skyworks Solutions, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Woburn, Massachusetts semiconductor wafer fabrication facility",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "semiconductor wafer fabrication facility",
+      "evidence_quote": "Our key facilities include, but are not limited to, our semiconductor wafer fabrication facilities in Newbury Park, California, and Woburn, Massachusetts",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0000004127",
+        "form": "10-K",
+        "accession": "0000004127-25-000085",
+        "filed": "2025-11-07",
+        "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('facilities')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules+model",
+        "flags": [],
+        "reason": "The filing lists the Woburn, Massachusetts semiconductor wafer fabrication facility under key facilities.",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "edge_id": "edge_3b40a2a2300d",
+      "source_company_key": "CIK:0000004127",
+      "source_company_name": "Skyworks Solutions, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "key_input",
+      "target_name": "gallium",
+      "target_kind": "material",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "critical mineral / rare earth metal",
+      "evidence_quote": "the availability and cost of materials, including gallium, germanium, antimony, tungsten, molybdenum, scandium, and other rare earth metals/critical minerals",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0000004127",
+        "form": "10-K",
+        "accession": "0000004127-25-000085",
+        "filed": "2025-11-07",
+        "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Key input relationship",
+          "Criticality cue ('critical')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_ca7519a10cea",
+      "source_company_key": "CIK:0000004127",
+      "source_company_name": "Skyworks Solutions, Inc.",
+      "source_in_portfolio": true,
+      "edge_type": "key_input",
+      "target_name": "germanium",
+      "target_kind": "material",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "critical mineral / rare earth metal",
+      "evidence_quote": "the availability and cost of materials, including gallium, germanium, antimony, tungsten, molybdenum, scandium, and other rare earth metals/critical minerals",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0000004127",
+        "form": "10-K",
+        "accession": "0000004127-25-000085",
+        "filed": "2025-11-07",
+        "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Key input relationship",
+          "Criticality cue ('critical')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    }
+  ],
+  "agentic_findings": [
+    {
+      "finding_id": "res_undisclosed_edge_bc723b6898e2",
+      "kind": "undisclosed_customer",
+      "subject": "Skyworks Solutions, Inc.'s undisclosed customer (Unnamed customer)",
+      "question": "Do Skyworks Solutions, Inc.'s or peer SEC filings name or corroborate Unnamed customer?",
+      "outcome": "confirmed",
+      "explanation": "The unnamed customer accounting for greater than ten percent of net revenue is revised to Apple, as the filing identifies that \"Our key customers include Amazon, Apple Inc.\" and specifically notes sales to Apple across the periods.",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "greater than ten percent of our net revenue",
+          "summary": "Searched filing for greater than ten percent of our net revenue; only the initial extraction passage matched (no second independent passage).",
+          "filing": {
+            "company_key": "CIK:0000004127",
+            "form": "10-K",
+            "accession": "0000004127-25-000085",
+            "filed": "2025-11-07",
+            "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "find_in_filing",
+          "query": "Apple",
+          "summary": "Found independent filing passage \"Our key customers include Amazon, Apple Inc.\" matching Apple.",
+          "filing": {
+            "company_key": "CIK:0000004127",
+            "form": "10-K",
+            "accession": "0000004127-25-000085",
+            "filed": "2025-11-07",
+            "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "conclude",
+          "query": "Unnamed customer",
+          "summary": "The unnamed customer accounting for greater than ten percent of net revenue is revised to Apple, as the filing identifies that \"Our key customers include Amazon, Apple Inc.\" and specifically notes sales to Apple across the periods.",
+          "filing": {
+            "company_key": "CIK:0000004127",
+            "form": "10-K",
+            "accession": "0000004127-25-000085",
+            "filed": "2025-11-07",
+            "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [
+        "edge_bc723b6898e2",
+        "edge_a3521924a54d"
+      ],
+      "rejected_edge_ids": [],
+      "new_edges": []
+    },
+    {
+      "finding_id": "res_unresolved_edge_a3521924a54d",
+      "kind": "unresolved_counterparty",
+      "subject": "Skyworks Solutions, Inc. counterparty Apple Inc.",
+      "question": "Can counterparty Apple Inc. in Skyworks Solutions, Inc.'s filing be verified and resolved?",
+      "outcome": "confirmed",
+      "explanation": "The filing confirms that Apple is a customer, stating: \"During fiscal 2025, fiscal 2024, and fiscal 2023, Apple, through sales to multiple distributors, contract manufacturers, and direct sales for multiple applications including smartphones, tablets, desktop, and notebook computers, watches and other devices, in the aggregate accounted for 67%, 69%, and 66% of the Company's net revenue, respectively.\"",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "Apple",
+          "summary": "Found independent filing passage \"(\"Apple\"), Arcadyan, Arris, Bose, Ciena, Cisco, Ericsson, Fibocom, Garmin, Gemalto (a Thales company), General Electric, Google, Honeywell, \" matching Apple.",
+          "filing": {
+            "company_key": "CIK:0000004127",
+            "form": "10-K",
+            "accession": "0000004127-25-000085",
+            "filed": "2025-11-07",
+            "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "read_section",
+          "query": "Item 1A",
+          "summary": "Read section A and extracted verified passage \"•The Merger Agreement contains provisions that limit our ability to pursue alternative transactions to the Mergers which could discourage a \".",
+          "filing": {
+            "company_key": "CIK:0000004127",
+            "form": "10-K",
+            "accession": "0000004127-25-000085",
+            "filed": "2025-11-07",
+            "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "conclude",
+          "query": "Apple Inc.",
+          "summary": "The filing confirms that Apple is a customer, stating: \"During fiscal 2025, fiscal 2024, and fiscal 2023, Apple, through sales to multiple distributors, contract manufacturers, and direct sales for multiple applications including smartphones, tablets, desktop, and notebook computers, watches and other devices, in the aggregate accounted for 67%, 69%, and 66% of the Company's net revenue, respectively.\"",
+          "filing": {
+            "company_key": "CIK:0000004127",
+            "form": "10-K",
+            "accession": "0000004127-25-000085",
+            "filed": "2025-11-07",
+            "url": "https://www.sec.gov/Archives/edgar/data/4127/000000412725000085/swks-20251003.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [
+        "edge_a3521924a54d"
+      ],
+      "rejected_edge_ids": [],
+      "new_edges": []
+    }
+  ],
+  "agentic_rejected_edge_ids": [],
+  "agentic_steps_done": 6,
+  "agentic_steps_total": 6,
+  "agentic_interpretation_rejected": 0
 }

@@ -204,7 +204,7 @@ class GoldDocument(_EvalModel):
 
 
 class RecordedCompanyPrediction(_EvalModel):
-    """Recorded extractor + V-INT output for one held-out company so `--replay` needs no network or keys."""
+    """Recorded extractor + V-INT + agentic research output for one held-out company so `--replay` needs no network or keys."""
 
     ticker: str
     company_key: str
@@ -217,10 +217,21 @@ class RecordedCompanyPrediction(_EvalModel):
     judge_prompt_version: str = ""
     model: str | None = None
     edges: list[dict[str, Any]] = Field(default_factory=list)
-    """Verified edges surviving V-INT (or all verified edges if V-INT was not run)."""
+    """Verified edges surviving V-INT before the agentic research pass (single-pass baseline)."""
     vint_rejected_edges: list[dict[str, Any]] = Field(default_factory=list)
     """Edges that passed quote verification BEFORE V-INT, but were rejected by V-INT."""
     quote_rejected_count: int = 0
+    research_depth: str = "none"
+    """v3.1 A3: depth of the per-company agentic research pass ('none', 'light', 'thorough')."""
+    agentic_edges: list[dict[str, Any]] | None = None
+    """v3.1 A3: final verified edges after the per-company agentic research pass (None = same as `edges`)."""
+    agentic_findings: list[dict[str, Any]] = Field(default_factory=list)
+    """v3.1 A3: recorded `ResearchFinding` items from the per-company agentic loop."""
+    agentic_rejected_edge_ids: list[str] = Field(default_factory=list)
+    """v3.1 A3: edge IDs dropped by the per-company agentic loop."""
+    agentic_steps_done: int = 0
+    agentic_steps_total: int = 0
+    agentic_interpretation_rejected: int = 0
 
 
 class MetricWithCI(_EvalModel):
@@ -335,6 +346,37 @@ class CompanyEvalSummary(_EvalModel):
     fp_blind_after_vint: int = 0
     precision_blind_after_vint: float = 0.0
     f1_blind_after_vint: float = 0.0
+    predicted_before_agentic: int = 0
+    predicted_after_agentic: int = 0
+    tp_before_agentic: int = 0
+    tp_core_before_agentic: int = 0
+    tp_extended_before_agentic: int = 0
+    fp_before_agentic: int = 0
+    fn_before_agentic: int = 0
+    tp_blind_before_agentic: int = 0
+    fp_blind_before_agentic: int = 0
+    precision_before_agentic: float = 0.0
+    precision_blind_before_agentic: float = 0.0
+    recall_before_agentic: float = 0.0
+    f1_before_agentic: float = 0.0
+    f1_blind_before_agentic: float = 0.0
+    tp_after_agentic: int = 0
+    tp_core_after_agentic: int = 0
+    tp_extended_after_agentic: int = 0
+    fp_after_agentic: int = 0
+    fn_after_agentic: int = 0
+    tp_blind_after_agentic: int = 0
+    fp_blind_after_agentic: int = 0
+    precision_after_agentic: float = 0.0
+    precision_blind_after_agentic: float = 0.0
+    recall_after_agentic: float = 0.0
+    f1_after_agentic: float = 0.0
+    f1_blind_after_agentic: float = 0.0
+    agentic_findings_count: int = 0
+    agentic_steps_done: int = 0
+    agentic_steps_total: int = 0
+    agentic_new_edges_count: int = 0
+    agentic_rejected_edges_count: int = 0
     direction_correct: int
     direction_total: int
     hard_neg_fp_before_vint: int
@@ -349,12 +391,44 @@ class CompanyEvalSummary(_EvalModel):
     pooled_candidates: list[PooledCandidate] = Field(default_factory=list)
 
 
+class AgenticAcceptanceReport(_EvalModel):
+    """Numeric acceptance check for agentic research sub-agents (FIX-1, FIX-2, FIX-14)."""
+
+    depth: str = "light"
+    findings_total: int = 0
+    tool_calls_total: int = 0
+    avg_tool_calls_per_finding: float = 0.0
+    min_tool_calls_per_finding: int = 0
+    max_tool_calls_per_finding: int = 0
+    single_lookup_findings_count: int = 0
+    findings_meeting_min_tool_calls: int = 0
+    search_filings_calls_total: int = 0
+    findings_with_search_filings: int = 0
+    read_section_calls_total: int = 0
+    find_in_filing_calls_total: int = 0
+    circular_confirmations_count: int = 0
+    duplicate_unnamed_customer_edges_count: int = 0
+    duplicate_unnamed_customer_edge_ids: list[str] = Field(default_factory=list)
+    group_unnamed_customer_edges_count: int = 0
+    group_unnamed_customer_edge_ids: list[str] = Field(default_factory=list)
+    thorough_evaluated: bool = False
+    light_surviving_edges_count: int = 0
+    thorough_edges_count: int = 0
+    thorough_missing_light_edge_ids: list[str] = Field(default_factory=list)
+    thorough_contains_light: bool = True
+    fix_1_pass: bool = True
+    fix_2_pass: bool = True
+    fix_14_pass: bool = True
+    all_passed: bool = True
+
+
 class EvalRunReport(_EvalModel):
-    schema_version: str = "hoc-eval-v3.2"
+    schema_version: str = "hoc-eval-v3.3"
     mode: Literal["replay", "live", "synthetic_baseline"]
     git_commit: str
     extractor_prompt_version: str
     judge_prompt_version: str
+    research_depth: str = "light"
     bootstrap_iterations: int = 2000
     bootstrap_seed: int = 20261108
     companies_evaluated: int
@@ -371,6 +445,20 @@ class EvalRunReport(_EvalModel):
     macro_before_vint: PRFMetrics
     blind_overall_after_vint: PRFMetrics | None = None
     blind_macro_after_vint: PRFMetrics | None = None
+    overall_before_agentic: PRFMetrics | None = None
+    blind_overall_before_agentic: PRFMetrics | None = None
+    macro_before_agentic: PRFMetrics | None = None
+    blind_macro_before_agentic: PRFMetrics | None = None
+    overall_after_agentic: PRFMetrics | None = None
+    blind_overall_after_agentic: PRFMetrics | None = None
+    macro_after_agentic: PRFMetrics | None = None
+    blind_macro_after_agentic: PRFMetrics | None = None
+    agentic_findings_total: int = 0
+    agentic_steps_done_total: int = 0
+    agentic_steps_total: int = 0
+    agentic_new_edges_total: int = 0
+    agentic_rejected_edges_total: int = 0
+    agentic_acceptance: AgenticAcceptanceReport | None = None
     per_edge_type: dict[str, PRFMetrics]
     direction_accuracy: MetricWithCI
     hard_negative_fp_rate_before_vint: MetricWithCI
