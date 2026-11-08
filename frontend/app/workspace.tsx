@@ -79,9 +79,13 @@ export function Workspace() {
       <Drawer aria-label="Navigation" isOpen={mobile} onOpenChange={setMobile} placement="start" size="sm" className="mobile-workspace-drawer">
         <DrawerHeader title={APP_NAME} />
         <DrawerBody>
-          <Suspense fallback={<p className="text-body-regular">Opening…</p>}>
-            <DashboardSidebar workspaceName={APP_NAME} selected={page.key} items={navItems} mobile fluid flat onClose={() => setMobile(false)} minimal className="telos-sidebar" />
-          </Suspense>
+          <div onClickCapture={(event) => {
+            if (event.target instanceof Element && event.target.closest('a[href^="#/"]')) setMobile(false);
+          }}>
+            <Suspense fallback={<p className="text-body-regular">Opening…</p>}>
+              <DashboardSidebar workspaceName={APP_NAME} selected={page.key} items={navItems} mobile fluid flat onClose={() => setMobile(false)} minimal className="telos-sidebar" />
+            </Suspense>
+          </div>
         </DrawerBody>
       </Drawer>
       <div className="dashboard-main">
