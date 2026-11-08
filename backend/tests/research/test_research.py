@@ -46,7 +46,10 @@ def _sample_filing(
         "ITEM 1. BUSINESS\n"
         "We rely exclusively on ZZFAB for advanced wafer fabrication of our core processor line.\n"
         "We also purchase memory components from ZZSUP under multi-year supply agreements.\n"
+        "Any disruption at ZZFAB or ZZSUP facilities could materially delay shipments of our core products.\n"
         "ITEM 1A. RISK FACTORS\n"
+        "Supply chain interruptions at ZZFAB or ZZSUP could adversely affect our operating results.\n"
+        "Global semiconductor demand fluctuates across enterprise and consumer markets.\n"
         "Our primary competitors include ZZCOMP and other regional semiconductor manufacturers.\n"
     )
     return Filing(
@@ -662,7 +665,11 @@ def test_merge_preserves_independent_judge_that_cleared_rule_flag() -> None:
         interp_flags=["competitor_mention"],
     )
     analysis, result = _one_edge(edge)
-    filing = _sample_filing(text="ITEM 1. BUSINESS\n" + quote)
+    filing = _sample_filing(
+        text="ITEM 1. BUSINESS\n"
+        + quote
+        + "\nAny disruption at ZZFAB foundry sites could delay processor deliveries.\n"
+    )
     client = _VerdictClient("confirmed", edge.edge_id, ["competitor_mention"])
     verdict = verify_edge_interpretation(
         edge.model_copy(update={"interpretation": None}),
@@ -1199,3 +1206,279 @@ def test_a1_dependency_extractor_reuses_cached_extraction_from_light_to_thorough
     new_calls = client.calls[calls_after_light:]
     assert all("FILING TEXT:" not in c["prompt"] for c in new_calls)
     assert len(thorough_ext.findings) >= len(light_ext.findings)
+
+
+def test_fix1_non_circular_confirmation_requires_different_passage_or_other_filing() -> None:
+    analysis, _ = _sample_analysis_and_result()
+    comp = analysis.exposures[0]
+    quote = "We rely exclusively on ZZFAB for advanced wafer fabrication of our core processor line."
+
+    # 1. Filing containing ONLY the edge's own initial quote -> re-finding it is circular -> unresolved
+    single_passage_filing = _sample_filing(
+        cik="0009990001",
+        accession="0009990001-25-000101",
+        text=f"ITEM 1. BUSINESS\n{quote}\nThe Company operates globally across several regions.\n",
+    )
+    edge = _make_edge(
+        edge_id="e_circular",
+        source_key=comp.company_key,
+        source_name=comp.company_name,
+        target_name="ZZFAB",
+        target_key="CIK:0009990009",
+        quote=quote,
+        interp_status="flagged",
+        interp_flags=["judge_unclear"],
+    )
+    res_circular = ResearchLoop(
+        client=FakeGeminiClient(),
+        filings_by_key={comp.company_key: single_passage_filing},
+    ).research_company(comp, single_passage_filing, [edge], depth="light")
+    assert len(res_circular.findings) == 1
+    assert res_circular.findings[0].outcome == "unresolved"
+    assert res_circular.findings[0].confirmed_edge_ids == []
+
+    # 2. Counterparty filing in search_filings corroborates the edge even when own filing has only the 1 quote
+    counterparty_filing = _sample_filing(
+        cik="0009990009",
+        accession="0009990009-25-000001",
+        text=(
+            "ITEM 1. BUSINESS\n"
+            "ZZFAB provides dedicated wafer foundry services to ZZ Alpha Corp under long-term agreements.\n"
+        ),
+    )
+    res_cross_filing = ResearchLoop(
+        client=FakeGeminiClient(),
+        filings_by_key={
+            comp.company_key: single_passage_filing,
+            "CIK:0009990009": counterparty_filing,
+        },
+    ).research_company(comp, single_passage_filing, [edge], depth="thorough")
+    assert len(res_cross_filing.findings) == 1
+    assert res_cross_filing.findings[0].outcome == "confirmed"
+    assert res_cross_filing.findings[0].confirmed_edge_ids == ["e_circular"]
+    assert any(s.action == "search_filings" for s in res_cross_filing.findings[0].steps)
+
+
+def test_fix1_enforces_minimum_tool_calls_and_thorough_search_filings() -> None:
+    analysis, _ = _sample_analysis_and_result()
+    comp = analysis.exposures[0]
+    filing = _sample_filing(cik="0009990001", accession="0009990001-25-000102")
+    edge = _make_edge(
+        edge_id="e_early",
+        source_key=comp.company_key,
+        source_name=comp.company_name,
+        target_name="ZZFAB",
+        interp_status="flagged",
+        interp_flags=["judge_unclear"],
+    )
+
+    class AlwaysEarlyConcludeClient(FakeGeminiClient):
+        def generate_json(self, prompt, schema, **kwargs):
+            if "verdicts" in schema.get("properties", {}):
+                return super().generate_json(prompt, schema, **kwargs)
+            return {
+                "action": "conclude",
+                "query": "ZZFAB",
+                "outcome": "confirmed",
+                "explanation": 'Corroborated "Any disruption at ZZFAB or ZZSUP facilities could materially delay shipments of our core products."',
+                "candidate_edges": [],
+            }, self.extractor_model
+
+    # Light mode enforces >= 2 tool calls before conclude (so 3 steps total)
+    res_light = ResearchLoop(
+        client=AlwaysEarlyConcludeClient(),
+        filings_by_key={comp.company_key: filing},
+    ).research_company(comp, filing, [edge], depth="light")
+    f_light = res_light.findings[0]
+    tool_steps_light = [s for s in f_light.steps if s.action != "conclude"]
+    assert len(tool_steps_light) >= 2
+    assert f_light.steps[-1].action == "conclude"
+
+    # Thorough mode enforces >= 3 tool calls including >= 1 search_filings before conclude (4 steps total)
+    res_thorough = ResearchLoop(
+        client=AlwaysEarlyConcludeClient(),
+        filings_by_key={comp.company_key: filing},
+    ).research_company(comp, filing, [edge], depth="thorough")
+    f_thorough = res_thorough.findings[0]
+    tool_steps_thorough = [s for s in f_thorough.steps if s.action != "conclude"]
+    assert len(tool_steps_thorough) >= 3
+    assert any(s.action == "search_filings" for s in tool_steps_thorough)
+    assert f_thorough.steps[-1].action == "conclude"
+
+
+def test_fix2_thorough_preserves_light_findings_and_edges(tmp_path) -> None:
+    from hoc.core.cache import DiskCache
+
+    analysis, _ = _sample_analysis_and_result()
+    comp = analysis.exposures[0]
+    new_quote = "We depend on ZZPACK as our sole provider of advanced substrate packaging."
+    filing = _sample_filing(
+        cik="0009990001",
+        accession="0009990001-25-000103",
+        text=(
+            "ITEM 1. BUSINESS\n"
+            "We rely exclusively on ZZFAB for advanced wafer fabrication of our core processor line.\n"
+            f"{new_quote}\n"
+            "Sales to Customer A accounted for 18% of our revenue in fiscal 2025.\n"
+            "ITEM 1A. RISK FACTORS\n"
+            "Any disruption at ZZFAB or ZZPACK facilities could materially delay shipments of our core products.\n"
+        ),
+    )
+    e_flag = _make_edge(
+        edge_id="e_flag_keep",
+        source_key=comp.company_key,
+        source_name=comp.company_name,
+        target_name="ZZFAB",
+        interp_status="flagged",
+        interp_flags=["judge_unclear"],
+    )
+    e_undisc = _make_edge(
+        edge_id="e_undisc_keep",
+        source_key=comp.company_key,
+        source_name=comp.company_name,
+        target_name="Unnamed customer (Customer A)",
+        target_key=None,
+        target_kind="unnamed_customer",
+        edge_type="customer",
+        sole_source=False,
+        quote="Sales to Customer A accounted for 18% of our revenue in fiscal 2025.",
+    )
+    e_single = _make_edge(
+        edge_id="e_single_extra",
+        source_key=comp.company_key,
+        source_name=comp.company_name,
+        target_name="ZZFAB",
+        sole_source=True,
+    )
+
+    class LightFindsNewEdgeButThoroughMissesItClient(FakeGeminiClient):
+        def __init__(self) -> None:
+            super().__init__()
+            self.mode = "light"
+
+        def generate_json(self, prompt, schema, **kwargs):
+            if "verdicts" in schema.get("properties", {}):
+                return super().generate_json(prompt, schema, **kwargs)
+            resp, model = super().generate_json(prompt, schema, **kwargs)
+            if self.mode == "light" and resp.get("action") == "conclude" and "undisclosed_customer" in prompt:
+                return {
+                    "action": "conclude",
+                    "query": "ZZPACK",
+                    "outcome": "new_evidence",
+                    "explanation": f'Discovered substrate supplier "{new_quote}".',
+                    "candidate_edges": [
+                        {
+                            "target_name": "ZZPACK",
+                            "target_kind": "company",
+                            "edge_type": "supplier",
+                            "sole_source": True,
+                            "qualifier": "sole substrate packaging provider",
+                            "evidence_quote": new_quote,
+                            "section": "Item 1",
+                        }
+                    ],
+                }, model
+            return resp, model
+
+    disk = DiskCache(tmp_path)
+    client = LightFindsNewEdgeButThoroughMissesItClient()
+    runner = ResearchLoop(
+        client=client,
+        disk_cache=disk,
+        filings_by_key={comp.company_key: filing},
+    )
+    light_res = runner.research_company(comp, filing, [e_flag, e_undisc, e_single], depth="light")
+    light_edge_ids = {e.edge_id for e in light_res.edges}
+    assert any(e.target_name == "ZZPACK" for e in light_res.edges)
+
+    client.mode = "thorough"
+    thorough_res = runner.research_company(comp, filing, [e_flag, e_undisc, e_single], depth="thorough")
+    thorough_edge_ids = {e.edge_id for e in thorough_res.edges}
+    expected_subset = light_edge_ids - set(thorough_res.rejected_edge_ids)
+    assert expected_subset.issubset(thorough_edge_ids)
+    assert any(e.target_name == "ZZPACK" for e in thorough_res.edges)
+    assert len(thorough_res.findings) >= len(light_res.findings)
+
+
+def test_fix14_skips_duplicate_unnamed_customers_and_plural_customer_groups() -> None:
+    analysis, _ = _sample_analysis_and_result()
+    comp = analysis.exposures[0]
+    quote_anon = "Sales to our largest customer accounted for 14% of total revenue in fiscal 2025."
+    quote_group = "Our three largest customers outside of the United States accounted for 29% of revenue."
+    quote_group_2 = "Sales through five distributors represented 21% of consolidated net revenue."
+    filing = _sample_filing(
+        cik="0009990001",
+        accession="0009990001-25-000104",
+        text=(
+            "ITEM 1. BUSINESS\n"
+            f"{quote_anon}\n"
+            f"{quote_group}\n"
+            f"{quote_group_2}\n"
+            "ITEM 1A. RISK FACTORS\n"
+            "Loss of our largest customer could materially reduce revenue.\n"
+        ),
+    )
+    existing_unnamed = _make_edge(
+        edge_id="e_unnamed_existing",
+        source_key=comp.company_key,
+        source_name=comp.company_name,
+        target_name="Unnamed customer (largest customer)",
+        target_key=None,
+        target_kind="unnamed_customer",
+        edge_type="customer",
+        sole_source=False,
+        quote=quote_anon,
+    )
+
+    class DuplicateAndGroupCustomerClient(FakeGeminiClient):
+        def generate_json(self, prompt, schema, **kwargs):
+            if "verdicts" in schema.get("properties", {}):
+                return super().generate_json(prompt, schema, **kwargs)
+            resp, model = super().generate_json(prompt, schema, **kwargs)
+            if resp.get("action") == "conclude":
+                return {
+                    "action": "conclude",
+                    "query": "largest customer",
+                    "outcome": "new_evidence",
+                    "explanation": f'Found "{quote_anon}" and "{quote_group}".',
+                    "candidate_edges": [
+                        {
+                            "target_name": "Unnamed customer (our largest customer)",
+                            "target_kind": "unnamed_customer",
+                            "edge_type": "customer",
+                            "sole_source": False,
+                            "qualifier": "14% of total revenue",
+                            "evidence_quote": quote_anon,
+                            "section": "Item 1",
+                        },
+                        {
+                            "target_name": "Three largest customers outside of the United States",
+                            "target_kind": "unnamed_customer",
+                            "edge_type": "customer",
+                            "sole_source": False,
+                            "qualifier": "29% of revenue",
+                            "evidence_quote": quote_group,
+                            "section": "Item 1",
+                        },
+                        {
+                            "target_name": "five distributors",
+                            "target_kind": "company",
+                            "edge_type": "customer",
+                            "sole_source": False,
+                            "qualifier": "21% of consolidated net revenue",
+                            "evidence_quote": quote_group_2,
+                            "section": "Item 1",
+                        },
+                    ],
+                }, model
+            return resp, model
+
+    res = ResearchLoop(
+        client=DuplicateAndGroupCustomerClient(),
+        filings_by_key={comp.company_key: filing},
+    ).research_company(comp, filing, [existing_unnamed], depth="light")
+
+    # Neither the duplicate unnamed customer on the same quote nor the plural customer groups may be added
+    assert [e.edge_id for e in res.edges] == ["e_unnamed_existing"]
+    assert all(f.new_edges == [] for f in res.findings)
+
