@@ -6,10 +6,11 @@
 
 import { RiArrowRightUpLine, RiGridLine } from "@remixicon/react";
 import { useAnalysis } from "@/app/analysis";
+import { useExperience } from "@/app/experience";
 import { EtfChip } from "@/app/ui/etf-chip";
 import { Pct } from "@/app/ui/pct";
 import { Button } from "@/components/base/buttons/button";
-import { GUIDE_STEP_META, openInFullView } from "../copy";
+import { GUIDE_STEP_META } from "../copy";
 import type { GuideStepProps } from "../index";
 import { pickMostOverlappingPair } from "../sentence";
 import { useAutoDependencies } from "../use-auto-dependencies";
@@ -19,6 +20,7 @@ const STEP_META = GUIDE_STEP_META[1];
 
 export function StepOwn({ onBack }: GuideStepProps) {
   const { analysis } = useAnalysis();
+  const { openExpertPage } = useExperience();
   // Always-run AI supply-chain check in the background as soon as step 2 renders ready.
   useAutoDependencies();
   // FIX-47: never show an earlier portfolio's results as current (loading, error, unfinished edit, empty).
@@ -118,7 +120,7 @@ export function StepOwn({ onBack }: GuideStepProps) {
       <div className="flex justify-end">
         <button
           type="button"
-          onClick={() => openInFullView(STEP_META.learnMoreHref)}
+          onClick={() => openExpertPage(STEP_META.learnMoreHref)}
           className="inline-flex items-center gap-1 text-caption-1-medium text-text-secondary underline hover:text-text-primary"
         >
           <span>{STEP_META.learnMoreLabel}</span>
