@@ -99,7 +99,8 @@ class TickerInsideAdapter:
             lines.append(RawHolding(
                 source_symbol=symbol, name=_longest(row[3] if row and len(row) > 3 else None, ident.get("name")),
                 weight=weight / 100, asset_class=asset_class, exchange=ident.get("exchange"),
-                country=country_of(symbol), cik=ident.get("cik"), figi=ident.get("composite_figi"),
+                country=country_of(symbol, ident, row[3] if row and len(row) > 3 else None),
+                cik=ident.get("cik"), figi=ident.get("composite_figi"),
             ))
 
         price = _price(data)

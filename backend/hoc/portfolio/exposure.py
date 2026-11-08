@@ -23,6 +23,13 @@ def exposures(items, loaded):
         # Stable representative metadata even if a source changes line order.
         rows.sort(key=lambda row: (row[1].security_key, row[0].ticker, row[1].name))
         representative = rows[0][1]
+        # Issuer-reported countries outrank TickerInside's listing-country fallback;
+        # within that fallback, an overseas listing outranks an inferred US listing.
+        # Keep the existing stable row ordering to break ties without changing weights.
+        known_countries = [line for _, line in rows if line.country]
+        country = min(known_countries, key=lambda line: (
+            line.source == "tickerinside", line.source == "tickerinside" and line.country == "US"
+        )).country if known_countries else None
         by_etf, securities = defaultdict(list), defaultdict(list)
         for item, line in rows:
             by_etf[item.ticker].append((item, line))
@@ -60,7 +67,7 @@ def exposures(items, loaded):
                 ),
                 symbols=sorted({line.symbol for _, line in rows if line.symbol}),
                 sector=representative.sector,
-                country=representative.country,
+                country=country,
                 exposure=wsum(value.contribution for value in contributions),
                 etf_count=sum(value.contribution > 0 for value in contributions),
                 contributions=contributions,

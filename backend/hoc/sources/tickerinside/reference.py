@@ -75,7 +75,7 @@ class TickerInsideReference:
                 symbol=key, name=_longest(row[3] if row and len(row) > 3 else None, ident.get("name")),
                 cik=ident.get("cik"), figi=ident.get("composite_figi"),
                 share_class_figi=ident.get("share_class_figi"), exchange=ident.get("exchange"),
-                country=country_of(key),
+                country=country_of(key, ident, row[3] if row and len(row) > 3 else None),
                 sector_label=sectors[key].result() if key in sectors else None,
             )
         return found
