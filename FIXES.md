@@ -31,14 +31,6 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
-### FIX-33 · high · Importance scoring bugs from the FIX-30 audit (issue #216, A + C + reverse links)
-Reproduced offline by Codex:
-- **(A) The wrong customer's share.** `_customer_base_score` takes the largest % anywhere in the quote. With qualifier "8% of revenue" and quote "ZZ represented 8%…; Another Company represented 22%", it scores 0.90 / critical and cites 22%. Fix: use only a share grounded to this target (the qualifier, or the % in the clause naming the target); otherwise leave the amount unknown.
-- **(C) Offices scored as factories.** "office facilities" matches the production regex and scores 0.70 / high. Fix: office/headquarters is 0.30 unless there's real production evidence; generic "facilities" isn't evidence.
-- **Reverse links.** A supplier saying "Nvidia is 30% of our sales" shows the supplier depends on Nvidia, not how much Nvidia depends on that supplier. Fix: don't let a reverse customer edge's revenue share raise the buyer's `critical.*`; cap it at medium unless the buyer's own filing supports more.
-- **Then:** the lead re-checks `critical.*` numbers live. Docs that quote "critically dependent … 12.39%" may change, and Gawyn's Gemini updates them.
-- **Owner:** Gawyn's Gemini (`hoc/graph/importance.py`, `metrics.py`) · **Status:** assigned
-
 ### FIX-34 · high · An unsupported "sole source" flag can make an ordinary supplier critical (issue #216, B)
 `extractor.verify_and_build_edges` copies the model's raw `sole_source=True`. `verify_quote` checks only the quote and name, so "We buy components from ZZ alongside several other vendors" with `sole_source=True` passes with no flags and becomes 0.95 / critical.
 - Fix: ground `sole_source`, and any revenue-share qualifier, in the target-specific quote (sole/single/only source wording near the target) before it can raise importance. If it's unsupported, keep the ordinary supplier link, drop the flag, and add a rules flag. Add tests from the issue.
@@ -60,6 +52,7 @@ Reproduced offline by Codex:
 
 ## Done (checked on `main` by the lead)
 
+- FIX-33 importance: customer shares grounded to the target (live: Applied Materials' customer rated high from its own 19%, not the other's 15%); headquarters low 0.30; reverse customer links capped. On the sample only `critical.CIK:0000804328` (1.43%) drops out; `critical.ALIAS:TSMC` stays 12.39%, so the docs are unchanged — #220
 - FIX-35 main is green again (561 passed) — #218
 - FIX-31 importance badges show the tier only (no "Critical 90%"); the graph legend says "Line thickness = how much of your money is in that company" — #219
 - FIX-32 one-liners read "Checked: Nvidia's partnership with OpenAI — still unclear" and "Checked: Apple's reliance on Japan — confirmed"; FIX-11 casts removed — #219
