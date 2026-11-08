@@ -16,9 +16,10 @@ import type {
 } from "@/api/types";
 import { useAnalysis } from "@/app/analysis";
 import { triggerDependenciesRun } from "@/app/dependencies-state";
+import { useExperience } from "@/app/experience";
 import { metricCitationLabel } from "@/app/pages/dependencies/metrics";
 import { useScenario } from "@/app/scenario";
-import { DraftEditor, ServerError } from "@/app/ui/draft-editor";
+import { DraftEditor, normTicker, ServerError } from "@/app/ui/draft-editor";
 import { formatPct } from "@/app/ui/pct";
 import { Chip } from "@/components/base/badges/chip";
 import { Button } from "@/components/base/buttons/button";
@@ -517,12 +518,24 @@ export function ChangeIdeas({ heading = "Ideas to try", onTried }: { heading?: s
 /** The editable copy of the portfolio, the four headline rows and "More details". */
 export function TryAChange({ editorTitle = "Your new mix" }: { editorTitle?: string }) {
   const { draft: current } = useAnalysis();
+  const { isBeginner } = useExperience();
   const { scenario, resetToCurrent, compare, compareStatus, result, error, stale } = useScenario();
   const ready = current.inputs !== null && scenario.inputs !== null;
   const [applying, setApplying] = useState(false);
   const [applyError, setApplyError] = useState<ApiError | null>(null);
   const adoptionController = useRef<AbortController | null>(null);
   useEffect(() => () => adoptionController.current?.abort(), []);
+  const flaggedTickers = new Set(
+    [error, scenario.valuation.error, applyError].flatMap((cause) =>
+      cause?.code === "UNKNOWN_TICKER"
+        ? ((cause.details as { tickers?: string[] } | undefined)?.tickers ?? []).map(normTicker)
+        : [],
+    ),
+  );
+  for (const issue of scenario.valuation.result?.issues ?? []) {
+    if (issue.severity === "blocking" && issue.ticker) flaggedTickers.add(normTicker(issue.ticker));
+  }
+  const flaggedIds = new Set(scenario.rows.filter((row) => flaggedTickers.has(normTicker(row.ticker))).map((row) => row.id));
 
   // Auto-compare once the edits settle. compare() aborts the previous request, so a stale answer never lands;
   // a failed comparison is retried only by the user or the next edit.
@@ -583,6 +596,8 @@ export function TryAChange({ editorTitle = "Your new mix" }: { editorTitle?: str
         <DraftEditor
           draft={scenario}
           label="Changed portfolio ETFs"
+          sharesOnly={isBeginner}
+          flaggedIds={flaggedIds}
           emptyText={{
             percent: "Add the ETFs you'd like to try. The allocations need to total 100%.",
             shares: "Add the ETFs you'd like to try and how many shares of each.",
