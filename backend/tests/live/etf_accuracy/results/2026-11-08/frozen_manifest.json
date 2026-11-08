@@ -1,0 +1,214 @@
+{
+  "created_at": "2026-11-08T10:36:36.032312+00:00",
+  "git_commit": "9bdf21f88fff6f2b260cf76e1547a63915c34975",
+  "cases": [
+    {
+      "id": "default-us",
+      "group": "default",
+      "label": "US core with tech tilt",
+      "weights": {
+        "IVV": 0.4,
+        "QQQ": 0.25,
+        "XLK": 0.15,
+        "EEM": 0.2
+      }
+    },
+    {
+      "id": "default-global",
+      "group": "default",
+      "label": "Global core with Nasdaq tilt",
+      "weights": {
+        "VTI": 0.5,
+        "VXUS": 0.3,
+        "QQQ": 0.2
+      }
+    },
+    {
+      "id": "nontech-01",
+      "group": "nontech",
+      "label": "Financials, large vs broad",
+      "weights": {
+        "XLF": 0.5,
+        "VFH": 0.5
+      }
+    },
+    {
+      "id": "nontech-02",
+      "group": "nontech",
+      "label": "Healthcare, large vs broad",
+      "weights": {
+        "XLV": 0.5,
+        "VHT": 0.5
+      }
+    },
+    {
+      "id": "nontech-03",
+      "group": "nontech",
+      "label": "Energy, large vs broad",
+      "weights": {
+        "XLE": 0.5,
+        "VDE": 0.5
+      }
+    },
+    {
+      "id": "nontech-04",
+      "group": "nontech",
+      "label": "Utilities, large vs broad",
+      "weights": {
+        "XLU": 0.5,
+        "VPU": 0.5
+      }
+    },
+    {
+      "id": "nontech-05",
+      "group": "nontech",
+      "label": "Consumer staples, large vs broad",
+      "weights": {
+        "XLP": 0.5,
+        "VDC": 0.5
+      }
+    },
+    {
+      "id": "nontech-06",
+      "group": "nontech",
+      "label": "Industrials, large vs broad",
+      "weights": {
+        "XLI": 0.5,
+        "VIS": 0.5
+      }
+    },
+    {
+      "id": "nontech-07",
+      "group": "nontech",
+      "label": "Materials, large vs broad",
+      "weights": {
+        "XLB": 0.5,
+        "VAW": 0.5
+      }
+    },
+    {
+      "id": "nontech-08",
+      "group": "nontech",
+      "label": "Real estate, sector vs broad",
+      "weights": {
+        "XLRE": 0.5,
+        "VNQ": 0.5
+      }
+    },
+    {
+      "id": "nontech-09",
+      "group": "nontech",
+      "label": "Financials, healthcare, utilities",
+      "weights": {
+        "XLF": 0.4,
+        "XLV": 0.35,
+        "XLU": 0.25
+      }
+    },
+    {
+      "id": "nontech-10",
+      "group": "nontech",
+      "label": "Energy, staples, industrials",
+      "weights": {
+        "XLE": 0.3,
+        "XLP": 0.3,
+        "XLI": 0.4
+      }
+    }
+  ],
+  "pairs": [
+    [
+      "EEM",
+      "IVV"
+    ],
+    [
+      "EEM",
+      "QQQ"
+    ],
+    [
+      "EEM",
+      "XLK"
+    ],
+    [
+      "IVV",
+      "QQQ"
+    ],
+    [
+      "IVV",
+      "XLK"
+    ],
+    [
+      "QQQ",
+      "VTI"
+    ],
+    [
+      "QQQ",
+      "VXUS"
+    ],
+    [
+      "QQQ",
+      "XLK"
+    ],
+    [
+      "VAW",
+      "XLB"
+    ],
+    [
+      "VDC",
+      "XLP"
+    ],
+    [
+      "VDE",
+      "XLE"
+    ],
+    [
+      "VFH",
+      "XLF"
+    ],
+    [
+      "VHT",
+      "XLV"
+    ],
+    [
+      "VIS",
+      "XLI"
+    ],
+    [
+      "VNQ",
+      "XLRE"
+    ],
+    [
+      "VPU",
+      "XLU"
+    ],
+    [
+      "VTI",
+      "VXUS"
+    ],
+    [
+      "XLE",
+      "XLI"
+    ],
+    [
+      "XLE",
+      "XLP"
+    ],
+    [
+      "XLF",
+      "XLU"
+    ],
+    [
+      "XLF",
+      "XLV"
+    ],
+    [
+      "XLI",
+      "XLP"
+    ],
+    [
+      "XLU",
+      "XLV"
+    ]
+  ],
+  "selection": "Two existing application defaults plus ten new combinations not present in those defaults. Non-tech refers to fund mandates, not a guarantee of zero technology holdings. This is a diagnostic sample, not a random sample or a model-training holdout."
+}
