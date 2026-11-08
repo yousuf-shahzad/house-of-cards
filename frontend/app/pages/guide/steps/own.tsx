@@ -9,27 +9,21 @@ import { useAnalysis } from "@/app/analysis";
 import { EtfChip } from "@/app/ui/etf-chip";
 import { Pct } from "@/app/ui/pct";
 import { Button } from "@/components/base/buttons/button";
-import { Spinner } from "@/components/base/spinner/spinner";
 import { GUIDE_STEP_META, openInFullView } from "../copy";
 import type { GuideStepProps } from "../index";
 import { pickMostOverlappingPair } from "../sentence";
 import { useAutoDependencies } from "../use-auto-dependencies";
+import { useGuideAnalysisGate } from "../analysis-gate";
 
 const STEP_META = GUIDE_STEP_META[1];
 
 export function StepOwn({ onBack }: GuideStepProps) {
-  const { analysis, status, stale } = useAnalysis();
+  const { analysis } = useAnalysis();
   // Always-run AI supply-chain check in the background as soon as step 2 renders ready.
   useAutoDependencies();
-
-  if (status === "loading" || (stale && !analysis)) {
-    return (
-      <section className="suite-card flex flex-col items-center justify-center gap-3 py-10 text-center" aria-live="polite">
-        <Spinner size="md" aria-label="Loading holdings" />
-        <p className="text-body-medium text-text-primary">Adding up the companies inside your ETFs…</p>
-      </section>
-    );
-  }
+  // FIX-47: never show an earlier portfolio's results as current (loading, error, unfinished edit, empty).
+  const gate = useGuideAnalysisGate(onBack, "Adding up the companies inside your ETFs…");
+  if (gate) return gate;
 
   if (!analysis || analysis.exposures.length === 0) {
     return (

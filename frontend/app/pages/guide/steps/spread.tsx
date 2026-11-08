@@ -9,41 +9,21 @@ import { useAnalysis } from "@/app/analysis";
 import { diversificationVerdict } from "@/app/ui/concentration";
 import { Pct } from "@/app/ui/pct";
 import { Chip } from "@/components/base/badges/chip";
-import { Button } from "@/components/base/buttons/button";
-import { Spinner } from "@/components/base/spinner/spinner";
 import {
   GUIDE_STEP_META,
   openInFullView,
   plainSectorName,
 } from "../copy";
 import type { GuideStepProps } from "../index";
+import { useGuideAnalysisGate } from "../analysis-gate";
 
 const STEP_META = GUIDE_STEP_META[2];
 
 export function StepSpread({ onBack }: GuideStepProps) {
-  const { analysis, status, stale } = useAnalysis();
-
-  if (status === "loading" || (stale && !analysis)) {
-    return (
-      <section className="suite-card flex flex-col items-center justify-center gap-3 py-10 text-center" aria-live="polite">
-        <Spinner size="md" aria-label="Checking portfolio spread" />
-        <p className="text-body-medium text-text-primary">Checking how spread out your money is…</p>
-      </section>
-    );
-  }
-
-  if (!analysis) {
-    return (
-      <section className="suite-card flex flex-col items-start gap-3">
-        <p className="text-body-medium text-text-primary">
-          Pick or enter a valid portfolio totaling 100% in Step 1 first.
-        </p>
-        <Button variant="secondary" size="small" onClick={onBack}>
-          Back to Step 1
-        </Button>
-      </section>
-    );
-  }
+  const { analysis } = useAnalysis();
+  // FIX-47: never show an earlier portfolio's results as current (loading, error, unfinished edit, empty).
+  const gate = useGuideAnalysisGate(onBack, "Checking how spread out your money is…");
+  if (gate || !analysis) return gate;
 
   const { concentration, sectors } = analysis;
   const verdict = diversificationVerdict({ hhi: concentration.hhi, sectors });
