@@ -361,13 +361,13 @@ export default function OverlapPage() {
               </h2>
               <p className="mt-1 text-body-regular text-text-secondary">
                 {basis === "company"
-                  ? "Company-level overlap merges dual share classes and cross-listed ADRs into one company before adding up the weight held by both ETFs."
-                  : "Security-level overlap compares exact stock listings only, without merging multiple share classes of the same company."}
+                  ? "Compare companies by combining their share classes and listings, then adding up how much both ETFs hold in common."
+                  : "Compare exact stock listings, keeping different share classes of a company separate."}
               </p>
             </div>
 
             <SegmentedControl
-              aria-label="Overlap resolution level"
+              aria-label="Compare overlap by"
               selectedKeys={[basis]}
               onSelectionChange={(keys) => {
                 const next = [...keys][0];
@@ -376,8 +376,8 @@ export default function OverlapPage() {
                 }
               }}
             >
-              <SegmentedControlItem id="company">Company level</SegmentedControlItem>
-              <SegmentedControlItem id="security">Security level</SegmentedControlItem>
+              <SegmentedControlItem id="company">Companies</SegmentedControlItem>
+              <SegmentedControlItem id="security">Exact share classes</SegmentedControlItem>
             </SegmentedControl>
           </div>
 
@@ -403,7 +403,7 @@ export default function OverlapPage() {
               );
             }}
             getCellSubtitle={(rowTicker, colTicker, _val, isDiagonal) => {
-              if (isDiagonal) return "Covered NAV";
+              if (isDiagonal) return "Holdings covered";
               const pair = pairMap.get(canonicalPairKey(rowTicker, colTicker));
               if (!pair) return "Overlap";
               return basis === "company"
@@ -412,7 +412,7 @@ export default function OverlapPage() {
             }}
             getCellTitle={(rowTicker, colTicker, val, isDiagonal) => {
               if (isDiagonal) {
-                return `Covered NAV (${formatPct(val)}): the share of ${rowTicker} we could look through, excluding cash and derivatives.`;
+                return `Holdings covered (${formatPct(val)}): the share of ${rowTicker} traced to companies, excluding cash and derivatives.`;
               }
               const pair = pairMap.get(canonicalPairKey(rowTicker, colTicker));
               if (!pair) return `${rowTicker} × ${colTicker}: ${formatPct(val)}`;
@@ -652,7 +652,7 @@ function PairDetailSection({
               )}
             </div>
             <p className="text-caption-1-regular text-text-tertiary">
-              Common weight held by both ETFs after merging share classes &amp; aliases
+              How much both ETFs hold in common after combining share classes of the same company
             </p>
           </div>
         </div>
@@ -660,7 +660,7 @@ function PairDetailSection({
         <div className="flex flex-col justify-between gap-3 rounded-2xl bg-background-secondary-default p-4">
           <div className="flex items-center justify-between gap-2">
             <span className="text-body-medium text-text-secondary">
-              Security overlap
+              Exact share-class overlap
             </span>
             <span className="flex rounded-md bg-stat-card-icon-background p-1.5">
               <RiLinksLine className="size-5 text-foreground-icon-primary" aria-hidden />
@@ -696,7 +696,7 @@ function PairDetailSection({
             <p className="text-caption-1-regular text-text-tertiary">
               {reportA && reportB
                 ? `Out of ${reportA.company_count.toLocaleString()} in ${pair.etf_a} and ${reportB.company_count.toLocaleString()} in ${pair.etf_b}`
-                : "Issuers held with positive weight in both ETFs"}
+                : "Companies held with positive weight in both ETFs"}
             </p>
           </div>
         </div>
@@ -704,7 +704,7 @@ function PairDetailSection({
         <div className="flex flex-col justify-between gap-3 rounded-2xl bg-background-secondary-default p-4">
           <div className="flex items-center justify-between gap-2">
             <span className="text-body-medium text-text-secondary">
-              Shared securities
+              Shared stock listings
             </span>
             <span className="flex rounded-md bg-stat-card-icon-background p-1.5">
               <RiStackLine className="size-5 text-foreground-icon-primary" aria-hidden />
@@ -720,7 +720,7 @@ function PairDetailSection({
             <p className="text-caption-1-regular text-text-tertiary">
               {reportA && reportB
                 ? `Out of ${reportA.holdings_count.toLocaleString()} in ${pair.etf_a} and ${reportB.holdings_count.toLocaleString()} in ${pair.etf_b}`
-                : "Distinct security listings held in both ETFs"}
+                : "Exact stock listings held in both ETFs"}
             </p>
           </div>
         </div>
@@ -810,10 +810,7 @@ function PairDetailSection({
                               </Chip>
                             )}
                           </div>
-                          <span className="text-caption-1-regular text-text-tertiary">
-                            {sectorLabel ? `${sectorLabel} · ` : ""}
-                            <span dir="ltr">{item.company_key}</span>
-                          </span>
+                          {sectorLabel && <span className="text-caption-1-regular text-text-tertiary">{sectorLabel}</span>}
                         </div>
                       </div>
                     </TableCell>
