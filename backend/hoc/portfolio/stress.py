@@ -37,7 +37,11 @@ def _side(
                 exposure=company.exposure, loss=company.exposure * basis.drop,
             ))
     affected.sort(key=lambda company: (-company.loss, company.company_key))
-    weight = wsum(company.exposure for company in affected)
+    named_weight = wsum(company.exposure for company in affected)
+    # Use the same industry basis as Compare, including fund-reported totals for
+    # funds whose individual holdings do not carry industry classifications.
+    weight = (wsum(sector.weight for sector in analysis.sectors if sector.sector == request.shock.key)
+              if request.shock.kind == "sector" else named_weight)
 
     notes = []
     # Coverage reconciliation can leave floating-point dust. Ignore amounts that would
@@ -50,12 +54,14 @@ def _side(
         if round(amount, 10) > 0:
             notes.append(f"{label}: {amount:.2%} of the portfolio was not shocked because {reason}.")
     if analysis.exposures_truncated or analysis.other_exposure > 0:
-        notes.append(f"{label}: the company list was truncated; omitted companies were not shocked.")
+        detail = ("industry totals were still used" if request.shock.kind == "sector"
+                  else "omitted companies were not shocked")
+        notes.append(f"{label}: the company list was truncated; {detail}.")
     if any(gap.kind == "nested_fund" and (gap.portfolio_weight is None or gap.portfolio_weight > 0)
            for gap in analysis.gaps):
         notes.append(f"{label}: holdings inside nested funds could not be looked through.")
     if request.shock.kind == "sector":
-        unknown = wsum(company.exposure for company in companies if company.sector == Sector.unknown)
+        unknown = wsum(sector.weight for sector in analysis.sectors if sector.sector == Sector.unknown)
         if unknown > 0:
             notes.append(f"{label}: {unknown:.2%} of the portfolio has an unknown industry.")
     elif request.shock.kind == "country":
@@ -65,6 +71,9 @@ def _side(
                          "so it isn't counted.")
     if notes:
         notes.append(f"{label}: coverage is incomplete, so the loss may be understated.")
+    if request.shock.kind == "sector" and round(weight - named_weight, 10) > 0:
+        notes.append(f"{label}: industry totals come from the funds' own reports; "
+                     "the companies listed are the ones we can name.")
 
     return StressSide(
         affected_weight=weight, loss_fraction=weight * basis.drop, affected_count=len(affected),
@@ -78,10 +87,11 @@ def simulate_failure(
     candidate_analysis: AnalysisResponse | None,
     basis: ShockBasis,
 ) -> StressResponse:
-    """Apply one supplied drop to each side's affected company exposure without renormalising.
+    """Apply one supplied drop to each side's affected exposure without renormalising.
 
     The caller obtains the historical/simulated basis (including any explicit override)
-    and analyses. Only the top ten affected companies are listed; totals use every match.
+    and analyses. Industry totals use analysis.sectors; country and supplier totals use
+    every matching company. Only the top ten affected companies are listed.
     Supplier keys identify the supplied affected set, including the supplier if held.
     """
     if (request.candidate is None) != (candidate_analysis is None):
