@@ -31,6 +31,11 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
+### FIX-35 · high · Main is red: the FIX-22 job test asserts the wrong read-pool tasks
+`tests/api/test_agentic_jobs.py::test_fix_22_separate_research_pool_and_start_deadlines` fails 3/3. `read_tasks` also contains `_reverse`, because reverse-link reads legitimately run on the read pool.
+- Fix: assert only `_forward`/`_reverse` on the read pool (2 forwards), `research_tasks == ['_research', '_research']`, and no `_research` on the read pool.
+- **Owner:** Bekarys's Gemini · **Status:** assigned (urgent)
+
 ### FIX-33 · high · Importance scoring bugs from the FIX-30 audit (issue #216, A + C + reverse links)
 Reproduced offline by Codex:
 - **(A) The wrong customer's share.** `_customer_base_score` takes the largest % anywhere in the quote. With qualifier "8% of revenue" and quote "ZZ represented 8%…; Another Company represented 22%", it scores 0.90 / critical and cites 22%. Fix: use only a share grounded to this target (the qualifier, or the % in the clause naming the target); otherwise leave the amount unknown.
@@ -65,81 +70,16 @@ From Codex's FIX-30 audit:
   - **On hold until Gawyn decides,** because it replaces the 5-step guide Gawyn chose.
 - **Owner:** Yousuf's Codex · **Status:** audit done (issue #216, split into FIX-31, FIX-33, FIX-34); walkthrough waiting for Gawyn
 
-### FIX-22 · medium · Research time budgets are too tight
-In the FIX-1 live check, 4 of 23 light findings stopped after one tool call ("step budget expired"), and 15 of 45 thorough findings were skipped ("time budget reached").
-- Fix:
-  - Raise the per-company budgets, especially thorough's, since the user asked to go deeper, or run a company's items in parallel. Keep the job inside A2's limits (light about +90 s, thorough about +180 s).
-  - Label budget stops "not finished in time", not plain "unresolved".
-  - Make each explanation match its outcome (Nvidia→OpenAI: outcome "unresolved", but the text says "is rejected").
-- After it merges, Bekarys's Gemini re-runs the held-out eval at thorough depth to see whether deeper research changes links.
-- **Owner:** Kendrick's Gemini (+ Bekarys's Claude for job limits) · **Status:** plan approved (an 8-worker research pool; light 40 s and thorough 85 s per company)
-
-### FIX-17 · high · Change ideas: AI proposes, Python verifies (Gawyn, 07:08)
-Gawyn wants concrete ideas ("add this ETF to help fix this diversification issue") on screen 5 and in Try a change, in both views. **The AI proposes the changes and Python verifies them**, the same pattern as the AI summaries.
-
-**1. AI proposer** (Gawyn's Gemini; new `backend/hoc/graph/idea_proposer.py`, next to the orchestrator; uses the existing Gemini client without changing `hoc/ai`):
-- **Input from Python:** the portfolio's issues. That means the largest industry (same ≥40% rule as the verdict on screen 3 and the Risk page), the biggest dependencies, top 10, and effective N, all as metric ids. It also gets the current holdings, and a pinned universe of loadable ETFs (about 15–20: broad, equal-weight, value, international, sector funds). Each ETF comes with its name, category and largest industry, computed by Python.
-- **Asks the model (Argon, `gemini-4-argon`, the orchestrator's model; Gawyn's call, for accuracy)** for up to 5 proposals. Each one is:
-  - `add`: put fraction f of the portfolio into ETF Z, scaling the rest; or
-  - `swap`: move f from held ETF Y into ETF Z;
-  - with f in {0.1, 0.2, 0.3}, the issue id it addresses, and a short `rationale`. Numbers in the rationale appear only as `{{metric:id}}` placeholders.
-- **Behaviour:** versioned prompt, JSON schema, cached per (holdings, issues, prompt version, model).
-- **On a missing key, error or timeout:** return no proposals with an `ai_status`.
-- **Argon is slow (about 45 s), so it runs in the background:**
-  - the first request returns the rules ideas at once with `ai_status: "pending"`;
-  - the AI ideas replace them when they're verified;
-  - results are cached on disk, so restarts and repeat clicks are free;
-  - the startup warm-up also prepares AI ideas for the example portfolios, so the demo is instant.
-
-**2. Python verifier and ranker** (Yousuf's Codex; `portfolio/ideas.py`, after FIX-20). It rejects any proposal that:
-- uses a ticker outside the universe;
-- has a bad fraction, or a swap source that isn't held;
-- has a rationale that fails the orchestrator's placeholder, number and name rules;
-- doesn't measurably improve the issue it names;
-- makes the largest industry or the top dependency worse beyond a small tolerance.
-
-Survivors are measured with cache-only compare on one company set (FIX-20). Python renders every number, ranks by verified improvement, and returns the top 3 distinct ETFs. If the AI is unavailable or nothing survives, the current rules shortlist is the fallback.
-
-**3. Contract** (lead-approved, Codex adds it; additive):
-- **`ChangeIdea`:**
-  - `proposed_by: "ai" | "rules"`;
-  - `action: "add" | "swap"`;
-  - `swap_from: str | None`;
-  - `rationale: str | None`, the verified and rendered text;
-  - `add_fraction` widens to 0.1 / 0.2 / 0.3.
-- **`ChangeIdeasResponse`:**
-  - `ai_status: "ok" | "pending" | "missing_api_key" | "failed" | "timeout" | "not_used"`;
-  - `model` and `prompt_version`;
-  - `rejected_proposals: [{ticker, action, reason}]`, so the UI can say "the AI suggested 5, we kept 3".
-
-**4. UI** (Bekarys's Claude):
-- **Cards:** idea cards show the rationale and an "AI idea, checked with your numbers" note. Rules ideas are labelled as such.
-- **Swaps:** they move shares from the source ETF.
-- **Polling:** while `ai_status` is `pending`, show the rules ideas with "AI is checking more ideas…". Re-request about every 3 s, for up to about 90 s, and swap in the AI ideas when they arrive.
-- **Live check (lead):** sample portfolio. Every shown idea improves its named issue by the shown amount; the AI and fallback paths both work, including with no key.
-- **Owners:** Gawyn's Gemini (proposer) + Yousuf's Codex (verifier, contract) + Bekarys's Claude (UI)
-- **Status:**
-  - Merged: rules version (#177–#181), AI contract (#185), proposer (#194, plus name and sector checks; "Consider" fixed in #197).
-  - Engine merged (#192); FIX-24 fix merged (#199).
-  - **Live AI path PASS (lead, main 6e3c825):** rules ideas show first ("pending"), then after about 36 s 2 Argon ideas replace them. Add SCHD: GPU dependency 8.1% → 6.5%. Add RSP: top 10 37.2% → 30.1%. Both match an independent compare. 3 proposals were rejected, with reasons.
-  - **No-key path PASS:** `missing_api_key`, rules ideas.
-  - **Left:** UI PR #186 (final wording fix), then merge.
-  - UI PR #186 is in review.
-
 ### FIX-9 · medium · Final QA of both views
 - Fix: once everything above merges, audit the full and simple views end to end; send problems to their owners.
 - Also test with no AI key or SEC contact: page 4 must say "The AI check couldn't run on this computer" (FIX-4 was checked in code only).
 - **Owner:** Bekarys's Gemini · **Status:** interim QA passed on everything merged through #183, including a live no-key/no-contact test of page 4; final pass after FIX-1 and FIX-17.
 
-### FIX-11 · low · Research findings appear only when the scan ends
-The plan asked for the research trace to show live during the run.
-- Fix:
-  - The job exposes findings as each agent finishes.
-  - The Dependencies page and simple page 4 show them.
-- **Owner:** Bekarys's Gemini (job, taken over) + Yousuf's Gemini (pages) · **Status:** pages (#170) and job (#193) merged; the lead's live check is batched with #186; the type casts can now go
-
 ## Done (checked on `main` by the lead)
 
+- FIX-17 change ideas: Argon proposes and Python verifies. Screen 5 and Try a change show "AI suggested 5 ideas; we kept 3" with reasons, "AI idea, checked with your numbers" cards, and Try this (lead: the QQQ→VTV swap loads as QQQ 1 sh + VTV 9 sh; Technology 51.1% → 41.7% after whole-share rounding, card says 41.8%). Rules fallback when there's no key — #177–#181, #185, #186, #192, #194, #197, #199, #201, #207, #210
+- FIX-22 research time budgets (lead, live): light 62 s (was 131), 0 'not finished' (was 4); thorough 193 s, 1 'not finished' (was 15), 40/45 findings use search_filings — #206, #217
+- FIX-11 research findings show while the scan runs (lead, live: thorough job.research grew 3 → 7 → 13 → … → 41 → 45) — #170, #193
 - FIX-29 beginner-friendly text: AI cards on the Dependencies page show one plain sentence with a Full detail toggle (lead: 514 → 1,335 chars when opened); section intros are one sentence; guide step 4 shows one line per finding ("Checked: Apple Inc. single-source reliance on Japan — confirmed") with Details. Kendrick's Gemini may polish wording such as "Nvidia -> OpenAI" — #214
 - FIX-28 "What's here & why" on every page; copy has no stale numbers; Risk thresholds 35/100 days; Light vs Go deeper described correctly — #207, #212, #213, #214
 - Thorough held-out eval after FIX-22's research side: 35/35 findings with 3 tool calls and `search_filings`, 0 budget stops; thorough keeps every light edge; 0 links changed, so precision and recall are unchanged (88.4% / 96.1% / 57.4%). Reproduced offline by the lead — #211
