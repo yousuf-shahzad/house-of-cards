@@ -5,7 +5,7 @@
 // then three plain findings, the AI's top two concerns (plain_title + plain_text with full text under "Read more"),
 // and a single "Go deeper" button after a light run whose results replace in place.
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useAnalysis } from "@/app/analysis";
 import { useDependencies } from "@/app/dependencies-state";
 import { useExperience } from "@/app/experience";
@@ -25,7 +25,7 @@ import type {
 } from "@/api/types";
 import { useAutoDependencies } from "./use-auto-dependencies";
 import { RISKS_COPY } from "./copy";
-import { splitFirstSentence } from "./sentence";
+import { monotonicProgressPct, splitFirstSentence } from "./sentence";
 
 export { splitFirstSentence };
 
@@ -283,6 +283,15 @@ export default function RisksStep(_props: RiskStepProps) {
   const activePhase = job?.phase ?? "reading";
   const stepsDone = job?.steps_done || job?.progress_done || 0;
   const stepsTotal = job?.steps_total || job?.progress_total || job?.companies.length || 15;
+  const rawPct = stepsTotal > 0 ? (stepsDone / stepsTotal) * 100 : 0;
+  const progressRef = useRef<{ jobId: string | null; pct: number }>({ jobId: null, pct: 0 });
+  progressRef.current = monotonicProgressPct(
+    progressRef.current.jobId,
+    progressRef.current.pct,
+    job?.job_id,
+    rawPct,
+  );
+  const progressPct = progressRef.current.pct;
   const phases: Array<{ id: "reading" | "researching" | "synthesising"; label: string }> = [
     { id: "reading", label: RISKS_COPY.phaseReading },
     { id: "researching", label: RISKS_COPY.phaseResearching },
@@ -311,8 +320,8 @@ export default function RisksStep(_props: RiskStepProps) {
         label={RISKS_COPY.phasedProgress}
         description={RISKS_COPY.readingNote}
         isIndeterminate={!job?.steps_total && !job?.progress_total}
-        value={stepsDone}
-        maxValue={stepsTotal}
+        value={progressPct}
+        maxValue={100}
       />
       {liveResearch.length > 0 && (
         <div className="flex flex-col gap-2 pt-1">

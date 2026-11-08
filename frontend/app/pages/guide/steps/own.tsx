@@ -12,6 +12,7 @@ import { Button } from "@/components/base/buttons/button";
 import { Spinner } from "@/components/base/spinner/spinner";
 import { GUIDE_STEP_META, openInFullView } from "../copy";
 import type { GuideStepProps } from "../index";
+import { pickMostOverlappingPair } from "../sentence";
 import { useAutoDependencies } from "../use-auto-dependencies";
 
 const STEP_META = GUIDE_STEP_META[1];
@@ -45,7 +46,7 @@ export function StepOwn({ onBack }: GuideStepProps) {
 
   const topFive = analysis.exposures.slice(0, 5);
   const topScore = Math.max(0.01, topFive[0]?.exposure ?? 0.01);
-  const topPair = analysis.overlap.pairs[0] ?? null;
+  const topPair = pickMostOverlappingPair(analysis.overlap.pairs);
 
   return (
     <div className="flex flex-col gap-5">
