@@ -4,7 +4,8 @@ import type { ExamplePortfolio } from "@/api/types";
 import { useAnalysis } from "@/app/analysis";
 import { useExperience } from "@/app/experience";
 import { DraftEditor, normTicker, ServerError } from "@/app/ui/draft-editor";
-import { Button } from "@/components/base/buttons/button";
+import { RiArrowRightLine } from "@remixicon/react";
+import { Button, ButtonLink } from "@/components/base/buttons/button";
 import { Spinner } from "@/components/base/spinner/spinner";
 
 /** Shares-only editor over the same draft and sample-loading path as the existing guide. */
@@ -36,6 +37,11 @@ export function SimplePortfolio() {
   const unknown = error?.code === "UNKNOWN_TICKER" ? ((error.details as { tickers?: string[] })?.tickers ?? []).map(normTicker) : [];
   const flagged = new Set(rows.filter((row) => unknown.includes(normTicker(row.ticker))).map((row) => row.id));
   const unavailable = !stale ? analysis?.etfs.filter((etf) => etf.status === "unavailable") ?? [] : [];
+  const ready = status === "ready" && analysis !== null && !stale;
+  const waitingReason = status === "loading" ? "Opening your ETFs…"
+    : status === "error" ? "Fix the problem above to continue."
+      : rows.length === 0 ? "Use a sample or add an ETF to continue."
+        : "Finish your ETFs and shares above to continue.";
   return <div className="flex flex-col gap-5">
     <section className="suite-card flex flex-col gap-3" aria-label="Choose how to start">
       <div><Button disabled={loading} onClick={() => loadSample()}>Use a sample portfolio</Button></div>
@@ -51,6 +57,15 @@ export function SimplePortfolio() {
         {unavailable.length > 0 && <p role="status">Holdings are unavailable for {unavailable.map((etf) => etf.ticker).join(", ")}. Results leave out that part of your portfolio.</p>}
       </>}
     />
-    <div><Button variant="secondary" size="small" onClick={() => openExpertPage("#/portfolio")}>See the full Portfolio builder</Button></div>
+    {/* FIX-53: a clear next step once the portfolio is ready; the full builder stays a quieter secondary link. */}
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col gap-1">
+        {ready
+          ? <ButtonLink href="#/exposures" trailingIcon={RiArrowRightLine}>Next: what you really own</ButtonLink>
+          : <Button disabled trailingIcon={RiArrowRightLine}>Next: what you really own</Button>}
+        {!ready && <p className="text-caption-1-regular text-text-secondary">{waitingReason}</p>}
+      </div>
+      <Button variant="ghost" size="small" onClick={() => openExpertPage("#/portfolio")}>See the full Portfolio builder</Button>
+    </div>
   </div>;
 }
