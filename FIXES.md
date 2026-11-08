@@ -30,11 +30,6 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
-### FIX-67 · high · BUG: the US never appears under Countries (Gawyn, 11:55)
-`tickerinside/files.py` `country_of(symbol)` only reads an exchange suffix, so US listings (Apple, Nvidia, Microsoft…) get country=null. That's ~70–80% of a typical portfolio, and the simulator's Country tab and the Risk page's largest country never show the US.
-- Fix: US-exchange listing with no suffix → "US" (except depositary receipts); at company level, prefer a reported country over an inferred one. Add regression tests.
-- **Owner:** Yousuf's Codex (board worker) · **Status:** assigned
-
 ### FIX-68 · medium · UX: Dependencies shows "Scan 15 more" only after the first scan (Gawyn, 11:55)
 Before the first scan, show only "Find dependencies". After it, show "Scan 15 more" (top 30).
 - **Owner:** Yousuf's Gemini (with FIX-63 E+F) · **Status:** assigned
@@ -60,7 +55,7 @@ Show what it's doing under the progress bar: "Reading Apple's annual report…" 
 - **Status:** **live and verified on main** (fbd70f2):
   - #266 panel, #267 supplier list, #270 history pre-warm, #271 Risk links, #272 README, #273 deep-link scroll and 0.05% filter, #275 company-only suppliers and a 20% simulated fall.
   - The lead browser-checked it, and Bekarys's Gemini's E2E passed (32 frontend tests, 623 backend tests, and live tech, TW and TSMC cases).
-  - Left: Yousuf's Gemini's Dependencies and guide links (E+F), and Kendrick's Gemini B's demo table.
+  - Left: Yousuf's Gemini's Dependencies and guide links (E+F, #279, approved), and the demo table (moved from Kendrick's Gemini B to **Bekarys's Gemini**, 12:05: it hadn't started).
 ### FIX-62 · medium · Second check of the guide + second bug hunter on Simple view (Gawyn, 10:40)
 Kendrick's Claude is free again. In order:
 1. **Post-merge review of #251 (FIX-59).** Read the diff. In the guide, check steps 2–5 in each state: loading, backend down (error), edited-but-invalid (changed), empty, and editing the portfolio while Step 4's progress bar runs, then restoring it. Step 4 must restart for the new portfolio and never show the old one's results.
@@ -87,6 +82,7 @@ For each **confirmed** bug, add one line under **New** in FIXES.md: `BUG: <what 
 
 ## Done (checked on `main` by the lead)
 
+- FIX-67 the US now appears under Countries: US-exchange listings are inferred as US (receipts excluded), and reported countries win. Live: US 79.1% of IVV/QQQ/EEM, unknown 1.4%; a US failure is SPY's historical 12.8% (lead, curl after a restart). Yousuf's Codex — #280
 - FIX-64/65 Simple view: an unknown ticker no longer says "pin this row" (plain issue text keyed on the issue code; Full view unchanged), and the "details are missing" banner shows only for real gaps (not at 99.93%). Gawyn's Gemini; checked by the lead in the browser and the owner — #276
 - FIX-40 guide steps 1–3 "Learn more in the full …" links open Full view (#/portfolio, #/exposures, #/risk), browser-checked by Kendrick's Claude under FIX-62 — #234
 - FIX-58 independent benchmark (Yousuf's request), in `backend/tests/live/etf_accuracy/`. The lead checked the saved `summary.json` / `verification.json`:

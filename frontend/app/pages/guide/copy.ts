@@ -139,6 +139,8 @@ export const NEXT_COPY = {
   intro: "Ways to rely less on the same companies and places.",
   waiting: "The ideas will appear here when the check on the previous step has finished.",
   none: "The AI didn't suggest any specific changes.",
+  failurePrompt: "Want to see how an industry, country, or supplier crash would hit your money?",
+  failureLink: "See what a failure would cost you",
   tryChange: "Try a change",
   tryChangeNote: "Compare your portfolio with a different mix side by side.",
   seeEverything: "See everything",

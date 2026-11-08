@@ -68,6 +68,7 @@ import {
 import { claimMetricOneLiner } from "@/app/pages/guide/step-4-risks";
 import { PAGE_INFO_COPY } from "@/app/pages/guide/copy";
 import { TabInfoBanner } from "@/app/pages/guide";
+import { SUPPLIER_EDGE_TYPES, supplierOptions } from "@/app/ui/failure-suppliers";
 import { formatPct, Pct } from "@/app/ui/pct";
 import { Chip, type ChipColor } from "@/components/base/badges/chip";
 import { StatusDot } from "@/components/base/badges/status-dot";
@@ -613,7 +614,7 @@ function CoveragePanel({
                   )}
                   {gap.kind === "outside_top_n" && currentTopN < 30 && (
                     <span className="text-caption-1-regular text-text-tertiary">
-                      Use “Scan top 30” in the action row above to include more holdings.
+                      Use “Scan 15 more” in the action row above to include more holdings.
                     </span>
                   )}
                 </div>
@@ -970,11 +971,13 @@ function importanceTooltip(edge: VerifiedEdge, shortLabel: string): string {
 function EdgeEvidenceCard({
   edge,
   exposureMap,
+  supplierShockHref,
   isSelected,
   onSelect,
 }: {
   edge: VerifiedEdge;
   exposureMap: Map<string, number>;
+  supplierShockHref?: string | null;
   isSelected?: boolean;
   onSelect?: (edgeId: string) => void;
 }) {
@@ -1057,6 +1060,15 @@ function EdgeEvidenceCard({
           <Chip variant="caption" color="purple">
             In portfolio
           </Chip>
+        )}
+        {supplierShockHref && (
+          <a
+            href={supplierShockHref}
+            className="inline-flex items-center gap-1 rounded-lg border border-border-button-default bg-background-secondary-default px-2 py-0.5 text-caption-1-medium text-text-primary transition-colors hover:bg-background-primary-hover focus-visible:ring-2 focus-visible:ring-border-focus-ring outline-none"
+          >
+            <span>What if it fails?</span>
+            <RiArrowRightUpLine className="size-3.5" aria-hidden />
+          </a>
         )}
       </div>
 
@@ -1562,6 +1574,34 @@ function DependenciesPageContent() {
   const summaryFacts = useMemo(() => (result ? buildSummaryFacts(result.metrics) : []), [result]);
   const visibleMetricCards = showAllMetrics ? metricCards : metricCards.slice(0, METRIC_CARDS_SHOWN);
 
+  const { supplierKeySet, supplierKeyByEdgeId } = useMemo(() => {
+    const keySet = new Set<string>();
+    const byEdgeId = new Map<string, string>();
+    if (!result) return { supplierKeySet: keySet, supplierKeyByEdgeId: byEdgeId };
+    for (const opt of supplierOptions(result)) {
+      keySet.add(opt.key);
+    }
+    for (const edge of result.edges) {
+      if (!SUPPLIER_EDGE_TYPES.has(edge.edge_type)) continue;
+      if (edge.target_kind !== "company") continue;
+      if (edge.interpretation?.status === "rejected") continue;
+      const rawKey = edge.target_key?.trim();
+      const rawName = edge.target_name?.trim() ?? "";
+      const key =
+        rawKey ||
+        `NAME:${
+          rawName
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "") || "unknown"
+        }`;
+      if (keySet.has(key)) {
+        byEdgeId.set(edge.edge_id, key);
+      }
+    }
+    return { supplierKeySet: keySet, supplierKeyByEdgeId: byEdgeId };
+  }, [result]);
+
   const activeNodeId = hoveredNodeId ?? selectedNodeId;
 
   const filteredSortedEdges = useMemo<VerifiedEdge[]>(() => {
@@ -1769,6 +1809,7 @@ function DependenciesPageContent() {
     analysisStatus !== "error" &&
     topExposures.length > 0;
   const hasOutsideTopN =
+    Boolean(result) &&
     effectiveTopN < 30 &&
     Boolean(
       (result?.coverage &&
@@ -1846,7 +1887,7 @@ function DependenciesPageContent() {
                 disabled={!canRunScan}
                 onClick={() => runDependencies(30)}
               >
-                Scan top 30
+                Scan 15 more
               </Button>
             )}
             {result && (
@@ -2243,56 +2284,76 @@ function DependenciesPageContent() {
                 </ul>
               )}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {visibleMetricCards.map((card) => (
-                  <div
-                    key={card.share.metric_id}
-                    className="flex flex-col justify-between gap-2 rounded-2xl border border-separator-border bg-background-primary-default p-4"
-                  >
-                    <div className="flex flex-col gap-1">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="text-caption-1-regular text-text-tertiary">
-                          {card.category}
-                        </span>
-                        {card.singlePoint && (
-                          <Chip variant="caption" color="orange">
-                            Single point of failure
-                          </Chip>
-                        )}
-                      </div>
-                      <p className="text-body-semibold text-text-primary">{card.subject}</p>
-                      <p className="text-body-2-regular text-text-secondary">
-                        <span className="text-display-4-medium text-text-primary tabular-nums">
-                          {formatMetricValue(card.share)}
-                        </span>{" "}
-                        {card.explanation}
-                      </p>
-                    </div>
-                    {card.supportingEdgeIds.length > 0 && (
-                      <details className="border-t border-separator-border pt-2">
-                        <summary className="cursor-pointer text-caption-1-regular text-text-tertiary">
-                          {card.supportingEdgeIds.length === 1
-                            ? "1 source in the filings"
-                            : `${card.supportingEdgeIds.length} sources in the filings`}
-                        </summary>
-                        <div className="flex flex-wrap gap-1.5 pt-2">
-                          {card.supportingEdgeIds.map((edgeId) => {
-                            const edge = edgeById.get(edgeId);
-                            return (
-                              <button
-                                key={edgeId}
-                                type="button"
-                                onClick={() => selectEdge(edgeId, true)}
-                                className="cursor-pointer rounded-md border border-border-button-default bg-background-secondary-default px-2 py-0.5 text-caption-1-regular text-text-primary hover:bg-background-primary-hover"
+                {visibleMetricCards.map((card) => {
+                  const cardSupplierKey =
+                    card.kind === "depends_on" || card.kind === "critical" || card.kind === "single_point"
+                      ? (card.supportingEdgeIds.map((id) => supplierKeyByEdgeId.get(id)).find(Boolean) ??
+                        (card.share.subject_key && supplierKeySet.has(card.share.subject_key)
+                          ? card.share.subject_key
+                          : null))
+                      : null;
+                  return (
+                    <div
+                      key={card.share.metric_id}
+                      className="flex flex-col justify-between gap-2 rounded-2xl border border-separator-border bg-background-primary-default p-4"
+                    >
+                      <div className="flex flex-col gap-1">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-caption-1-regular text-text-tertiary">
+                            {card.category}
+                          </span>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {card.singlePoint && (
+                              <Chip variant="caption" color="orange">
+                                Single point of failure
+                              </Chip>
+                            )}
+                            {cardSupplierKey && (
+                              <a
+                                href={`#/compare?shock=supplier:${encodeURIComponent(cardSupplierKey)}`}
+                                className="inline-flex items-center gap-1 rounded-lg border border-border-button-default bg-background-secondary-default px-2 py-0.5 text-caption-1-medium text-text-primary transition-colors hover:bg-background-primary-hover focus-visible:ring-2 focus-visible:ring-border-focus-ring outline-none"
                               >
-                                {edge ? `${edge.source_company_name} → ${edge.target_name}` : edgeId}
-                              </button>
-                            );
-                          })}
+                                <span>What if it fails?</span>
+                                <RiArrowRightUpLine className="size-3.5" aria-hidden />
+                              </a>
+                            )}
+                          </div>
                         </div>
-                      </details>
-                    )}
-                  </div>
-                ))}
+                        <p className="text-body-semibold text-text-primary">{card.subject}</p>
+                        <p className="text-body-2-regular text-text-secondary">
+                          <span className="text-display-4-medium text-text-primary tabular-nums">
+                            {formatMetricValue(card.share)}
+                          </span>{" "}
+                          {card.explanation}
+                        </p>
+                      </div>
+                      {card.supportingEdgeIds.length > 0 && (
+                        <details className="border-t border-separator-border pt-2">
+                          <summary className="cursor-pointer text-caption-1-regular text-text-tertiary">
+                            {card.supportingEdgeIds.length === 1
+                              ? "1 source in the filings"
+                              : `${card.supportingEdgeIds.length} sources in the filings`}
+                          </summary>
+                          <div className="flex flex-wrap gap-1.5 pt-2">
+                            {card.supportingEdgeIds.map((edgeId) => {
+                              const edge = edgeById.get(edgeId);
+                              return (
+                                <button
+                                  key={edgeId}
+                                  type="button"
+                                  onClick={() => selectEdge(edgeId, true)}
+                                  className="cursor-pointer rounded-md border border-border-button-default bg-background-secondary-default px-2 py-0.5 text-caption-1-regular text-text-primary hover:bg-background-primary-hover"
+                                >
+                                  {edge ? `${edge.source_company_name} → ${edge.target_name}` : edgeId}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </details>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
               {metricCards.length > METRIC_CARDS_SHOWN && (
                 <div>
@@ -2755,15 +2816,23 @@ function DependenciesPageContent() {
                 </p>
               ) : (
                 <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                  {inspectedEdges.slice(0, 6).map((edge) => (
-                    <EdgeEvidenceCard
-                      key={edge.edge_id}
-                      edge={edge}
-                      exposureMap={exposureMap}
-                      isSelected={edge.edge_id === selectedEdgeId && drawerOpen}
-                      onSelect={(id) => selectEdge(id, true)}
-                    />
-                  ))}
+                  {inspectedEdges.slice(0, 6).map((edge) => {
+                    const supplierKey = supplierKeyByEdgeId.get(edge.edge_id);
+                    return (
+                      <EdgeEvidenceCard
+                        key={edge.edge_id}
+                        edge={edge}
+                        exposureMap={exposureMap}
+                        supplierShockHref={
+                          supplierKey
+                            ? `#/compare?shock=supplier:${encodeURIComponent(supplierKey)}`
+                            : null
+                        }
+                        isSelected={edge.edge_id === selectedEdgeId && drawerOpen}
+                        onSelect={(id) => selectEdge(id, true)}
+                      />
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -2839,8 +2908,21 @@ function DependenciesPageContent() {
                               </div>
                             </td>
                             <td className="py-2 pe-4 text-text-primary">
-                              {edge.target_name}
-                              {edge.qualifier ? ` (${edge.qualifier})` : ""}
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <span>
+                                  {edge.target_name}
+                                  {edge.qualifier ? ` (${edge.qualifier})` : ""}
+                                </span>
+                                {supplierKeyByEdgeId.has(edge.edge_id) && (
+                                  <a
+                                    href={`#/compare?shock=supplier:${encodeURIComponent(supplierKeyByEdgeId.get(edge.edge_id) ?? "")}`}
+                                    className="inline-flex items-center gap-1 rounded-lg border border-border-button-default bg-background-secondary-default px-2 py-0.5 text-caption-1-medium text-text-primary transition-colors hover:bg-background-primary-hover focus-visible:ring-2 focus-visible:ring-border-focus-ring outline-none"
+                                  >
+                                    <span>What if it fails?</span>
+                                    <RiArrowRightUpLine className="size-3.5" aria-hidden />
+                                  </a>
+                                )}
+                              </div>
                             </td>
                             <td className="max-w-md py-2 pe-4 italic">
                               “{edge.evidence_quote}”
@@ -3025,6 +3107,11 @@ function DependenciesPageContent() {
               <EdgeEvidenceCard
                 edge={drawerEdge}
                 exposureMap={exposureMap}
+                supplierShockHref={
+                  supplierKeyByEdgeId.has(drawerEdge.edge_id)
+                    ? `#/compare?shock=supplier:${encodeURIComponent(supplierKeyByEdgeId.get(drawerEdge.edge_id) ?? "")}`
+                    : null
+                }
                 isSelected
               />
               <div className="flex flex-col gap-2 rounded-2xl border border-separator-border bg-background-secondary-default p-4 text-caption-1-regular text-text-secondary">
