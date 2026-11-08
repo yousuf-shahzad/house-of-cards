@@ -246,6 +246,23 @@ def test_research_can_read_finished_dependencies_from_a_fresh_instance(rig):
     assert research.get(started.research_id).status == "done"
 
 
+def test_completed_scan_can_be_replaced_after_retention_expires(rig):
+    job = rig.deps().submit(rig.request)
+    drain(rig)
+    path = rig.store.pointer("dependencies", job.job_id)
+    record = json.loads(rig.objects.get(path).body)
+    old_run = record["run_id"]
+    record["created_at"] = time.time() - 3601
+    rig.objects.put(path, json.dumps(record).encode())
+    assert rig.deps().get(job.job_id).status == "done"
+
+    restarted = rig.deps().submit(rig.request)
+    assert restarted.status == "queued"
+    assert rig.store.read("dependencies", job.job_id)["run_id"] != old_run
+    drain(rig)
+    assert rig.deps().get(job.job_id).status == "done"
+
+
 def test_installed_sdk_can_discover_private_queue_subscribers():
     queue = pytest.importorskip("vercel.queue")
 

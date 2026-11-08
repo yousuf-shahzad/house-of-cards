@@ -74,9 +74,18 @@ class BlobStore:
         return True
 
     def delete(self, key: str, *, etag: str) -> None:
+        from vercel.blob import BlobPreconditionFailedError
         from vercel.blob import sync as blob
 
-        blob.delete_blob(self._path(key), if_match=etag)
+        path = self._path(key)
+        if etag.startswith("W/"):
+            # Delivery can weaken the Blob ETag. Resolve it against the write
+            # API before using a strong condition; never delete a newer version.
+            current = blob.head_blob(path)
+            if current.etag != etag.removeprefix("W/"):
+                raise BlobPreconditionFailedError("The scan changed before replacement.")
+            etag = current.etag
+        blob.delete_blob(path, if_match=etag)
 
     def keys(self, prefix: str) -> list[str]:
         from vercel.blob import sync as blob
