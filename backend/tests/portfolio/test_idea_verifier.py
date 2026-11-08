@@ -150,7 +150,7 @@ def test_unknown_candidate_industries_never_create_a_verified_gain():
 
 def test_every_ai_proposal_is_accounted_for_in_selected_or_rejected_results():
     request, baseline, loaded, scenarios = setup()
-    proposals = [proposal_for(request, baseline, loaded, ticker=t)
+    proposals = [proposal_for(request, baseline, loaded, ticker=t, title=f'Add {t} for broader exposure')
                  for t in loaded if t != 'ZZBASE']
     proposals.append(replace(proposals[0], fraction=.1))
     result = verify(request, baseline, loaded, scenarios, proposals)

@@ -438,7 +438,7 @@ def verify_change_ideas(
     proposals = proposer_result.proposals if proposer_result.ai_status == "ok" else []
     scenarios, rejected = build_proposal_scenarios(request, baseline, loaded, proposals, universe)
     verified = rank_change_ideas(request, baseline, scenarios, cached, aliases=aliases)
-    response = verified if verified.ideas else fallback.model_copy(deep=True)
+    response = (verified if verified.ideas else fallback).model_copy(deep=True)
     response.ai_status = proposer_result.ai_status
     response.model = proposer_result.model
     response.prompt_version = proposer_result.prompt_version
