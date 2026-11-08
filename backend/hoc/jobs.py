@@ -60,6 +60,8 @@ class Extraction:
     edges: list[VerifiedEdge]
     """Only edges whose evidence quote Python verified against the filing."""
     rejected: int = 0
+    interpretation_rejected: int = 0
+    """V-INT: quotes that verified but whose meaning did not (competitor, negated...); already removed."""
     quality: Literal["sections", "fallback"] | None = None
     cached: bool = False
     """True when served from the extraction cache (no Gemini call)."""
@@ -148,7 +150,8 @@ class LivePipeline:
         found = self.extractor.extract(company, document or filing, cache_only=cache_only,
                                        resolve_target_key=self.resolve_target_key)
         return Extraction(edges=list(found.edges), rejected=found.rejected, quality=found.quality,
-                          cached=found.cached)
+                          cached=found.cached,
+                          interpretation_rejected=getattr(found, "interpretation_rejected", 0))
 
     def insights(self, analysis, edges, *, cache_only):
         return self.orchestrator.insights(analysis, edges, cache_only=cache_only)
@@ -169,7 +172,8 @@ class LivePipeline:
         found = self.extractor.extract_reverse(company, hits, cache_only=cache_only,
                                                top_n_company_keys={company.company_key},
                                                resolve_target_key=self.resolver_for([company]))
-        return Extraction(edges=list(found.edges), rejected=found.rejected, cached=found.cached)
+        return Extraction(edges=list(found.edges), rejected=found.rejected, cached=found.cached,
+                          interpretation_rejected=getattr(found, "interpretation_rejected", 0))
 
     def _filer_titles(self) -> dict[str, str]:
         """10-digit CIK -> SEC company title (one cached SEC request per process); {} if unavailable."""
@@ -249,6 +253,30 @@ def _resolve_and_flag(analysis: AnalysisResponse, edges: list[VerifiedEdge],
             "target_in_portfolio": target_key is not None and target_key in keys,
         }))
     return flagged
+
+
+def _with_importance(edges: list[VerifiedEdge]) -> list[VerifiedEdge]:
+    """R-IMP: every edge in the result carries its deterministic importance (score, tier, reasons), capped at
+    medium when V-INT flagged it. A scoring bug leaves importance None (metrics still score on the fly)."""
+    from hoc.graph import attach_edge_importance
+
+    try:
+        return attach_edge_importance(edges)
+    except Exception:
+        log.exception("importance scoring failed; edges keep importance=None")
+        return edges
+
+
+def _coverage(analysis: AnalysisResponse, companies: list[CompanyRunStatus], edges: list[VerifiedEdge]):
+    """C-COV: what share of the portfolio the run actually covers. Optional: a failure leaves it None, never
+    the job."""
+    from hoc.graph import compute_coverage_report
+
+    try:
+        return compute_coverage_report(analysis, companies, edges, as_of_date=analysis.as_of_date)
+    except Exception:
+        log.exception("coverage report failed; result.coverage stays None")
+        return None
 
 
 @dataclass
@@ -364,19 +392,23 @@ class DependencyJobs:
             edges = _resolve_and_flag(job.analysis,
                                       list({e.edge_id: e for x in extractions if x for e in x.edges}.values()),
                                       resolver_for(job.analysis.exposures) if resolver_for else None)
+            edges = _with_importance(edges)
             metrics, insights = self.pipeline.insights(job.analysis, edges, cache_only=job.cache_only)
             with self._lock:
                 companies = list(job.companies)
             analysed = sum(c.status in ("cached", "done") for c in companies)
+            coverage = _coverage(job.analysis, companies, edges)
             result = DependencyResult(
                 as_of_date=job.analysis.as_of_date, request=job.request, companies=companies, edges=edges, metrics=metrics, insights=insights,
                 counts=DependencyCounts(
                     companies_requested=len(companies), companies_analysed=analysed,
                     companies_skipped=len(companies) - analysed, verified_edges=len(edges),
                     rejected_edges=sum(c.rejected_edges for c in companies),
+                    interpretation_rejected=sum(x.interpretation_rejected for x in extractions if x),
                     unresolved_counterparties=len({e.target_name.casefold() for e in edges
                                                    if e.target_key is None and e.target_kind == "company"}),
                 ),
+                coverage=coverage,
             )
             self._set(job, status="done", result=result)
         except Exception as exc:  # the job fails visibly (status error), never the server
@@ -421,13 +453,14 @@ class DependencyJobs:
         reverse, note = reverse_step
         edges = [*(forward.edges if forward else []), *(reverse.edges if reverse else [])]
         rejected = (forward.rejected if forward else 0) + (reverse.rejected if reverse else 0)
+        misread = (forward.interpretation_rejected if forward else 0) + (reverse.interpretation_rejected if reverse else 0)
         if forward is None and reverse and reverse.edges:
             message = f"{message or ''} {len(reverse.edges)} link(s) found in other companies' filings.".strip()
         if note:
             message = f"{message or ''} {note}".strip()
         self._set_company(job, index, status=status, message=message, verified_edges=len(edges),
                           rejected_edges=rejected, extraction_quality=forward.quality if forward else None)
-        if forward is None and not edges:
+        if forward is None and not edges and not misread:
             return None
         return Extraction(edges=edges, rejected=rejected, quality=forward.quality if forward else None,
-                          cached=bool(forward and forward.cached))
+                          cached=bool(forward and forward.cached), interpretation_rejected=misread)

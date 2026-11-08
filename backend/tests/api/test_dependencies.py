@@ -366,3 +366,62 @@ def test_a_click_joining_a_running_warm_up_finishes_it_live(setup, monkeypatch):
         assert time.monotonic() < deadline
         time.sleep(0.02)
     assert pipeline.insights_calls == [False]  # one job, finished with the live orchestrator
+
+
+# ---------- v3 I-API: importance (R-IMP) and coverage (C-COV) in the job result ----------
+
+
+def test_result_edges_carry_importance_and_coverage_sums_to_one(setup):
+    client, _, _ = setup(FakePipeline())
+    result = post(client).json()["result"]
+    assert result["edges"] and all(edge["importance"] is not None for edge in result["edges"])
+    assert {edge["importance"]["tier"] for edge in result["edges"]} <= {"critical", "high", "medium", "low"}
+    coverage = result["coverage"]
+    assert coverage is not None
+    assert sum(bucket["weight"] for bucket in coverage["buckets"]) == pytest.approx(1.0, abs=1e-6)
+    verified = next(b for b in coverage["buckets"] if b["kind"] == "verified")
+    assert verified["companies"] == 3 and verified["weight"] > 0
+    assert {etf["ticker"] for etf in coverage["by_etf"]} == {"ZZAAA", "ZZBBB", "ZZCCC"}
+
+
+def test_skipped_companies_land_in_their_coverage_bucket(setup, make_service):
+    service, _ = make_service()
+    top = service.analyse(PortfolioRequest(holdings=HOLDINGS)).exposures
+    client, _, _ = setup(FakePipeline(unavailable={top[1].company_key: "no_sec_filing"}))
+    coverage = post(client).json()["result"]["coverage"]
+    buckets = {b["kind"]: b for b in coverage["buckets"]}
+    assert buckets["no_sec_filing"]["companies"] == 1
+    assert buckets["no_sec_filing"]["weight"] == pytest.approx(top[1].exposure, abs=1e-9)
+    assert sum(b["weight"] for b in coverage["buckets"]) == pytest.approx(1.0, abs=1e-6)
+
+
+def test_a_coverage_or_importance_bug_never_fails_the_job(setup, monkeypatch):
+    def broken(*args, **kwargs):
+        raise RuntimeError("synthetic bug")
+
+    monkeypatch.setattr("hoc.graph.compute_coverage_report", broken)
+    monkeypatch.setattr("hoc.graph.attach_edge_importance", broken)
+    client, _, _ = setup(FakePipeline())
+    job = post(client).json()
+    assert job["status"] == "done"
+    assert job["result"]["coverage"] is None
+    assert all(edge["importance"] is None for edge in job["result"]["edges"])
+
+
+class MisreadPipeline(FakePipeline):
+    """V-INT already ran inside the extractor: it reports how many quotes it removed as misread."""
+
+    def extract(self, company, filing, *, cache_only):
+        found = super().extract(company, filing, cache_only=cache_only)
+        return Extraction(edges=found.edges, rejected=found.rejected, quality=found.quality,
+                          cached=found.cached, interpretation_rejected=2)
+
+    def reverse(self, company, *, cache_only):
+        return Extraction(edges=[], interpretation_rejected=1)
+
+
+def test_interpretation_rejections_are_counted_from_forward_and_reverse(setup):
+    client, _, _ = setup(MisreadPipeline())
+    counts = post(client).json()["result"]["counts"]
+    assert counts["interpretation_rejected"] == 3 * (2 + 1)
+    assert counts["verified_edges"] == 4  # misread quotes are already gone; the kept edges are unchanged
