@@ -430,7 +430,7 @@ def test_cache_key_changes_when_allocations_or_edges_change() -> None:
     )
     assert k1 != k2
     assert k1 != k3
-    assert prompt_version == "hoc-orch-v2.1"
+    assert prompt_version == "hoc-orch-v3.0"
     assert compute_dependency_summary(analysis.exposures, edges).verified_edges_count == 3
 
 

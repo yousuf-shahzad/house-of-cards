@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from hoc.contract.api import CompanyExposure
 from hoc.contract.dependencies import MetricFact, MetricUnit, VerifiedEdge
 from hoc.contract.units import wsum
+from hoc.graph.importance import score_edge_importance
 
 SUPPLY_EDGE_TYPES: frozenset[str] = frozenset(
     {
@@ -813,47 +814,180 @@ _COUNTRY_DEFINITIONS: Mapping[str, tuple[str, tuple[str, ...]]] = {
     "NZ": ("New Zealand", ("nz", "new zealand", "auckland", "wellington", "christchurch")),
     "TH": (
         "Thailand",
-        ("th", "thailand", "kingdom of thailand", "bangkok", "chonburi", "rayong", "ayutthaya", "pathum thani"),
+        (
+            "th",
+            "thailand",
+            "thai",
+            "kingdom of thailand",
+            "bangkok",
+            "chonburi",
+            "rayong",
+            "ayutthaya",
+            "pathum thani",
+        ),
     ),
-    "ID": ("Indonesia", ("id", "indonesia", "republic of indonesia", "jakarta", "batam", "surabaya", "bandung")),
-    "PK": ("Pakistan", ("pk", "pakistan", "islamic republic of pakistan", "karachi", "lahore", "islamabad")),
-    "BD": ("Bangladesh", ("bd", "bangladesh", "dhaka", "chittagong")),
-    "LK": ("Sri Lanka", ("lk", "sri lanka", "colombo")),
+    "KH": (
+        "Cambodia",
+        (
+            "kh",
+            "cambodia",
+            "cambodian",
+            "kingdom of cambodia",
+            "phnom penh",
+            "siem reap",
+            "sihanoukville",
+            "kampong speu",
+            "kandal",
+            "svay rieng",
+            "takeo",
+        ),
+    ),
+    "LA": ("Laos", ("la", "laos", "lao peoples democratic republic", "vientiane")),
+    "MM": ("Myanmar", ("mm", "myanmar", "burma", "yangon", "naypyidaw", "mandalay")),
+    "BN": ("Brunei", ("bn", "brunei", "brunei darussalam", "bandar seri begawan")),
+    "ID": (
+        "Indonesia",
+        (
+            "id",
+            "indonesia",
+            "indonesian",
+            "republic of indonesia",
+            "jakarta",
+            "batam",
+            "surabaya",
+            "bandung",
+            "semarang",
+            "tangerang",
+            "bekasi",
+            "bogor",
+            "karawang",
+            "central java",
+            "west java",
+            "east java",
+            "banten",
+        ),
+    ),
+    "PK": ("Pakistan", ("pk", "pakistan", "pakistani", "islamic republic of pakistan", "karachi", "lahore", "islamabad", "sialkot", "faisalabad")),
+    "BD": ("Bangladesh", ("bd", "bangladesh", "bangladeshi", "dhaka", "chittagong", "gazipur", "narayanganj")),
+    "LK": ("Sri Lanka", ("lk", "sri lanka", "sri lankan", "colombo", "katunayake")),
+    "NP": ("Nepal", ("np", "nepal", "kathmandu")),
+    "MN": ("Mongolia", ("mn", "mongolia", "ulaanbaatar")),
+    "AF": ("Afghanistan", ("af", "afghanistan", "kabul")),
+    "UZ": ("Uzbekistan", ("uz", "uzbekistan", "tashkent")),
+    "TM": ("Turkmenistan", ("tm", "turkmenistan", "ashgabat")),
+    "KG": ("Kyrgyzstan", ("kg", "kyrgyzstan", "bishkek")),
+    "TJ": ("Tajikistan", ("tj", "tajikistan", "dushanbe")),
+    "AZ": ("Azerbaijan", ("az", "azerbaijan", "baku")),
+    "AM": ("Armenia", ("am", "armenia", "yerevan")),
+    "GE": ("Georgia", ("ge", "republic of georgia", "tbilisi")),
+    "BY": ("Belarus", ("by", "belarus", "minsk")),
+    "MD": ("Moldova", ("md", "moldova", "republic of moldova", "chisinau")),
+    "AL": ("Albania", ("al", "albania", "tirana")),
+    "BA": ("Bosnia and Herzegovina", ("ba", "bosnia and herzegovina", "bosnia", "sarajevo")),
+    "ME": ("Montenegro", ("me", "montenegro", "podgorica")),
+    "MK": ("North Macedonia", ("mk", "north macedonia", "macedonia", "skopje")),
+    "MC": ("Monaco", ("mc", "monaco", "monte carlo")),
+    "LI": ("Liechtenstein", ("li", "liechtenstein", "vaduz")),
+    "AD": ("Andorra", ("ad", "andorra")),
+    "SM": ("San Marino", ("sm", "san marino")),
     "JM": ("Jamaica", ("jm", "jamaica", "kingston", "montego bay")),
-    "NI": ("Nicaragua", ("ni", "nicaragua", "managua")),
-    "HN": ("Honduras", ("hn", "honduras", "tegucigalpa", "san pedro sula")),
-    "CR": ("Costa Rica", ("cr", "costa rica", "heredia", "alajuela")),
+    "NI": ("Nicaragua", ("ni", "nicaragua", "nicaraguan", "managua")),
+    "HN": ("Honduras", ("hn", "honduras", "honduran", "tegucigalpa", "san pedro sula", "choloma")),
+    "CR": ("Costa Rica", ("cr", "costa rica", "costa rican", "heredia", "alajuela", "cartago")),
     "PA": ("Panama", ("pa", "panama", "panama city")),
-    "GT": ("Guatemala", ("gt", "guatemala", "guatemala city")),
-    "SV": ("El Salvador", ("sv", "el salvador", "san salvador")),
-    "DO": ("Dominican Republic", ("do", "dominican republic", "santo domingo")),
-    "PR": ("Puerto Rico", ("pr", "puerto rico", "san juan")),
+    "GT": ("Guatemala", ("gt", "guatemala", "guatemalan", "guatemala city")),
+    "SV": ("El Salvador", ("sv", "el salvador", "salvadoran", "san salvador")),
+    "DO": ("Dominican Republic", ("do", "dominican republic", "santo domingo", "santiago de los caballeros")),
+    "HT": ("Haiti", ("ht", "haiti", "port au prince")),
+    "CU": ("Cuba", ("cu", "cuba", "havana")),
+    "BS": ("Bahamas", ("bs", "bahamas", "the bahamas", "nassau")),
+    "BB": ("Barbados", ("bb", "barbados", "bridgetown")),
+    "TT": ("Trinidad and Tobago", ("tt", "trinidad and tobago", "port of spain")),
+    "BZ": ("Belize", ("bz", "belize", "belmopan")),
+    "PR": ("Puerto Rico", ("pr", "puerto rico", "san juan", "ponce", "aguadilla", "manati", "humacao", "juncos")),
     "BR": (
         "Brazil",
-        ("br", "brazil", "federative republic of brazil", "sao paulo", "rio de janeiro", "campinas", "manaus"),
+        (
+            "br",
+            "brazil",
+            "brazilian",
+            "federative republic of brazil",
+            "sao paulo",
+            "rio de janeiro",
+            "campinas",
+            "manaus",
+            "curitiba",
+            "belo horizonte",
+            "porto alegre",
+            "jaguariuna",
+            "sorocaba",
+        ),
     ),
-    "AR": ("Argentina", ("ar", "argentina", "argentine republic", "buenos aires", "cordoba")),
-    "CL": ("Chile", ("cl", "chile", "republic of chile", "santiago")),
-    "CO": ("Colombia", ("co", "colombia", "republic of colombia", "bogota", "medellin", "cali")),
-    "PE": ("Peru", ("pe", "peru", "republic of peru", "lima")),
+    "AR": ("Argentina", ("ar", "argentina", "argentine republic", "buenos aires", "cordoba", "rosario")),
+    "CL": ("Chile", ("cl", "chile", "republic of chile", "santiago", "valparaiso", "antofagasta")),
+    "CO": ("Colombia", ("co", "colombia", "republic of colombia", "bogota", "medellin", "cali", "barranquilla")),
+    "PE": ("Peru", ("pe", "peru", "republic of peru", "lima", "callao")),
     "UY": ("Uruguay", ("uy", "uruguay", "montevideo")),
-    "ZA": ("South Africa", ("za", "south africa", "republic of south africa", "johannesburg", "cape town")),
-    "EG": ("Egypt", ("eg", "egypt", "arab republic of egypt", "cairo", "alexandria")),
-    "MA": ("Morocco", ("ma", "morocco", "kingdom of morocco", "casablanca", "rabat", "tangier")),
+    "PY": ("Paraguay", ("py", "paraguay", "asuncion")),
+    "BO": ("Bolivia", ("bo", "bolivia", "la paz", "santa cruz de la sierra")),
+    "EC": ("Ecuador", ("ec", "ecuador", "quito", "guayaquil")),
+    "VE": ("Venezuela", ("ve", "venezuela", "caracas")),
+    "GY": ("Guyana", ("gy", "guyana", "georgetown")),
+    "SR": ("Suriname", ("sr", "suriname", "paramaribo")),
+    "ZA": ("South Africa", ("za", "south africa", "republic of south africa", "johannesburg", "cape town", "durban", "pretoria")),
+    "EG": ("Egypt", ("eg", "egypt", "egyptian", "arab republic of egypt", "cairo", "alexandria", "giza")),
+    "MA": ("Morocco", ("ma", "morocco", "moroccan", "kingdom of morocco", "casablanca", "rabat", "tangier", "kenitra")),
+    "TN": ("Tunisia", ("tn", "tunisia", "tunisian", "tunis", "sfax", "sousse")),
+    "DZ": ("Algeria", ("dz", "algeria", "algiers")),
+    "LY": ("Libya", ("ly", "libya", "tripoli")),
     "NG": ("Nigeria", ("ng", "nigeria", "lagos", "abuja")),
-    "KE": ("Kenya", ("ke", "kenya", "nairobi")),
+    "KE": ("Kenya", ("ke", "kenya", "nairobi", "mombasa")),
+    "GH": ("Ghana", ("gh", "ghana", "accra")),
+    "CI": ("Cote d'Ivoire", ("ci", "cote d ivoire", "ivory coast", "abidjan")),
+    "SN": ("Senegal", ("sn", "senegal", "dakar")),
+    "CM": ("Cameroon", ("cm", "cameroon", "douala", "yaounde")),
+    "ET": ("Ethiopia", ("et", "ethiopia", "addis ababa")),
+    "TZ": ("Tanzania", ("tz", "tanzania", "dar es salaam")),
+    "UG": ("Uganda", ("ug", "uganda", "kampala")),
+    "RW": ("Rwanda", ("rw", "rwanda", "kigali")),
+    "ZM": ("Zambia", ("zm", "zambia", "lusaka")),
+    "ZW": ("Zimbabwe", ("zw", "zimbabwe", "harare")),
+    "BW": ("Botswana", ("bw", "botswana", "gaborone")),
+    "NA": ("Namibia", ("na", "namibia", "windhoek")),
+    "MU": ("Mauritius", ("mu", "mauritius", "port louis")),
+    "MG": ("Madagascar", ("mg", "madagascar", "antananarivo")),
+    "AO": ("Angola", ("ao", "angola", "luanda")),
+    "MZ": ("Mozambique", ("mz", "mozambique", "maputo")),
+    "CD": ("Democratic Republic of the Congo", ("cd", "democratic republic of the congo", "drc", "kinshasa", "katanga", "kolwezi")),
+    "CG": ("Republic of the Congo", ("cg", "republic of the congo", "brazzaville")),
+    "GA": ("Gabon", ("ga", "gabon", "libreville")),
+    "LS": ("Lesotho", ("ls", "lesotho", "maseru")),
+    "SZ": ("Eswatini", ("sz", "eswatini", "swaziland", "mbabane")),
     "AE": ("United Arab Emirates", ("ae", "uae", "united arab emirates", "dubai", "abu dhabi", "sharjah")),
-    "SA": ("Saudi Arabia", ("sa", "saudi arabia", "kingdom of saudi arabia", "riyadh", "jeddah", "dammam")),
+    "SA": ("Saudi Arabia", ("sa", "saudi arabia", "kingdom of saudi arabia", "riyadh", "jeddah", "dammam", "dhahran")),
     "QA": ("Qatar", ("qa", "qatar", "doha")),
     "KW": ("Kuwait", ("kw", "kuwait", "kuwait city")),
     "BH": ("Bahrain", ("bh", "bahrain", "manama")),
     "OM": ("Oman", ("om", "oman", "muscat")),
-    "JO": ("Jordan", ("jo", "jordan", "amman")),
-    "UA": ("Ukraine", ("ua", "ukraine", "kyiv", "kiev", "lviv", "kharkiv")),
+    "JO": ("Jordan", ("jo", "jordan", "hashemite kingdom of jordan", "amman", "aqaba", "irbid")),
+    "LB": ("Lebanon", ("lb", "lebanon", "beirut")),
+    "IQ": ("Iraq", ("iq", "iraq", "baghdad", "basra", "erbil")),
+    "IR": ("Iran", ("ir", "iran", "tehran")),
+    "SY": ("Syria", ("sy", "syria", "damascus")),
+    "YE": ("Yemen", ("ye", "yemen", "sanaa")),
+    "UA": ("Ukraine", ("ua", "ukraine", "kyiv", "kiev", "lviv", "kharkiv", "odesa")),
     "RU": ("Russia", ("ru", "russia", "russian federation", "moscow", "saint petersburg")),
     "KZ": ("Kazakhstan", ("kz", "kazakhstan", "almaty", "astana")),
-    "RS": ("Serbia", ("rs", "serbia", "belgrade", "novi sad")),
+    "RS": ("Serbia", ("rs", "serbia", "belgrade", "novi sad", "kragujevac")),
     "MO": ("Macau", ("mo", "macau", "macao")),
+    "FJ": ("Fiji", ("fj", "fiji", "suva")),
+    "PG": ("Papua New Guinea", ("pg", "papua new guinea", "port moresby")),
+    "NC": ("New Caledonia", ("nc", "new caledonia", "noumea")),
+    "BM": ("Bermuda", ("bm", "bermuda", "hamilton bermuda")),
+    "KY": ("Cayman Islands", ("ky", "cayman islands", "grand cayman")),
+    "VG": ("British Virgin Islands", ("vg", "british virgin islands")),
+    "VI": ("U.S. Virgin Islands", ("vi", "us virgin islands")),
+    "GU": ("Guam", ("gu", "guam")),
 }
 
 # Short country abbreviations that are unambiguous as whole words in English prose.
@@ -1078,6 +1212,9 @@ class SupplierDependencySummary:
     target_in_portfolio: bool
     edge_types: tuple[str, ...]
     supporting_edge_ids: tuple[str, ...]
+    critical_dependent_weight: float = 0.0
+    critical_company_keys: tuple[str, ...] = ()
+    critical_supporting_edge_ids: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -1156,6 +1293,8 @@ def compute_dependency_summary(
     supplier_edges: dict[str, set[str]] = {}
     supplier_edge_types: dict[str, set[str]] = {}
     supplier_sole_source: dict[str, bool] = {}
+    critical_supplier_companies: dict[str, set[str]] = {}
+    critical_supplier_edges: dict[str, set[str]] = {}
 
     # 2. Facility/country dependencies grouped by canonical country_code.
     country_names: dict[str, str] = {}
@@ -1188,6 +1327,9 @@ def compute_dependency_summary(
         if target_key and target_key in portfolio_by_key:
             companies_with_edges.add(target_key)
 
+        edge_imp = edge.importance if edge.importance is not None else score_edge_importance(edge)
+        is_critical_or_high = edge_imp.tier in ("critical", "high")
+
         # Facility / country edges
         if edge_type == "facility" or target_kind in FACILITY_TARGET_KINDS:
             if src_key in portfolio_by_key:
@@ -1215,6 +1357,9 @@ def compute_dependency_summary(
                 supplier_edge_types.setdefault(target_id, set()).add(edge_type)
                 if edge.sole_source:
                     supplier_sole_source[target_id] = True
+                if is_critical_or_high:
+                    critical_supplier_companies.setdefault(target_id, set()).add(src_key)
+                    critical_supplier_edges.setdefault(target_id, set()).add(edge_id)
             continue
 
         # Customer edges:
@@ -1242,6 +1387,9 @@ def compute_dependency_summary(
                 supplier_edge_types.setdefault(sup_id, set()).add("supplier")
                 if edge.sole_source:
                     supplier_sole_source[sup_id] = True
+                if is_critical_or_high:
+                    critical_supplier_companies.setdefault(sup_id, set()).add(dep_comp_key)
+                    critical_supplier_edges.setdefault(sup_id, set()).add(edge_id)
 
     # Build SupplierDependencySummary list
     suppliers: list[SupplierDependencySummary] = []
@@ -1264,6 +1412,14 @@ def compute_dependency_summary(
                 }
             )
         )
+        crit_keys = tuple(
+            sorted(
+                critical_supplier_companies.get(target_id, set()),
+                key=lambda k: (-portfolio_by_key[k].exposure, k),
+            )
+        )
+        crit_weight = wsum(portfolio_by_key[k].exposure for k in crit_keys) if crit_keys else 0.0
+        crit_edges = tuple(sorted(critical_supplier_edges.get(target_id, set())))
         suppliers.append(
             SupplierDependencySummary(
                 target_id=target_id,
@@ -1276,6 +1432,9 @@ def compute_dependency_summary(
                 target_in_portfolio=target_id in portfolio_by_key,
                 edge_types=tuple(sorted(supplier_edge_types.get(target_id, set()))),
                 supporting_edge_ids=tuple(sorted(supplier_edges.get(target_id, set()))),
+                critical_dependent_weight=crit_weight,
+                critical_company_keys=crit_keys,
+                critical_supporting_edge_ids=crit_edges,
             )
         )
 
@@ -1351,7 +1510,7 @@ def compute_dependency_summary(
     analysed_weight = wsum(portfolio_by_key[k].exposure for k in sorted(companies_with_edges))
     sorted_all_edges = sorted(set(all_edge_ids))
 
-    # 1. Supplier dependency metrics (matching synthetic-dependencies.json: dep.<target_id>)
+    # 1. Supplier dependency metrics (matching synthetic-dependencies.json: dep.<target_id> + critical.<target_id>)
     for sup in suppliers:
         metrics.append(
             _make_metric(
@@ -1373,6 +1532,27 @@ def compute_dependency_summary(
                 supporting_edge_ids=sup.supporting_edge_ids,
             )
         )
+        if sup.critical_company_keys:
+            metrics.append(
+                _make_metric(
+                    metric_id=f"critical.{sup.target_id}",
+                    label=f"Portfolio exposure critically dependent on {sup.target_name}",
+                    value=sup.critical_dependent_weight,
+                    unit="fraction",
+                    subject_key=sup.target_id,
+                    supporting_edge_ids=sup.critical_supporting_edge_ids,
+                )
+            )
+            metrics.append(
+                _make_metric(
+                    metric_id=f"critical.{sup.target_id}.companies",
+                    label=f"Portfolio companies critically dependent on {sup.target_name}",
+                    value=float(len(sup.critical_company_keys)),
+                    unit="count",
+                    subject_key=sup.target_id,
+                    supporting_edge_ids=sup.critical_supporting_edge_ids,
+                )
+            )
 
     # 2. Facility concentration by country (matching synthetic-dependencies.json: facility.<code>)
     for fac in facilities_by_country:

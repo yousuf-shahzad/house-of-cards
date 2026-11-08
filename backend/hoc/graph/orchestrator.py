@@ -35,6 +35,7 @@ from hoc.contract.dependencies import (
     MetricFact,
     VerifiedEdge,
 )
+from hoc.graph.importance import attach_edge_importance, score_edge_importance
 from hoc.graph.metrics import (
     DependencyGraphSummary,
     compute_dependency_summary,
@@ -43,7 +44,7 @@ from hoc.graph.metrics import (
 
 log = logging.getLogger("hoc.graph.orchestrator")
 
-ORCHESTRATOR_PROMPT_VERSION = "hoc-orch-v2.1"
+ORCHESTRATOR_PROMPT_VERSION = "hoc-orch-v3.0"
 prompt_version: str = ORCHESTRATOR_PROMPT_VERSION
 
 GEMINI_INTERACTIONS_URL = "https://generativelanguage.googleapis.com/v1beta/interactions"
@@ -304,6 +305,9 @@ def _build_metric_and_edge_aliases(
         canonical_mid = f"dep.{sup.target_id}"
         if canonical_mid in summary.metrics_by_id:
             metric_aliases.setdefault(f"supplier_dep_{idx}", canonical_mid)
+        crit_mid = f"critical.{sup.target_id}"
+        if crit_mid in summary.metrics_by_id:
+            metric_aliases.setdefault(f"critical_dep_{idx}", crit_mid)
     if not metric_aliases and summary.metrics:
         metric_aliases["supplier_dep_1"] = summary.metrics[0].metric_id
     for idx, edge in enumerate(edges, start=1):
@@ -653,24 +657,32 @@ def build_user_prompt(
         }
         for m in summary.metrics
     ]
-    edges_payload = [
-        {
-            "edge_id": e.edge_id,
-            "source_company_key": e.source_company_key,
-            "source_company_name": e.source_company_name,
-            "edge_type": e.edge_type,
-            "target_name": e.target_name,
-            "target_kind": e.target_kind,
-            "target_key": e.target_key,
-            "sole_source": e.sole_source,
-            "qualifier": e.qualifier,
-            "section": e.section,
-            "form": e.filing.form,
-            "filed": str(e.filing.filed),
-            "evidence_quote": e.evidence_quote,
-        }
-        for e in edges
-    ]
+    edges_payload = []
+    for e in edges:
+        imp = e.importance if e.importance is not None else score_edge_importance(e)
+        edges_payload.append(
+            {
+                "edge_id": e.edge_id,
+                "source_company_key": e.source_company_key,
+                "source_company_name": e.source_company_name,
+                "edge_type": e.edge_type,
+                "target_name": e.target_name,
+                "target_kind": e.target_kind,
+                "target_key": e.target_key,
+                "sole_source": e.sole_source,
+                "importance_tier": imp.tier,
+                "importance_score": imp.score,
+                "importance_reasons": list(imp.reasons),
+                "interpretation_status": (
+                    e.interpretation.status if e.interpretation is not None else "ok"
+                ),
+                "qualifier": e.qualifier,
+                "section": e.section,
+                "form": e.filing.form,
+                "filed": str(e.filing.filed),
+                "evidence_quote": e.evidence_quote,
+            }
+        )
     payload = {
         "etfs": etf_list,
         "top_holdings": top_holdings,
@@ -939,6 +951,10 @@ class DependencyOrchestrator:
         cache_only: bool = False,
     ) -> tuple[list[MetricFact], Insights]:
         """Compute deterministic MetricFacts and verified Insights without raising."""
+        edges = [
+            e if e.importance is not None else attach_edge_importance([e])[0]
+            for e in edges
+        ]
         summary = compute_dependency_summary(exposures, edges)
         etf_context = etfs if etfs else holdings
 
