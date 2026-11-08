@@ -39,7 +39,7 @@ Gawyn: remove the option to switch to percent on simple screen 1, and make the p
 - Fix:
   - Add a `DraftEditor` option that hides the Shares | % switch and shows % as plain text (not an input). Use it in `guide/steps/pick.tsx` only; the full view keeps both.
   - If a sample's prices can't be fetched, load it as shares anyway (or show a short "prices unavailable, try again" message), not as pinned % rows the user can't edit.
-- **Owner:** Yousuf's Claude (owns `app/ui/draft-editor.tsx`; lead-approved one-line change in `pick.tsx`) · **Status:** assigned
+- **Owner:** Yousuf's Claude (owns `app/ui/draft-editor.tsx`; lead-approved one-line change in `pick.tsx`) · **Status:** in progress (branch `28-fix-15-shares-only`)
 
 ### FIX-16 · high · Simple screen 2 shows the first ETF pair, not the most overlapping one
 "Do your ETFs own the same companies?" uses `analysis.overlap.pairs[0]`, but the API returns pairs in input order. For the sample it shows IVV/QQQ (48.82%) when QQQ/XLK overlap most (50.11%).
@@ -58,7 +58,7 @@ Gawyn wants concrete ideas such as "add this ETF to help fix this diversificatio
 - **Frontend:**
   - **Screen 5:** idea cards ("Add RSP: largest industry 51% → 41%") with a "Try this" button that opens Try a change with the idea loaded. The ETF is added as whole shares worth its share of your portfolio.
   - **Try a change** (guide and Compare page): an "Ideas" list at the top that loads an idea in one click.
-- **Owner:** Yousuf's Codex (backend + contract) + Bekarys's Claude (frontend; can start on the fixture) · **Status:** assigned
+- **Owner:** Yousuf's Codex (backend + contract; shape approved) + Yousuf's Claude (vite proxy + `api.changeIdeas`) + Bekarys's Claude (frontend; can start on the fixture) · **Status:** in progress (branch `28-fix-17-change-ideas`)
 
 ### FIX-18 · high · The progress bar can go down
 `steps_total` grows when the research phase starts (16 → about 50), so the bar drops from about 100% to about 30%. It also changes as agents finish.
@@ -100,14 +100,11 @@ The plan asked for the research trace to show live during the run.
 - Fix:
   - The job exposes findings as each agent finishes.
   - The Dependencies page and simple page 4 show them.
-- **Owner:** Bekarys's Claude (job; adds `DependencyJob.research`, lead-approved) + Yousuf's Gemini (pages) · **Status:** assigned, job part starts after FIX-1
-
-### FIX-12 · low · 7 links cite the section "document" instead of a 10-K Item
-These are 6 Microsoft links and 1 Alphabet link. Their quotes are exact, but the evidence panel can't say which part of the report they're from.
-- **Owner:** Yousuf's Codex (filings) · **Status:** merged in PR #169, lead checking live
+- **Owner:** Bekarys's Claude (job; adds `DependencyJob.research`, lead-approved) + Yousuf's Gemini (pages) · **Status:** pages merged (#170); job part starts after FIX-1
 
 ## Done (checked on `main` by the lead)
 
+- FIX-12 all links cite a real 10-K Item (Microsoft, Alphabet sections fixed; 132/132 quotes exact) — #169
 - FIX-13 PR #25 closed by Bekarys (branch kept)
 - FIX-3 short AI cards on simple pages 4–5, "Read more", a splitter that keeps "Co., Ltd." whole; FIX-4 "couldn't run on this computer" (#151, checked in code); FIX-5 page 4 progress bar and "Go deeper" that updates in place — #166
 - Try a change: starts from your portfolio, updates on its own, 4 rows — #156, #163
