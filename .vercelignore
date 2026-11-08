@@ -1,0 +1,17 @@
+.git
+.board
+.claude
+.codex-state
+.worktrees
+.vercel-tools
+.venv
+.playwright-cli
+output
+slides
+validation
+backend/.cache
+backend/tests
+frontend/node_modules
+frontend/dist
+**/.env
+**/.env.*
