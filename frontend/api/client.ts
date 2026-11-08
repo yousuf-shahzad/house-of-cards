@@ -3,9 +3,7 @@
 // keep the contract's fractions of 1.
 import {
   DEFAULT_RESEARCH_ITEMS,
-  DEFAULT_SHOCK_DROP,
   DEFAULT_TOP_N,
-  type AffectedCompany,
   type PortfolioRequest,
   type AnalysisResponse,
   type ChangeIdeasRequest,
@@ -23,7 +21,6 @@ import {
   type ShockSpec,
   type StressRequest,
   type StressResponse,
-  type StressSide,
   type ValuationIssue,
   type ValuationRequest,
   type ValuationResponse,
@@ -241,59 +238,16 @@ const mockResearch = async (): Promise<ResearchJob> =>
 const mockDependencies = async (): Promise<DependencyJob> =>
   (await import("./__fixtures__/synthetic-dependencies.json")).default as unknown as DependencyJob;
 
+// Mock mode replays the real /api/stress fixtures (IT, Taiwan, TSMC supplier) for each shock kind.
 async function mockStress(req: StressRequest): Promise<StressResponse> {
-  const analysis = await mockAnalysis();
-  const drop = req.shock.drop ?? DEFAULT_SHOCK_DROP;
-  const keyUpper = req.shock.key.trim().toUpperCase();
-  const keyLower = req.shock.key.trim().toLowerCase();
-  const companyKeySet = new Set((req.company_keys ?? []).map((k) => k.trim()));
-
-  const buildSide = (): StressSide => {
-    const matched = analysis.exposures.filter((c) => {
-      if (req.shock.kind === "sector") return c.sector.toLowerCase() === keyLower;
-      if (req.shock.kind === "country") return (c.country ?? "").trim().toUpperCase() === keyUpper;
-      return companyKeySet.has(c.company_key);
-    });
-    const sectorRow =
-      req.shock.kind === "sector"
-        ? analysis.sectors.find((s) => s.sector.toLowerCase() === keyLower)
-        : undefined;
-    const affectedWeight =
-      sectorRow !== undefined
-        ? sectorRow.weight
-        : matched.reduce((sum, c) => sum + c.exposure, 0);
-    const affected: AffectedCompany[] = matched
-      .map((c) => ({
-        company_key: c.company_key,
-        company_name: c.company_name,
-        exposure: c.exposure,
-        loss: c.exposure * drop,
-      }))
-      .sort((a, b) => b.loss - a.loss || a.company_key.localeCompare(b.company_key))
-      .slice(0, 10);
-    return {
-      affected_weight: affectedWeight,
-      loss_fraction: affectedWeight * drop,
-      affected_count: matched.length,
-      affected,
-    };
-  };
-
-  return {
-    status: "ok",
-    shock: req.shock,
-    basis: {
-      source: "simulated",
-      drop,
-      proxy: null,
-      window_start: null,
-      window_end: null,
-      description: `Simulated ${Math.round(drop * 100)}% fall across affected companies.`,
-    },
-    baseline: buildSide(),
-    candidate: req.candidate ? buildSide() : null,
-    notes: [],
-  };
+  const fixture = (
+    req.shock.kind === "country"
+      ? await import("./__fixtures__/stress-tw.json")
+      : req.shock.kind === "supplier"
+        ? await import("./__fixtures__/stress-supplier.json")
+        : await import("./__fixtures__/stress-it.json")
+  ).default as unknown as StressResponse;
+  return { ...fixture, shock: req.shock, candidate: req.candidate ? fixture.candidate : null };
 }
 
 export const api = {
