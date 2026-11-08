@@ -38,10 +38,6 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 - **Top 30 drops to 15:** Run again, Re-evaluate and Try again hard-code `runDependencies(DEFAULT_TOP_N)` (lines ~1821, 1854, 1918), so a top-30 scan drops back to 15. Fix: use the current `effectiveTopN`.
 - **Owner:** Yousuf's Gemini (`pages/dependencies/`), together with FIX-52/FIX-48 · **Status:** assigned
 
-### FIX-56 · medium · BUG: Simple-mode Try a change shows Full-mode controls (bug hunt batch 2)
-`TryAChange` (`try-a-change.tsx` ~551–558) doesn't pass `sharesOnly={isBeginner}` or `flaggedIds` to `DraftEditor`, so Simple `#/compare` and guide Step 5 show the % switch and pins, and don't flag unknown tickers.
-- **Owner:** Yousuf's Codex (`app/ui/try-a-change.tsx`) · **Status:** assigned
-
 ### FIX-52 · high · Reorder the Dependencies page: the important actions and AI synthesis first (Gawyn, 09:57)
 Today the order is: header (Find dependencies, Go deeper) → progress → coverage panel (holding "Scan top 30") → audit bar → AI synthesis → research panel (holding "Investigate gaps") → key numbers → graph → countries.
 
@@ -104,6 +100,7 @@ For each **confirmed** bug, add one line under **New** in FIXES.md: `BUG: <what 
 
 ## Done (checked on `main` by the lead)
 
+- FIX-56 Simple Try a change has no Shares/% switch and no pins; unknown tickers are flagged in the scenario (lead, browser) — #244
 - FIX-54 Full-view stale/error states. Exposures (#241) and Risk (#242) show "last valid analysis" with Edit portfolio and no endless spinner (lead, browser). The Portfolio link is hidden while stale (#240).
 - FIX-36 independent proof (`validation/`, standard library only, no `hoc` imports; the lead re-ran it from saved data and got identical results):
   - **Overlap:** QQQ/XLK reproduces the app's 50.11% / 35 shared exactly with date-matched files, and is 51.44% on current issuer files.
