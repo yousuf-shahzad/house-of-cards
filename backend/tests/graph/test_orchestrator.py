@@ -450,3 +450,45 @@ def test_fake_gemini_client_default_orchestrator_response_integration(
     assert res.flaws[0].cited_metric_ids == ["dep.ALIAS:ZZEPSILON"]
     assert res.flaws[0].cited_edge_ids == ["e-alp-foundry-eps"]
 
+
+
+def test_cache_key_changes_when_target_resolution_changes_but_edge_ids_do_not(tmp_path: Path) -> None:
+    """Resolving target_key keeps every edge id but changes the metrics the model sees, so it must miss the cache.
+
+    Live regression (us-core-tilt): a reply cached before name resolution cited dep.NAME:* metrics that no
+    longer existed afterwards, and replaying it silently dropped the most important claims.
+    """
+    analysis = _sample_analysis()
+    unresolved = [e.model_copy(update={"target_key": None, "target_in_portfolio": False}) for e in _sample_edges()]
+    resolved = _sample_edges()
+    assert [e.edge_id for e in unresolved] == [e.edge_id for e in resolved]
+
+    calls: list[str] = []
+
+    def counting_client(*, model: str, **_: Any) -> dict[str, Any]:
+        calls.append(model)
+        # One claim that verifies with or without resolution (only replies with a verified claim are cached).
+        return {"flaws": [], "suggestions": [{
+            "title": "Assembly concentrated in Taiwan",
+            "text": "{{metric:facility.TW}} of your portfolio relies on final assembly in Taiwan.",
+            "severity": "warning",
+            "cited_metric_ids": ["facility.TW"],
+            "cited_edge_ids": ["e-alp-facility-tw"],
+            "entities": ["Taiwan", "ZZ Alpha Corp"],
+        }]}
+
+    orch = DependencyOrchestrator(ai_client=counting_client, cache_dir=tmp_path)
+    orch.insights(analysis, unresolved)
+    orch.insights(analysis, unresolved)  # identical input: replayed from the disk cache
+    assert len(calls) == 1
+    orch.insights(analysis, resolved)  # same edge ids, new target_key and metrics: must call the model
+    assert len(calls) == 2
+
+    # Identical input still replays cache-only, with no client at all (the warm-up path).
+    _, replay = DependencyOrchestrator(ai_client=None, cache_dir=tmp_path).insights(analysis, resolved, cache_only=True)
+    assert replay.status == "ok"
+
+    # A different orchestrator model is a different reply.
+    other = DependencyOrchestrator(ai_client=counting_client, cache_dir=tmp_path, orchestrator_model="gemini-3.8-flash")
+    other.insights(analysis, resolved)
+    assert len(calls) == 3

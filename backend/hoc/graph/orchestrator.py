@@ -456,8 +456,17 @@ def compute_orchestrator_cache_key(
     edges: Sequence[VerifiedEdge],
     holdings: Sequence[PortfolioItem] = (),
     prompt_ver: str = ORCHESTRATOR_PROMPT_VERSION,
+    *,
+    model: str | None = None,
+    user_prompt: str | None = None,
 ) -> str:
-    """Compute the deterministic sha256 cache key for orchestrator output."""
+    """Compute the deterministic sha256 cache key for orchestrator output.
+
+    Edge ids alone are not enough: resolving a target_key (or any metric change) keeps every edge id but
+    changes what the model sees, so a stale reply would be re-validated against new metrics and lose
+    every claim that cites a renamed metric. `user_prompt` (the exact grounding payload) and `model`
+    therefore go into the key too.
+    """
     alloc_part = (
         [
             (h.ticker.upper(), f"{h.allocation:.10f}")
@@ -475,6 +484,10 @@ def compute_orchestrator_cache_key(
             "allocations": alloc_part,
             "verified_edge_ids": edge_ids,
             "prompt_version": prompt_ver,
+            "model": model,
+            "user_prompt_sha256": (
+                hashlib.sha256(user_prompt.encode("utf-8")).hexdigest() if user_prompt is not None else None
+            ),
         },
         sort_keys=True,
         separators=(",", ":"),
@@ -939,9 +952,11 @@ class DependencyOrchestrator:
                 rejected_claims_count=0,
             )
 
-        # 2. Check disk cache by (allocations_hash, verified_edge_ids, prompt_version)
+        # 2. Check disk cache by (allocations, verified_edge_ids, prompt_version, model, exact prompt)
+        user_prompt = build_user_prompt(exposures, edges, summary, etfs=etf_context)
         cache_key = compute_orchestrator_cache_key(
-            exposures, edges, holdings=holdings, prompt_ver=self.prompt_version
+            exposures, edges, holdings=holdings, prompt_ver=self.prompt_version,
+            model=self._orchestrator_model, user_prompt=user_prompt,
         )
         cached = self._read_cache(cache_key)
         if cached is not None:
@@ -988,7 +1003,6 @@ class DependencyOrchestrator:
             return summary.metrics, fallback_insights
 
         # 4. Call AI client or HTTP client (with 429 fallback from Argon to Flash)
-        user_prompt = build_user_prompt(exposures, edges, summary, etfs=etf_context)
         chosen_model = self._orchestrator_model
         raw_payload: dict[str, Any] | None = None
         call_failed = False
