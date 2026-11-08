@@ -18,15 +18,18 @@ from hoc.contract.api import (
     SectorExposure,
 )
 from hoc.contract.dependencies import MetricFact
+from hoc.contract.holdings import EtfHoldings, NormalisedHolding
 from hoc.contract.units import Sector
 from hoc.graph.idea_proposer import (
     DEFAULT_PROPOSER_MODEL,
     IDEA_PROPOSER_PROMPT_VERSION,
     PINNED_ETF_UNIVERSE,
+    EtfUniverseEntry,
     IdeaProposer,
     PortfolioIssue,
     build_portfolio_issues,
     compute_idea_proposer_cache_key,
+    enrich_universe_from_loaded,
     propose_change_ideas,
     verify_and_render_proposal_rationale,
     verify_raw_proposals,
@@ -298,3 +301,102 @@ def test_idea_proposer_disk_cache_and_fallback_statuses(tmp_path: Path) -> None:
     conv = propose_change_ideas(holdings, issues, cache_dir=tmp_path, cache_only=True)
     assert conv.ai_status == "ok"
     assert len(conv.proposals) == 1
+
+
+def test_verify_rationale_rejects_made_up_company_name() -> None:
+    """verify_and_render_proposal_rationale and verify_raw_proposals reject invented company names."""
+    issues = build_portfolio_issues(_sample_analysis(), _sample_dep_metrics())
+    metrics_lookup: dict[str, PortfolioIssue | str] = {i.metric_id: i for i in issues}
+    allowed_tickers = {"IVV", "QQQ", "XLK", "EEM", "VTV", "RSP", "TSMC"}
+    allowed_entities = {"taiwan semiconductor manufacturing", "tsmc", "apple"}
+
+    # Grounded entity passes
+    ok_text, ok_err = verify_and_render_proposal_rationale(
+        "Shifting out of XLK into VTV lowers your {{metric:dep.ALIAS:TSMC}} Taiwan Semiconductor reliance.",
+        metrics_by_id=metrics_lookup,
+        allowed_tickers=allowed_tickers,
+        allowed_entities=allowed_entities,
+    )
+    assert ok_err is None
+    assert ok_text is not None and "12.39%" in ok_text
+
+    # Invented company name in rationale is rejected
+    bad_text, bad_err = verify_and_render_proposal_rationale(
+        "Shifting out of XLK into VTV lowers your {{metric:dep.ALIAS:TSMC}} Cyberdyne reliance.",
+        metrics_by_id=metrics_lookup,
+        allowed_tickers=allowed_tickers,
+        allowed_entities=allowed_entities,
+    )
+    assert bad_text is None
+    assert bad_err == "unknown_entity:Cyberdyne"
+
+    # Also rejected in verify_raw_proposals
+    verified, rejected = verify_raw_proposals(
+        {
+            "proposals": [
+                {
+                    "action": "add",
+                    "ticker": "RSP",
+                    "fraction": 0.2,
+                    "swap_from": "",
+                    "issue_id": "top_sector",
+                    "title": "Add equal-weight US stocks with RSP",
+                    "rationale": "Adding RSP reduces your {{metric:top_sector}} reliance on FakeMegaCorp.",
+                    "cited_metric_ids": ["top_sector"],
+                }
+            ]
+        },
+        holdings=_sample_holdings(),
+        issues=issues,
+    )
+    assert verified == []
+    assert len(rejected) == 1
+    assert rejected[0]["reason"] == "unknown_entity:FakeMegaCorp"
+
+
+def test_enrich_universe_uses_authoritative_fund_reported_sector_breakdown() -> None:
+    """enrich_universe_from_loaded uses hoc.portfolio.sectors.etf_sectors (including fund_reported weights)."""
+    holding_line = NormalisedHolding(
+        etf_ticker="VTV",
+        security_key="SYM:BRK.B",
+        security_id="BRK.B",
+        security_id_type="symbol",
+        symbol="BRK.B",
+        name="Berkshire Hathaway",
+        company_key="CIK:0001067983",
+        company_key_basis="cik",
+        company_name="Berkshire Hathaway Inc.",
+        identity_status="resolved",
+        weight=0.98,
+        sector=Sector.unknown,
+        sector_source="none",
+        source="sec_nport",
+        as_of=date(2026, 10, 31),
+    )
+    etf = EtfHoldings(
+        etf_ticker="VTV",
+        etf_name="Vanguard Value ETF",
+        source="sec_nport",
+        as_of=date(2026, 10, 31),
+        retrieved_at=datetime(2026, 11, 8, 0, 0, tzinfo=UTC),
+        source_url="https://example.invalid/vtv",
+        holdings=[holding_line],
+        reported_weight=0.98,
+        holdings_weight=0.98,
+        excluded_weight=0.0,
+        unmatched_weight=0.0,
+        sector_basis="fund_reported",
+        sector_weights={
+            Sector.health_care: 0.35,
+            Sector.financials: 0.22,
+        },
+        raw_line_count=1,
+        normaliser_version="1",
+    )
+    custom_universe = (
+        EtfUniverseEntry("VTV", "Vanguard Value ETF", "US large-cap value", "Financials"),
+    )
+    enriched = enrich_universe_from_loaded({"VTV": etf}, universe=custom_universe)
+    assert len(enriched) == 1
+    assert enriched[0].largest_industry == "Health Care"
+
