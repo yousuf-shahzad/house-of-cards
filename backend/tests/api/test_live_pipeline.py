@@ -109,3 +109,25 @@ def test_live_pipeline_resolves_names_against_the_job_portfolio(make_service, tm
     first = portfolio[0]
     assert resolve(first.company_name) == first.company_key
     assert resolve("contract manufacturers") is None
+
+
+def test_live_pipeline_reverse_wiring(make_service, tmp_path):
+    """LivePipeline.reverse: searches other filers by display name, excludes the company's own CIK, and keeps
+    only edges resolving to this company (G-AI's extract_reverse is tested in tests/ai)."""
+    service, _ = make_service()
+    _, pipeline = build(service, tmp_path)
+    company = service.analyse(PortfolioRequest(holdings=HOLDINGS)).exposures[0].model_copy(
+        update={"company_key": "CIK:0009990001"})
+    searched, passed = [], {}
+    pipeline.fetcher.names_in_other_filings = lambda name, *, exclude_cik=None: searched.append((name, exclude_cik)) or ["F"]
+
+    def fake_reverse(company_arg, filings, *, cache_only, top_n_company_keys, resolve_target_key):
+        passed.update(filings=filings, cache_only=cache_only, keys=top_n_company_keys,
+                      resolves=resolve_target_key(company_arg.company_name))
+        return type("Found", (), {"edges": [], "rejected": 0, "cached": True})()
+
+    pipeline.extractor.extract_reverse = fake_reverse
+    result = pipeline.reverse(company, cache_only=True)
+    assert searched == [(company.company_name, "0009990001")]
+    assert passed == {"filings": ["F"], "cache_only": True, "keys": {"CIK:0009990001"}, "resolves": "CIK:0009990001"}
+    assert result.edges == [] and result.cached
