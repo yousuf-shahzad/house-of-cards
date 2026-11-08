@@ -11,7 +11,15 @@ from fastapi.testclient import TestClient
 
 from hoc.api.app import create_app
 from hoc.config import Settings
-from hoc.contract import CompanyUnavailable, FilingRef, Insights, MetricFact, PortfolioRequest, VerifiedEdge
+from hoc.contract import (
+    CompanyUnavailable,
+    DependencyRequest,
+    FilingRef,
+    Insights,
+    MetricFact,
+    PortfolioRequest,
+    VerifiedEdge,
+)
 from hoc.examples import ExampleDefinition
 from hoc.jobs import DependencyJobs, Extraction, InlineExecutor
 
@@ -225,3 +233,52 @@ def test_name_variants_resolve_to_one_portfolio_key(setup, make_service):
     assert by_name["contract manufacturers"]["target_key"] is None  # generic noun: never guessed
     assert by_name["contract manufacturers"]["target_in_portfolio"] is False
     assert foundry_key in pipeline.seen_portfolios[0]  # the resolver saw this job's whole portfolio
+
+
+class ReversePipeline(FakePipeline):
+    """Forward as FakePipeline; reverse finds one other filer naming each company, or fails for `broken`."""
+
+    def __init__(self, *, broken=(), **kwargs):
+        super().__init__(**kwargs)
+        self.broken = set(broken)
+        self.reverse_calls: list[tuple[str, bool]] = []
+
+    def reverse(self, company, *, cache_only):
+        self.reverse_calls.append((company.company_key, cache_only))
+        if company.company_key in self.broken:
+            raise CompanyUnavailable("sec_contact_missing", "Set HOC_SEC_CONTACT")
+        filing = FilingRef(company_key="CIK:9990000099", form="10-K", accession="9990000099-26-000001",
+                           filed=date(2026, 3, 1), url="https://example.invalid/other")
+        edge = VerifiedEdge(edge_id=f"rev-{company.company_key}", source_company_key="CIK:9990000099",
+                            source_company_name="ZZ Other Filer", source_in_portfolio=False, edge_type="foundry",
+                            target_name=company.company_name, target_kind="company",
+                            target_key=company.company_key, target_in_portfolio=True,
+                            evidence_quote=f"We rely on {company.company_name} (synthetic).", section="1",
+                            filing=filing)
+        return Extraction(edges=[edge], rejected=1)
+
+
+def test_reverse_links_cover_companies_without_their_own_filing(setup, make_service):
+    service, _ = make_service()
+    keys = [c.company_key for c in service.analyse(PortfolioRequest(holdings=HOLDINGS)).exposures[:3]]
+    client, _, pipeline = setup(ReversePipeline(unavailable={keys[0]: "no_sec_filing"}, broken={keys[2]}))
+    job = post(client).json()
+    companies = {c["company_key"]: c for c in job["companies"]}
+    no_filing = companies[keys[0]]
+    assert no_filing["status"] == "no_sec_filing" and no_filing["verified_edges"] == 1
+    assert "1 link(s) found in other companies' filings" in no_filing["message"]
+    assert companies[keys[1]]["status"] == "cached" and companies[keys[1]]["verified_edges"] == 3  # 2 forward + 1
+    assert companies[keys[2]]["status"] == "cached"  # its reverse failed: forward status unchanged
+    edge_ids = {e["edge_id"] for e in job["result"]["edges"]}
+    assert {f"rev-{keys[0]}", f"rev-{keys[1]}"} <= edge_ids and f"rev-{keys[2]}" not in edge_ids
+    reverse_edge = next(e for e in job["result"]["edges"] if e["edge_id"] == f"rev-{keys[0]}")
+    assert reverse_edge["target_in_portfolio"] and not reverse_edge["source_in_portfolio"]
+    assert sorted(k for k, _ in pipeline.reverse_calls) == sorted(keys)
+    # rejected: keys[0] reverse 1 (no forward) + keys[1] forward 1 + reverse 1 + keys[2] forward 1 (reverse failed)
+    assert job["result"]["counts"]["rejected_edges"] == 4
+
+
+def test_reverse_runs_cache_only_at_warm_up(setup):
+    _, service, pipeline = setup(ReversePipeline())
+    service.submit_dependencies(DependencyRequest(holdings=HOLDINGS, top_n=2), cache_only=True)
+    assert pipeline.reverse_calls and all(cache_only for _, cache_only in pipeline.reverse_calls)
