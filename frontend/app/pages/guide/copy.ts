@@ -163,9 +163,9 @@ export const GUIDE_STEP_INFO: Readonly<Record<GuideStepMeta["id"], TabInfoGuide>
     whatsHere:
       "Your true combined share in every company after opening up all of your ETFs and adding overlapping stocks together, plus which two ETFs overlap the most.",
     whyItMatters:
-      "Buying three or four different ETFs can still leave 30%–40% of your money in the same 10 giant companies if those funds track similar indexes.",
+      "Buying several different ETFs can still leave a large share of your money in the same giant companies if those funds track similar indexes.",
     keyDetails: [
-      "Combined share: If Apple is in three of your ETFs, we add all three slices together.",
+      "Combined share: If a company sits inside several of your ETFs, we add all of those slices together.",
       "Split tickers merged: Dual share classes (like Alphabet's GOOG and GOOGL) are combined into one company.",
     ],
   },
@@ -174,16 +174,16 @@ export const GUIDE_STEP_INFO: Readonly<Record<GuideStepMeta["id"], TabInfoGuide>
     whatsHere:
       "A plain-English verdict on whether your money is well spread out or heavily tilted toward one industry or a small group of companies.",
     whyItMatters:
-      "Even if you hold hundreds of stocks on paper, if 50% of your money sits in one industry (such as Technology), a single sector downturn hits half your portfolio.",
+      "Even if you hold hundreds of stocks on paper, if a large share of your money sits in one industry (such as Technology), a single sector downturn hits much of your portfolio at once.",
     keyDetails: [
-      " behaves-like count: Shows how many equally sized companies your portfolio behaves like.",
-      "Industry breakdown: Highlights any single industry above 40% of your money.",
+      "Behaves-like count: Shows how many equally sized companies your portfolio behaves like.",
+      "Industry breakdown: Highlights when a single industry makes up a heavy share of your money.",
     ],
   },
   risks: {
     title: "About Step 4 · Hidden supply-chain risks",
     whatsHere:
-      "Suppliers, chip foundries, customers, and factory locations that your top 15 companies rely on, extracted from their official SEC annual reports (10-K / 20-F).",
+      "Suppliers, chip foundries, customers, and factory locations that your largest companies rely on, extracted from their official SEC annual reports (10-K / 20-F).",
     whyItMatters:
       "Companies that look separate in your portfolio—like Nvidia, AMD, Broadcom, and Intel—can all rely on the same single supplier (like TSMC) or manufacturing region.",
     keyDetails: [
@@ -196,9 +196,9 @@ export const GUIDE_STEP_INFO: Readonly<Record<GuideStepMeta["id"], TabInfoGuide>
     whatsHere:
       "Concrete diversification ideas checked against your actual portfolio numbers, plus 'Try a change' to test any ETF swap side by side.",
     whyItMatters:
-      "Before changing anything, you can see exactly how adding or swapping an ETF would shift your top-10 concentration, biggest industry, and supplier reliance.",
+      "Before changing anything, you can see exactly how adding or swapping an ETF would shift your top-company concentration, biggest industry, and supplier reliance.",
     keyDetails: [
-      "Python-verified math: Every before → after percentage is calculated by deterministic Python code, never guessed by AI.",
+      "Python-verified math: Every before → after change is calculated by deterministic Python code, never guessed by AI.",
       "Not financial advice: Ideas are educational comparisons only and never place trades.",
     ],
   },
@@ -209,7 +209,7 @@ export const TRY_CHANGE_INFO: TabInfoGuide = {
   whatsHere:
     "An interactive sandbox where you can add an ETF or adjust share counts and immediately compare the new mix against your current portfolio.",
   whyItMatters:
-    "Lets you verify whether a candidate ETF actually reduces your top-10 weight, top industry share, or single-supplier exposure before making a decision.",
+    "Lets you verify whether a candidate ETF actually reduces your top-company weight, largest industry share, or single-supplier exposure before making a decision.",
   keyDetails: [
     "Same-company comparison: Dependency changes are measured on the same underlying companies for a fair apples-to-apples check.",
     "Safe sandbox: Editing numbers here does not overwrite your main portfolio unless you click Apply.",
@@ -237,7 +237,7 @@ export const PAGE_INFO_COPY: Readonly<Record<string, TabInfoGuide>> = {
     keyDetails: [
       "Per-ETF stacked bars & rows: Click any company row to see how much each of your ETFs contributes to that holding.",
       "Entity resolution: Merges split share classes (e.g. GOOG + GOOGL) by ISIN/CIK so a company's true weight isn't split in two.",
-      "True coverage: If an ETF has unmapped cash or missing data, we report the exact coverage rather than silently scaling weights to 100%.",
+      "True coverage: If an ETF has unmapped cash or missing data, we report the exact coverage rather than silently scaling weights.",
     ],
   },
   overlap: {
@@ -245,10 +245,10 @@ export const PAGE_INFO_COPY: Readonly<Record<string, TabInfoGuide>> = {
     whatsHere:
       "A pairwise overlap matrix and shared-holdings inspector showing how much any two of your ETFs invest in the exact same companies.",
     whyItMatters:
-      "High overlap (e.g. 50% between QQQ and XLK) means two funds that sound different are largely buying the same underlying stocks.",
+      "High overlap between two ETFs means funds with different names and tickers are largely buying the same underlying stocks.",
     keyDetails: [
       "Weighted overlap formula: Sum of min(weight in ETF A, weight in ETF B) across every shared company.",
-      "Click any cell: Inspect the top shared companies driving the overlap between that pair of ETFs.",
+      "Click any cell: Inspect the shared companies driving the overlap between that pair of ETFs.",
     ],
   },
   network: {
@@ -265,13 +265,13 @@ export const PAGE_INFO_COPY: Readonly<Record<string, TabInfoGuide>> = {
   dependencies: {
     title: "About the Dependencies tab · What's here & why",
     whatsHere:
-      "An X-ray of who your top 15 companies rely on—suppliers, chip foundries, customers, and factory locations—extracted from official SEC Form 10-K and 20-F annual reports.",
+      "An X-ray of who your largest companies rely on—suppliers, chip foundries, customers, and factory locations—extracted from official SEC Form 10-K and 20-F annual reports.",
     whyItMatters:
-      "Standard portfolio trackers stop at stock tickers. Even if you own 4 different chip stocks (Nvidia, Broadcom, AMD, Intel), SEC filings reveal that all 4 rely on TSMC to manufacture their chips.",
+      "Standard portfolio trackers stop at stock tickers. Even when you own several separate chip or hardware stocks, SEC filings can reveal that they all rely on the same foundry or supplier.",
     keyDetails: [
-      "100% verbatim evidence: Click any percentage, graph line, or citation chip to open the exact word-for-word sentence from the SEC filing.",
-      "5-bucket coverage bar: Shows how much of your portfolio has verified disclosures vs. companies that file 10-Ks without naming suppliers (like Apple) or sit outside the top-15 scan.",
-      "Light vs. Go deeper: Light mode checks your top 15 filings; 'Go deeper' runs cross-company filing searches to resolve uncertain links.",
+      "Verbatim evidence: Click any percentage, graph line, or citation chip to open the exact word-for-word sentence from the SEC filing.",
+      "Coverage bar: Shows how much of your portfolio has verified disclosures vs. companies that file annual reports without naming suppliers (like Apple) or sit outside the scan window.",
+      "Light vs. Go deeper: Light mode checks your top holdings' filings; 'Go deeper' runs cross-company filing searches to investigate uncertain links.",
     ],
   },
   compare: {
@@ -279,7 +279,7 @@ export const PAGE_INFO_COPY: Readonly<Record<string, TabInfoGuide>> = {
     whatsHere:
       "Side-by-side comparison of your current portfolio against a candidate mix, plus AI-proposed, Python-verified ETF change ideas.",
     whyItMatters:
-      "Shows the exact before → after impact on your top-10 concentration, effective holdings count, largest sector, and top supply-chain bottleneck.",
+      "Shows the exact before → after impact on your top-company concentration, effective holdings count, largest sector, and top supply-chain bottleneck.",
     keyDetails: [
       "Verified deltas: Every candidate idea is tested by Python's compare_portfolios engine; any idea that worsens a key risk is rejected.",
       "One-click apply: Test an idea in the draft editor or apply it to your main portfolio when ready.",
@@ -290,10 +290,10 @@ export const PAGE_INFO_COPY: Readonly<Record<string, TabInfoGuide>> = {
     whatsHere:
       "Portfolio-wide concentration metrics (HHI and effective holdings count), GICS sector breakdown, and filing freshness/staleness audit.",
     whyItMatters:
-      "Summarises how concentrated your portfolio is by company and industry, and warns you if any ETF's holdings report is more than 120 days old.",
+      "Summarises how concentrated your portfolio is by company and industry, and flags ageing ETF holdings reports (noted after 35 days, staleness warning after 100 days).",
     keyDetails: [
       "Effective holdings (1/HHI): Shows how many equally weighted stocks your portfolio behaves like.",
-      "Audit trail: Lists every data source, filing date, and coverage percentage.",
+      "Audit trail: Lists every data source, filing date, and coverage share.",
     ],
   },
 } as const;
