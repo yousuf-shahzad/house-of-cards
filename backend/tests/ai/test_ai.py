@@ -1018,3 +1018,29 @@ def test_extractor_populates_interpretation_and_counts_interpretation_rejected(t
     assert single_interp.status == "confirmed"
     ctx, (q_s, q_e) = extract_quote_context(by_target["ZZFAB Corp"].evidence_quote, doc)
     assert ctx[q_s:q_e] == by_target["ZZFAB Corp"].evidence_quote
+
+
+def test_v_int_rules_do_not_spill_across_adjacent_sentences_in_300_char_window():
+    """Competitor and negation cues in adjacent sentences within the ±300-char window must NOT
+    flag a clean supplier/customer sentence, while the ±300-char context_window is preserved for the judge.
+    """
+    doc = (
+        "We do not have long-term commitments with certain legacy vendors. "
+        "We engage with independent subcontractors such as ZZHonHai Precision Co., Ltd. and ZZWistron Corp. "
+        "to perform assembly, testing and packaging of our final products. "
+        "Competition. We compete intensely with ZZRival Corp across all server segments."
+    )
+    edge = _make_edge(
+        quote=(
+            "We engage with independent subcontractors such as ZZHonHai Precision Co., Ltd. and ZZWistron Corp. "
+            "to perform assembly, testing and packaging of our final products."
+        ),
+        target_name="ZZHonHai Precision Co., Ltd.",
+        edge_type="contract_manufacturer",
+    )
+    flags, reason, ctx = check_interpretation_rules(edge, doc)
+    assert flags == []
+    assert reason is None
+    # The ±300-char context window still includes the surrounding sentences for the judge
+    assert "We compete intensely with ZZRival Corp" in ctx
+    assert "We do not have long-term commitments" in ctx
