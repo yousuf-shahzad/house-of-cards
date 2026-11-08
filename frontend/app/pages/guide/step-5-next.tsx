@@ -7,10 +7,14 @@ import { ChangeIdeas } from "@/app/ui/try-a-change";
 import { Button } from "@/components/base/buttons/button";
 import { ClaimCards, isCoverageNotAnalysed, type RiskStepProps, topClaims } from "./step-4-risks";
 import { NEXT_COPY, RISKS_COPY } from "./copy";
+import { useGuideAnalysisGate } from "./analysis-gate";
 
 export default function NextStep({ onJumpToStep, onStartOver, onTryChange }: RiskStepProps & { onTryChange?: () => void }) {
   const { job, stale } = useDependencies();
   const { openExpertPage, setStep } = useExperience();
+  // FIX-59: with an unfinished edit, a failed analysis or no portfolio, say so instead of "Still checking" forever.
+  const gate = useGuideAnalysisGate("Checking your portfolio…");
+  if (gate) return gate;
   const result = !stale ? job?.result ?? null : null;
   const suggestions = result?.insights.status === "ok" ? topClaims(result.insights.suggestions) : [];
   const notAnalysed = result ? isCoverageNotAnalysed(result) : false;

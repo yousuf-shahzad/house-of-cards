@@ -113,8 +113,9 @@ export function TabInfoBanner({
 
 export default function GuidePage() {
   const { step, totalSteps: total, setStep } = useExperience();
-  const { status, analysis } = useAnalysis();
-  const canProceedFromStep1 = status === "ready" && Boolean(analysis);
+  const { status, analysis, stale } = useAnalysis();
+  // FIX-59: only move on once the current draft is analysed (not an older portfolio's results).
+  const canProceedFromStep1 = status === "ready" && !stale && Boolean(analysis);
 
   // F6: step 5's "Try a change" sub-screen. Leaving step 5 (Start over, the stepper) closes it.
   const [tryingChange, setTryingChange] = useState(false);
@@ -219,7 +220,7 @@ export default function GuidePage() {
         <div className="flex items-center gap-3">
           {step === 1 && !canProceedFromStep1 && (
             <span className="text-caption-1-regular text-text-secondary">
-              Load a sample or enter your ETFs to continue
+              {stale ? "Finish or fix your ETFs above to continue" : "Load a sample or enter your ETFs to continue"}
             </span>
           )}
           {step < total && (

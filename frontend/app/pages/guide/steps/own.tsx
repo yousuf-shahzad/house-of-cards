@@ -24,7 +24,7 @@ export function StepOwn({ onBack }: GuideStepProps) {
   // Always-run AI supply-chain check in the background as soon as step 2 renders ready.
   useAutoDependencies();
   // FIX-47: never show an earlier portfolio's results as current (loading, error, unfinished edit, empty).
-  const gate = useGuideAnalysisGate(onBack, "Adding up the companies inside your ETFs…");
+  const gate = useGuideAnalysisGate("Adding up the companies inside your ETFs…");
   if (gate) return gate;
 
   if (!analysis || analysis.exposures.length === 0) {

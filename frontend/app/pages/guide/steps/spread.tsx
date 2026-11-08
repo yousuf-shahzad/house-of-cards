@@ -14,16 +14,15 @@ import {
   GUIDE_STEP_META,
   plainSectorName,
 } from "../copy";
-import type { GuideStepProps } from "../index";
 import { useGuideAnalysisGate } from "../analysis-gate";
 
 const STEP_META = GUIDE_STEP_META[2];
 
-export function StepSpread({ onBack }: GuideStepProps) {
+export function StepSpread() {
   const { analysis } = useAnalysis();
   const { openExpertPage } = useExperience();
   // FIX-47: never show an earlier portfolio's results as current (loading, error, unfinished edit, empty).
-  const gate = useGuideAnalysisGate(onBack, "Checking how spread out your money is…");
+  const gate = useGuideAnalysisGate("Checking how spread out your money is…");
   if (gate || !analysis) return gate;
 
   const { concentration, sectors } = analysis;
