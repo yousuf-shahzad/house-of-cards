@@ -41,8 +41,9 @@ The Dependencies page reads top to bottom: audit & coverage bar, AI synthesis, k
     coverage gaps.
   - **Interpretation verification (v3):** Every quote is checked word for word against its filing and scanned by
     deterministic rules on ±300 characters of context, with an independent Flash judge reviewing every
-    rules-flagged edge plus a 20% sample of unflagged edges: **138 confirmed, 1 flagged** (`Nvidia -> OpenAI`,
-    flagged as tentative because the 10-K says *"agreement being finalized... no assurance"*).
+    rules-flagged edge plus a 20% sample of unflagged edges: **137 confirmed, 1 rejected, 1 flagged** (`AMD ->
+    Sanmina` rejected because *"we sold the ZT Manufacturing Business to Sanmina"* is a divestiture, not supply;
+    `Nvidia -> OpenAI` flagged as tentative because the 10-K says *"agreement being finalized... no assurance"*).
 - **1:55, the AI synthesis:** read one **critical flaw** and one **diversification idea**. Every number in them is a
   Python metric (`hoc-orch-v3.0`, **0 rejected claims**); a claim with any other number is dropped automatically.
 - **2:10, relationship importance & single points of failure (key numbers):** Every edge is scored deterministically

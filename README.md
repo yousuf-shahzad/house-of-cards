@@ -153,12 +153,14 @@ setting is missing.
 - **Reverse links.** EDGAR full-text search finds other companies' current annual reports that name a
   holding (e.g. Qualcomm's 10-K naming Samsung as a foundry), so companies without SEC filings still appear.
 - **Interpretation verification (v3 `V-INT`).** Verbatim quotes can still be misread (a competitor list, a
-  negated sentence, or a tentative deal). Python rules scan the quote and ±300 characters of surrounding
-  filing text for `competitor_mention`, `negated`, `hypothetical`, `direction_mismatch`, `generic_reference`,
-  and `subject_mismatch`, then an independent `gemini-3.8-flash` judge (`hoc-v3-judge-1`) reviews every
-  rules-flagged edge plus a deterministic 20% sample of unflagged edges. Contradicted or competitor edges are
-  removed and counted in `interpretation_rejected`; uncertain edges stay `flagged` (e.g. `Nvidia -> OpenAI` on
-  `us-core-tilt`: *"agreement being finalized... no assurance"*).
+  negated sentence, a divestiture, or a tentative deal). Python rules scan the quote and ±300 characters of
+  surrounding filing text for `competitor_mention`, `negated`, `hypothetical`, `direction_mismatch`,
+  `generic_reference`, and `subject_mismatch`, then an independent `gemini-3.8-flash` judge (`hoc-v3-judge-1`)
+  reviews every rules-flagged edge plus a deterministic 20% sample of unflagged edges. Contradicted or competitor
+  edges are removed and counted in `interpretation_rejected` (e.g. rejecting `AMD -> Sanmina` as a
+  `contract_manufacturer` on `us-core-tilt` because *"we sold the ZT Manufacturing Business to Sanmina"* is a
+  divestiture, not supply), while uncertain edges stay `flagged` (e.g. `Nvidia -> OpenAI`: *"agreement being
+  finalized... no assurance"*).
 - **Relationship importance (v3 `R-IMP`).** Python deterministically scores every edge in `[0, 1]` and assigns
   a tier (`critical >= 0.8`, `high >= 0.6`, `medium >= 0.4`, `low < 0.4`) from the relationship type, customer
   revenue share (`>=20%` critical, `10-20%` high), facility role (production vs HQ/office/R&D), and verbatim
@@ -234,7 +236,7 @@ cd backend && uv run hoc eval --live
   - **Micro precision:** **88.4% [83.2%, 92.5%]** blind (114/129; **Micro F1 = 69.6% [51.9%, 82.7%]**) and **96.1% [89.6%, 100.0%]** after blind pooled adjudication (124/129; **Micro F1 = 71.9% [53.3%, 85.1%]**, with 10 of 14 unmatched predictions confirmed verbatim in the filings as extended relationships).
   - **Core recall (`tier='core'`, blind denominator):** **57.4% [35.3%, 76.0%]** (66/115 core relationships; misses are mainly multi-site facility countries, 23/49, and Pfizer co-development alliances, 18/49).
   - **Hard-negative false-positive rate:** **1.3% [0.0%, 3.9%]** (**1/79** across 27 competitor, 11 negated, 9 hypothetical, 7 unrelated, and 25 generic passages), **100.0% [100.0%, 100.0%] direction accuracy** (124/124), **100.0% [100.0%, 100.0%] facility-country accuracy** (**39/39**), and **importance-tier agreement** quadratic weighted Cohen's $\kappa = \mathbf{0.475\ [0.382,\ 0.631]}$ (54/79).
-  - **Honest V-INT note:** On the 10 held-out filings, the extractor + verbatim quote check already rejected 78/79 hard negatives so **V-INT filtered 0 edges on the held-out set** (`129 -> 129`); on the live `us-core-tilt` portfolio run, V-INT's rules + 20% judge sample caught and flagged 1 real tentative overclaim (`Nvidia -> OpenAI`). Supplier precision is the weakest relationship type (16.7% blind / 50.0% pooled, 3/6).
+  - **Honest V-INT note:** On the 10 held-out filings, the extractor + verbatim quote check already rejected 78/79 hard negatives so **V-INT filtered 0 edges on the held-out set** (`129 -> 129`); on the live `us-core-tilt` portfolio run, V-INT rejected **1** misread divestiture (`AMD -> Sanmina`, *"we sold the ZT Manufacturing Business to Sanmina"*) and flagged **1** tentative overclaim (`Nvidia -> OpenAI`). Supplier precision is the weakest relationship type (16.7% blind / 50.0% pooled, 3/6).
 
 The unit tests cover weighted exposure, duplicate and overlapping holdings, share-class merging, allocation
 validation, weighted overlap, incomplete and missing data, the source adapters' parsing, relationship
