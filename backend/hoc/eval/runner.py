@@ -13,6 +13,7 @@ Rules (docs/hoc/PLAN-v3.md §1):
 from __future__ import annotations
 
 import argparse
+import inspect
 import json
 import subprocess
 import sys
@@ -38,7 +39,9 @@ from hoc.eval.metrics import (
     DEFAULT_BOOTSTRAP_SEED,
     CompanyEvalBundle,
     aggregate_eval_report,
+    evaluate_agentic_acceptance,
     evaluate_company,
+    format_agentic_acceptance_summary,
 )
 from hoc.eval.report import write_eval_outputs
 from hoc.eval.schema import (
@@ -613,12 +616,121 @@ def _recover_vint_rejected_from_cache(
         return []
 
 
+def _run_agentic_if_available(
+    *,
+    company_key: str,
+    company_name: str,
+    ticker: str,
+    filing: Any,
+    edges_before_agentic: Sequence[VerifiedEdge],
+    depth: Literal["none", "light", "thorough"] = "light",
+    client: Any = None,
+    fetcher: Any = None,
+    cache: Any = None,
+    disk_cache: Any = None,
+    aliases: Any = None,
+    resolve_target_key: Any = None,
+    cache_only: bool = False,
+) -> tuple[list[VerifiedEdge], list[dict[str, Any]], list[str], int, int, int]:
+    """Run per-company agentic research (`A1`) when available.
+
+    Returns `(final_edges, findings_dicts, rejected_edge_ids, steps_done, steps_total, interp_rejected)`.
+    """
+    if depth == "none":
+        return list(edges_before_agentic), [], [], 0, 0, 0
+
+    try:
+        import hoc.research as _res_mod
+        from hoc.contract import CompanyExposure
+    except ImportError:
+        return list(edges_before_agentic), [], [], 0, 0, 0
+
+    company_exp = CompanyExposure(
+        rank=1,
+        company_key=company_key,
+        company_name=company_name,
+        identity_status="resolved",
+        symbols=[ticker] if ticker else [],
+        sector="unknown",
+        country=None,
+        exposure=0.10,
+        etf_count=1,
+        contributions=[],
+        securities=[],
+    )
+
+    runner_fn = getattr(_res_mod, "research_company", None)
+    if runner_fn is None:
+        loop_cls = getattr(_res_mod, "ResearchLoop", None)
+        if loop_cls is not None and client is not None and fetcher is not None:
+            try:
+                loop_inst = loop_cls(
+                    client=client,
+                    fetcher=fetcher,
+                    cache=cache,
+                    disk_cache=disk_cache,
+                    aliases=aliases,
+                )
+                runner_fn = getattr(loop_inst, "research_company", None) or getattr(
+                    loop_inst, "run_company", None
+                )
+            except Exception:
+                runner_fn = None
+
+    if runner_fn is None:
+        return list(edges_before_agentic), [], [], 0, 0, 0
+
+    try:
+        sig = inspect.signature(runner_fn)
+        kwargs: dict[str, Any] = {
+            "depth": depth,
+            "cache_only": cache_only,
+        }
+        if "resolve_target_key" in sig.parameters and resolve_target_key is not None:
+            kwargs["resolve_target_key"] = resolve_target_key
+        if "filing_obj" in sig.parameters and filing is not None:
+            kwargs["filing_obj"] = filing
+        if "client" in sig.parameters and client is not None:
+            kwargs["client"] = client
+        if "fetcher" in sig.parameters and fetcher is not None:
+            kwargs["fetcher"] = fetcher
+        if "cache" in sig.parameters and cache is not None:
+            kwargs["cache"] = cache
+        if "disk_cache" in sig.parameters and disk_cache is not None:
+            kwargs["disk_cache"] = disk_cache
+        if "aliases" in sig.parameters and aliases is not None:
+            kwargs["aliases"] = aliases
+
+        res = runner_fn(company_exp, filing, list(edges_before_agentic), **kwargs)
+        final_edges = _attach_importance_if_needed(
+            list(getattr(res, "edges", edges_before_agentic))
+        )
+        raw_findings = list(getattr(res, "findings", ()) or ())
+        findings_dicts = [
+            f.model_dump(mode="json") if hasattr(f, "model_dump") else dict(f)
+            for f in raw_findings
+        ]
+        rejected_ids = [str(eid) for eid in (getattr(res, "rejected_edge_ids", ()) or ())]
+        steps_done = int(getattr(res, "steps_done", 0) or 0)
+        steps_total = int(getattr(res, "steps_total", 0) or 0)
+        interp_rej = int(getattr(res, "interpretation_rejected", 0) or 0)
+        return final_edges, findings_dicts, rejected_ids, steps_done, steps_total, interp_rej
+    except Exception as exc:
+        if not cache_only:
+            print(
+                f"[eval warning] agentic research failed for {ticker} ({company_key}): {exc}",
+                file=sys.stderr,
+            )
+        return list(edges_before_agentic), [], [], 0, 0, 0
+
+
 def run_evaluation(
     *,
     live: bool = False,
     gold_dir: Path = DEFAULT_GOLD_DIR,
     recorded_dir: Path = DEFAULT_RECORDED_DIR,
     tickers: Sequence[str] | None = None,
+    depth: Literal["none", "light", "thorough"] = "light",
     bootstrap_iterations: int = DEFAULT_BOOTSTRAP_ITERATIONS,
     bootstrap_seed: int = DEFAULT_BOOTSTRAP_SEED,
 ) -> EvalRunReport:
@@ -636,8 +748,11 @@ def run_evaluation(
 
     fetcher = None
     extractor = None
+    extractor_cache = None
     gemini_client = None
     disk_cache = None
+    aliases = None
+    resolver = None
 
     if live or any(d.company.ticker.upper() not in recorded_by_ticker for d in gold_docs):
         try:
@@ -651,13 +766,15 @@ def run_evaluation(
 
             settings = Settings.from_env()
             disk_cache = DiskCache(settings.cache_dir)
+            extractor_cache = ExtractionCache(disk_cache)
             http = CachedHttpClient(settings, disk_cache)
             fetcher = FilingFetcher(http, settings)
             gemini_client = GeminiClient(http, settings)
-            resolver = NameResolver([], load_aliases()).resolve
+            aliases = load_aliases()
+            resolver = NameResolver([], aliases).resolve
             extractor = DependencyExtractor(
                 gemini_client,
-                ExtractionCache(disk_cache),
+                extractor_cache,
                 filing_fetcher=fetcher,
                 resolve_target_key=resolver,
             )
@@ -673,20 +790,43 @@ def run_evaluation(
 
         if not live and ticker in recorded_by_ticker:
             rec = recorded_by_ticker[ticker]
-            edges_after = _hydrate_recorded_edges(rec.edges)
+            edges_before_ag = _hydrate_recorded_edges(rec.edges)
+            edges_after_ag = (
+                _hydrate_recorded_edges(rec.agentic_edges)
+                if rec.agentic_edges is not None and depth != "none"
+                else edges_before_ag
+            )
             edges_rej = _hydrate_recorded_edges(rec.vint_rejected_edges)
+            before_ids = {e.edge_id for e in edges_before_ag}
+            after_ids = {e.edge_id for e in edges_after_ag}
+            new_cnt = len(after_ids - before_ids)
+            rej_cnt = len(rec.agentic_rejected_edge_ids) or len(before_ids - after_ids)
             bundles.append(
                 evaluate_company(
                     gold_doc,
-                    edges_after,
+                    edges_after_ag,
                     vint_rejected_edges=edges_rej,
+                    before_agentic_edges=edges_before_ag,
+                    agentic_findings=rec.agentic_findings if depth != "none" else (),
+                    agentic_findings_count=len(rec.agentic_findings) if depth != "none" else 0,
+                    agentic_steps_done=rec.agentic_steps_done if depth != "none" else 0,
+                    agentic_steps_total=rec.agentic_steps_total if depth != "none" else 0,
+                    agentic_new_edges_count=new_cnt if depth != "none" else 0,
+                    agentic_rejected_edges_count=rej_cnt if depth != "none" else 0,
                 )
             )
             continue
 
         # Live mode or cache-only fallback from ExtractionCache
-        edges_after: list[VerifiedEdge] = []
+        edges_before_ag: list[VerifiedEdge] = []
+        edges_after_ag: list[VerifiedEdge] = []
         edges_rej: list[VerifiedEdge] = []
+        ag_findings: list[dict[str, Any]] = []
+        ag_rej_ids: list[str] = []
+        ag_steps_done = 0
+        ag_steps_total = 0
+        ag_interp_rej = 0
+
         if fetcher is not None and extractor is not None:
             try:
                 filing = fetcher.latest(cik)
@@ -694,40 +834,80 @@ def run_evaluation(
                 if quote_errors:
                     for err in quote_errors:
                         print(f"[eval warning] {err}", file=sys.stderr)
-                outcome = extractor.extract_company(
-                    company_key=company_key,
-                    company_name=gold_doc.company.name,
-                    filing=filing,
-                    cache_only=(not live),
-                )
-                if live and outcome.status not in {"done", "cached"}:
-                    raise RuntimeError(
-                        f"Live extraction failed for {ticker} ({company_key}): "
-                        f"status={outcome.status}, error={outcome.error_message}"
-                    )
-                raw_verified = list(outcome.edges)
-                explicit_vint_rej = list(getattr(outcome, "rejected_edges_list", ()) or ())
-                if not explicit_vint_rej:
-                    explicit_vint_rej = _recover_vint_rejected_from_cache(
-                        extractor=extractor,
+
+                existing_rec = recorded_by_ticker.get(ticker)
+                used_model: str | None = None
+                quote_rej_count: int = 0
+                if (
+                    existing_rec is not None
+                    and existing_rec.edges
+                    and existing_rec.filing_accession == filing.accession
+                    and existing_rec.prompt_version == detect_extractor_prompt_version()
+                ):
+                    edges_before_ag = _hydrate_recorded_edges(existing_rec.edges)
+                    edges_rej = _hydrate_recorded_edges(existing_rec.vint_rejected_edges)
+                    used_model = existing_rec.model
+                    quote_rej_count = existing_rec.quote_rejected_count
+                else:
+                    outcome = extractor.extract_company(
                         company_key=company_key,
                         company_name=gold_doc.company.name,
                         filing=filing,
-                        model_name=outcome.model,
-                    )
-                if explicit_vint_rej:
-                    edges_after = _attach_importance_if_needed(raw_verified)
-                    edges_rej = _attach_importance_if_needed(explicit_vint_rej)
-                else:
-                    post_edges, rej_edges = _run_vint_if_available(
-                        raw_verified,
-                        filing.text,
-                        client=gemini_client,
-                        cache=disk_cache,
                         cache_only=(not live),
                     )
-                    edges_after = _attach_importance_if_needed(post_edges)
-                    edges_rej = _attach_importance_if_needed(rej_edges)
+                    if live and outcome.status not in {"done", "cached"}:
+                        raise RuntimeError(
+                            f"Live extraction failed for {ticker} ({company_key}): "
+                            f"status={outcome.status}, error={outcome.error_message}"
+                        )
+                    used_model = outcome.model
+                    quote_rej_count = outcome.rejected_count
+                    raw_verified = list(outcome.edges)
+                    explicit_vint_rej = list(getattr(outcome, "rejected_edges_list", ()) or ())
+                    if not explicit_vint_rej:
+                        explicit_vint_rej = _recover_vint_rejected_from_cache(
+                            extractor=extractor,
+                            company_key=company_key,
+                            company_name=gold_doc.company.name,
+                            filing=filing,
+                            model_name=outcome.model,
+                        )
+                    if explicit_vint_rej:
+                        edges_before_ag = _attach_importance_if_needed(raw_verified)
+                        edges_rej = _attach_importance_if_needed(explicit_vint_rej)
+                    else:
+                        post_edges, rej_edges = _run_vint_if_available(
+                            raw_verified,
+                            filing.text,
+                            client=gemini_client,
+                            cache=disk_cache,
+                            cache_only=(not live),
+                        )
+                        edges_before_ag = _attach_importance_if_needed(post_edges)
+                        edges_rej = _attach_importance_if_needed(rej_edges)
+
+                (
+                    edges_after_ag,
+                    ag_findings,
+                    ag_rej_ids,
+                    ag_steps_done,
+                    ag_steps_total,
+                    ag_interp_rej,
+                ) = _run_agentic_if_available(
+                    company_key=company_key,
+                    company_name=gold_doc.company.name,
+                    ticker=ticker,
+                    filing=filing,
+                    edges_before_agentic=edges_before_ag,
+                    depth=depth,
+                    client=gemini_client,
+                    fetcher=fetcher,
+                    cache=extractor_cache,
+                    disk_cache=disk_cache,
+                    aliases=aliases,
+                    resolve_target_key=resolver,
+                    cache_only=(not live),
+                )
 
                 if live:
                     save_recorded_prediction(
@@ -742,10 +922,17 @@ def run_evaluation(
                             filing_url=filing.url,
                             prompt_version=detect_extractor_prompt_version(),
                             judge_prompt_version=detect_judge_prompt_version(),
-                            model=outcome.model,
-                            edges=[e.model_dump(mode="json") for e in edges_after],
+                            model=used_model,
+                            edges=[e.model_dump(mode="json") for e in edges_before_ag],
                             vint_rejected_edges=[e.model_dump(mode="json") for e in edges_rej],
-                            quote_rejected_count=outcome.rejected_count,
+                            quote_rejected_count=quote_rej_count,
+                            research_depth=depth,
+                            agentic_edges=[e.model_dump(mode="json") for e in edges_after_ag],
+                            agentic_findings=ag_findings,
+                            agentic_rejected_edge_ids=ag_rej_ids,
+                            agentic_steps_done=ag_steps_done,
+                            agentic_steps_total=ag_steps_total,
+                            agentic_interpretation_rejected=ag_interp_rej,
                         ),
                     )
             except Exception as exc:
@@ -756,11 +943,22 @@ def run_evaluation(
                     file=sys.stderr,
                 )
 
+        before_ids = {e.edge_id for e in edges_before_ag}
+        after_ids = {e.edge_id for e in edges_after_ag}
+        new_cnt = len(after_ids - before_ids)
+        rej_cnt = len(ag_rej_ids) or len(before_ids - after_ids)
         bundles.append(
             evaluate_company(
                 gold_doc,
-                edges_after,
+                edges_after_ag,
                 vint_rejected_edges=edges_rej,
+                before_agentic_edges=edges_before_ag,
+                agentic_findings=ag_findings,
+                agentic_findings_count=len(ag_findings),
+                agentic_steps_done=ag_steps_done,
+                agentic_steps_total=ag_steps_total,
+                agentic_new_edges_count=new_cnt,
+                agentic_rejected_edges_count=rej_cnt,
             )
         )
 
@@ -770,6 +968,7 @@ def run_evaluation(
         git_commit=detect_git_commit(),
         extractor_prompt_version=detect_extractor_prompt_version(),
         judge_prompt_version=detect_judge_prompt_version(),
+        research_depth=depth,
         bootstrap_iterations=bootstrap_iterations,
         bootstrap_seed=bootstrap_seed,
     )
@@ -790,10 +989,13 @@ def format_console_summary(report: EvalRunReport) -> str:
     fac_acc = report.facility_country_accuracy
     kappa = report.importance_weighted_kappa
 
+    pre_ag = report.overall_before_agentic or report.overall_after_vint
+    pre_ag_blind = report.blind_overall_before_agentic or blind
+
     src_str = ", ".join(f"{k}={v}" for k, v in sorted(report.gold_core_by_source.items())) or "none"
     lines = [
         (
-            f"House of Cards v3 Evaluation ({report.mode}, commit {report.git_commit}, "
+            f"House of Cards v3.1 Evaluation ({report.mode}, depth={report.research_depth}, commit {report.git_commit}, "
             f"extractor {report.extractor_prompt_version}, judge {report.judge_prompt_version})"
         ),
         (
@@ -804,19 +1006,25 @@ def format_console_summary(report: EvalRunReport) -> str:
         "",
         (
             f"  Micro Precision (blind)      : {p_blind.value * 100:5.1f}% [{p_blind.ci_low * 100:5.1f}%, {p_blind.ci_high * 100:5.1f}%] "
-            f"({p_blind.numerator}/{p_blind.denominator})"
+            f"({p_blind.numerator}/{p_blind.denominator}; before agentic: {pre_ag_blind.precision.value * 100:5.1f}%, {pre_ag_blind.precision.numerator}/{pre_ag_blind.precision.denominator})"
         ),
         (
             f"  Micro Precision (pooled)     : {p.value * 100:5.1f}% [{p.ci_low * 100:5.1f}%, {p.ci_high * 100:5.1f}%] "
-            f"({p.numerator}/{p.denominator}; before V-INT: {p_pre.value * 100:5.1f}%)"
+            f"({p.numerator}/{p.denominator}; before agentic: {pre_ag.precision.value * 100:5.1f}%, {pre_ag.precision.numerator}/{pre_ag.precision.denominator}; before V-INT: {p_pre.value * 100:5.1f}%)"
         ),
         (
             f"  Micro Recall    (core, post) : {r.value * 100:5.1f}% [{r.ci_low * 100:5.1f}%, {r.ci_high * 100:5.1f}%] "
-            f"({r.numerator}/{r.denominator})"
+            f"({r.numerator}/{r.denominator}; before agentic: {pre_ag.recall.value * 100:5.1f}%, {pre_ag.recall.numerator}/{pre_ag.recall.denominator})"
         ),
         (
             f"  Micro F1        (blind/pool) : {f1_blind.value * 100:5.1f}% [{f1_blind.ci_low * 100:5.1f}%, {f1_blind.ci_high * 100:5.1f}%] / "
-            f"{f1.value * 100:5.1f}% [{f1.ci_low * 100:5.1f}%, {f1.ci_high * 100:5.1f}%]"
+            f"{f1.value * 100:5.1f}% [{f1.ci_low * 100:5.1f}%, {f1.ci_high * 100:5.1f}%] "
+            f"(before agentic: {pre_ag_blind.f1.value * 100:5.1f}% / {pre_ag.f1.value * 100:5.1f}%)"
+        ),
+        (
+            f"  Agentic Sub-Agents           : {report.agentic_findings_total} findings, "
+            f"{report.agentic_steps_done_total}/{report.agentic_steps_total} steps, "
+            f"+{report.agentic_new_edges_total} new / -{report.agentic_rejected_edges_total} rejected edges"
         ),
         f"  Direction Accuracy           : {dir_acc.value * 100:5.1f}% ({dir_acc.numerator}/{dir_acc.denominator})",
         (
@@ -826,7 +1034,40 @@ def format_console_summary(report: EvalRunReport) -> str:
         f"  Facility-Country Accuracy    : {fac_acc.value * 100:5.1f}% ({fac_acc.numerator}/{fac_acc.denominator})",
         f"  Importance Weighted Kappa    : {kappa.value:5.3f} [{kappa.ci_low:5.3f}, {kappa.ci_high:5.3f}]",
     ]
+    if report.agentic_acceptance is not None and report.agentic_acceptance.findings_total > 0:
+        lines.append("")
+        lines.append(format_agentic_acceptance_summary(report.agentic_acceptance))
     return "\n".join(lines)
+
+
+def _load_agentic_check_target(path_or_tag: str, recorded_dir: Path) -> Any:
+    if path_or_tag.strip().lower() == "recorded":
+        return list(load_recorded_predictions(recorded_dir).values())
+    p = Path(path_or_tag)
+    if p.is_dir():
+        return list(load_recorded_predictions(p).values())
+    return json.loads(p.read_text(encoding="utf-8"))
+
+
+def _run_check_agentic(
+    target: str,
+    thorough_target: str | None,
+    recorded_dir: Path,
+    *,
+    as_json: bool = False,
+) -> int:
+    light_obj = _load_agentic_check_target(target, recorded_dir)
+    thorough_obj = (
+        _load_agentic_check_target(thorough_target, recorded_dir)
+        if thorough_target
+        else None
+    )
+    acc = evaluate_agentic_acceptance(light_obj, thorough_obj)
+    if as_json:
+        print(acc.model_dump_json(indent=2))
+    else:
+        print(format_agentic_acceptance_summary(acc))
+    return 0
 
 
 def _run_compare_annotators(gold_dir: Path) -> int:
@@ -904,6 +1145,22 @@ def build_eval_arg_parser(
         help="optional comma-separated subset of tickers to evaluate (e.g. NKE,BA,SWKS)",
     )
     p.add_argument(
+        "--depth",
+        choices=("none", "light", "thorough"),
+        default="light",
+        help="agentic sub-agent research depth: 'light' (default), 'thorough', or 'none'",
+    )
+    p.add_argument(
+        "--check-agentic",
+        metavar="PATH_OR_RECORDED",
+        help="evaluate FIX-1/FIX-2/FIX-14 agentic acceptance metrics on a DependencyResult/Job JSON file, directory, or 'recorded'",
+    )
+    p.add_argument(
+        "--check-agentic-thorough",
+        metavar="PATH",
+        help="optional thorough DependencyResult/Job JSON file or directory to verify FIX-2 (thorough contains light)",
+    )
+    p.add_argument(
         "--compare-annotators",
         action="store_true",
         help="compare annotator A and B gold files (<TICKER>.a.json / <TICKER>.json vs <TICKER>.b.json)",
@@ -921,16 +1178,26 @@ def run_eval_from_args(args: argparse.Namespace) -> int:
     if getattr(args, "compare_annotators", False):
         return _run_compare_annotators(args.gold_dir)
 
+    if getattr(args, "check_agentic", None):
+        return _run_check_agentic(
+            args.check_agentic,
+            getattr(args, "check_agentic_thorough", None),
+            args.recorded_dir,
+            as_json=bool(getattr(args, "json", False)),
+        )
+
     tickers = (
         [t.strip().upper() for t in args.tickers.split(",") if t.strip()]
         if getattr(args, "tickers", None)
         else None
     )
+    depth_arg = getattr(args, "depth", "light") or "light"
     report = run_evaluation(
         live=bool(getattr(args, "live", False)),
         gold_dir=args.gold_dir,
         recorded_dir=args.recorded_dir,
         tickers=tickers,
+        depth=depth_arg,
     )
     write_eval_outputs(
         report,

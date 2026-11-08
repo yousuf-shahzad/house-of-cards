@@ -57,17 +57,33 @@ def render_eval_markdown(report: EvalRunReport) -> str:
 
     blind_micro = report.blind_overall_after_vint or report.overall_after_vint
     blind_macro = report.blind_macro_after_vint or report.macro_after_vint
+    pre_ag = report.overall_before_agentic or report.overall_after_vint
+    post_ag = report.overall_after_agentic or report.overall_after_vint
+    pre_ag_blind = report.blind_overall_before_agentic or blind_micro
+    post_ag_blind = report.blind_overall_after_agentic or blind_micro
+    pre_ag_macro = report.macro_before_agentic or report.macro_after_vint
+    post_ag_macro = report.macro_after_agentic or report.macro_after_vint
+    pre_ag_blind_macro = report.blind_macro_before_agentic or blind_macro
+    post_ag_blind_macro = report.blind_macro_after_agentic or blind_macro
+
+    ag_p_blind_delta = post_ag_blind.precision.value - pre_ag_blind.precision.value
+    ag_p_pool_delta = post_ag.precision.value - pre_ag.precision.value
+    ag_r_delta = post_ag.recall.value - pre_ag.recall.value
+    ag_f1_blind_delta = post_ag_blind.f1.value - pre_ag_blind.f1.value
+    ag_f1_pool_delta = post_ag.f1.value - pre_ag.f1.value
+
     fac_fn_count = report.per_edge_type["facility"].fn if "facility" in report.per_edge_type else 0
     total_fn_count = report.overall_after_vint.fn
 
     lines: list[str] = [
-        "# House of Cards v3 — Unseen-Data Dependency Extraction Evaluation (`E-RUN`)",
+        "# House of Cards v3.1 — Unseen-Data Dependency Extraction Evaluation (`E-RUN` & `A3`)",
         "",
         "## 1. Run Metadata & Methodology",
         "",
         "| Parameter | Value |",
         "|---|---|",
         f"| **Evaluation Mode** | `{report.mode}` |",
+        f"| **Agentic Research Depth** | `{report.research_depth}` |",
         f"| **Git Commit** | `{report.git_commit}` |",
         f"| **Extractor Prompt Version** | `{report.extractor_prompt_version}` |",
         f"| **V-INT Judge Prompt Version** | `{report.judge_prompt_version}` |",
@@ -115,6 +131,16 @@ def render_eval_markdown(report: EvalRunReport) -> str:
         "1. **V-INT on the held-out set vs. live portfolio run**: V-INT filtered `0` edges on the 10 held-out companies (`129 → 129`), so it had no measurable precision/recall delta on this corpus — the extractor prompt (`hoc-v2-extract-1`) and deterministic quote/generic-noun verifier already avoided all `27` competitor, `11` negated, `9` hypothetical, and `7` unrelated hard negatives, and the `hoc-v3-judge-1` Flash judge cleared 2 false-alarm `competitor_mention` rule flags on Skyworks' `Samsung` and `Tesla` customer edges. V-INT's practical value shows up on the live `us-core-tilt` portfolio run: with the tightened rules (PR #130), it correctly **rejects 1 edge** (`AMD` → `Sanmina` `contract_manufacturer` from *\"we sold the ZT Manufacturing Business to Sanmina\"*, a divestiture rather than supply) and **flags 1 tentative overclaim** (`Nvidia` → `OpenAI`).",
         f"2. **Recall misses are concentrated in facility countries (`{fac_fn_count}/{total_fn_count}`) and Pfizer alliances**: Of the `{total_fn_count}` missed core relationships, `{fac_fn_count}` (`{fac_fn_count}/{total_fn_count}`) are facility countries where a 10-K lists multiple countries in a single prose sentence (e.g., Boeing's 8 international locations in Item 2, GM's 4 non-US assembly countries, Pfizer's 8-country plant summary), and `18/{total_fn_count}` come from Pfizer (`PFE`), whose three wholesaler customers (`McKesson`, `Cencora`, `Cardinal Health`) sit in a Note 17B table and whose drug co-development/commercialization alliances (`Astellas`, `BMS`, `Genmab`, `SMPS`, `Takeda`) are spread across product paragraphs in Item 1 (`1/19` core recall on `PFE`, vs. `65/96` = `67.7%` across the other 9 filers).",
         "3. **`supplier` precision is the weak edge type**: On `supplier` predictions (`n = 6`), blind precision is `16.7%` (`1/6`, where `Ford Otosan` matched a core `jv_partner`/`supplier` relationship) and pooled precision is `50.0%` (`3/6`, after `ARC Automotive` and `Delphi Automotive` were accepted in pooling). The 3 remaining `supplier` false positives are a wholly-owned subsidiary (`NKE` `Air Manufacturing Innovation`), a trade-finance/preferred-stock holder (`NKE` `Sojitz Corporation of America`), and an industry-wide NHTSA recall mention (`F` `Takata`). By contrast, `facility` (`68/68`), `key_input` (`18/18`), `jv_partner` (`14/14`), and `contract_manufacturer` (`5/5`) achieve `100.0%` pooled precision, and `customer` reaches `88.9%` (`16/18`).",
+        (
+            f"4. **Per-company agentic sub-agents (`depth = \"{report.research_depth}\"`, `A3`)**: "
+            f"Running bounded per-company agentic research after single-pass extraction + V-INT produced `{report.agentic_findings_total}` findings "
+            f"across `{report.agentic_steps_done_total}/{report.agentic_steps_total}` tool steps (`+{report.agentic_new_edges_total}` new edges, `-{report.agentic_rejected_edges_total}` rejected edges), "
+            f"moving predicted edges from `{pre_ag.predicted_count}` to `{post_ag.predicted_count}`, "
+            f"blind precision from `{_fmt_pct(pre_ag_blind.precision.value)}` (`{pre_ag_blind.precision.numerator}/{pre_ag_blind.precision.denominator}`) to `{_fmt_pct(post_ag_blind.precision.value)}` (`{post_ag_blind.precision.numerator}/{post_ag_blind.precision.denominator}`, `{ag_p_blind_delta * 100:+.1f} pp`), "
+            f"pooled precision from `{_fmt_pct(pre_ag.precision.value)}` (`{pre_ag.precision.numerator}/{pre_ag.precision.denominator}`) to `{_fmt_pct(post_ag.precision.value)}` (`{post_ag.precision.numerator}/{post_ag.precision.denominator}`, `{ag_p_pool_delta * 100:+.1f} pp`), "
+            f"core recall from `{_fmt_pct(pre_ag.recall.value)}` (`{pre_ag.recall.numerator}/{pre_ag.recall.denominator}`) to `{_fmt_pct(post_ag.recall.value)}` (`{post_ag.recall.numerator}/{post_ag.recall.denominator}`, `{ag_r_delta * 100:+.1f} pp`), "
+            f"and blind / pooled F1 from `{_fmt_pct(pre_ag_blind.f1.value)}` / `{_fmt_pct(pre_ag.f1.value)}` to `{_fmt_pct(post_ag_blind.f1.value)}` / `{_fmt_pct(post_ag.f1.value)}` (`{ag_f1_blind_delta * 100:+.1f}` / `{ag_f1_pool_delta * 100:+.1f} pp`)."
+        ),
         "",
         "---",
         "",
@@ -131,13 +157,58 @@ def render_eval_markdown(report: EvalRunReport) -> str:
         f"| **Hard-Negative FP Rate** | {_fmt_ci(report.hard_negative_fp_rate_before_vint)} | {_fmt_ci(report.hard_negative_fp_rate_after_vint)} | `{hn_delta * 100:+.1f} pp` |",
         f"| **Predicted Edges (TP [Core+Ext] / FP / Core FN)** | `{report.overall_before_vint.predicted_count}` (`{report.overall_before_vint.tp}` [`{report.overall_before_vint.tp_core}`+`{report.overall_before_vint.tp_extended}`] / `{report.overall_before_vint.fp}` / `{report.overall_before_vint.fn}`) | `{report.overall_after_vint.predicted_count}` (`{report.overall_after_vint.tp}` [`{report.overall_after_vint.tp_core}`+`{report.overall_after_vint.tp_extended}`] / `{report.overall_after_vint.fp}` / `{report.overall_after_vint.fn}`) | `{report.overall_after_vint.predicted_count - report.overall_before_vint.predicted_count:+d}` edges |",
         "",
-        "---",
+        f"### 3.1 Before vs. After Agentic Sub-Agents (`depth = \"{report.research_depth}\"`)",
         "",
-        "## 4. Per-`edge_type` Breakdown (After V-INT)",
-        "",
-        "| `edge_type` | Gold (Core+Ext) | Predicted | TP (Core+Ext) | FP | Core FN | Precision (95% CI) | Core Recall (95% CI) | F1 (95% CI) |",
-        "|---|---:|---:|---:|---:|---:|---|---|---|",
+        "| Metric | Before Agentic (Single-Pass + V-INT) | After Agentic (`depth = \"" + report.research_depth + "\"`) | Delta (After − Before) |",
+        "|---|---|---|---|",
+        f"| **Micro Precision — Blind** | {_fmt_ci(pre_ag_blind.precision)} | {_fmt_ci(post_ag_blind.precision)} | `{ag_p_blind_delta * 100:+.1f} pp` |",
+        f"| **Micro Precision — Pooled** | {_fmt_ci(pre_ag.precision)} | {_fmt_ci(post_ag.precision)} | `{ag_p_pool_delta * 100:+.1f} pp` |",
+        f"| **Micro Recall on Core (`tier = 'core'`)** | {_fmt_ci(pre_ag.recall)} | {_fmt_ci(post_ag.recall)} | `{ag_r_delta * 100:+.1f} pp` |",
+        f"| **Micro F1 — Blind** | {_fmt_ci(pre_ag_blind.f1)} | {_fmt_ci(post_ag_blind.f1)} | `{ag_f1_blind_delta * 100:+.1f} pp` |",
+        f"| **Micro F1 — Pooled** | {_fmt_ci(pre_ag.f1)} | {_fmt_ci(post_ag.f1)} | `{ag_f1_pool_delta * 100:+.1f} pp` |",
+        f"| **Macro Precision — Blind / Pooled** | {_fmt_ci(pre_ag_blind_macro.precision)} / {_fmt_ci(pre_ag_macro.precision)} | {_fmt_ci(post_ag_blind_macro.precision)} / {_fmt_ci(post_ag_macro.precision)} | `{(post_ag_blind_macro.precision.value - pre_ag_blind_macro.precision.value) * 100:+.1f}` / `{(post_ag_macro.precision.value - pre_ag_macro.precision.value) * 100:+.1f} pp` |",
+        f"| **Macro Recall on Core** | {_fmt_ci(pre_ag_macro.recall)} | {_fmt_ci(post_ag_macro.recall)} | `{(post_ag_macro.recall.value - pre_ag_macro.recall.value) * 100:+.1f} pp` |",
+        f"| **Macro F1 — Blind / Pooled** | {_fmt_ci(pre_ag_blind_macro.f1)} / {_fmt_ci(pre_ag_macro.f1)} | {_fmt_ci(post_ag_blind_macro.f1)} / {_fmt_ci(post_ag_macro.f1)} | `{(post_ag_blind_macro.f1.value - pre_ag_blind_macro.f1.value) * 100:+.1f}` / `{(post_ag_macro.f1.value - pre_ag_macro.f1.value) * 100:+.1f} pp` |",
+        f"| **Predicted Edges (TP [Core+Ext] / FP / Core FN)** | `{pre_ag.predicted_count}` (`{pre_ag.tp}` [`{pre_ag.tp_core}`+`{pre_ag.tp_extended}`] / `{pre_ag.fp}` / `{pre_ag.fn}`) | `{post_ag.predicted_count}` (`{post_ag.tp}` [`{post_ag.tp_core}`+`{post_ag.tp_extended}`] / `{post_ag.fp}` / `{post_ag.fn}`) | `{post_ag.predicted_count - pre_ag.predicted_count:+d}` edges (`+{report.agentic_new_edges_total}` new, `-{report.agentic_rejected_edges_total}` rejected) |",
+        f"| **Agentic Findings & Tool Steps** | `0` findings (`0/0` steps) | `{report.agentic_findings_total}` findings (`{report.agentic_steps_done_total}/{report.agentic_steps_total}` steps) | `+{report.agentic_findings_total}` findings |",
     ]
+
+    if report.agentic_acceptance is not None:
+        acc = report.agentic_acceptance
+        f1_status = "PASS" if acc.fix_1_pass else "FAIL"
+        f2_status = (
+            ("PASS" if acc.fix_2_pass else "FAIL")
+            if acc.thorough_evaluated
+            else "N/A (single depth)"
+        )
+        f14_status = "PASS" if acc.fix_14_pass else "FAIL"
+        lines.extend(
+            [
+                "",
+                "### 3.2 Agentic Sub-Agent Acceptance Check (`FIX-1` / `FIX-2` / `FIX-14`)",
+                "",
+                "| Check | Metric | Value | Status |",
+                "|---|---|---|---|",
+                f"| **FIX-1: Multi-Step Tool Use** | Tool calls per finding (avg / min / max; non-conclude) | `{acc.avg_tool_calls_per_finding:.2f}` (`{acc.min_tool_calls_per_finding}` / `{acc.max_tool_calls_per_finding}` across `{acc.findings_total}` findings) | `{f1_status}` |",
+                f"| **FIX-1: Single-Lookup Findings** | Findings with `<= 1` tool call (excl. valid rejections) | `{acc.single_lookup_findings_count}/{acc.findings_total}` (meeting min: `{acc.findings_meeting_min_tool_calls}/{acc.findings_total}`) | `{f1_status}` |",
+                f"| **FIX-1: Cross-Filing & Section Search** | `search_filings` / `read_section` / `find_in_filing` calls | `{acc.search_filings_calls_total}` (`{acc.findings_with_search_filings}` findings) / `{acc.read_section_calls_total}` / `{acc.find_in_filing_calls_total}` | `{f1_status}` |",
+                f"| **FIX-1: Non-Circular Confirmation** | Circular `confirmed` findings (re-finding own quote only) | `{acc.circular_confirmations_count}/{acc.findings_total}` | `{f1_status}` |",
+                f"| **FIX-2: Thorough Contains Light** | Surviving `light` edges missing in `thorough` | `{len(acc.thorough_missing_light_edge_ids)}` (`{acc.light_surviving_edges_count}` light -> `{acc.thorough_edges_count}` thorough) | `{f2_status}` |",
+                f"| **FIX-14: Unnamed-Customer Hygiene** | Duplicate quote `unnamed_customer` / customer-group links | `{acc.duplicate_unnamed_customer_edges_count}` duplicate / `{acc.group_unnamed_customer_edges_count}` group | `{f14_status}` |",
+            ]
+        )
+
+    lines.extend(
+        [
+            "",
+            "---",
+            "",
+            "## 4. Per-`edge_type` Breakdown (After V-INT)",
+            "",
+            "| `edge_type` | Gold (Core+Ext) | Predicted | TP (Core+Ext) | FP | Core FN | Precision (95% CI) | Core Recall (95% CI) | F1 (95% CI) |",
+            "|---|---:|---:|---:|---:|---:|---|---|---|",
+        ]
+    )
 
     for edge_type, metrics in report.per_edge_type.items():
         lines.append(
@@ -154,8 +225,8 @@ def render_eval_markdown(report: EvalRunReport) -> str:
             "",
             "## 5. Per-Company Breakdown",
             "",
-            "| Ticker | Company | Accession | Gold (Core+Ext) | Negs | Pred (Pre→Post V-INT) | TP (Core+Ext) | FP | Core FN | P (Blind→Pooled) | Core R | F1 (Blind→Pooled) | Dir Acc | Hard-Neg FP | Fac Country |",
-            "|---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|---|---|---|",
+            "| Ticker | Company | Accession | Gold (Core+Ext) | Negs | Pred (Pre→Post Agentic) | Agentic (F/+N/-R) | TP (Core+Ext) | FP | Core FN | P (Blind→Pooled) | Core R | F1 (Blind→Pooled) | Dir Acc | Hard-Neg FP | Fac Country |",
+            "|---|---|---|---:|---:|---:|---|---:|---:|---:|---|---|---|---|---|---|",
         ]
     )
 
@@ -170,10 +241,12 @@ def render_eval_markdown(report: EvalRunReport) -> str:
             if comp.facility_country_total > 0
             else "—"
         )
+        ag_str = f"{comp.agentic_findings_count} (+{comp.agentic_new_edges_count}/-{comp.agentic_rejected_edges_count})"
         lines.append(
             f"| `{comp.ticker}` | {_escape_md_cell(comp.company_name, 28)} | `{comp.accession}` | "
             f"{comp.gold_total} ({comp.gold_core_total}+{comp.gold_extended_total}) | "
-            f"{comp.negatives_total} | {comp.predicted_before_vint}→{comp.predicted_after_vint} | "
+            f"{comp.negatives_total} | {comp.predicted_before_agentic}→{comp.predicted_after_agentic} | "
+            f"{ag_str} | "
             f"{comp.tp_after_vint} ({comp.tp_core_after_vint}+{comp.tp_extended_after_vint}) | "
             f"{comp.fp_after_vint} | {comp.fn_after_vint} | "
             f"{_fmt_pct(comp.precision_blind_after_vint)}→{_fmt_pct(comp.precision_after_vint)} | "

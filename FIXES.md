@@ -19,34 +19,47 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 ## Open
 
-### FIX-1 · high · Research agents still do mostly one lookup
-In the live check, 22 of 25 light findings and 41 of 45 thorough ones made one tool call and stopped. `search_filings` was never used, and most "confirmed" results just re-found the edge's own quote. Gawyn asked for a real research loop, not a text lookup.
-- `PITCH_DECK.md` already describes a multi-step investigation; this fix makes that true.
-- Fix: re-finding the edge's own quote is not a confirmation. Light needs 2 or more tool calls; thorough needs 3 or more, including a `search_filings` across other companies' filings. Keep light within about +90 s.
-- **Owner:** Kendrick's Gemini · **Status:** in progress (branch `28-v3.1-a1-fix`)
+### FIX-23 · high · Dependencies page is overloaded and scrolls too long (Gawyn, 07:40)
+Make these four sections collapsible:
+- "AI synthesis: critical flaws & diversification ideas"
+- "Investigate uncertain findings"
+- "Verified Counterparty & Supply-Chain Graph"
+- "Facility & Manufacturing Concentration by Country"
 
-### FIX-2 · high · "Go deeper" loses findings
-The thorough run dropped 3 verified links that the light run had found: Nvidia's 22% and 14% direct customers, and Cisco's 11% channel partner.
-- Fix: thorough starts from the light results and goes further. Add a test that thorough keeps every light edge that wasn't rejected.
-- **Owner:** Kendrick's Gemini · **Status:** in progress (same branch as FIX-1)
+**Collapsed (default):** show the header (title plus a one-line summary or count), then a short preview of the content (about 280 px) that fades out at the bottom, then a "Show all" button that unfolds the rest. "Show less" folds it back.
 
-### FIX-14 · high · Research agents add duplicate "unnamed customer" links
-Seen by Bekarys's Gemini on NKE: the agent added a new link "Three largest customers outside of the United States" on the same quote as the existing "Unnamed Customer" link. It got a different ID, so it was counted twice. A group of customers is also not one customer.
-- Fix: when merging an agent's new links, skip an `unnamed_customer` link whose source, link type and normalised quote already match an existing link. Treat groups like "three largest customers" as not a link.
-- **Owner:** Kendrick's Gemini (fold into A1-fix) · **Status:** assigned
+**Previews:**
+- AI synthesis: the first 2 claim cards.
+- Investigate: the first 2 findings.
+- Graph: the top of the graph.
+- Countries: the chart.
 
-### FIX-19 · low · Progress bar: the reset in #187 could let the bar drop (reopened, defensive)
-#187 resets the bar when a reused job_id goes done/error → running. But its extra clause (`prevPct >= 100 && clamped < 100 && active`) also fires for a job that's still running: reading hits 15/15 = 100%, research grows the total to 30, and the bar drops 100% → 50%. Reproduced by Yousuf's Claude on main.
-- Fix: keep only the done/error → queued/running reset. Add a test: running at 100%, total grows, bar stays at 100%.
-- Not live with the current backend: since FIX-18 the backend reserves the full total up front and only lowers it (Bekarys's Claude). It's still worth removing as a safeguard.
-- **Owner:** Yousuf's Gemini · **Status:** reopened
+**Countries layout:** stack the two inner panels: the chart full width on top, the country list below. Today they sit side by side (`lg:grid-cols-12`, 5/7).
 
-### FIX-21 · medium · Docs quote the old swap figure
-After FIX-20, the XLK → VTV swap is 12.39% → 6.30% (−6.10 pts), not 4.69% (−7.71 pts).
-- Fix: update README.md, docs/hoc/DEMO.md and PITCH_DECK.md.
-- Also (from Yousuf's deck review): PITCH_DECK.md slide 3 names Apple as one of the 4 companies behind the 12.39% TSMC figure. In our data they are Nvidia 6.89% + Broadcom 2.28% + AMD 2.04% + Intel 1.19%. Apple doesn't name its component suppliers.
-- **Owner:** Gawyn's Gemini · **Status:** assigned
+**Details:**
+- One small page-local component, `pages/dependencies/collapsible-section.tsx`.
+- The button has `aria-expanded`/`aria-controls`, and Tab into the hidden part expands it.
+- The fade uses theme tokens (light and dark).
+- Remember each section's state per viewer with localStorage, wrapped in try/catch.
+- Selecting an edge elsewhere, such as from an insight card, expands the Graph section so the evidence drawer still works.
 
+**Check:** report the page's scroll height before and after at 1280×800. The progress bar, headline numbers and "Go deeper" stay visible at the top.
+
+- **Owner:** Yousuf's Gemini (Dependencies page); Yousuf's Claude reviews · **Status:** assigned
+
+### FIX-22 · medium · Research time budgets are too tight
+In the FIX-1 live check, 4 of 23 light findings stopped after one tool call ("step budget expired"), and 15 of 45 thorough findings were skipped ("time budget reached").
+- Fix:
+  - Raise the per-company budgets, especially thorough's, since the user asked to go deeper, or run a company's items in parallel. Keep the job inside A2's limits (light about +90 s, thorough about +180 s).
+  - Label budget stops "not finished in time", not plain "unresolved".
+  - Make each explanation match its outcome (Nvidia→OpenAI: outcome "unresolved", but the text says "is rejected").
+- After it merges, Bekarys's Gemini re-runs the held-out eval at thorough depth to see whether deeper research changes links.
+- **Owner:** Kendrick's Gemini (+ Bekarys's Claude for job limits) · **Status:** plan approved (an 8-worker research pool; light 40 s and thorough 85 s per company)
+
+### FIX-21 · medium · Docs: say what the research agents did on the held-out eval
+Done in #195 (checked by the lead): swap figure 12.39% → 6.30% (−6.10 pts), +20% XLU 12.39% → 9.92%, and slide 3 names Nvidia, Broadcom, AMD and Intel.
+- Still to do: add the FIX-8 result honestly to README, DEMO and PITCH_DECK. Light research double-checks findings (18/18 with 2+ lookups, 0 circular) but changes no links on the held-out set, so precision and recall stay 88.4% / 96.1% / 57.4% (+0.0 pp). Don't say the agents raise accuracy.
+- **Owner:** Gawyn's Gemini · **Status:** assigned (after the "Consider" checker fix)
 ### FIX-17 · high · Change ideas: AI proposes, Python verifies (Gawyn, 07:08)
 Gawyn wants concrete ideas ("add this ETF to help fix this diversification issue") on screen 5 and in Try a change, in both views. **The AI proposes the changes and Python verifies them**, the same pattern as the AI summaries.
 
@@ -90,12 +103,11 @@ Survivors are measured with cache-only compare on one company set (FIX-20). Pyth
 - **Swaps:** they move shares from the source ETF.
 - **Polling:** while `ai_status` is `pending`, show the rules ideas with "AI is checking more ideas…". Re-request about every 3 s, for up to about 90 s, and swap in the AI ideas when they arrive.
 - **Live check (lead):** sample portfolio. Every shown idea improves its named issue by the shown amount; the AI and fallback paths both work, including with no key.
-- **Owners:** Gawyn's Gemini (proposer) + Yousuf's Codex (verifier, contract, FIX-20 first) + Bekarys's Claude (UI) · **Status:** assigned; the rules-only version is merged (#177–#179)
-
-### FIX-8 · medium · The evaluation doesn't show the effect of the research agents
-- Fix: after FIX-1 and FIX-2 merge, run `uv run hoc eval --live` with light agents. EVAL.md then reports precision and recall before vs after the agents, with confidence intervals. Do no tuning on the 10 held-out companies.
-- Also add an agentic acceptance check to `hoc eval`. From a result it reports tool calls per finding, `search_filings` use, whether thorough contains light, and duplicate `unnamed_customer` links, so FIX-1, FIX-2 and FIX-14 are judged by numbers.
-- **Owner:** Bekarys's Gemini (A3) · **Status:** acceptance check ready (`hoc eval --check-agentic`, branch `28-fix-8-eval-agentic`); live eval runs when FIX-1, FIX-2 and FIX-14 merge
+- **Owners:** Gawyn's Gemini (proposer) + Yousuf's Codex (verifier, contract) + Bekarys's Claude (UI)
+- **Status:**
+  - Merged: rules version (#177–#181), AI contract (#185), proposer (#194, plus name and sector checks).
+  - Engine PR #192 is approved and blocked only on the proposer's "Consider" false positive (Gawyn's Gemini).
+  - UI PR #186 is in review.
 
 ### FIX-9 · medium · Final QA of both views
 - Fix: once everything above merges, audit the full and simple views end to end; send problems to their owners.
@@ -107,10 +119,13 @@ The plan asked for the research trace to show live during the run.
 - Fix:
   - The job exposes findings as each agent finishes.
   - The Dependencies page and simple page 4 show them.
-- **Owner:** Bekarys's Claude (job; adds `DependencyJob.research`, lead-approved) + Yousuf's Gemini (pages) · **Status:** pages merged (#170); job part starts now if A1-fix keeps the `research_company` return type
+- **Owner:** Bekarys's Claude (job; adds `DependencyJob.research`, lead-approved) + Yousuf's Gemini (pages) · **Status:** pages merged (#170); job PR #193 approved; then remove the type casts
 
 ## Done (checked on `main` by the lead)
 
+- FIX-8 before/after eval on the 10 held-out 10-Ks (light agents): precision 88.4% blind / 96.1% pooled and core recall 57.4%, all unchanged (+0.0 pp); 18 findings, 0 links added or removed; agentic check PASS (18/18 make 2+ tool calls, 0 circular). Reproduced offline by the lead — #196
+- FIX-1, FIX-2, FIX-14 real research loop. Light: 17/23 findings make 2+ tool calls (was 3/25). Thorough: 27/45 use `search_filings` (was 0). Thorough keeps every light edge. 0 duplicate or group customer links — #189
+- FIX-19 the bar resets only when a reused job starts again; a running bar at 100% stays at 100% — #187, #191
 - FIX-20 compare measures both sides on the same companies (+20% XLU: 9.92%, exact dilution; swap: 12.39% → 6.30%) — #183
 - FIX-7 README and DEMO cover v3.1 (shares default, simple view, Try a change, change ideas "coming") with verified numbers — #132. The FIX-8 numbers follow in a small PR from Gawyn's Gemini.
 - FIX-18 progress bar never goes down: the total is set up front and only lowered (live: 106 → 100 → 65; 0% → 15% → 98% → 100%), and the pages never show a lower % — #172, #174

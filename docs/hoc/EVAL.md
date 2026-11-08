@@ -1,11 +1,12 @@
-# House of Cards v3 — Unseen-Data Dependency Extraction Evaluation (`E-RUN`)
+# House of Cards v3.1 — Unseen-Data Dependency Extraction Evaluation (`E-RUN` & `A3`)
 
 ## 1. Run Metadata & Methodology
 
 | Parameter | Value |
 |---|---|
 | **Evaluation Mode** | `replay` |
-| **Git Commit** | `ee1c795` |
+| **Agentic Research Depth** | `light` |
+| **Git Commit** | `1fe135d` |
 | **Extractor Prompt Version** | `hoc-v2-extract-1` |
 | **V-INT Judge Prompt Version** | `hoc-v3-judge-1` |
 | **Held-Out Companies Evaluated** | `10` |
@@ -45,6 +46,7 @@
 1. **V-INT on the held-out set vs. live portfolio run**: V-INT filtered `0` edges on the 10 held-out companies (`129 → 129`), so it had no measurable precision/recall delta on this corpus — the extractor prompt (`hoc-v2-extract-1`) and deterministic quote/generic-noun verifier already avoided all `27` competitor, `11` negated, `9` hypothetical, and `7` unrelated hard negatives, and the `hoc-v3-judge-1` Flash judge cleared 2 false-alarm `competitor_mention` rule flags on Skyworks' `Samsung` and `Tesla` customer edges. V-INT's practical value shows up on the live `us-core-tilt` portfolio run: with the tightened rules (PR #130), it correctly **rejects 1 edge** (`AMD` → `Sanmina` `contract_manufacturer` from *"we sold the ZT Manufacturing Business to Sanmina"*, a divestiture rather than supply) and **flags 1 tentative overclaim** (`Nvidia` → `OpenAI`).
 2. **Recall misses are concentrated in facility countries (`23/49`) and Pfizer alliances**: Of the `49` missed core relationships, `23` (`23/49`) are facility countries where a 10-K lists multiple countries in a single prose sentence (e.g., Boeing's 8 international locations in Item 2, GM's 4 non-US assembly countries, Pfizer's 8-country plant summary), and `18/49` come from Pfizer (`PFE`), whose three wholesaler customers (`McKesson`, `Cencora`, `Cardinal Health`) sit in a Note 17B table and whose drug co-development/commercialization alliances (`Astellas`, `BMS`, `Genmab`, `SMPS`, `Takeda`) are spread across product paragraphs in Item 1 (`1/19` core recall on `PFE`, vs. `65/96` = `67.7%` across the other 9 filers).
 3. **`supplier` precision is the weak edge type**: On `supplier` predictions (`n = 6`), blind precision is `16.7%` (`1/6`, where `Ford Otosan` matched a core `jv_partner`/`supplier` relationship) and pooled precision is `50.0%` (`3/6`, after `ARC Automotive` and `Delphi Automotive` were accepted in pooling). The 3 remaining `supplier` false positives are a wholly-owned subsidiary (`NKE` `Air Manufacturing Innovation`), a trade-finance/preferred-stock holder (`NKE` `Sojitz Corporation of America`), and an industry-wide NHTSA recall mention (`F` `Takata`). By contrast, `facility` (`68/68`), `key_input` (`18/18`), `jv_partner` (`14/14`), and `contract_manufacturer` (`5/5`) achieve `100.0%` pooled precision, and `customer` reaches `88.9%` (`16/18`).
+4. **Per-company agentic sub-agents (`depth = "light"`, `A3`)**: Running bounded per-company agentic research after single-pass extraction + V-INT produced `18` findings across `54/54` tool steps (`+0` new edges, `-0` rejected edges), moving predicted edges from `129` to `129`, blind precision from `88.4%` (`114/129`) to `88.4%` (`114/129`, `+0.0 pp`), pooled precision from `96.1%` (`124/129`) to `96.1%` (`124/129`, `+0.0 pp`), core recall from `57.4%` (`66/115`) to `57.4%` (`66/115`, `+0.0 pp`), and blind / pooled F1 from `69.6%` / `71.9%` to `69.6%` / `71.9%` (`+0.0` / `+0.0 pp`).
 
 ---
 
@@ -60,6 +62,32 @@
 | **Macro F1** | 70.0% [53.0%, 84.1%] | 70.0% [53.4%, 84.1%] | `+0.0 pp` |
 | **Hard-Negative FP Rate** | 1.3% [0.0%, 3.8%] (1/79) | 1.3% [0.0%, 3.9%] (1/79) | `+0.0 pp` |
 | **Predicted Edges (TP [Core+Ext] / FP / Core FN)** | `129` (`124` [`66`+`23`] / `5` / `49`) | `129` (`124` [`66`+`23`] / `5` / `49`) | `+0` edges |
+
+### 3.1 Before vs. After Agentic Sub-Agents (`depth = "light"`)
+
+| Metric | Before Agentic (Single-Pass + V-INT) | After Agentic (`depth = "light"`) | Delta (After − Before) |
+|---|---|---|---|
+| **Micro Precision — Blind** | 88.4% [83.2%, 92.9%] (114/129) | 88.4% [82.8%, 92.7%] (114/129) | `+0.0 pp` |
+| **Micro Precision — Pooled** | 96.1% [89.8%, 100.0%] (124/129) | 96.1% [90.0%, 100.0%] (124/129) | `+0.0 pp` |
+| **Micro Recall on Core (`tier = 'core'`)** | 57.4% [36.7%, 76.3%] (66/115) | 57.4% [35.6%, 76.6%] (66/115) | `+0.0 pp` |
+| **Micro F1 — Blind** | 69.6% [51.9%, 83.1%] | 69.6% [51.5%, 82.5%] | `+0.0 pp` |
+| **Micro F1 — Pooled** | 71.9% [52.6%, 84.9%] | 71.9% [53.4%, 84.9%] | `+0.0 pp` |
+| **Macro Precision — Blind / Pooled** | 89.3% [83.2%, 95.0%] / 95.5% [88.8%, 100.0%] | 89.3% [82.8%, 95.0%] / 95.5% [88.8%, 99.4%] | `+0.0` / `+0.0 pp` |
+| **Macro Recall on Core** | 60.9% [42.4%, 76.3%] | 60.9% [43.3%, 77.3%] | `+0.0 pp` |
+| **Macro F1 — Blind / Pooled** | 68.2% [52.3%, 81.6%] / 70.0% [52.4%, 83.4%] | 68.2% [52.1%, 81.6%] / 70.0% [53.9%, 83.8%] | `+0.0` / `+0.0 pp` |
+| **Predicted Edges (TP [Core+Ext] / FP / Core FN)** | `129` (`124` [`66`+`23`] / `5` / `49`) | `129` (`124` [`66`+`23`] / `5` / `49`) | `+0` edges (`+0` new, `-0` rejected) |
+| **Agentic Findings & Tool Steps** | `0` findings (`0/0` steps) | `18` findings (`54/54` steps) | `+18` findings |
+
+### 3.2 Agentic Sub-Agent Acceptance Check (`FIX-1` / `FIX-2` / `FIX-14`)
+
+| Check | Metric | Value | Status |
+|---|---|---|---|
+| **FIX-1: Multi-Step Tool Use** | Tool calls per finding (avg / min / max; non-conclude) | `2.00` (`2` / `2` across `18` findings) | `PASS` |
+| **FIX-1: Single-Lookup Findings** | Findings with `<= 1` tool call (excl. valid rejections) | `0/18` (meeting min: `18/18`) | `PASS` |
+| **FIX-1: Cross-Filing & Section Search** | `search_filings` / `read_section` / `find_in_filing` calls | `1` (`1` findings) / `14` / `21` | `PASS` |
+| **FIX-1: Non-Circular Confirmation** | Circular `confirmed` findings (re-finding own quote only) | `0/18` | `PASS` |
+| **FIX-2: Thorough Contains Light** | Surviving `light` edges missing in `thorough` | `0` (`129` light -> `0` thorough) | `N/A (single depth)` |
+| **FIX-14: Unnamed-Customer Hygiene** | Duplicate quote `unnamed_customer` / customer-group links | `0` duplicate / `0` group | `PASS` |
 
 ---
 
@@ -79,18 +107,18 @@
 
 ## 5. Per-Company Breakdown
 
-| Ticker | Company | Accession | Gold (Core+Ext) | Negs | Pred (Pre→Post V-INT) | TP (Core+Ext) | FP | Core FN | P (Blind→Pooled) | Core R | F1 (Blind→Pooled) | Dir Acc | Hard-Neg FP | Fac Country |
-|---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|---|---|---|
-| `NKE` | NIKE, Inc. | `0000320187-26-000088` | 25 (9+16) | 10 | 9→9 | 6 (5+0) | 3 | 4 | 66.7%→66.7% | 55.6% | 60.6%→60.6% | 6/6 | 0→0/10 | 5/5 |
-| `F` | Ford Motor Company | `0000037996-26-000015` | 30 (17+13) | 9 | 18→18 | 17 (14+2) | 1 | 3 | 83.3%→94.4% | 82.3% | 82.8%→88.0% | 17/17 | 0→0/9 | 6/6 |
-| `GM` | General Motors Company | `0001467858-26-000013` | 26 (9+17) | 8 | 14→14 | 14 (3+9) | 0 | 6 | 85.7%→100.0% | 33.3% | 48.0%→50.0% | 14/14 | 0→0/8 | 2/2 |
-| `BA` | The Boeing Company | `0001628280-26-004357` | 16 (12+4) | 7 | 10→10 | 10 (5+2) | 0 | 7 | 80.0%→100.0% | 41.7% | 54.8%→58.8% | 10/10 | 0→0/7 | 1/1 |
-| `SWKS` | Skyworks Solutions, Inc. | `0000004127-25-000085` | 44 (7+37) | 7 | 15→15 | 15 (7+7) | 0 | 0 | 93.3%→100.0% | 100.0% | 96.5%→100.0% | 15/15 | 0→0/7 | 4/4 |
-| `QRVO` | Qorvo, Inc. | `0001628280-26-032873` | 11 (10+1) | 7 | 8→8 | 8 (6+0) | 0 | 4 | 100.0%→100.0% | 60.0% | 75.0%→75.0% | 8/8 | 0→0/7 | 2/2 |
-| `GLW` | Corning Incorporated | `0000024741-26-000124` | 19 (13+6) | 9 | 16→16 | 15 (11+0) | 1 | 2 | 93.8%→93.8% | 84.6% | 88.9%→88.9% | 15/15 | 1→1/9 | 10/10 |
-| `PFE` | Pfizer Inc. | `0000078003-26-000026` | 19 (19+0) | 8 | 1→1 | 1 (1+0) | 0 | 18 | 100.0%→100.0% | 5.3% | 10.0%→10.0% | 1/1 | 0→0/8 | — |
-| `DE` | Deere & Company | `0001104659-25-122321` | 20 (12+8) | 6 | 32→32 | 32 (9+3) | 0 | 3 | 90.6%→100.0% | 75.0% | 82.1%→85.7% | 32/32 | 0→0/6 | 8/8 |
-| `SBUX` | Starbucks Corporation | `0000829224-25-000114` | 12 (7+5) | 8 | 6→6 | 6 (5+0) | 0 | 2 | 100.0%→100.0% | 71.4% | 83.3%→83.3% | 6/6 | 0→0/8 | 1/1 |
+| Ticker | Company | Accession | Gold (Core+Ext) | Negs | Pred (Pre→Post Agentic) | Agentic (F/+N/-R) | TP (Core+Ext) | FP | Core FN | P (Blind→Pooled) | Core R | F1 (Blind→Pooled) | Dir Acc | Hard-Neg FP | Fac Country |
+|---|---|---|---:|---:|---:|---|---:|---:|---:|---|---|---|---|---|---|
+| `NKE` | NIKE, Inc. | `0000320187-26-000088` | 25 (9+16) | 10 | 9→9 | 2 (+0/-0) | 6 (5+0) | 3 | 4 | 66.7%→66.7% | 55.6% | 60.6%→60.6% | 6/6 | 0→0/10 | 5/5 |
+| `F` | Ford Motor Company | `0000037996-26-000015` | 30 (17+13) | 9 | 18→18 | 2 (+0/-0) | 17 (14+2) | 1 | 3 | 83.3%→94.4% | 82.3% | 82.8%→88.0% | 17/17 | 0→0/9 | 6/6 |
+| `GM` | General Motors Company | `0001467858-26-000013` | 26 (9+17) | 8 | 14→14 | 2 (+0/-0) | 14 (3+9) | 0 | 6 | 85.7%→100.0% | 33.3% | 48.0%→50.0% | 14/14 | 0→0/8 | 2/2 |
+| `BA` | The Boeing Company | `0001628280-26-004357` | 16 (12+4) | 7 | 10→10 | 2 (+0/-0) | 10 (5+2) | 0 | 7 | 80.0%→100.0% | 41.7% | 54.8%→58.8% | 10/10 | 0→0/7 | 1/1 |
+| `SWKS` | Skyworks Solutions, Inc. | `0000004127-25-000085` | 44 (7+37) | 7 | 15→15 | 2 (+0/-0) | 15 (7+7) | 0 | 0 | 93.3%→100.0% | 100.0% | 96.5%→100.0% | 15/15 | 0→0/7 | 4/4 |
+| `QRVO` | Qorvo, Inc. | `0001628280-26-032873` | 11 (10+1) | 7 | 8→8 | 2 (+0/-0) | 8 (6+0) | 0 | 4 | 100.0%→100.0% | 60.0% | 75.0%→75.0% | 8/8 | 0→0/7 | 2/2 |
+| `GLW` | Corning Incorporated | `0000024741-26-000124` | 19 (13+6) | 9 | 16→16 | 2 (+0/-0) | 15 (11+0) | 1 | 2 | 93.8%→93.8% | 84.6% | 88.9%→88.9% | 15/15 | 1→1/9 | 10/10 |
+| `PFE` | Pfizer Inc. | `0000078003-26-000026` | 19 (19+0) | 8 | 1→1 | 0 (+0/-0) | 1 (1+0) | 0 | 18 | 100.0%→100.0% | 5.3% | 10.0%→10.0% | 1/1 | 0→0/8 | — |
+| `DE` | Deere & Company | `0001104659-25-122321` | 20 (12+8) | 6 | 32→32 | 2 (+0/-0) | 32 (9+3) | 0 | 3 | 90.6%→100.0% | 75.0% | 82.1%→85.7% | 32/32 | 0→0/6 | 8/8 |
+| `SBUX` | Starbucks Corporation | `0000829224-25-000114` | 12 (7+5) | 8 | 6→6 | 2 (+0/-0) | 6 (5+0) | 0 | 2 | 100.0%→100.0% | 71.4% | 83.3%→83.3% | 6/6 | 0→0/8 | 1/1 |
 
 ---
 
@@ -110,11 +138,11 @@
 
 | Ticker | Edge ID | `edge_type` | Target (`target_kind`) | Reason | Verbatim Quote |
 |---|---|---|---|---|---|
-| `NKE` | `edge_d3ccd3a1052a` | `customer` | Unnamed Customer (`unnamed_customer`) | Pooled review: reject — customer group ('three largest cu... | "During fiscal 2026, NIKE's three largest customers outside of the United States accounted for approximately 16% of total non-U.S. sales." |
+| `NKE` | `edge_d3ccd3a1052a` | `customer` | Unnamed customer (`unnamed_customer`) | Pooled review: reject — customer group ('three largest cu... | "During fiscal 2026, NIKE's three largest customers outside of the United States accounted for approximately 16% of total non-U.S. sales." |
 | `NKE` | `edge_db8132253be5` | `supplier` | Air Manufacturing Innovation (`company`) | Pooled review: reject — Air Manufacturing Innovation is a... | "During fiscal 2026, Air Manufacturing Innovation, a wholly-owned subsidiary, with facilities near Beaverton, Oregon, in Dong Nai City, Vi..." |
 | `NKE` | `edge_55810b619d12` | `supplier` | Sojitz Corporation of America (`company`) | Pooled review: reject — Sojitz America provides import-ex... | "Since 1972, Sojitz Corporation of America ("Sojitz America"), a large Japanese trading company and the sole owner of our redeemable prefe..." |
 | `F` | `edge_83e00ad1aec8` | `supplier` | Takata (`company`) | Pooled review: reject — Takata appears only in an industr... | "For example, NHTSA and the automotive industry are currently engaged in a study of the safety of approximately 56 million Takata desiccat..." |
-| `GLW` | `edge_4a8f0bde58a7` | `customer` | Unnamed Customer (`unnamed_customer`) | Hard negative leak (generic: GLW-NADJ1) | "The following table details the number of combined customers of our reportable segments that accounted for a large percentage of segment ..." |
+| `GLW` | `edge_4a8f0bde58a7` | `customer` | Unnamed customer (`unnamed_customer`) | Hard negative leak (generic: GLW-NADJ1) | "The following table details the number of combined customers of our reportable segments that accounted for a large percentage of segment ..." |
 
 ---
 

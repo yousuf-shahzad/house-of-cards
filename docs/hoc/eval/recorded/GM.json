@@ -516,5 +516,622 @@
     }
   ],
   "vint_rejected_edges": [],
-  "quote_rejected_count": 0
+  "quote_rejected_count": 0,
+  "research_depth": "light",
+  "agentic_edges": [
+    {
+      "edge_id": "edge_d9b6a0afc098",
+      "source_company_key": "CIK:0001467858",
+      "source_company_name": "General Motors Company",
+      "source_in_portfolio": true,
+      "edge_type": "jv_partner",
+      "target_name": "LG Energy Solution",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "battery cell production joint venture Ultium Cells Holdings LLC",
+      "evidence_quote": "Our EV portfolio takes advantage of integrated supply chain development, including battery cell production from Ultium Cells Holdings LLC (a joint venture with LG Energy Solution) in plants in Warren, Ohio and Spring Hill, Tennessee.",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0001467858",
+        "form": "10-K",
+        "accession": "0001467858-26-000013",
+        "filed": "2026-01-27",
+        "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+      },
+      "importance": {
+        "score": 0.4,
+        "tier": "medium",
+        "reasons": [
+          "Joint-venture partner relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_d3d268649da2",
+      "source_company_key": "CIK:0001467858",
+      "source_company_name": "General Motors Company",
+      "source_in_portfolio": true,
+      "edge_type": "jv_partner",
+      "target_name": "SAIC General Motors Sales Co., Ltd.",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Automotive China Joint Venture (SGMS)",
+      "evidence_quote": "Includes sales by the Automotive China Joint Ventures (Automotive China JVs): SAIC General Motors Sales Co., Ltd. (SGMS) and SAIC GM Wuling Automobile Co., Ltd. (SGMW).",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0001467858",
+        "form": "10-K",
+        "accession": "0001467858-26-000013",
+        "filed": "2026-01-27",
+        "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+      },
+      "importance": {
+        "score": 0.4,
+        "tier": "medium",
+        "reasons": [
+          "Joint-venture partner relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_85f1bd72c86f",
+      "source_company_key": "CIK:0001467858",
+      "source_company_name": "General Motors Company",
+      "source_in_portfolio": true,
+      "edge_type": "jv_partner",
+      "target_name": "SAIC GM Wuling Automobile Co., Ltd.",
+      "target_kind": "company",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Automotive China Joint Venture (SGMW)",
+      "evidence_quote": "Includes sales by the Automotive China Joint Ventures (Automotive China JVs): SAIC General Motors Sales Co., Ltd. (SGMS) and SAIC GM Wuling Automobile Co., Ltd. (SGMW).",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0001467858",
+        "form": "10-K",
+        "accession": "0001467858-26-000013",
+        "filed": "2026-01-27",
+        "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+      },
+      "importance": {
+        "score": 0.4,
+        "tier": "medium",
+        "reasons": [
+          "Joint-venture partner relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_1aab8a8e1866",
+      "source_company_key": "CIK:0001467858",
+      "source_company_name": "General Motors Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Warren, Ohio",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Ultium Cells Holdings LLC battery cell production plant",
+      "evidence_quote": "Our EV portfolio takes advantage of integrated supply chain development, including battery cell production from Ultium Cells Holdings LLC (a joint venture with LG Energy Solution) in plants in Warren, Ohio and Spring Hill, Tennessee.",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0001467858",
+        "form": "10-K",
+        "accession": "0001467858-26-000013",
+        "filed": "2026-01-27",
+        "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('production')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_daf31cec8bb0",
+      "source_company_key": "CIK:0001467858",
+      "source_company_name": "General Motors Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Spring Hill, Tennessee",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "Ultium Cells Holdings LLC battery cell production plant",
+      "evidence_quote": "Our EV portfolio takes advantage of integrated supply chain development, including battery cell production from Ultium Cells Holdings LLC (a joint venture with LG Energy Solution) in plants in Warren, Ohio and Spring Hill, Tennessee.",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0001467858",
+        "form": "10-K",
+        "accession": "0001467858-26-000013",
+        "filed": "2026-01-27",
+        "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+      },
+      "importance": {
+        "score": 0.7,
+        "tier": "high",
+        "reasons": [
+          "Production facility ('production')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_030e11f34051",
+      "source_company_key": "CIK:0001467858",
+      "source_company_name": "General Motors Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Technical Center in Warren, Michigan",
+      "target_kind": "facility",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "global vehicle architecture development team headquarters",
+      "evidence_quote": "Our global vehicle architecture development team is headquartered at our Technical Center in Warren, Michigan, where we build experiences to meet customer requirements and maximize global economies of scale.",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0001467858",
+        "form": "10-K",
+        "accession": "0001467858-26-000013",
+        "filed": "2026-01-27",
+        "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+      },
+      "importance": {
+        "score": 0.3,
+        "tier": "low",
+        "reasons": [
+          "Headquarters, office, or R&D facility ('headquartered')"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_9578c3f4fa4b",
+      "source_company_key": "CIK:0001467858",
+      "source_company_name": "General Motors Company",
+      "source_in_portfolio": true,
+      "edge_type": "key_input",
+      "target_name": "steel",
+      "target_kind": "material",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "primary raw material",
+      "evidence_quote": "The raw materials primarily include steel, aluminum, resins, copper, lead, and precious metals.",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0001467858",
+        "form": "10-K",
+        "accession": "0001467858-26-000013",
+        "filed": "2026-01-27",
+        "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+      },
+      "importance": {
+        "score": 0.6,
+        "tier": "high",
+        "reasons": [
+          "Key input relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_48ff26a6d9fc",
+      "source_company_key": "CIK:0001467858",
+      "source_company_name": "General Motors Company",
+      "source_in_portfolio": true,
+      "edge_type": "key_input",
+      "target_name": "aluminum",
+      "target_kind": "material",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "primary raw material",
+      "evidence_quote": "The raw materials primarily include steel, aluminum, resins, copper, lead, and precious metals.",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0001467858",
+        "form": "10-K",
+        "accession": "0001467858-26-000013",
+        "filed": "2026-01-27",
+        "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+      },
+      "importance": {
+        "score": 0.6,
+        "tier": "high",
+        "reasons": [
+          "Key input relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_70e9302a71fb",
+      "source_company_key": "CIK:0001467858",
+      "source_company_name": "General Motors Company",
+      "source_in_portfolio": true,
+      "edge_type": "key_input",
+      "target_name": "resins",
+      "target_kind": "material",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "primary raw material",
+      "evidence_quote": "The raw materials primarily include steel, aluminum, resins, copper, lead, and precious metals.",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0001467858",
+        "form": "10-K",
+        "accession": "0001467858-26-000013",
+        "filed": "2026-01-27",
+        "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+      },
+      "importance": {
+        "score": 0.6,
+        "tier": "high",
+        "reasons": [
+          "Key input relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_3ac0d2582895",
+      "source_company_key": "CIK:0001467858",
+      "source_company_name": "General Motors Company",
+      "source_in_portfolio": true,
+      "edge_type": "key_input",
+      "target_name": "copper",
+      "target_kind": "material",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "primary raw material",
+      "evidence_quote": "The raw materials primarily include steel, aluminum, resins, copper, lead, and precious metals.",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0001467858",
+        "form": "10-K",
+        "accession": "0001467858-26-000013",
+        "filed": "2026-01-27",
+        "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+      },
+      "importance": {
+        "score": 0.6,
+        "tier": "high",
+        "reasons": [
+          "Key input relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_8ac0e6cc0b87",
+      "source_company_key": "CIK:0001467858",
+      "source_company_name": "General Motors Company",
+      "source_in_portfolio": true,
+      "edge_type": "key_input",
+      "target_name": "lead",
+      "target_kind": "material",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "primary raw material",
+      "evidence_quote": "The raw materials primarily include steel, aluminum, resins, copper, lead, and precious metals.",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0001467858",
+        "form": "10-K",
+        "accession": "0001467858-26-000013",
+        "filed": "2026-01-27",
+        "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+      },
+      "importance": {
+        "score": 0.6,
+        "tier": "high",
+        "reasons": [
+          "Key input relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_097a856e62e0",
+      "source_company_key": "CIK:0001467858",
+      "source_company_name": "General Motors Company",
+      "source_in_portfolio": true,
+      "edge_type": "key_input",
+      "target_name": "precious metals",
+      "target_kind": "material",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "primary raw material",
+      "evidence_quote": "The raw materials primarily include steel, aluminum, resins, copper, lead, and precious metals.",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0001467858",
+        "form": "10-K",
+        "accession": "0001467858-26-000013",
+        "filed": "2026-01-27",
+        "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+      },
+      "importance": {
+        "score": 0.6,
+        "tier": "high",
+        "reasons": [
+          "Key input relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_83b864294c5b",
+      "source_company_key": "CIK:0001467858",
+      "source_company_name": "General Motors Company",
+      "source_in_portfolio": true,
+      "edge_type": "key_input",
+      "target_name": "lithium",
+      "target_kind": "material",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "raw material secured through offtake agreements",
+      "evidence_quote": "This includes securing supply through offtake agreements for raw materials and derivatives thereof, such as lithium, cathode active material, manganese, synthetic and natural graphite, nickel, cobalt, rare earth elements, and permanent motor magnets.",
+      "section": "1A",
+      "filing": {
+        "company_key": "CIK:0001467858",
+        "form": "10-K",
+        "accession": "0001467858-26-000013",
+        "filed": "2026-01-27",
+        "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+      },
+      "importance": {
+        "score": 0.6,
+        "tier": "high",
+        "reasons": [
+          "Key input relationship"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    },
+    {
+      "edge_id": "edge_476f234475c0",
+      "source_company_key": "CIK:0001467858",
+      "source_company_name": "General Motors Company",
+      "source_in_portfolio": true,
+      "edge_type": "facility",
+      "target_name": "Mexico",
+      "target_kind": "country",
+      "target_key": null,
+      "target_in_portfolio": false,
+      "sole_source": false,
+      "qualifier": "approximately 11% of total long-lived assets at December 31, 2025",
+      "evidence_quote": "No individual country other than the U.S. represented more than 10% of our total net sales and revenue or long-lived assets, other than Mexico, whose long-lived assets as a percentage of our total long-lived assets were approximately 11% at December 31, 2025",
+      "section": "concentration_2",
+      "filing": {
+        "company_key": "CIK:0001467858",
+        "form": "10-K",
+        "accession": "0001467858-26-000013",
+        "filed": "2026-01-27",
+        "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+      },
+      "importance": {
+        "score": 0.5,
+        "tier": "medium",
+        "reasons": [
+          "Facility location"
+        ]
+      },
+      "interpretation": {
+        "status": "confirmed",
+        "method": "rules",
+        "flags": [],
+        "reason": null,
+        "model": null
+      }
+    }
+  ],
+  "agentic_findings": [
+    {
+      "finding_id": "res_single_edge_1aab8a8e1866",
+      "kind": "single_source",
+      "subject": "General Motors Company single-source reliance on Warren, Ohio",
+      "question": "Is General Motors Company's critical reliance on Warren, Ohio corroborated in the filing or peer filings?",
+      "outcome": "unresolved",
+      "explanation": "Initial disclosure \"Our EV portfolio takes advantage of integrated supply chain development, including battery cell production from Ultium Cells Holdings LLC (a joint venture with LG Energy Solution) in plants in Warren, Ohio and Spring Hill, Tennessee.\" was not corroborated by a second passage or peer filing.",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "Warren, Ohio",
+          "summary": "Searched filing for Warren, Ohio; only the initial extraction passage matched (no second independent passage).",
+          "filing": {
+            "company_key": "CIK:0001467858",
+            "form": "10-K",
+            "accession": "0001467858-26-000013",
+            "filed": "2026-01-27",
+            "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "read_section",
+          "query": "Item 2",
+          "summary": "Read section and extracted verified passage \"within our GMNA segment (excluding our automotive financing operations and dealerships), which are primarily for manufacturing, assembly, di\".",
+          "filing": {
+            "company_key": "CIK:0001467858",
+            "form": "10-K",
+            "accession": "0001467858-26-000013",
+            "filed": "2026-01-27",
+            "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "conclude",
+          "query": "Warren, Ohio",
+          "summary": "Initial disclosure \"Our EV portfolio takes advantage of integrated supply chain development, including battery cell production from Ultium Cells Holdings LLC (a joint venture with LG Energy Solution) in plants in Warren, Ohio and Spring Hill, Tennessee.\" was not corroborated by a second passage or peer filing.",
+          "filing": {
+            "company_key": "CIK:0001467858",
+            "form": "10-K",
+            "accession": "0001467858-26-000013",
+            "filed": "2026-01-27",
+            "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [],
+      "rejected_edge_ids": [],
+      "new_edges": []
+    },
+    {
+      "finding_id": "res_single_edge_daf31cec8bb0",
+      "kind": "single_source",
+      "subject": "General Motors Company single-source reliance on Spring Hill, Tennessee",
+      "question": "Is General Motors Company's critical reliance on Spring Hill, Tennessee corroborated in the filing or peer filings?",
+      "outcome": "unresolved",
+      "explanation": "Initial disclosure \"Our EV portfolio takes advantage of integrated supply chain development, including battery cell production from Ultium Cells Holdings LLC (a joint venture with LG Energy Solution) in plants in Warren, Ohio and Spring Hill, Tennessee.\" was not corroborated by a second passage or peer filing.",
+      "steps": [
+        {
+          "index": 1,
+          "action": "find_in_filing",
+          "query": "Spring Hill",
+          "summary": "Searched filing for Spring Hill; only the initial extraction passage matched (no second independent passage).",
+          "filing": {
+            "company_key": "CIK:0001467858",
+            "form": "10-K",
+            "accession": "0001467858-26-000013",
+            "filed": "2026-01-27",
+            "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+          }
+        },
+        {
+          "index": 2,
+          "action": "read_section",
+          "query": "Item 2",
+          "summary": "Read section and extracted verified passage \"within our GMNA segment (excluding our automotive financing operations and dealerships), which are primarily for manufacturing, assembly, di\".",
+          "filing": {
+            "company_key": "CIK:0001467858",
+            "form": "10-K",
+            "accession": "0001467858-26-000013",
+            "filed": "2026-01-27",
+            "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+          }
+        },
+        {
+          "index": 3,
+          "action": "conclude",
+          "query": "Spring Hill, Tennessee",
+          "summary": "Initial disclosure \"Our EV portfolio takes advantage of integrated supply chain development, including battery cell production from Ultium Cells Holdings LLC (a joint venture with LG Energy Solution) in plants in Warren, Ohio and Spring Hill, Tennessee.\" was not corroborated by a second passage or peer filing.",
+          "filing": {
+            "company_key": "CIK:0001467858",
+            "form": "10-K",
+            "accession": "0001467858-26-000013",
+            "filed": "2026-01-27",
+            "url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785826000013/gm-20251231.htm"
+          }
+        }
+      ],
+      "confirmed_edge_ids": [],
+      "rejected_edge_ids": [],
+      "new_edges": []
+    }
+  ],
+  "agentic_rejected_edge_ids": [],
+  "agentic_steps_done": 6,
+  "agentic_steps_total": 6,
+  "agentic_interpretation_rejected": 0
 }
