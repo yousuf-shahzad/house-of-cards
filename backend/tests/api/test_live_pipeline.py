@@ -99,3 +99,13 @@ def test_no_key_and_nothing_cached_is_a_status_not_a_500(make_service, tmp_path)
     job = response.json()
     assert {c["status"] for c in job["companies"]} == {"missing_api_key"}
     assert job["result"]["insights"]["status"] in ("no_verified_edges", "missing_api_key")
+
+
+def test_live_pipeline_resolves_names_against_the_job_portfolio(make_service, tmp_path):
+    service, _ = make_service()
+    portfolio = service.analyse(PortfolioRequest(holdings=HOLDINGS)).exposures
+    _, pipeline = build(service, tmp_path)
+    resolve = pipeline.resolver_for(portfolio)
+    first = portfolio[0]
+    assert resolve(first.company_name) == first.company_key
+    assert resolve("contract manufacturers") is None

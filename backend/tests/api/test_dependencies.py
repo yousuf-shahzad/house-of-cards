@@ -178,3 +178,42 @@ def test_warm_up_replays_from_cache_only_and_a_click_upgrades_it(make_service, m
             job = client.get(f"/api/dependencies/{job['job_id']}").json()
     assert not any(cache_only for _, cache_only in pipeline.calls[warm_calls:])  # the click ran for real
     assert {c["status"] for c in job["companies"]} == {"done"}
+
+
+class NamingPipeline(FakePipeline):
+    """Emits one edge per counterparty spelling, and resolves names like G-DOC's deterministic resolver."""
+
+    NAMES = ("ZZ Foundry", "ZZ Foundry Manufacturing Company Limited", "contract manufacturers")
+
+    def __init__(self, foundry_key):
+        super().__init__()
+        self.foundry_key = foundry_key
+        self.seen_portfolios = []
+
+    def extract(self, company, filing, *, cache_only):
+        edges = [VerifiedEdge(edge_id=f"{company.company_key}-{i}", source_company_key=company.company_key,
+                              source_company_name=company.company_name, source_in_portfolio=False,
+                              edge_type="foundry", target_name=name, target_kind="company",
+                              evidence_quote=f"We rely on {name} for our wafers (synthetic).", section="1",
+                              filing=filing)
+                 for i, name in enumerate(self.NAMES)]
+        return Extraction(edges=edges, cached=True)
+
+    def resolver_for(self, portfolio):
+        self.seen_portfolios.append([c.company_key for c in portfolio])
+        names = {"zz foundry": self.foundry_key, "zz foundry manufacturing company limited": self.foundry_key}
+        return lambda name: names.get(name.casefold())
+
+
+def test_name_variants_resolve_to_one_portfolio_key(setup, make_service):
+    service, _ = make_service()
+    foundry_key = service.analyse(PortfolioRequest(holdings=HOLDINGS)).exposures[2].company_key
+    client, _, pipeline = setup(NamingPipeline(foundry_key))
+    edges = post(client, top_n=1).json()["result"]["edges"]
+    by_name = {e["target_name"]: e for e in edges}
+    assert by_name["ZZ Foundry"]["target_key"] == by_name["ZZ Foundry Manufacturing Company Limited"]["target_key"] \
+        == foundry_key
+    assert by_name["ZZ Foundry"]["target_in_portfolio"] and by_name["ZZ Foundry"]["source_in_portfolio"]
+    assert by_name["contract manufacturers"]["target_key"] is None  # generic noun: never guessed
+    assert by_name["contract manufacturers"]["target_in_portfolio"] is False
+    assert foundry_key in pipeline.seen_portfolios[0]  # the resolver saw this job's whole portfolio
