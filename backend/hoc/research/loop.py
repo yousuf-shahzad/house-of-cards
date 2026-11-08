@@ -324,8 +324,19 @@ def _normalise_candidate_dict_for_q2(cand: Mapping[str, Any]) -> dict[str, Any]:
     """Rewrite anonymised customer labels in raw candidate dicts to `unnamed_customer` (Q2)."""
     out = dict(cand)
     raw_target = str(out.get("target_name") or out.get("object_name_as_written") or "").strip()
+    raw_quote = str(out.get("evidence_quote") or "").strip()
     anon_name = _format_anonymised_customer_target(raw_target)
     if anon_name is not None:
+        norm_quote_cf = normalise_for_verify(raw_quote).casefold()
+        already = _ALREADY_UNNAMED_RE.match(normalise_for_verify(raw_target).strip())
+        inner_label = (already.group(1) or "").strip() if already else raw_target
+        if (
+            inner_label
+            and inner_label.casefold() not in ("unnamed customer", "undisclosed customer")
+            and normalise_for_verify(inner_label).casefold() not in norm_quote_cf
+        ):
+            out["evidence_quote"] = ""
+            return out
         out["target_name"] = anon_name
         out["target_kind"] = "unnamed_customer"
         out["edge_type"] = "customer"
