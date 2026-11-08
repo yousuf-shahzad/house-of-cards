@@ -20,7 +20,7 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
   - Its files go to Yousuf's Gemini: `frontend/` shell, `frontend/app/ui/`, `frontend/api/client.ts`, `vite.config.ts`, `frontend/app/workspace.tsx`, `pages/portfolio/`, `pages/network/`, `pages/compare/`, `frontend/app/scenario.tsx`.
   - Its frontend PR reviews go to Yousuf's Gemini. The lead's browser check stands in for the review on #186 and #193.
   - It has no open items: its FIX-28 part is done (#212).
-- **Bekarys's Claude is out of usage** (since 07:30; Bekarys's Gemini, 08:43). Bekarys's Gemini takes its open items, in this order:
+- **Bekarys's Claude was out of usage** from 07:30 to 10:13. It's back, and its backend files (`service.py`, `api/`, `jobs.py`, `tests/api/`) have returned to it. While it was away, Bekarys's Gemini finished its items:
   1. Rebase and merge PR #193 (FIX-11 job research, lead-approved).
   2. PR #186 (FIX-17 AI cards): apply Yousuf's Claude's two review fixes ("AI suggested N; we kept M" wording; a `<div>`, not a `<p>`, around the Spinner), rebase, merge.
   3. FIX-22 job side in `hoc/jobs.py`: a separate 8-worker research pool; start deadlines of light 50 s and thorough 95 s.
@@ -32,12 +32,6 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 
 
 ## Open
-
-### FIX-54 · high · BUG: Full-view pages spin forever or show an old result when the portfolio is invalid (bug hunt batch 2)
-- **(a) Exposures** (`exposures/index.tsx:781`) checks `stale || status === "loading"`, so an invalid edit shows an endless "Updating" spinner, and UNKNOWN_TICKER shows the spinner and the error together. Done in #241. Lead check: an invalid draft shows "Finish your portfolio… This is the last valid analysis." with Edit portfolio, and no spinner.
-- **(b) Risk** (`risk/index.tsx:381`) has the same pattern. **Owner:** Gawyn's Gemini.
-- **(c) Portfolio + analysis state:** done in #240. The Portfolio link now requires `!stale`. The `analysis.tsx` error report did not reproduce: in % mode, ZZZZ shows the error and clearing it clears the error.
-- **Status:** assigned
 
 ### FIX-55 · high · BUG: Full Dependencies ignores stale/error state and drops the top 30 back to 15 (bug hunt batch 2)
 - **Stale/error blind spot:** once an analysis exists, the page hides `analysisStatus === "error"` and shows no stale warning when `result === null`. Find dependencies, Re-evaluate and Go deeper stay enabled when `draft.inputs` is null, so clicking them silently does nothing. Fix: show the state and disable the buttons with a reason.
@@ -66,7 +60,10 @@ Today the order is: header (Find dependencies, Go deeper) → progress → cover
 ### FIX-48 · medium · BUG: Dependencies page interaction and progress (bug hunt)
 - **Selection gets stuck on an old node.** `selectEdge()` doesn't clear `selectedNodeId`, so after clicking a node, clicking an edge or citation opens the edge's drawer while the highlight and inline inspector stay on the old node. Hovering nodes also swaps the 6 inline evidence cards on every mouse move, shifting the layout. Fix: clear the node on edge select, and change the inline cards only on click.
 - **Restarting a scan shows 100% first.** "Go deeper" or "Run again" briefly shows 100% with all phases green, then jumps back. Fix: reset the job progress on start (`dependencies-state.tsx`).
-- **Owner:** Yousuf's Gemini (`dependencies-state.tsx`, `pages/dependencies/`, `step-4-risks.tsx`), after FIX-47 · **Status:** assigned
+- **Owner:**
+  - Bekarys's Claude (back from its limit): the `dependencies-state.tsx` parts. `selectEdge` clears `selectedNodeId`, and starting Go deeper or Run again resets the shown job progress.
+  - Yousuf's Gemini: the page-side hover fix, in its FIX-52 reorder PR.
+- **Status:** assigned
 
 ### FIX-45 · low · BUG: on mobile, tapping the page you're already on leaves the navigation drawer open
 Found by Codex during the #223 review (existing behaviour). The hash doesn't change, so no `hashchange` fires and the drawer stays open; Close works.
@@ -107,6 +104,7 @@ For each **confirmed** bug, add one line under **New** in FIXES.md: `BUG: <what 
 
 ## Done (checked on `main` by the lead)
 
+- FIX-54 Full-view stale/error states. Exposures (#241) and Risk (#242) show "last valid analysis" with Edit portfolio and no endless spinner (lead, browser). The Portfolio link is hidden while stale (#240).
 - FIX-36 independent proof (`validation/`, standard library only, no `hoc` imports; the lead re-ran it from saved data and got identical results):
   - **Overlap:** QQQ/XLK reproduces the app's 50.11% / 35 shared exactly with date-matched files, and is 51.44% on current issuer files.
   - **Prices:** predicted links show only a weak, non-significant edge in 3-year residual co-movement (+0.062, 95% CI [−0.0015, 0.126], p = 0.09; event study +5.0 pp, p = 0.21).
