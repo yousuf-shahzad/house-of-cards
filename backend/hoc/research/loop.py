@@ -89,7 +89,7 @@ RESEARCH_CACHE_NAMESPACE = "research"
 RESEARCH_COMPANY_CACHE_NAMESPACE = "research_company"
 MAX_RESEARCH_STEPS = 4
 DEFAULT_CALL_TIMEOUT_SECONDS = 45.0
-DEFAULT_ITEM_TIMEOUT_SECONDS = 25.0
+DEFAULT_ITEM_TIMEOUT_SECONDS = 40.0
 DEFAULT_TOTAL_TIMEOUT_SECONDS = 90.0
 DEFAULT_INSIGHTS_TIMEOUT_SECONDS = 75.0
 
@@ -101,8 +101,8 @@ RESEARCH_DEPTH_PRESETS: dict[str, tuple[int, int]] = {
 }
 RESEARCH_DEPTH_TIMEOUT_SECONDS: dict[str, float] = {
     "none": 0.0,
-    "light": 25.0,
-    "thorough": 45.0,
+    "light": 40.0,
+    "thorough": 85.0,
 }
 
 _RECENT_VERIFIED_INTERPRETATIONS: dict[str, EdgeInterpretation] = {}
@@ -534,6 +534,174 @@ def _is_unnamed_customer_edge(edge: VerifiedEdge) -> bool:
     if not is_unnamed:
         return False
     return _has_material_customer_share(edge)
+
+
+_BUDGET_STOP_CUES: tuple[str, ...] = (
+    "not finished in time",
+    "step budget expired",
+    "time budget reached",
+    "time budget was reached",
+    "wall-clock budget reached",
+)
+
+
+def _is_budget_stopped_finding(finding: ResearchFinding) -> bool:
+    """Return True if `finding` stopped early because a step or wall-clock budget expired (FIX-22)."""
+    if finding.outcome != "unresolved":
+        return False
+    exp_low = (finding.explanation or "").lower()
+    if any(cue in exp_low for cue in _BUDGET_STOP_CUES):
+        return True
+    if finding.steps:
+        last_sum = (finding.steps[-1].summary or "").lower()
+        if any(cue in last_sum for cue in _BUDGET_STOP_CUES):
+            return True
+    return False
+
+
+_CONTRADICTORY_PROSE_BY_OUTCOME: dict[str, tuple[str, ...]] = {
+    "unresolved": (
+        "is rejected",
+        "was rejected",
+        "be rejected",
+        "are rejected",
+        "reject this",
+        "reject the",
+        "rejected as",
+        "rejected because",
+        "should be rejected",
+        "must be rejected",
+        "does not establish",
+        "should not be recorded",
+        "cannot be recorded",
+        "not an active",
+        "not an established",
+        "contradicts an active",
+        "contradicts the",
+        "does not support an active",
+        "is confirmed",
+        "was confirmed",
+        "confirms the",
+        "corroborates the",
+    ),
+    "confirmed": (
+        "is rejected",
+        "was rejected",
+        "be rejected",
+        "remains unresolved",
+        "remains uncorroborated",
+        "remains ambiguous",
+        "could not confirm",
+        "unable to confirm",
+        "not finished in time",
+        "contradicts an active",
+        "does not establish",
+        "should not be recorded",
+    ),
+    "revised": (
+        "is rejected",
+        "was rejected",
+        "remains unresolved",
+        "not finished in time",
+    ),
+    "rejected": (
+        "is confirmed",
+        "was confirmed",
+        "confirms the operational",
+        "corroborates the",
+        "remains unresolved",
+        "not finished in time",
+    ),
+    "new_evidence": (
+        "is rejected",
+        "was rejected",
+        "remains unresolved",
+        "no additional",
+        "leaves specific counterparty identities undisclosed",
+        "not finished in time",
+    ),
+}
+
+
+def _explanation_matches_outcome(explanation: str, outcome: ResearchOutcome) -> bool:
+    """Return True if the unquoted prose of `explanation` does not contradict `outcome` (FIX-22)."""
+    if not explanation or not explanation.strip():
+        return False
+    unquoted = re.sub(r'"[^"]*"', " ", explanation).lower()
+    unquoted = re.sub(r"\s+", " ", unquoted)
+    forbidden = _CONTRADICTORY_PROSE_BY_OUTCOME.get(outcome, ())
+    return not any(phrase in unquoted for phrase in forbidden)
+
+
+def _format_budget_stop_text(text: str, default_body: str = "research step budget expired before completing verification.") -> str:
+    """Ensure budget-stopped explanations and summaries begin with `'Not finished in time: ...'` (FIX-22)."""
+    stripped = (text or "").strip()
+    if not stripped:
+        return f"Not finished in time: {default_body}"
+    if stripped.lower().startswith("not finished in time"):
+        return stripped
+    lowered_first = stripped[0].lower() + stripped[1:] if len(stripped) > 1 else stripped.lower()
+    return f"Not finished in time: {lowered_first}"
+
+
+def _sanitize_finding(finding: ResearchFinding) -> ResearchFinding:
+    """Normalize budget-stopped labels and fix any outcome/explanation mismatch on `finding` (FIX-22)."""
+    if _is_budget_stopped_finding(finding):
+        new_exp = _format_budget_stop_text(finding.explanation)
+        new_steps = list(finding.steps)
+        if new_steps and new_steps[-1].action == "conclude":
+            last_s = new_steps[-1]
+            new_steps[-1] = last_s.model_copy(
+                update={
+                    "summary": _format_budget_stop_text(
+                        last_s.summary if any(c in (last_s.summary or "").lower() for c in _BUDGET_STOP_CUES) else new_exp
+                    )
+                }
+            )
+        if new_exp != finding.explanation or new_steps != finding.steps:
+            return finding.model_copy(update={"explanation": new_exp, "steps": new_steps})
+        return finding
+
+    if _explanation_matches_outcome(finding.explanation, finding.outcome):
+        return finding
+
+    quotes = re.findall(r'"([^"]+)"', finding.explanation or "")
+    first_quote = quotes[0] if quotes else ""
+    if finding.outcome == "unresolved":
+        new_exp = (
+            f'Filing passage "{first_quote}" uses conditional or uncorroborated wording, so the relationship remains unresolved.'
+            if first_quote
+            else "Filing context remains ambiguous or uncorroborated in the inspected sections, so the item remains unresolved."
+        )
+    elif finding.outcome == "confirmed":
+        new_exp = (
+            f'Verified filing passage "{first_quote}" corroborates the operational relationship.'
+            if first_quote
+            else "Verified filing passages corroborate the operational relationship."
+        )
+    elif finding.outcome == "rejected":
+        new_exp = (
+            f'Filing context "{first_quote}" does not support an active operational dependency, so the link is rejected.'
+            if first_quote
+            else "Filing context does not support an active operational dependency, so the link is rejected."
+        )
+    elif finding.outcome == "new_evidence":
+        new_exp = (
+            f'Extracted verified dependency disclosure "{first_quote}" from the filing.'
+            if first_quote
+            else "Extracted verified dependency disclosure from the filing."
+        )
+    else:
+        new_exp = (
+            f'Resolved counterparty identity for "{first_quote}" against portfolio records.'
+            if first_quote
+            else "Resolved counterparty identity against portfolio records."
+        )
+
+    new_steps = list(finding.steps)
+    if new_steps and new_steps[-1].action == "conclude":
+        new_steps[-1] = new_steps[-1].model_copy(update={"summary": new_exp})
+    return finding.model_copy(update={"explanation": new_exp, "steps": new_steps})
 
 
 _KIND_PRIORITY: dict[ResearchItemKind, int] = {
@@ -1281,7 +1449,7 @@ class ResearchLoop:
             if entry is not None:
                 try:
                     data = json.loads(entry.body.decode("utf-8"))
-                    findings = [ResearchFinding.model_validate(f) for f in data.get("findings", [])]
+                    findings = [_sanitize_finding(ResearchFinding.model_validate(f)) for f in data.get("findings", [])]
                     merged = DependencyResult.model_validate(data["result"])
                     self._replay_cache[cache_key] = (findings, merged)
                     return list(findings), merged
@@ -1327,7 +1495,8 @@ class ResearchLoop:
             if entry is not None:
                 try:
                     data = json.loads(entry.body.decode("utf-8"))
-                    findings = [ResearchFinding.model_validate(f) for f in data.get("findings", [])]
+                    raw_findings = [ResearchFinding.model_validate(f) for f in data.get("findings", [])]
+                    findings = [_sanitize_finding(f) for f in raw_findings]
                     edges = [VerifiedEdge.model_validate(e) for e in data.get("edges", [])]
                     rejected_edge_ids = [str(rid) for rid in data.get("rejected_edge_ids", [])]
                     steps_done = int(data.get("steps_done", sum(len(f.steps) for f in findings)))
@@ -1351,7 +1520,10 @@ class ResearchLoop:
                         quality=quality,
                         model=str(model_val) if model_val else self.model,
                     )
-                    self._company_replay_cache[cache_key] = res
+                    if findings != raw_findings:
+                        self._put_cached_company_run(cache_key, res)
+                    else:
+                        self._company_replay_cache[cache_key] = res
                     return res
                 except Exception:  # noqa: BLE001
                     log.warning("Failed to deserialize cached company research for %s", cache_key)
@@ -1399,8 +1571,8 @@ class ResearchLoop:
     ) -> CompanyResearch:
         """Run the v3.1 per-company agentic sub-agent loop (A1 <-> A2/A3 seam).
 
-        - Depth presets: `'light'` (`max_items=2, max_steps=3`, ~25s budget),
-          `'thorough'` (`max_items=4, max_steps=4`, ~45s budget), `'none'` (`0, 0`).
+        - Depth presets: `'light'` (`max_items=2, max_steps=3`, ~40s budget),
+          `'thorough'` (`max_items=4, max_steps=4`, ~85s budget), `'none'` (`0, 0`).
         - Cached in `DiskCache` per `(extraction_hash, depth, prompt_version)` so `cache_only=True`
           replays without calling Gemini and switching from `'light'` to `'thorough'` reuses the extraction.
         - Raises `CompanyUnavailable('missing_api_key', ...)` when uncached and either `cache_only=True`
@@ -1485,7 +1657,9 @@ class ResearchLoop:
         )
 
         cached_res = self._get_cached_company_run(cache_key)
-        if cached_res is not None:
+        if cached_res is not None and (
+            cache_only or not any(_is_budget_stopped_finding(f) for f in cached_res.findings)
+        ):
             replay_total = sum(max(1, len(f.steps)) for f in cached_res.findings)
             _invoke_company_progress(progress, on_step, 0, replay_total, [], None, None)
             done_so_far = 0
@@ -1532,6 +1706,12 @@ class ResearchLoop:
                 "missing_api_key",
                 f"HOC_GEMINI_API_KEY is not set and research for {company.company_key} ({depth}) is not cached.",
             )
+
+        completed_same_depth_by_id: dict[str, ResearchFinding] = (
+            {f.finding_id: f for f in cached_res.findings if not _is_budget_stopped_finding(f)}
+            if cached_res is not None
+            else {}
+        )
 
         cached_light: CompanyResearch | None = None
         if depth == "thorough":
@@ -1583,7 +1763,7 @@ class ResearchLoop:
         if company.company_key:
             top_keys.add(company.company_key)
 
-        preset_timeout = RESEARCH_DEPTH_TIMEOUT_SECONDS.get(depth, 25.0)
+        preset_timeout = RESEARCH_DEPTH_TIMEOUT_SECONDS.get(depth, 40.0)
         company_timeout_s = (
             min(self.total_timeout_s, preset_timeout)
             if self.total_timeout_s >= DEFAULT_TOTAL_TIMEOUT_SECONDS
@@ -1592,7 +1772,9 @@ class ResearchLoop:
         min_tool_calls = 3 if depth == "thorough" else 2
         require_search_filings = depth == "thorough"
         light_findings_by_id: dict[str, ResearchFinding] = (
-            {f.finding_id: f for f in cached_light.findings} if cached_light is not None else {}
+            {f.finding_id: f for f in cached_light.findings if not _is_budget_stopped_finding(f)}
+            if cached_light is not None
+            else {}
         )
 
         started = time.monotonic()
@@ -1605,6 +1787,7 @@ class ResearchLoop:
         for idx, item in enumerate(items):
             remaining_items_after = len(items) - idx - 1
             elapsed = time.monotonic() - started
+            completed_same_depth = completed_same_depth_by_id.get(item.item_id)
             prior_finding = light_findings_by_id.get(item.item_id)
 
             def _on_tool_step(step: ResearchStep, cur_total: int = steps_total) -> None:
@@ -1612,7 +1795,12 @@ class ResearchLoop:
                 steps_done += 1
                 _invoke_company_progress(progress, on_step, steps_done, cur_total, findings, step, None)
 
-            if prior_finding is not None and prior_finding.outcome == "rejected":
+            if completed_same_depth is not None:
+                # Re-use already-completed finding from a partial prior run at the same depth
+                for step in completed_same_depth.steps[:-1]:
+                    _on_tool_step(step)
+                finding = completed_same_depth
+            elif prior_finding is not None and prior_finding.outcome == "rejected":
                 # Keep already-verified rejection from light without re-spending steps
                 for step in prior_finding.steps[:-1]:
                     _on_tool_step(step)
@@ -1947,13 +2135,13 @@ class ResearchLoop:
             subject=item.subject_label,
             question=item.question,
             outcome="unresolved",
-            explanation="Research wall-clock budget reached before completing verification.",
+            explanation="Not finished in time: research wall-clock budget reached before completing verification.",
             steps=[
                 ResearchStep(
                     index=1,
                     action="conclude",
                     query=item.target_name or item.subject_name,
-                    summary="Skipped remaining steps because the research time budget was reached.",
+                    summary="Not finished in time: skipped remaining steps because the research time budget was reached.",
                     filing=item.filing_ref,
                 )
             ],
@@ -2155,10 +2343,58 @@ class ResearchLoop:
         has_key = bool(getattr(self.client, "has_api_key", True))
         can_call_gemini = has_key and not cache_only
 
+        # FIX-22: When upgrading from light to thorough (effective_max_steps >= 4) and prior_finding
+        # has completed tool steps, replay up to (effective_max_steps - 2) prior tool steps in Python
+        # so thorough continues directly from step 3 (`search_filings`) instead of re-spending Gemini calls.
+        if (
+            prior_finding is not None
+            and not _is_budget_stopped_finding(prior_finding)
+            and effective_max_steps >= 4
+        ):
+            prior_tool_steps = [
+                ps
+                for ps in prior_finding.steps
+                if ps.action in ("find_in_filing", "read_section", "search_filings")
+            ]
+            for ps in prior_tool_steps[: max(0, effective_max_steps - 2)]:
+                sec_val = "1"
+                if ps.action == "read_section":
+                    sec_val = re.sub(r"^item\s+", "", ps.query, flags=re.IGNORECASE).strip() or "1"
+                replay_decision: dict[str, Any] = {
+                    "action": ps.action,
+                    "query": ps.query,
+                    "cik": cik,
+                    "section": sec_val,
+                    "outcome": "unresolved",
+                    "explanation": "",
+                    "candidate_edges": [],
+                }
+                prev_len = len(steps)
+                self._execute_tool_step(
+                    action=ps.action,
+                    decision=replay_decision,
+                    item=item,
+                    cik=cik,
+                    filing=filing,
+                    filing_ref=filing_ref,
+                    result=result,
+                    analysis=analysis,
+                    resolver=resolver,
+                    cache_only=True,
+                    steps=steps,
+                    observations=observations,
+                    verified_quotes=verified_quotes,
+                    corroborating_quotes=corroborating_quotes,
+                    initial_quote=initial_quote,
+                )
+                if on_tool_step is not None and len(steps) > prev_len and len(steps) < effective_max_steps:
+                    on_tool_step(steps[-1])
+
         concluded_payload: Mapping[str, Any] | None = None
         timed_out_or_failed = False
+        start_step_idx = len(steps) + 1
 
-        for step_idx in range(1, effective_max_steps + 1):
+        for step_idx in range(start_step_idx, effective_max_steps + 1):
             budget = self._remaining_budget(
                 run_started=run_started,
                 item_started=item_started,
@@ -2241,8 +2477,6 @@ class ResearchLoop:
                     f"{min_tools} tool calls is insufficient. Running another tool to check for independent "
                     "corroboration in the filing or peer SEC filings."
                 )
-                if str(step_decision.get("explanation") or "").strip():
-                    concluded_payload = step_decision  # Preserve explanation/candidates if final step times out
                 step_decision = self._next_complementary_tool_decision(
                     item=item,
                     cik=cik,
@@ -2312,7 +2546,7 @@ class ResearchLoop:
                 "action": "conclude",
                 "query": item.target_name or item.subject_name,
                 "outcome": "unresolved",
-                "explanation": "Research step budget expired before completing verification.",
+                "explanation": "Not finished in time: research step budget expired before completing verification.",
                 "candidate_edges": [],
             }
 
@@ -2340,6 +2574,7 @@ class ResearchLoop:
             max_steps_override=effective_max_steps,
             total_timeout_override=total_timeout_override,
             prior_finding=prior_finding,
+            timed_out=timed_out_or_failed,
         )
 
     @staticmethod
@@ -2539,6 +2774,7 @@ class ResearchLoop:
         max_steps_override: int | None = None,
         total_timeout_override: float | None = None,
         prior_finding: ResearchFinding | None = None,
+        timed_out: bool = False,
     ) -> ResearchFinding:
         effective_max_steps = max(
             1,
@@ -2564,6 +2800,7 @@ class ResearchLoop:
             if raw_outcome in ("confirmed", "revised", "rejected", "new_evidence", "unresolved")
             else "unresolved"
         )
+        model_outcome: ResearchOutcome = outcome
         raw_explanation = str(concluded_payload.get("explanation") or "").strip()
 
         combined_raw_candidates: list[Mapping[str, Any]] = list(collected_candidate_edges)
@@ -2759,6 +2996,8 @@ class ResearchLoop:
                 if vint_interp is not None and vint_interp.status != "confirmed":
                     verified_interpretations[edge.edge_id] = vint_interp
                     _RECENT_VERIFIED_INTERPRETATIONS[edge.edge_id] = vint_interp
+                if outcome != model_outcome or not _explanation_matches_outcome(raw_explanation, outcome):
+                    raw_explanation = ""
                 if not raw_explanation:
                     raw_explanation = (
                         f'Filing context for "{edge.evidence_quote}" remains ambiguous or unresolved.'
@@ -2768,6 +3007,8 @@ class ResearchLoop:
                 _RECENT_VERIFIED_INTERPRETATIONS[edge.edge_id] = vint_interp
                 outcome = "rejected"
                 rejected_edge_ids = [edge.edge_id]
+                if outcome != model_outcome or not _explanation_matches_outcome(raw_explanation, outcome):
+                    raw_explanation = ""
                 if not raw_explanation:
                     raw_explanation = (
                         f'Filing context "{edge.evidence_quote}" does not support an active supply dependency.'
@@ -2781,6 +3022,8 @@ class ResearchLoop:
                 _RECENT_VERIFIED_INTERPRETATIONS[edge.edge_id] = vint_interp
                 outcome = "confirmed"
                 confirmed_edge_ids = [edge.edge_id]
+                if outcome != model_outcome or not _explanation_matches_outcome(raw_explanation, outcome):
+                    raw_explanation = ""
                 if not raw_explanation:
                     raw_explanation = (
                         f'Verified corroborating passage "{best_corroborating_quote}" confirms the operational dependency.'
@@ -2790,10 +3033,20 @@ class ResearchLoop:
                     verified_interpretations[edge.edge_id] = vint_interp
                     _RECENT_VERIFIED_INTERPRETATIONS[edge.edge_id] = vint_interp
                 outcome = "unresolved"
+                if outcome != model_outcome or not _explanation_matches_outcome(raw_explanation, outcome):
+                    raw_explanation = ""
                 if not raw_explanation or not has_corroboration:
-                    raw_explanation = (
-                        f'Filing context "{edge.evidence_quote}" remains uncorroborated by an independent passage.'
+                    is_hypo = (vint_interp is not None and "hypothetical" in vint_interp.flags) or (
+                        edge.interpretation is not None and "hypothetical" in edge.interpretation.flags
                     )
+                    if is_hypo:
+                        raw_explanation = (
+                            f'Filing context "{edge.evidence_quote}" describes a prospective or uncompleted arrangement and remains unresolved.'
+                        )
+                    else:
+                        raw_explanation = (
+                            f'Filing context "{edge.evidence_quote}" remains uncorroborated by an independent passage and is unresolved.'
+                        )
 
         elif item.item_kind == "single_source" and item.edge is not None:
             edge = item.edge
@@ -2802,6 +3055,10 @@ class ResearchLoop:
                 outcome = "new_evidence"
                 if edge_is_confirmed and has_corroboration:
                     confirmed_edge_ids = [edge.edge_id]
+                if outcome != model_outcome or not _explanation_matches_outcome(raw_explanation, outcome):
+                    raw_explanation = (
+                        f'Extracted verified dependency disclosure "{verified_new_edges[0].evidence_quote}".'
+                    )
             elif (
                 has_corroboration
                 and edge_is_confirmed
@@ -2810,12 +3067,16 @@ class ResearchLoop:
                 outcome = "confirmed"
                 if edge.edge_id not in confirmed_edge_ids:
                     confirmed_edge_ids.append(edge.edge_id)
+                if outcome != model_outcome or not _explanation_matches_outcome(raw_explanation, outcome):
+                    raw_explanation = ""
                 if not raw_explanation:
                     raw_explanation = (
                         f'Verified sole-source disclosure "{best_corroborating_quote}" in the annual report.'
                     )
             else:
                 outcome = "unresolved"
+                if outcome != model_outcome or not _explanation_matches_outcome(raw_explanation, outcome):
+                    raw_explanation = ""
                 if not raw_explanation or not has_corroboration:
                     raw_explanation = (
                         f'Initial disclosure "{edge.evidence_quote}" was not corroborated by a second passage or peer filing.'
@@ -2829,6 +3090,8 @@ class ResearchLoop:
                 outcome = "revised"
                 if edge_is_confirmed:
                     confirmed_edge_ids = [edge.edge_id]
+                if outcome != model_outcome or not _explanation_matches_outcome(raw_explanation, outcome):
+                    raw_explanation = ""
                 if not raw_explanation:
                     raw_explanation = (
                         f'Resolved counterparty identity for "{edge.evidence_quote}" against portfolio records.'
@@ -2841,12 +3104,16 @@ class ResearchLoop:
                 outcome = "confirmed"
                 if edge.edge_id not in confirmed_edge_ids:
                     confirmed_edge_ids.append(edge.edge_id)
+                if outcome != model_outcome or not _explanation_matches_outcome(raw_explanation, outcome):
+                    raw_explanation = ""
                 if not raw_explanation:
                     raw_explanation = (
                         f'Verified external counterparty disclosure "{best_corroborating_quote}" in the filing.'
                     )
             else:
                 outcome = "unresolved"
+                if outcome != model_outcome or not _explanation_matches_outcome(raw_explanation, outcome):
+                    raw_explanation = ""
                 if not raw_explanation or not has_corroboration:
                     raw_explanation = (
                         f'Counterparty in "{edge.evidence_quote}" remains unresolved as an external entity.'
@@ -2857,6 +3124,8 @@ class ResearchLoop:
                 outcome = "new_evidence"
                 if (
                     not raw_explanation
+                    or outcome != model_outcome
+                    or not _explanation_matches_outcome(raw_explanation, outcome)
                     or "no additional" in raw_explanation.lower()
                     or "undisclosed" in raw_explanation.lower()
                 ):
@@ -2873,12 +3142,16 @@ class ResearchLoop:
                 outcome = "confirmed"
                 if item.edge.edge_id not in confirmed_edge_ids:
                     confirmed_edge_ids.append(item.edge.edge_id)
+                if outcome != model_outcome or not _explanation_matches_outcome(raw_explanation, outcome):
+                    raw_explanation = ""
                 if not raw_explanation:
                     raw_explanation = (
                         f'Confirmed customer concentration disclosure "{best_corroborating_quote}" in the filing.'
                     )
             else:
                 outcome = "unresolved"
+                if outcome != model_outcome or not _explanation_matches_outcome(raw_explanation, outcome):
+                    raw_explanation = ""
                 if not raw_explanation or not has_corroboration:
                     raw_explanation = (
                         "Filing leaves specific counterparty identities undisclosed in the inspected sections."
@@ -2902,6 +3175,10 @@ class ResearchLoop:
                         if pq not in verified_quotes:
                             verified_quotes.append(pq)
 
+        # FIX-22: Ensure budget stops always surface "Not finished in time: ..." instead of generic unresolved text
+        if timed_out and outcome == "unresolved":
+            raw_explanation = "Not finished in time: research step budget expired before completing verification."
+
         clean_explanation = strip_unquoted_numbers(raw_explanation, verified_quotes)
 
         if len(steps) < effective_max_steps:
@@ -2923,17 +3200,19 @@ class ResearchLoop:
                 filing=filing_ref,
             )
 
-        return ResearchFinding(
-            finding_id=item.item_id,
-            kind=item.item_kind,
-            subject=item.subject_label,
-            question=item.question,
-            outcome=outcome,
-            explanation=clean_explanation,
-            steps=steps[:effective_max_steps],
-            confirmed_edge_ids=confirmed_edge_ids,
-            rejected_edge_ids=rejected_edge_ids,
-            new_edges=verified_new_edges,
+        return _sanitize_finding(
+            ResearchFinding(
+                finding_id=item.item_id,
+                kind=item.item_kind,
+                subject=item.subject_label,
+                question=item.question,
+                outcome=outcome,
+                explanation=clean_explanation,
+                steps=steps[:effective_max_steps],
+                confirmed_edge_ids=confirmed_edge_ids,
+                rejected_edge_ids=rejected_edge_ids,
+                new_edges=verified_new_edges,
+            )
         )
 
     # ---------- filing & tool helpers ----------
