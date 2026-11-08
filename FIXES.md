@@ -34,24 +34,6 @@ Every known problem, who is fixing it, and where it stands. This is the team's s
 Logo + tagline + live demo link; short "What it does"; copy-paste setup (backend, frontend, env placeholders, offline mode, tests), with every command verified; short "How it works". Keep the Failure simulator, Data sources, Known limits and Layout sections. Move the long history into `<details>` or `docs/hoc/HISTORY.md`.
 - **Owner:** Bekarys's Gemini (README handed over by the lead for this task; after its demo table) · **Status:** assigned
 
-### FIX-63 · high · Failure simulator on the Compare screen (Gawyn, 11:04, top priority)
-"If an industry, country or supplier fails, what happens to my money?" Shows before → after money for Your portfolio and Your new mix.
-- The drop is **historical** when possible: the proxy ETF's worst one-month (21 trading days) fall in the last 5 years. Otherwise it's a **simulated 10% fall**.
-- Contract: **landed** in #255 (`hoc/contract/stress.py`, `api/types.ts`, CONTRACT.md §11).
-- **Owners** (board post 11:12):
-  1. ~~Kendrick's Claude~~ the lead (no reply): `backend/hoc/history/`. **Done** in #260; it matches the independent check in #261.
-  2. Yousuf's Codex: `backend/hoc/portfolio/stress.py`. **Done** in #258, plus the sector-total fix #265.
-  3. Bekarys's Claude: `Service.stress()` + `POST /api/stress`. **Done** in #259 and #263. Live on main b171fe2, it matches the hand calculation: IT shock 51.1% affected, $9,817.68 → $8,845.63.
-  4. Yousuf's Gemini: `api/client.ts` + `app/ui/failure-simulator.tsx` in Try a change (Full + Simple).
-  5. Gawyn's Gemini: `app/ui/failure-suppliers.ts` (supplier options from the dependencies result).
-  6. Kendrick's Gemini: independent history check. **Done** in #261.
-  7. Bekarys's Gemini: independent maths check + E2E.
-  8. Kendrick's Gemini B (11:21): `frontend/api/__fixtures__/stress-*.json`, the demo scenario table in `docs/hoc/demo/`, a README section, and second review of the UI PR.
-  - Lead: contract, merge order, final browser check.
-- **Status:** **live and verified on main** (fbd70f2):
-  - #266 panel, #267 supplier list, #270 history pre-warm, #271 Risk links, #272 README, #273 deep-link scroll and 0.05% filter, #275 company-only suppliers and a 20% simulated fall.
-  - The lead browser-checked it, and Bekarys's Gemini's E2E passed (32 frontend tests, 623 backend tests, and live tech, TW and TSMC cases).
-  - Dependencies/guide "What if it fails?" links merged in #279. Left: the demo table (moved from Kendrick's Gemini B to **Bekarys's Gemini**, 12:05: it hadn't started).
 ### FIX-62 · medium · Second check of the guide + second bug hunter on Simple view (Gawyn, 10:40)
 Kendrick's Claude is free again. In order:
 1. **Post-merge review of #251 (FIX-59).** Read the diff. In the guide, check steps 2–5 in each state: loading, backend down (error), edited-but-invalid (changed), empty, and editing the portfolio while Step 4's progress bar runs, then restoring it. Step 4 must restart for the new portfolio and never show the old one's results.
@@ -78,6 +60,13 @@ For each **confirmed** bug, add one line under **New** in FIXES.md: `BUG: <what 
 
 ## Done (checked on `main` by the lead)
 
+- FIX-63 **Failure simulator** on Compare / Try a change (Gawyn, 11:04):
+  - Pick an industry, a country (the US is included since #280) or a supplier (companies only), and see before → after money for your portfolio and the new mix, on the same base.
+  - Historical worst-month fall of the proxy ETF over 5 years, otherwise a simulated 20%.
+  - Risk and Dependencies "What if it fails?" links preselect the failure.
+  - PRs: #255 #258 #259 #260 #261 #263 #265 #266 #267 #269 #270 #271 #272 #273 #275 #279 #285.
+  - Verified: the lead in the browser, Bekarys's Gemini's E2E, the independent history check, and the hand calculations.
+  - Demo story (docs/hoc/demo/failure-simulator.md): US core, swap 20% QQQ → VTV, tech failure: $10,000 → $9,019 vs $9,199, so it loses $180 less.
 - FIX-69 Try a change shows "Your portfolio (now)" read-only on the left beside the editable new mix on the right, in Simple and Full alike. Equal columns from 1024 px, stacked below that with the current first. In Full it replaces the old current-portfolio list (lead, browser: 1280 and 390 px, Simple and Full) — #284
 - FIX-66 a scan at 0% now shows what it's doing ("Reading NVIDIA's annual report… · Read 3 of 15 · 12 s") with a moving bar, in Full Dependencies, guide Step 4 and Simple Dependencies. A re-scan says "Starting the scan…". Yousuf's Claude (#278, #282) + Yousuf's Gemini (#281); live check by Yousuf's Claude on an uncached XLE/XLU portfolio, lead code review
 - Hosting (Yousuf's request, issue #262):
