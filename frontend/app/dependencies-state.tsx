@@ -3,6 +3,12 @@
 // Persists the latest DependencyJob, polling loop, analysed portfolio key, and selected
 // evidence edge across page navigation (#/dependencies <-> #/exposures, etc.), whether
 // <DependenciesProvider> is mounted at the app root or inside DependenciesPage.
+//
+// Resilient polling:
+// - Survives backend restarts during polling: on network errors or HTTP 502/503/504,
+//   keeps polling with backoff for up to ~30 s and sets `reconnecting: true`.
+// - On HTTP 404 / JOB_NOT_FOUND (in-memory job table cleared by a backend restart),
+//   automatically re-POSTs `api.dependencies` once (idempotent job_id; cached companies replay fast).
 
 import {
   createContext,
@@ -20,8 +26,10 @@ import {
   type DependencyJob,
 } from "@/api/types";
 import { useAnalysis } from "./analysis";
+import { targetNodeIdForEdge } from "./pages/dependencies/graph";
 
 export const POLL_INTERVAL_MS = 1200;
+export const RECONNECT_WINDOW_MS = 30_000;
 
 export type DependenciesRunStatus = "idle" | "starting" | "polling" | "done" | "error";
 
@@ -31,6 +39,8 @@ export interface DependenciesSnapshot {
   /** The `analysedKey` of the portfolio when the dependency run was triggered. */
   depsKey: string | null;
   topN: number;
+  /** True while retrying after a transient 502/503/504/network error or 404 re-POST. */
+  reconnecting: boolean;
   error: ApiError | null;
   selectedEdgeId: string | null;
   selectedNodeId: string | null;
@@ -57,13 +67,23 @@ let storeState: DependenciesSnapshot = {
   job: null,
   depsKey: null,
   topN: DEFAULT_TOP_N,
+  reconnecting: false,
   error: null,
   selectedEdgeId: null,
   selectedNodeId: null,
   drawerOpen: false,
 };
 
-let activeRunId = 0;
+interface RunContext {
+  runId: number;
+  rows: AllocationInput[];
+  topN: number;
+  transientSince: number | null;
+  transientAttempts: number;
+  repostedAfter404: boolean;
+}
+
+let activeRun: RunContext | null = null;
 let activeController: AbortController | null = null;
 let pollTimer: number | null = null;
 const listeners = new Set<() => void>();
@@ -99,20 +119,134 @@ function stopActivePolling() {
   }
 }
 
-function handleJobUpdate(runId: number, job: DependencyJob) {
-  if (runId !== activeRunId) return;
+function isTransientError(cause: unknown): boolean {
+  if (!(cause instanceof ApiError)) return false;
+  return (
+    cause.code === "NETWORK_ERROR" ||
+    cause.status === 0 ||
+    cause.status === 502 ||
+    cause.status === 503 ||
+    cause.status === 504
+  );
+}
+
+function isJobNotFoundError(cause: unknown): boolean {
+  if (!(cause instanceof ApiError)) return false;
+  return cause.code === "JOB_NOT_FOUND" || cause.status === 404;
+}
+
+function backoffDelayMs(attempts: number): number {
+  return Math.min(5000, Math.round(1500 * Math.pow(1.4, Math.max(0, attempts))));
+}
+
+function postJobWithRecovery(run: RunContext) {
+  if (activeRun?.runId !== run.runId) return;
+  const controller = new AbortController();
+  activeController = controller;
+
+  api
+    .dependencies(run.rows, run.topN, controller.signal)
+    .then((job) => {
+      if (activeRun?.runId !== run.runId) return;
+      run.transientSince = null;
+      run.transientAttempts = 0;
+      handleJobUpdate(run, job);
+    })
+    .catch((cause: unknown) => {
+      if (activeRun?.runId !== run.runId) return;
+      if (cause instanceof DOMException && cause.name === "AbortError") return;
+
+      if (isTransientError(cause)) {
+        const now = Date.now();
+        if (run.transientSince === null) run.transientSince = now;
+        if (now - run.transientSince < RECONNECT_WINDOW_MS) {
+          const delay = backoffDelayMs(run.transientAttempts++);
+          setStoreState({ reconnecting: true, error: null });
+          pollTimer = window.setTimeout(() => postJobWithRecovery(run), delay);
+          return;
+        }
+      }
+
+      const apiErr =
+        cause instanceof ApiError
+          ? cause
+          : new ApiError(
+              "UNEXPECTED_ERROR",
+              cause instanceof Error ? cause.message : "Could not start dependency analysis.",
+              0,
+            );
+      setStoreState({ status: "error", reconnecting: false, error: apiErr });
+    });
+}
+
+function scheduleNextPoll(run: RunContext, jobId: string, delayMs: number) {
+  if (activeRun?.runId !== run.runId) return;
+  if (pollTimer !== null) {
+    window.clearTimeout(pollTimer);
+  }
+  pollTimer = window.setTimeout(async () => {
+    if (activeRun?.runId !== run.runId) return;
+    const controller = new AbortController();
+    activeController = controller;
+    try {
+      const updated = await api.dependencyJob(jobId, controller.signal);
+      if (activeRun?.runId !== run.runId) return;
+      run.transientSince = null;
+      run.transientAttempts = 0;
+      handleJobUpdate(run, updated);
+    } catch (cause) {
+      if (activeRun?.runId !== run.runId) return;
+      if (cause instanceof DOMException && cause.name === "AbortError") return;
+
+      // 404 JOB_NOT_FOUND after a backend restart: re-POST once (idempotent job_id; cached companies replay fast)
+      if (isJobNotFoundError(cause) && !run.repostedAfter404) {
+        run.repostedAfter404 = true;
+        run.transientSince = null;
+        run.transientAttempts = 0;
+        setStoreState({ status: "polling", reconnecting: true, error: null });
+        postJobWithRecovery(run);
+        return;
+      }
+
+      // Network error or 502/503/504 during backend restart: keep polling with backoff for up to ~30 s
+      if (isTransientError(cause)) {
+        const now = Date.now();
+        if (run.transientSince === null) run.transientSince = now;
+        if (now - run.transientSince < RECONNECT_WINDOW_MS) {
+          const nextDelay = backoffDelayMs(run.transientAttempts++);
+          setStoreState({ status: "polling", reconnecting: true, error: null });
+          scheduleNextPoll(run, jobId, nextDelay);
+          return;
+        }
+      }
+
+      const apiErr =
+        cause instanceof ApiError
+          ? cause
+          : new ApiError(
+              "UNEXPECTED_ERROR",
+              cause instanceof Error ? cause.message : "Failed while polling dependency status.",
+              0,
+            );
+      setStoreState({ status: "error", reconnecting: false, error: apiErr });
+    }
+  }, delayMs);
+}
+
+function handleJobUpdate(run: RunContext, job: DependencyJob) {
+  if (activeRun?.runId !== run.runId) return;
 
   if (job.status === "done") {
     stopActivePolling();
-    const firstEdge = job.result?.edges[0]?.edge_id ?? null;
     const keepEdge =
       storeState.selectedEdgeId &&
       job.result?.edges.some((e) => e.edge_id === storeState.selectedEdgeId)
         ? storeState.selectedEdgeId
-        : firstEdge;
+        : null;
     setStoreState({
       status: "done",
       job,
+      reconnecting: false,
       error: null,
       selectedEdgeId: keepEdge,
     });
@@ -127,6 +261,7 @@ function handleJobUpdate(runId: number, job: DependencyJob) {
     setStoreState({
       status: "error",
       job,
+      reconnecting: false,
       error: err,
     });
     return;
@@ -136,30 +271,11 @@ function handleJobUpdate(runId: number, job: DependencyJob) {
   setStoreState({
     status: "polling",
     job,
+    reconnecting: false,
     error: null,
   });
 
-  pollTimer = window.setTimeout(async () => {
-    if (runId !== activeRunId) return;
-    const controller = new AbortController();
-    activeController = controller;
-    try {
-      const updated = await api.dependencyJob(job.job_id, controller.signal);
-      handleJobUpdate(runId, updated);
-    } catch (cause) {
-      if (runId !== activeRunId) return;
-      if (cause instanceof DOMException && cause.name === "AbortError") return;
-      const apiErr =
-        cause instanceof ApiError
-          ? cause
-          : new ApiError(
-              "UNEXPECTED_ERROR",
-              cause instanceof Error ? cause.message : "Failed while polling dependency status.",
-              0,
-            );
-      setStoreState({ status: "error", error: apiErr });
-    }
-  }, POLL_INTERVAL_MS);
+  scheduleNextPoll(run, job.job_id, POLL_INTERVAL_MS);
 }
 
 function holdingsToAllocationInputs(analysis: AnalysisResponse): AllocationInput[] {
@@ -169,42 +285,34 @@ function holdingsToAllocationInputs(analysis: AnalysisResponse): AllocationInput
   }));
 }
 
+let nextRunSeq = 0;
+
 export function triggerDependenciesRun(
   analysis: AnalysisResponse,
   analysedKey: string | null,
   topN = DEFAULT_TOP_N,
 ) {
   stopActivePolling();
-  const runId = ++activeRunId;
-  const controller = new AbortController();
-  activeController = controller;
-
   const rows = holdingsToAllocationInputs(analysis);
+  const run: RunContext = {
+    runId: ++nextRunSeq,
+    rows,
+    topN,
+    transientSince: null,
+    transientAttempts: 0,
+    repostedAfter404: false,
+  };
+  activeRun = run;
+
   setStoreState({
     status: "starting",
     depsKey: analysedKey,
     topN,
+    reconnecting: false,
     error: null,
   });
 
-  api
-    .dependencies(rows, topN, controller.signal)
-    .then((job) => {
-      handleJobUpdate(runId, job);
-    })
-    .catch((cause: unknown) => {
-      if (runId !== activeRunId) return;
-      if (cause instanceof DOMException && cause.name === "AbortError") return;
-      const apiErr =
-        cause instanceof ApiError
-          ? cause
-          : new ApiError(
-              "UNEXPECTED_ERROR",
-              cause instanceof Error ? cause.message : "Could not start dependency analysis.",
-              0,
-            );
-      setStoreState({ status: "error", error: apiErr });
-    });
+  postJobWithRecovery(run);
 }
 
 // ---------- React Context + Hook ----------
@@ -239,21 +347,28 @@ function useDependenciesInternal(): DependenciesContextValue {
 
   const selectNode = useCallback((nodeId: string | null, openDrawer = false) => {
     if (nodeId === null) {
-      setStoreState({ selectedNodeId: null });
+      setStoreState({ selectedNodeId: null, selectedEdgeId: null });
+      return;
+    }
+    const nextNodeId = storeState.selectedNodeId === nodeId ? null : nodeId;
+    if (!openDrawer) {
+      setStoreState({
+        selectedNodeId: nextNodeId,
+        selectedEdgeId: null,
+      });
       return;
     }
     const edges = storeState.job?.result?.edges ?? [];
     const matchingEdge = edges.find(
       (e) =>
         e.source_company_key === nodeId ||
-        (e.target_key
-          ? `TARGET_KEY:${e.target_key}`
-          : `TARGET:${e.target_kind}:${e.target_name.trim().toUpperCase()}`) === nodeId,
+        (e.target_in_portfolio && e.target_key === nodeId) ||
+        targetNodeIdForEdge(e) === nodeId,
     );
     setStoreState({
-      selectedNodeId: storeState.selectedNodeId === nodeId ? null : nodeId,
-      selectedEdgeId: matchingEdge ? matchingEdge.edge_id : storeState.selectedEdgeId,
-      drawerOpen: openDrawer && !!matchingEdge ? true : storeState.drawerOpen,
+      selectedNodeId: nextNodeId,
+      selectedEdgeId: matchingEdge ? matchingEdge.edge_id : null,
+      drawerOpen: !!matchingEdge,
     });
   }, []);
 
