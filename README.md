@@ -1,67 +1,145 @@
-<p align="center">
-  <img src="frontend/public/brand/hoc-icon.svg" alt="House of Cards logo" width="96" height="96" />
+<div align="center">
+
+<a href="https://house-of-cards-pink.vercel.app/"><img src="docs/assets/hero.svg" alt="House of Cards: different funds, the same hidden dependencies" width="100%"></a>
+
+# House of Cards
+
+**See what is really holding up your portfolio.**
+
+Look through your ETFs to the companies you own, the dependencies they share, and the money at risk when one part fails.
+
+<p>
+  <img src="https://img.shields.io/badge/Python-3.12%2B-3776AB?style=flat-square&amp;logo=python&amp;logoColor=white" alt="Python 3.12+">
+  <img src="https://img.shields.io/badge/React-19-149ECA?style=flat-square&amp;logo=react&amp;logoColor=white" alt="React 19">
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&amp;logo=typescript&amp;logoColor=white" alt="TypeScript 5">
+  <img src="https://img.shields.io/badge/AI-Gemini-8E75B2?style=flat-square&amp;logo=googlegemini&amp;logoColor=white" alt="Gemini">
 </p>
 
-<h1 align="center">House of Cards</h1>
+**[Hosted demo](https://house-of-cards-pink.vercel.app/)** · **[Run locally](#quick-start)** · **[App tour](#a-tour-of-the-app)** · **[Evaluation](#evaluation)** · **[Docs](#documentation)**
 
-<p align="center">
-  <strong>See which companies you really own through your ETFs — and what happens to your money when one industry, country, or supplier fails.</strong>
-</p>
+</div>
 
-<p align="center">
-  <a href="https://house-of-cards-pink.vercel.app/"><strong>Live demo → house-of-cards-pink.vercel.app</strong></a>
-</p>
+> [!NOTE]
+> The hosted deployment was paused when checked on 17 November 2026. [Run locally](#quick-start) to explore the app. The screenshots below use the app's labelled synthetic mode.
 
-> **Note:** House of Cards is a proof of concept, not investment advice, and it does not trade or execute orders.
+## Why House of Cards
 
----
+Owning several ETFs does not necessarily mean owning several different risks. Funds can hold the same companies, and those companies can depend on the same supplier, factory location, or customer.
 
-## What it does
+House of Cards connects **fund holdings → company exposure → disclosed dependencies → stress scenarios**. Start with your ETF mix, follow the evidence into SEC filings, and compare a different allocation before making any decisions.
 
-Switch between **Simple view** (plain-English walkthrough + a 5-step guided flow at `#/guide`) and **Full view** (the complete analyst dashboard) at any time from the top bar while keeping your portfolio:
+<table>
+<tr>
+<td width="33%" valign="top"><h3>01 · Look through</h3>See your effective ownership in each company across all your funds. Share classes and supported cross-listings are merged.</td>
+<td width="33%" valign="top"><h3>02 · Follow the evidence</h3>Explore suppliers, customers, and facilities extracted from annual reports, with word-for-word quote verification in Python.</td>
+<td width="33%" valign="top"><h3>03 · Test a change</h3>Compare two ETF mixes and stress an industry, country, or supplier on the same dollar starting value.</td>
+</tr>
+</table>
 
-- **Portfolio (`#/portfolio`):** Enter your ETFs by **share count** (valued at latest exchange closes from TickerInside, e.g. `5 IVV / 4 QQQ / 9 XLK / 34 EEM = $9,817.68`) or by **percentage** (`%`, with optional pinned rows), or load a verified sample portfolio in one click.
-- **Exposures (`#/exposures`):** Look through every ETF's real, published holdings to see your effective ownership in each underlying company (merging share classes like `GOOG` + `GOOGL` and cross-listings like `TSM` + `2330.TW`), with a searchable holdings table and money-flow breakdown.
-- **Overlap (`#/overlap`):** Inspect the pairwise weighted overlap heatmap across your ETFs (e.g. `QQQ` and `XLK` share `50.11%` by weight across `35` companies) and drill into the shared holdings behind any pair.
-- **Dependencies (`#/dependencies`):** **Find dependencies** reads the latest SEC `10-K` / `20-F` annual reports for your top holdings using Gemini Flash sub-agents, keeping **only word-for-word verified filing quotes** in Python. Scores relationship importance (`critical` / `high` / `medium` / `low`), runs context checks (`V-INT`), highlights single points of failure (e.g. `12.39%` of the sample portfolio depends on **TSMC**), and lets you run **Go deeper** multi-step agentic filing research.
-- **Compare / Try a change + Failure simulator (`#/compare`):** Edit a candidate mix side by side with your current portfolio or apply one-click **Change ideas** (rules + Python-verified Argon AI proposals) to see instant before/after concentration and dependency deltas — plus the **Failure simulator** (*"What if one part fails?"*), showing before → after dollars under historical worst-month proxy ETF drops or a simulated `20%` fall.
-- **Risk (`#/risk`):** Check top-5 / top-10 concentration, effective equal-sized company count (`1 / HHI`), industry and country breakdowns with direct *"What if it fails?"* stress links, per-fund disclosure dates, and 5-bucket data coverage.
+## A tour of the app
 
----
+Switch between **Simple view**, a five-step guided flow, and **Full view**, the analyst dashboard, while keeping your portfolio.
 
-## Quick start / Setup
+<table>
+<tr>
+<td width="50%" valign="top"><img src="docs/assets/portfolio.jpg" alt="Portfolio screen running the labelled synthetic example" width="100%"><br><b>Start with your funds.</b> Enter shares or percentages, pin allocations, or load an example.</td>
+<td width="50%" valign="top"><img src="docs/assets/exposures.jpg" alt="Company exposure screen with synthetic holdings" width="100%"><br><b>See what you actually own.</b> Search underlying companies and trace their contributions across funds.</td>
+</tr>
+<tr>
+<td valign="top"><img src="docs/assets/overlap.jpg" alt="Weighted overlap heatmap for the synthetic ETF example" width="100%"><br><b>Spot duplicated exposure.</b> Inspect pairwise weighted overlap and the shared holdings behind it.</td>
+<td valign="top"><img src="docs/assets/dependencies.jpg" alt="Dependency analysis screen using synthetic filing fixtures" width="100%"><br><b>Find shared dependencies.</b> Follow disclosed relationships and inspect the supporting filing quotes.</td>
+</tr>
+</table>
 
-### Prerequisites
+<sub>Actual app captures using <code>VITE_API_MOCK=1</code>. Holdings, prices, and filing evidence in these images are synthetic fixtures, not investment data.</sub>
 
-- **Python 3.12+** managed with [**uv**](https://docs.astral.sh/uv/) (`winget install astral-sh.uv` on Windows; `brew install uv` on macOS)
-- **Node.js 22.12+** and **npm**
+| Screen | What you can explore |
+|---|---|
+| **Portfolio** | Share-count valuation at exchange closes, percentage allocations, pinned rows, and sample portfolios |
+| **Exposures** | Effective company ownership, share-class merging, searchable holdings, and money-flow breakdowns |
+| **Overlap** | Weighted ETF-pair heatmap and shared-company drilldowns |
+| **Dependencies** | SEC 10-K / 20-F quotes, relationship importance, context checks, coverage, and bounded deeper research |
+| **Compare / Try a change** | Side-by-side allocations, concentration deltas, change ideas, and industry/country/supplier failure scenarios |
+| **Risk** | Top-5 / top-10 concentration, effective company count (1 / HHI), industries, countries, and disclosure dates |
 
-### 1. Start the backend (`http://127.0.0.1:8000`)
+## How it works
+
+**Gemini proposes. Python calculates and verifies. You inspect the evidence.**
+
+```mermaid
+flowchart LR
+    A[ETF shares or percentages] --> B[Holdings adapters]
+    B --> C[Identity resolution]
+    C --> D[Exposure, overlap and concentration]
+    D --> E[SEC filing research with Gemini]
+    E --> F[Quote and context checks]
+    F --> G[Dependency analysis]
+    D --> H[Compare and stress scenarios]
+    G --> H
+```
+
+| Layer | Responsibility |
+|---|---|
+| **Holdings & identity** | TickerInside, iShares CSV, and SEC N-PORT adapters; CIK/LEI/ISIN identifiers and curated cross-listing aliases |
+| **Deterministic maths** | Python computes exposure, weighted overlap, HHI, valuation, comparison deltas, and scenario losses |
+| **Filing research** | Gemini proposes dependency quotes, judges ambiguous context, and performs bounded multi-step research |
+| **Verification** | Python checks verbatim quotes and metric placeholders; context checks and importance scores accompany retained relationships |
+| **Presentation** | FastAPI serves the React 19, TypeScript, Vite, and Tailwind v4 interface |
+
+The [contract](docs/hoc/CONTRACT.md) specifies the calculations, schemas, and error codes. The [history](docs/hoc/HISTORY.md) covers the v1–v3.1 pipeline.
+
+## Failure simulator
+
+Ask **“What if one part fails?”** on Compare / Try a change. Pick an industry, country, or supplier to see the current and candidate portfolios under the same shock.
+
+- **Historical proxy:** where price history is available, use the proxy ETF's worst 21-trading-day fall over five years of adjusted closes.
+- **Explicit fallback:** when history is unavailable, use a simulated 20% fall and show the reason. Supplier shocks always use a simulated 20% fall.
+- **Comparable dollars:** both portfolios use the shares-mode valuation total, or a notional $10,000 in percentage mode. The screen shows the shock basis and affected companies.
+
+These are scenarios, not forecasts. Industry totals can use fund-reported sector breakdowns even when individual company sectors are incomplete. See the [scenario walkthrough](docs/hoc/demo/failure-simulator.md), [contract §11](docs/hoc/CONTRACT.md), and [standalone stress validation](validation/stress/).
+
+## Evaluation
+
+The recorded dependency benchmark covers **10 held-out non-tech SEC 10-K filings**, with **115 core relationships** and **79 hard negatives**, evaluated in replay mode. These are recorded results, not a fresh live-model run.
+
+| Measure | Recorded result | Interpretation |
+|---|---|---|
+| **Blind precision** | **88.4%** · 114/129 | Initial blind annotation key |
+| **Pooled precision** | **96.1%** · 124/129 | After adjudicating unmatched quotes; includes 10 accepted pooled relationships |
+| **Core recall** | **57.4%** · 66/115 | Many disclosed relationships are still missed |
+| **Hard negatives wrongly kept** | **1.3%** · 1/79 | One annotated negative retained |
+| **Importance agreement** | **κ = 0.475** | Quadratic weighted agreement; importance remains imperfect |
+
+The deeper research pass added **no new edges** on this benchmark. Supplier classification was a weak point, and facility-country lists contributed many recall misses. Read the [full evaluation](docs/hoc/EVAL.md) for confidence intervals, per-company results, pooling methodology, and error analysis.
+
+## Quick start
+
+**Prerequisites:** Python 3.12+ with [uv](https://docs.astral.sh/uv/), Node.js 22.12+, npm, and Git.
+
+```bash
+git clone https://github.com/yousuf-shahzad/house-of-cards.git
+cd house-of-cards
+```
+
+### 1. Start the API
 
 ```bash
 cd backend
 uv sync
-```
-
-Create `backend/.env` (or copy [`backend/.env.example`](backend/.env.example)) with **placeholder values replaced by your own** (never commit real keys or personal emails):
-
-```dotenv
-# Needed for live SEC EDGAR 10-K / 20-F / N-PORT requests (SEC requires "Name email@domain.com")
-HOC_SEC_CONTACT="Your Name you@example.com"
-
-# Secret — needed only for uncached live Gemini extraction/synthesis; sent only in a request header
-GEMINI_API_KEY=your-gemini-api-key-here
-```
-
-Run the API server:
-
-```bash
 uv run uvicorn hoc.api.app:app --host 127.0.0.1 --port 8000
 ```
 
-### 2. Start the frontend (`http://127.0.0.1:5173`)
+No secrets are needed for holdings analysis. For **uncached live SEC filing research**, copy [backend/.env.example](backend/.env.example) to `backend/.env`, fill in `HOC_SEC_CONTACT="Your Name you@example.com"` and `GEMINI_API_KEY`, then start with:
 
-In a second terminal:
+```bash
+uv run --env-file .env uvicorn hoc.api.app:app --host 127.0.0.1 --port 8000
+```
+
+Keep real keys and personal contact details out of Git. Cached dependencies can be replayed without keys once a local cache exists; the cache is not included in a fresh clone.
+
+### 2. Start the interface
+
+In a second terminal, from the repository root:
 
 ```bash
 cd frontend
@@ -69,73 +147,55 @@ npm ci
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173** — the Vite dev server proxies `/api/*` requests to `http://127.0.0.1:8000`.
-
-### 3. Offline mode, CLI & tests
-
-The backend warms its local disk cache (`backend/.cache/`) on startup. Without `GEMINI_API_KEY` or `HOC_SEC_CONTACT`, cached portfolios and dependency scans still work cleanly and uncached scans report which setting is missing.
-
-```bash
-# Serve strictly from local cache with zero network calls
-cd backend && HOC_OFFLINE=1 uv run uvicorn hoc.api.app:app --host 127.0.0.1 --port 8000
-
-# Pre-warm the cache or run portfolio analysis from the CLI
-cd backend && uv run python -m hoc.cli warm
-cd backend && uv run python -m hoc.cli analyse --example us-core-tilt
-
-# Run backend unit & contract test suite (network blocked in tests)
-cd backend && uv run pytest
-
-# Run standalone stdlib evaluation & validation suites
-cd backend && uv run hoc eval
-python validation/run_validation.py
-python validation/stress/run_stress_validation.py
-
-# Run frontend unit tests and production type-check + build
-cd frontend && node --test app/ui/*.test.mjs app/pages/**/*.test.mjs app/*.test.mjs
-cd frontend && npm run build
-```
-
----
-
-## How it works
-
-Every portfolio figure, company match, and dollar loss is computed by **deterministic Python** on the backend. Gemini is used only to propose candidate dependency quotes from SEC filings, judge ambiguous filing context, summarize Python-computed metrics via `{{metric:id}}` placeholders, and suggest candidate ETF swaps — and Python verifies every quote and number before anything reaches the UI.
-
-```text
- ETF tickers ──> Holdings adapters ──> Look-through & identity ──> Portfolio analysis ──> SEC 10-K / 20-F AI scan ──> Python verifier
- (shares / %)    (TickerInside,        (CIK, LEI, ISIN, 48         (exposure, overlap,    (Gemini Flash extract +     (verbatim quote check,
-                  iShares, N-PORT)      curated aliases)            sectors, HHI, stress)  light research agents)      V-INT, R-IMP, metrics)
-```
-
-For the full mathematical specification, API schemas, and error codes, see [`docs/hoc/CONTRACT.md`](docs/hoc/CONTRACT.md) and [`docs/hoc/HISTORY.md`](docs/hoc/HISTORY.md).
+Open **[127.0.0.1:5173](http://127.0.0.1:5173)**. Vite proxies API requests to port 8000. The backend warms its local holdings cache on startup; first use needs data-provider network access.
 
 <details>
-<summary><strong>Version history (v1–v3.1), verification pipeline &amp; gold benchmark details</strong></summary>
+<summary><b>Explore the UI with synthetic data and no backend</b></summary>
 
-- **v1 — Look-through & overlap:** Multi-source ETF ingestion (`TickerInside` primary, `iShares` CSV fallback, `SEC N-PORT` fallback), un-rescaled look-through exposure, share-class & cross-listing identity resolution, pairwise weighted overlap, and `HHI` concentration.
-- **v2 — Shares valuation & SEC filing dependencies:** Exchange-close share valuation (`POST /api/valuation`), SEC `10-K`/`20-F` ingestion + reverse EDGAR search, per-company Gemini Flash extraction, word-for-word quote verification (`verify_quote`), target-local `sole_source` grounding (`FIX-34`), and placeholder-checked Argon synthesis.
-- **v3 / v3.1 — Interpretation checks (`V-INT`), importance scoring (`R-IMP`), coverage (`C-COV`), agentic research (`A-RES`), Compare & Failure simulator (`FIX-63`):**
-  - **Held-out Gold Benchmark ([`docs/hoc/EVAL.md`](docs/hoc/EVAL.md)):** Tested on **10 unseen non-tech SEC 10-K filings** (`NKE, F, GM, BA, SWKS, QRVO, GLW, PFE, DE, SBUX`, zero tuning) against a 2-annotator + lead-adjudicated key (`222` relationships, `115` core, `79` hard negatives):
-    - **Precision:** **88.4%** `[83.2%, 92.5%]` blind (`114/129`) · **96.1%** `[89.6%, 100.0%]` after reviewing unmatched verbatim quotes (`124/129`)
-    - **Core recall:** **57.4%** `[35.3%, 76.0%]` (`66/115`)
-    - **Hard negatives wrongly kept:** **1.3%** (`1/79`)
-    - **Direction & factory-country accuracy:** **100.0%** (`124/124` direction, `39/39` facility country)
-    - **Importance agreement (quadratic weighted $\kappa$):** **0.475** `[0.382, 0.631]`
-  - Full details in [`docs/hoc/HISTORY.md`](docs/hoc/HISTORY.md) and [`docs/hoc/EVAL.md`](docs/hoc/EVAL.md).
+From `frontend/`, after `npm ci`:
+
+```bash
+VITE_API_MOCK=1 npm run dev
+```
+
+PowerShell:
+
+```powershell
+$env:VITE_API_MOCK = "1"
+npm run dev
+```
+
+This mode shows a **SYNTHETIC** banner and uses committed fixtures. It demonstrates the interface; it does not fetch real holdings or call Gemini. Unset `VITE_API_MOCK` before returning to live mode.
 
 </details>
 
----
+<details>
+<summary><b>Cache-only mode and command-line analysis</b></summary>
 
-## Failure simulator
+Run each command from `backend/`:
 
-On the **Compare / Try a change** screen (`POST /api/stress`), the failure simulator answers *"If one industry, country, or supplier fails, what happens to my money?"* Pick an **Industry**, **Country**, or **Supplier** to compare before → after money for **Your portfolio** and **Your new mix** on the same dollar starting value (your shares-mode valuation total, or a notional `$10,000` in `%` mode), how much less the new mix loses, the shock basis, and the top affected companies:
+```bash
+uv run python -m hoc.cli warm
+uv run python -m hoc.cli analyse --example us-core-tilt
+HOC_OFFLINE=1 uv run uvicorn hoc.api.app:app --host 127.0.0.1 --port 8000
+```
 
-- **Historical vs. simulated drops:** When a proxy ETF has price history, the drop is **historical** — the proxy ETF's worst 1-month (**21-trading-day**) fall over the last **5 years** of daily adjusted closes from the Yahoo Finance v8 chart API (e.g. `XLK` `−19.37%` from `2026-10-07` to `2026-11-05` for Information Technology, `EWT` `−26.12%` for Taiwan, `SPY` `−12.80%` for the US; full proxy map in [`docs/hoc/CONTRACT.md`](docs/hoc/CONTRACT.md) §11, demo scenario table in [`docs/hoc/demo/failure-simulator.md`](docs/hoc/demo/failure-simulator.md), and standalone stdlib verification in [`validation/stress/`](validation/stress/)). When no proxy history is available, it falls back to a **simulated 20% fall** (`DEFAULT_SHOCK_DROP = 0.20`) and states why. **Supplier** shocks always use a simulated 20% fall across the supplier (if held) and the portfolio companies that rely on it in the verified dependency scan.
-- **Known limits:** Country codes come from TickerInside's per-stock files and US-exchange ordinary listings (`FIX-67`, while foreign ADRs and unmapped listings remain unknown and are reported on screen). For industry shocks, `affected_weight` and `loss_fraction` use the portfolio's `analysis.sectors` totals (which come from the funds' own published breakdowns when line-level company sectors are incomplete), while the expandable company list shows the individual holdings we can name.
+In PowerShell, set `$env:HOC_OFFLINE = "1"` before the server command. Offline mode never fetches data; populate the cache first. Missing cache entries are reported rather than invented.
 
----
+</details>
+
+## Checks and validation
+
+| Check | Working directory | Command |
+|---|---|---|
+| Backend unit & contract tests | `backend/` | `uv run pytest` |
+| Recorded evaluation | `backend/` | `uv run hoc eval` |
+| Portfolio validation | Repository root | `python validation/run_validation.py` |
+| Stress validation | Repository root | `python validation/stress/run_stress_validation.py` |
+| Frontend unit tests | `frontend/` | `node --test app/ui/*.test.mjs app/pages/**/*.test.mjs app/*.test.mjs` |
+| Type check & production build | `frontend/` | `npm run build` |
+
+Backend tests block network access; live-provider checks are separate. [Backend docs](backend/README.md) and [frontend docs](frontend/README.md) cover development in more detail.
 
 ## Data sources & licences
 
@@ -174,3 +234,17 @@ No proprietary financial data is committed to this repository; the only committe
 | [`validation/`](validation/) | Standalone standard-library verification scripts (ETF overlap, residual return co-movement, and 5-year proxy ETF drawdowns in [`validation/stress/`](validation/stress/)) |
 | [`scripts/`](scripts/) | Live API smoke checks ([`smoke_api.py`](scripts/smoke_api.py)) and TickerInside cross-checks |
 | [`tools/board`](docs/AGENT_BOARD.md) | GitHub-issue message board CLI used by the human + multi-agent team |
+
+
+## Documentation
+
+| Start here | Go deeper |
+|---|---|
+| [Demo walkthrough](docs/hoc/DEMO.md) | [Mathematical & API contract](docs/hoc/CONTRACT.md) |
+| [Failure-simulator examples](docs/hoc/demo/failure-simulator.md) | [Dependency benchmark & limitations](docs/hoc/EVAL.md) |
+| [Backend development](backend/README.md) | [Version history](docs/hoc/HISTORY.md) |
+| [Frontend development](frontend/README.md) | [Validation scripts](validation/) |
+
+---
+
+<p align="center"><b>Understand your exposure. Follow the evidence. Test the scenario.</b><br><sub>A portfolio research proof of concept. Not investment advice; no trading or order execution.</sub></p>
